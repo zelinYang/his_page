@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+	<style type="text/css">
+		.layui-table td, .layui-table th {
+			padding: 5px;
+		}
+	</style>
+</head>
+<body>
+<div class="layui-col-xs12 full-height">
+	<form class="layui-form" action="" id="editForm">
+		#formHiddenInput("clinicPatientStageId" "$!clinicPatientStageId" "id='clinicPatientStageId'")
+		#formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+		<blockquote class="layui-elem-quote remarksTips">
+			<dl class="remarksTips">
+				<dd>生成路径项目日期：$!date.format('yyyy-MM-dd', $DateUtils.getTodayDate())，第$!index天</dd>
+				<dd>当前选择时间阶段：$!clinicPathStage.pathStageContent</dd>
+			</dl>
+		</blockquote>
+		<div class="layui-form-item layui-hide" style="overflow: auto">
+			<input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认"/>
+		</div>
+	</form>
+	<script type="text/html" id="toolbarDemo">
+		<div class="layui-btn-container">
+			<button class="layui-btn layui-btn-sm" lay-event="allExe">全部已经执行</button>
+			<button class="layui-btn layui-btn-sm" lay-event="exe">已经执行</button>
+			<button class="layui-btn layui-btn-sm" lay-event="cancel">取消执行</button>
+			<button class="layui-btn layui-btn-sm" lay-event="sectionExe">部分执行</button>
+			<button class="layui-btn layui-btn-sm" lay-event="advanceExe">提前执行</button>
+			<button class="layui-btn layui-btn-sm" lay-event="postponeExe">延后执行</button>
+		</div>
+	</script>
+	<table id="stageTable" lay-filter="stageTable"></table>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+	var dicPathActivityType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathActivityType)');
+	var getParams;
+	var clinicPatientActivityData;
+
+	layui.use(['table', 'form', 'layer'], function () {
+		layer = layui.layer;
+		var table = layui.table, form = layui.form;
+
+		// 路径分页列表
+		var tableUrl = contextPath + '/clinic/clinicPatientActivityListData.jo';
+		var tablePathList = table.render($.extend(singlePageTable, {
+				url: tableUrl,
+				id: 'stageTable',
+				elem: '#stageTable',
+				toolbar: '#toolbarDemo',
+				height: getTableHeight(),
+				where: {clinicPatientStageId: $("#clinicPatientStageId").val()},
+				cols: [[
+					{type: 'radio', width: '50'},
+					{field: 'activityContent', width: '500', title: '活动名称'},
+					{field: 'activityType', width: '100', title: '活动类别', templet: function (res) {
+							if (res.activityType) {
+								return dicPathActivityType[res.activityType];
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeState', title: '已经执行', style: 'text-align: center;', width: '80', templet: function (res) {
+							if (res.activityExeState === '1') {
+								return '<i class="layui-icon layui-icon-ok"></i>';
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeState', title: '取消执行', style: 'text-align: center;', width: '80', templet: function (res) {
+							if (res.activityExeState === '2') {
+								return '<i class="layui-icon layui-icon-ok"></i>';
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeState', title: '部分执行', style: 'text-align: center;', width: '80', templet: function (res) {
+							if (res.activityExeState === '3') {
+								return '<i class="layui-icon layui-icon-ok"></i>';
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeState', title: '提前执行', style: 'text-align: center;', width: '80', templet: function (res) {
+							if (res.activityExeState === '4') {
+								return '<i class="layui-icon layui-icon-ok"></i>';
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeState', title: '延后执行', style: 'text-align: center;', width: '80', templet: function (res) {
+							if (res.activityExeState === '5') {
+								return '<i class="layui-icon layui-icon-ok"></i>';
+							}
+							return '';
+						}
+					},
+					{field: 'activityExeDesc', width: '200', title: '执行说明'}
+
+				]],
+				done: function () {
+					// 去掉表格头部的全选及取消全选功能
+					common.removeHeadCheckbox('clinicPathId');
+				}
+			})
+		);
+
+		//行选事件
+		table.on('row(stageTable)', function (obj) {
+			clinicPatientActivityData = obj.data;
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+			form.render('radio');
+		});
+
+		//操作栏操作按钮的事件
+		table.on('toolbar(stageTable)', function (obj) {
+			switch (obj.event) {
+				case 'allExe':
+					updateActivityExeState("6");
+					break;
+				case 'exe':
+					updateActivityExeState("1");
+					break;
+				case 'cancel':
+					updateActivityExeState("2");
+					break;
+				case 'sectionExe':
+					updateActivityExeState("3");
+					break;
+				case 'advanceExe':
+					updateActivityExeState("4");
+					break;
+				case 'postponeExe':
+					updateActivityExeState("5");
+					break;
+			}
+		});
+
+		function updateActivityExeState(exeStateType) {
+			var ids = "";
+			//6=全部执行
+			if ("6" == exeStateType) {
+				var stageTableData = layui.table.cache["stageTable"];
+				if (stageTableData) {
+					for (var i = 0; i < stageTableData.length; i++) {
+						var data = stageTableData[i];
+						ids = ids + "," + data["clinicPatientActivityId"];
+					}
+					if (ids.indexOf(",") > -1) {
+						ids = ids.substring(1);
+					}
+					var params = {
+						clinicPatientActivityIds: ids,
+						exeStateType: exeStateType
+					};
+					common.confirm("确定要执行该操作吗？", function () {
+						toDoUpdate(params);
+					});
+				}
+			}
+
+			// 1=已经执行
+			if ("1" == exeStateType) {
+				if (!clinicPatientActivityData) {
+					common.alertError("请选择要执行的活动");
+					return;
+				}
+				ids = clinicPatientActivityData["clinicPatientActivityId"];
+				var params = {
+					clinicPatientActivityIds: ids,
+					exeStateType: exeStateType
+				};
+				common.confirm("确定要执行该操作吗？", function () {
+					toDoUpdate(params);
+				});
+			}
+			//2=取消执行 3=部分执行 4=提前执行 5=延后执行
+			if ("2" == exeStateType || "3" == exeStateType || "4" == exeStateType || "5" == exeStateType) {
+				if (!clinicPatientActivityData) {
+					common.alertError("请选择要执行的活动");
+					return;
+				}
+				ids = clinicPatientActivityData["clinicPatientActivityId"];
+				layer.prompt({
+					formType: 2,
+					title: '请输入执行说明',
+					area: ['600px', '300px'] //自定义文本域宽高
+				}, function(value, index, elem){
+					var activityExeDesc = value;
+
+					layer.close(index);
+					var params = {
+						clinicPatientActivityIds: ids,
+						exeStateType: exeStateType,
+						activityExeDesc: activityExeDesc
+					};
+					common.confirm("确定要执行该操作吗？", function () {
+						toDoUpdate(params);
+					});
+				});
+			}
+		}
+
+		function toDoUpdate(params) {
+			common.requestServer(contextPath + '/clinic/updateActivityExeState.jo', params, function (result) {
+				if (result.code == "0") {
+					common.alert("保存成功");
+					table.reload('stageTable', {
+						height: getTableHeight()
+					});
+					parent.showClinicPatientActivity($("#clinicPatientStageId").val());
+					//重置选中对象
+					clinicPatientActivityData = null;
+				} else {
+					common.alertError("保存失败");
+				}
+			});
+		}
+
+		function getTableHeight() {
+			return $('body').height() - $("#editForm").height() - 10;
+		}
+
+		getParams = function () {
+			var checkStatus = table.checkStatus('stageTable');
+			var activityIds = [];
+			console.log(checkStatus.data)
+			$.each(checkStatus.data, function (index, activity) {
+				activityIds.push(activity.clinicPathActivityId);
+			});
+			return activityIds.join(',');
+		}
+
+	});
+</script>
+</html>

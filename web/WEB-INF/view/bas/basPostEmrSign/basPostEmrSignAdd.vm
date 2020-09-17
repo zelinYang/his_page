@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生权限设置-职称电子病历签名-新增</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <form class="layui-form" lay-filter="basPostFeeForm" id="basPostFeeForm">
+                <div class="layui-card right-box">
+                    <table id="basPostFeeListGrid" lay-filter="basPostFeeListGrid" lay-verify="basPostFee"></table>
+                </div>
+                <div class="tool-bottom-fixed " style="position: sticky;">
+                    <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                            class="layui-btn layui-btn-sm">保 存
+                    </button>
+                    <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bas/basPostEmrSign/basPostEmrSignAdd.js.vm")
+<!-- 单选列表 -->
+<script type="text/html" id="radioTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="radio" name="{{d.name}}" lay-filter="{{d.filter}}" value="{{val}}" {{val== d.value
+           ? 'checked' : ''}}  title="{{key}}" {{d.attr}}>
+    {{# }) }}
+</script>
+
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl;
+        common.verify(form);
+
+        table.render({
+            elem: '#basPostFeeListGrid',
+            url: contextPath + '/bas/basPostEmrSignPageData.jo',
+            parseData: function (res) { //res 即为原始返回的数据
+                res.data = $.map(dicDoctorPost, function (k, v) {
+                    var basPostFee = res.data.find(function (x) {
+                        return x.doctorPost == v;
+                    });
+                    if (!basPostFee) {
+                        // 不存在则新增
+                        basPostFee = {doctorPost: v, doctorSign: '', validFlag: YES_FLAG}
+                    }
+                    return basPostFee;
+                })
+                return res;
+            },
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 'full-50',
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'doctorPost',
+                    title: '职称',
+                    templet: function (d) {
+                        return dicDoctorPost[d.doctorPost] || '';
+                    }
+                }, {
+                    title: '电子病历签名',
+                    event: 'doctorSign',
+                    width: 300,
+                    templet: function (d) {
+                        return laytpl($('#radioTpl').html()).render({
+                            name: 'doctorSign' + d.LAY_TABLE_INDEX,
+                            filter: 'doctorSign',
+                            value: d.doctorSign,
+                            data: dicDoctorSignType
+                        });
+                    }
+                }, {
+                    event: 'checkbox',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    align: 'center',
+                }]]
+            , done: function (res) {
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(basPostFeeListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            var that = this;
+            switch (obj.event) {
+                case 'doctorSign':
+                    obj.update({
+                        'doctorSign': $(obj.tr).find(':radio[lay-filter="doctorSign"]:checked').val()
+                    });
+                    break;
+                case 'checkbox':
+                    $(that).find(':checkbox[lay-filter]').each(function () {
+                        var field = $(this).attr('lay-filter');
+                        obj.update({
+                            [field]: Number(+$(this).is(':checked'))
+                        });
+                    });
+                    break;
+            }
+        });
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            if (data.postEmrSignId) {
+                common.requestServer('../bas/updateBasPostEmrSignValidFlag.jo', {
+                    postEmrSignId: data.postEmrSignId,
+                    validFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result)
+                })
+            }
+        })
+
+        //提交表单
+        function saveBasPostEmrSign() {
+            var basPostEmrSigns = $.map(table.cache['basPostFeeListGrid'], function (item) {
+                if (item.doctorSign) return item;
+            });
+            var params = {
+                basPostEmrSignEditInfoList: basPostEmrSigns
+            };
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/bas/saveBasPostEmrSignList.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('basPostFeeListGrid');
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasPostEmrSign()
+            return false
+        })
+        $("#btn_close").click(function () {
+            $('#btn_query', window.parent.document).click();
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+</body>
+</html>

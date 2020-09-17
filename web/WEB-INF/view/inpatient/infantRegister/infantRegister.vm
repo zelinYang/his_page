@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+
+<style type="text/css">
+    .layui-input{
+        height:38px;
+    }
+    h3{
+        font-weight: 500;
+        font-size: 18px;
+    }
+    h3 > span{
+        
+    }
+    .babyCount,.motherName{
+        font-weight: 600;
+    }
+</style>
+</head>
+
+<body class="" style="height: calc(100% - 10px); ">
+
+    
+    <form id="editForm" class="layui-form layui-form-pane " style="background: #f9f9f9">
+    	<input type="hidden" name="motherInpatientNo" value="$!inpatientInhospital.inpatientNo">
+    	<input type="hidden" name="motherInpatientId" value="$!inpatientInhospital.inhospitalId">
+        <div class="layui-card m-t-xs text-center">
+            <div class="layui-card-header" style="padding-left:0px;">
+                <h3 class="">产妇<span class="motherName"> $!inpatientInhospital.patientName </span>的第<span class="babyCount"> $!babyCount </span>个婴儿信息登记 </h3>
+            </div>
+            <div class="layui-card-body p-r-n" >
+		        <div class="layui-form-item ">
+		            <div class="layui-inline">
+			        	<label class="layui-form-label">姓名</label>
+			            <div class="layui-input-inline">
+                            #formTextInput("patientName" "" "class='layui-input' id='infantName'")
+			            </div>
+		            </div>
+			        <div class="layui-inline">
+			            <label class=" layui-form-label">性别</label>
+			            <div class="layui-input-inline">
+			                #formSingleSelect("patientSex" "" $!dicData.dicSex "class='layui-input'" "")
+			            </div>
+		            </div>
+		        </div>
+		        <div class="layui-form-item ">
+		            <div class="layui-inline">
+			            <label class=" layui-form-label">住院号码</label>
+			            <div class="layui-input-inline">
+			                #formTextInput("inhospitalNo" "" "class='layui-input' id='inhospitalNo'")
+			            </div>
+			        </div>
+		            <div class="layui-inline">
+			            <label class=" layui-form-label">就诊卡号</label>
+			            <div class="layui-input-inline">
+			                #formTextInput("visitCardNo" "" "class='layui-input' id='visitCardNo'")
+			            </div>
+			        </div>    
+		        </div>
+		        
+		        <div class="layui-form-item ">
+		            <div class="layui-inline">
+			        	<label class="layui-form-label">出生日期</label>
+			            <div class="layui-input-inline">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd HH:mm','')" "class='layui-input' id='infantBirth' readonly")
+			            </div>
+			        </div>
+		            <div class="layui-inline">
+			            <label class="layui-form-label">入院日期</label>
+			            <div class="layui-input-inline">
+			            	#formTextInput("inhospitalDate" "$!date.format('yyyy-MM-dd HH:mm','')" "class='layui-input' id='infantInhospitalDate' readonly")
+			            </div>
+		            </div>
+		        </div>
+		        <div class="layui-form-item ">
+		            <div class="layui-inline">
+			        	<label class="layui-form-label">床号</label>
+			            <div class="layui-input-inline">
+			                #formSingleSelect("currentBedNo" "" $!wardBedMap "class='chosen-select layui-input'" "")
+			            </div>
+		            </div>
+		            <div class="layui-inline">
+			        	<label class="layui-form-label">备注</label>
+			            <div class="layui-input-inline">
+			                #formTextInput("remark" "" "class='layui-input'")
+			            </div>
+		            </div>
+		        </div>
+		    </div>    
+        </div>
+    </form>
+	<div class="text-center" style="background: #ffffff">
+        <button id="btn_save" type="button" class="layui-btn layui-btn-sm"><i class="fa fa-clone"></i> 保存</button>
+    </div>
+
+
+
+
+    <!-- 全局js -->
+#parse("./common/pageJs.vm") 
+#parse("./inpatient/infantRegister/infantRegister.js.vm") 
+
+</body>
+
+</html>
+

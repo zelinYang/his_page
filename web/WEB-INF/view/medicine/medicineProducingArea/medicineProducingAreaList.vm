@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-药品产地列表管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="medicineProducingArea_queryForm" class="layui-form">
+            #formHiddenInput("producingAreaType" "$!{producingAreaType}" " id='producingAreaType' ")
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">产地</label>
+                        <div class="layui-input-inline" style="width: auto;">
+                            #formTextInput("keyWord" "" " id='q_keyWord' class='layui-input'
+                            autocomplete='off' maxlength='100' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn_add"class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增">
+                            <i class="layui-icon layui-icon-add-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 是否有效开关模板 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" lay-filter="validFlag" value="{{d.producingAreaId}}" lay-skin="switch"
+                   lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked'}}>
+        </script>
+
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit">
+                <i class="layui-icon layui-icon-edit"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="medicineProducingAreaListGrid" lay-filter="medicineProducingAreaListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./medicine/medicineProducingArea/medicineProducingAreaList.js.vm")
+</body>
+</html>

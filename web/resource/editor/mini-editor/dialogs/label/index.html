@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>标签控件</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th><span>控件标签</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="labelName" placeholder="必填项"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    /*
+            label结构：
+            <span id="label1" sde-type="label" class="sde-ctrl sde-label" title="[可选]">
+              label内容
+            </span>
+            其中：id，class 为必须项，class可以扩展，有自定义样式
+            */
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            return eval(rgbStr);
+        };
+        var thePlugins = 'minilabel',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                //修改
+                ctrl = UE.plugins[thePlugins].editdom;
+                opt = ctrl.getOpt() || {};
+                domCtrl = ctrl.getCtrlElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id') || '');
+                $('#ctrlDesc').val(opt.desc || '');
+                $('#labelName').val(domCtrl.innerHTML);
+                if (domCtrl.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domCtrl.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[0], tempColor[1], tempColor[2]);
+                } else {
+                    document.getElementById('fontColor').value = (domCtrl.style.color || '').trim('#');
+                }
+                if (domCtrl.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domCtrl.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[0], tempBGColor[1], tempBGColor[2]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domCtrl.style.backgroundColor || '').trim('#');
+                }
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            if ($G('labelName').value == '') {
+                $G('labelName').focus();
+                layer.msg('请输入控件标签', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.type = 'label';
+            if (!!domCtrl) {
+                domCtrl.setAttribute('id', $G('ctrlId').value);
+                if ($('#fontColor').val().length > 0) {
+                    domCtrl.style.color = '#' + $('#fontColor').val();
+                } else {
+                    domCtrl.style.color = '';
+                }
+                if ($('#backgroundColor').val().length > 0) {
+                    domCtrl.style.backgroundColor = '#' + $('#backgroundColor').val();
+                } else {
+                    domCtrl.style.backgroundColor = '';
+                }
+                domCtrl.setAttribute('title', newOpt.desc);
+                ctrl.setOpt(newOpt);
+                domCtrl.innerHTML = $('#labelName').val();
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                //新增
+                domCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                    class: 'emr-ctrl emr-label',
+                    contenteditable: false,
+                    id: $G('ctrlId').value,
+                    'emr-type': 'label',
+                    title: newOpt.desc,
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                domCtrl.innerHTML = $('#labelName').val();
+                if ($('#fontColor').val().length > 0) {
+                    domCtrl.style.color = '#' + $('#fontColor').val();
+                }
+                if ($('#backgroundColor').val().length > 0) {
+                    domCtrl.style.backgroundColor = '#' + $('#backgroundColor').val();
+                }
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt);
+                UE.plugins[thePlugins].domListener();
+            }
+        };
+
+    })(UE);
+</script>
+</body>
+
+</html>

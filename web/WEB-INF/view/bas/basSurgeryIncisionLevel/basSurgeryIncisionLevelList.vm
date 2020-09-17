@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-手术流程配置-手术等级</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-row-query.search-term div.layui-form-label {
+            width: auto;
+            padding: 0px 5px 5px 15px;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        .layui-row-query.search-term .layui-input-block {
+            display: contents;
+        }
+
+        .layui-row-query.search-term input[type="checkbox"]:indeterminate + .layui-form-checkbox i {
+            background-color: #5FB878;
+            color: #5FB878;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="basSurgeryIncisionLevel_queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item layui-inline">
+                    <div class="layui-form-label ">
+                        <input type="checkbox" title="等级类别" lay-filter="checkboxMulti"
+                               for-checkbox="incisionLevels" lay-skin='primary'>
+                    </div>
+                    <div class="layui-input-block">
+                        #formCheckboxeGroup("incisionLevels" "" $dicData.dicIncisionLevel "
+                        lay-filter='incisionLevels' lay-skin='primary'")
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+
+                    <div class="layui-inline">
+                        <div class="layui-input-inline wd-220">
+                            #formTextInput("incisionLevelName" "" "class='layui-input' id='q_incisionLevelName'
+                            autocomplete='off'
+                            maxlength='40' placeholder='等级名称'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-btn-group">
+                            <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                                <i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                        <button id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" type="button"
+                                lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 是否有效开关 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" lay-filter="validFlag"
+                   data-d="{{layui.util.escape(JSON.stringify(d))}}"
+                   lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+        </script>
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="查看" lay-event="btn_show"><i
+                    class="layui-icon layui-icon-about"></i></a>
+            <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+                    class="layui-icon"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="basSurgeryIncisionLevelListGrid" lay-filter="basSurgeryIncisionLevelListGrid"></table>
+        <!--  列表表格 end -->
+
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bas/basSurgeryIncisionLevel/basSurgeryIncisionLevelList.js.vm")
+
+</body>
+</html>

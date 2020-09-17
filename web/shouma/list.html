@@ -1,0 +1,187 @@
+
+
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>数据操作 - 数据表格</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<link rel="stylesheet" href="../resource/layuiadmin/layui/css/layui.css" media="all">
+	<link rel="stylesheet" href="../resource/layuiadmin/style/admin.css" media="all">
+	<link rel="stylesheet" href="../resource/layuiadmin/style/right-popTips.css" media="all">
+</head>
+<body>
+
+<div class="layui-fluid">
+	<div class="layui-row layui-col-space15">
+		<div class="layui-col-md12 layui-bg-white">
+			<table class="layui-hide" id="test-table-operate" lay-filter="test-table-operate"></table>
+			<script type="text/html" id="test-table-operate-barDemo">
+				<a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail" lay-href="main.html">查看</a>
+				<a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+				<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+			</script>
+			<blockquote class="layui-elem-quote">此处由于是静态模拟数据，所以搜索后重载的结果没变，这并非是 BUG。实际使用时改成真实接口并根据搜索的字段筛选出对应的数据即可。</blockquote>
+		</div>
+		<div class="layui-row layui-btn-group">
+			<button type="button" class="btn" id="note_1">提醒</button>
+			<button type="button" class="btn btn-blue" id="note_2">提醒</button>
+			<button type="button" class="btn btn-green" id="note_3">提醒</button>
+			<button type="button" class="btn btn-Indigo" id="note_4">提示</button>
+			<button type="button" class="btn btn-orange" id="note_5">警示</button>
+			<button type="button" class="btn btn-red" id="note_6">提示</button>
+
+		</div>
+	</div>
+
+
+
+
+	<div class="taskRemind-box">
+		<div class="taskRemind-head taskRemind-click">
+			<i class="iconfont icon-daiban"></i>
+			<p>我的待办<span>(999)</span></p>
+		</div>
+		<div class="taskRemind-body">
+			<div class="task-header">我的待办事项<span>(999)</span><i class="layui-icon layui-icon-close taskRemind-click" title="关闭"></i></div>
+			<div class="task-box">
+				<ul>
+					<li><a href="#">A. 如果指定侧轴大小的属性值为'auto'，则其值会使项目的边距盒的尺寸尽可能接近所在行的尺寸</a><p>2020-02-21 15:30<span>截止：5小时</span></p></li>
+					<li><a href="#">B. 任务2</a></li>
+					<li><a href="#">C. 【张小白】的手术需要及时处理。</a><p>2020-02-21 15:30<span>截止：3小时</span></p></li>
+					<li><a href="#">任务4</a></li>
+					<li><a href="#">任务5</a></li>
+					<li><a href="#">如果指定侧轴大小的属性值为'auto'，</a></li>
+					<li><a href="#">任务2</a></li>
+					<li><a href="#">任务3</a></li>
+					<li><a href="#">任务4</a></li>
+					<li><a href="#">则其值会使项目的边距盒的尺寸尽可能接近所在行的尺寸</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+
+
+
+
+
+</div>
+
+<script src="../resource/layuiadmin/layui/layui.js"></script>
+<script src="../resource/hplus/js/jquery.min.js"></script>
+<script src="../resource/layuiadmin/modules/mypopTips.js"></script>
+<script>
+	layui.config({
+		base: '../resource/layuiadmin/' //静态资源所在路径
+	}).extend({
+		index: 'lib/index' //主入口模块
+		//,mypopTips:'mypopTips'
+	}).use(['index', 'table'], function(){
+		var $ = layui.$
+				,table = layui.table
+				,admin = layui.admin;
+
+		table.render({
+			elem: '#test-table-operate'
+			,url: layui.setter.base + 'json/table/user.js'
+			//,width: admin.screen() > 1 ? 892 : ''
+			,height: 332
+			,cols: [[
+				{type:'checkbox', fixed: 'left'}
+				,{field:'id', width:80, title: 'ID', sort: true, fixed: 'left'}
+				,{field:'username', width:80, title: '用户名'}
+				,{field:'sex', width:80, title: '性别', sort: true}
+				,{field:'city', width:80, title: '城市'}
+				,{field:'sign', width: 160, title: '签名'}
+				,{field:'experience', width:80, title: '积分', sort: true}
+				,{field:'wealth', width:135, title: '财富', sort: true}
+				,{field:'classify', width:80, title: '职业'}
+				,{field:'score', width:80, title: '评分', sort: true, fixed: 'right'}
+				,{width:178, align:'center', fixed: 'right', toolbar: '#test-table-operate-barDemo'}
+			]]
+			,page: true
+		});
+
+		//监听表格复选框选择
+		table.on('checkbox(test-table-operate)', function(obj){
+			console.log(obj)
+		});
+
+		$('.test-table-operate-btn .layui-btn').on('click', function(){
+			var type = $(this).data('type');
+			active[type] ? active[type].call(this) : '';
+		});
+
+		$("#note_1").smartNotification({
+			mainTitle: '标题标题标题00000',
+			mainContent: ' Lorem ipsum dolor sit amet.  ',
+			timerGo: false
+		});
+		$("#note_2").smartNotification({
+			mainTitle: '标题标题标题11111',
+			mainContent: ' 可实现一些动态特效，具体语法和参数可以网上自行学习 ',
+			timerGo: false,  /*自动关闭*/
+			toggleSwitch : 'on',  /*内容区域是否开启*/
+		});
+		$("#note_3").smartNotification({
+			mainTitle: '标题标题标题22222',
+			mainContent: ' 实现页面淡入特效，在火狐24版.  ',
+			timerGo: false
+		});
+		$("#note_4").smartNotification({
+			mainTitle: '标题标题标题333333',
+			mainContent: ' 为你的主题ID或类的名称即可.  ',
+			timerGo: false
+		});
+		$("#note_5").smartNotification({
+			mainTitle: '标题标题标题44444',
+			mainContent: ' 可针对页面某部分延长显示时间.  ',
+			timerGo: false,
+			onlyOne: '1'  /*是否优先置顶显示*/
+		});
+		$("#note_6").smartNotification({
+			mainTitle: '标题标题标题55555',
+			mainContent: ' 直接将上述代码添加到主题style样式文件中.  ',
+			timerGo: false,
+			onlyOne: '2'  /*是否优先置顶显示*/
+		});
+
+
+		$(".taskRemind-click").on("click", function () {
+			$(".taskRemind-body").toggleClass("open");
+		});
+
+/*		$('.ba').keydown(function(event){
+			alert(event.keyCode);
+		});*/
+
+
+//键盘操作
+		$(document).keydown(function (event) {
+			//组合键
+/*			if (event.ctrlKey && event.keyCode == 13) {
+				alert('Ctrl+Enter');
+			};*/
+
+			//单键
+			switch (event.keyCode) {
+				case 121:
+					$(".taskRemind-body").toggleClass("open");
+					break;
+				case 122:
+					//alert('方向键-右');
+					break;
+			}
+
+			return false;
+		});
+
+
+
+
+	});
+</script>
+</body>
+</html>

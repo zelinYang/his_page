@@ -1,0 +1,212 @@
+<script>
+var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)'); 
+var dicAllergyMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicAllergyMedicine)'); 
+$(document).ready(function () {
+    reApplyPlugins();
+});
+layui.use(['element','form'],function(){
+    var element = layui.element;
+    $("#btn_save").on("click",function(){
+        submitForm();
+    });
+});
+
+$('#tbodyDiv').on('scroll',function(){
+    $('#theadDiv').scrollLeft($('#tbodyDiv').scrollLeft());
+})
+
+function reApplyPlugins(){
+    laydate.render({elem:'.newCreateTime', type:'datetime',format: 'yyyy-MM-dd HH:mm:ss',value: new Date()});
+    lay('.layer-date').each(function(){
+        laydate.render({
+           elem: this
+           ,type: 'datetime'
+           , max: getSmpFormatNowDate(true)
+        });
+     });
+    $("select[name='createUserId']").change(function(){
+        $(this).parent().find("input[name='createUserName']").val(dicSysUser[$(this).val()]);
+    });
+    selectInputReplugins();
+}
+
+//提交表单
+function submitForm() {
+    
+    var alleArrayObj = getAllergyData();
+    console.log(alleArrayObj);
+    if(alleArrayObj.length==0){
+        common.msg('请填写过敏信息', 0);
+        return ;
+    }
+    var allergyDrugName = getAllergyDesc(alleArrayObj);
+    var params = {};
+    params['patientId'] = $("#patientId").val();
+    var jsonAllergyData = params['jsonAllergyData']=JSON.stringify(alleArrayObj);
+    
+    common.requestServer('../patient/saveDrugAllergy.jo', params, function(result){
+        if (result.code == "0") {
+            common.alertCall("保存成功。", 1, function (){
+
+                updateEmrDrugAllergy(allergyDrugName)
+                if($.isFunction(parent.showDrugAllergy)) {
+                    parent.showDrugAllergy("", allergyDrugName);
+                }
+                window.location.href = window.location.href;
+            });
+        } else {
+            parent.common.alert(result.msg, 0);
+        }
+    });
+    
+}
+//更新电子病历过敏信息
+function updateEmrDrugAllergy(allergyDrugName) {
+    var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.document);
+    if(emrIframe.length == 0) return;
+    var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+    emrEditWin.setDrugAllergy(allergyDrugName);
+}
+
+function getAllergyDesc(alleArrayObj){
+	var allergyDrug = '';
+	$(alleArrayObj).each(function(i, obj){
+		allergyDrug += obj.allergyDrugName + '、';
+	});
+	allergyDrug = common.clearLastChar(allergyDrug,'、');
+	return allergyDrug;
+}
+
+
+
+//获取过敏编辑数据
+function getAllergyData(){ 
+    var arrayObj = [];
+    $('#alTbody > tr').each(function (){
+        var obj = {};
+        //console.log($(this).find('td > input, select')[0]);
+        $(this).find('input, select').each(function (){
+            var name = $(this).attr('name');
+            var value = $(this).val();
+            if(name && value) {
+                obj[name] = value;
+            }
+        })
+        if(!$.isEmptyObject(obj) && obj.allergyDrugName) {
+            if(validateForm(obj)==1){
+                arrayObj.push(obj); 
+            }else{
+            	arrayObj = []; 
+                return ;
+            }
+        }
+    });
+    return arrayObj;
+}
+//验证编辑数据
+function validateForm(obj){
+    if(obj.allergyDrugName==null||obj.allergyDrugName==""){
+        common.alert("没有获取到过敏原名称",0);
+        return -1;
+    }
+    if(obj.createUserId==null||obj.createUserId==""){
+        common.alert("请选择记录人",0);
+        return -1;
+    }
+    if(obj.createTime==null||obj.createTime==""){
+        common.alert("请选择记录时间",0);
+        return -1;
+    }
+    return 1;
+}
+
+//删除过敏行
+function delAllergyTr(ele){
+	var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.document);
+    var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+    var ids = [];
+    var eles = [];
+    var tr = $(ele).parent().parent();
+    var drugAllergyId = $(tr).find("#drugAllergyId").val();
+    if(drugAllergyId!=null&&drugAllergyId!=""){
+        ids.push(drugAllergyId);
+    }else{
+        $(tr).remove();
+    }
+    if (ids.length > 0) {
+        common.confirm('确定要从库中删除吗？', function (){
+            common.requestServer('../patient/delPatientDrugAllergy.jo', {ids: ids.join(',')}, function (result){
+                if (result.code == '0') {
+                   /* $(ele).each(function (){
+                        $(this).remove();
+                    });*/
+                    $(tr).remove();
+                    var alleArrayObj = getAllergyData();
+                    var allergyDrugName = getAllergyDesc(alleArrayObj);
+                    emrEditWin.setDrugAllergy(allergyDrugName);
+                    parent.showDrugAllergy('',allergyDrugName);
+                    //window.location.href = window.location.href;
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+    }
+}
+
+//新增过敏行
+function addAllergyTr(){
+  var newTr = $('#alleThead .rowTpl .trRow').clone(); 
+  //lay-key必须唯一，否则二次渲染无效
+  var maxLayKey = 0; 
+  $(".layer-date").each(function(){
+      var key = $(this).attr("lay-key");
+      if(maxLayKey < parseInt(key)){
+          maxLayKey = parseInt(key);
+      }
+  })
+      console.log(maxLayKey);
+  newTr.find(".layer-date").each(function(){
+      maxLayKey++;
+      $(this).attr("lay-key",maxLayKey);
+  });
+  
+  $('#alTbody').append(newTr);
+  
+  reApplyPlugins();
+  
+}
+function selectInputReplugins(){
+    var selects = document.getElementsByClassName("selInp_select");
+    for(var i=0;i<selects.length;i++){
+        selects[i].onchange=function(){
+            var value = $(this).val();
+            var select = $(this).parent().find(".selInp_select");
+            var input = $(this).parent().find(".selInp_input");
+            var div_input = $(this).parent().find(".div_input");
+            if(value == 'other'){
+                $(input).val("");
+                $(select).val("");
+                $(select).hide();
+                $(div_input).show();
+                $(input)[0].focus();
+            }else{
+                $(input).val(dicAllergyMedicine[value]);
+            }
+        }
+    }
+    var inputClears = document.getElementsByClassName("input_clear")
+    for(var i=0;i<inputClears.length;i++){
+        inputClears[i].onclick=function(){
+            console.log("click");
+            var select = $(this).parent().parent().find(".selInp_select");
+            var input = $(this).parent().parent().find(".selInp_input");
+            var div_input = $(this).parent().parent().find(".div_input");
+            $(input).val("");
+            $(div_input).hide();
+            $(select).show();
+        }
+    }
+}
+
+</script>

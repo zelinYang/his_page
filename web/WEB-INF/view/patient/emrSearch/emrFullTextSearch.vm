@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./patient/emrSearch/emrFullTextSearch.css.vm")
+    <style type="text/css">
+
+    </style>
+</head>
+<body>
+<div class="full-height" style="background: #F5F7F7;">
+    <!-- 顶部搜索区域 -->
+    <div class="layout-top">
+        <div class="search-logo">
+            <i class="icon iconfont icon-wendangsousuo"></i>
+            <div>
+                <p class="logo-title">病历检索</p>
+##                <p class=logo-total>病历总数：<span>$!emrTotalCount份</span></p>
+            </div>
+        </div>
+        <div class="search-area">
+            <div class="layui-input-inline">
+                <div class="layui-col-xs11">
+                    <input class="layui-input" id="keyword" name="keyword" placeholder="请输入关键字">
+                </div>
+                <div class="layui-col-xs1">
+                    <button type="button" class="layui-btn layui-btn-sm" id="serach-btn" title="搜 索"> <i class="layui-icon layui-icon-search"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 排序区域 -->
+    <div class="sort-area">
+        <div class="sort-item"><span>创建时间</span><i sort-field="createTime" class="layui-icon layui-icon-down"></i></div>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div class="result-content layui-form">
+        <!-- <div class="layui-card">
+            <div class="layui-card-header">
+                <input type="checkbox" lay-skin="primary">
+                <h3 class="item-title">入院记录 </h3>
+                <div class="baseinfo"><span>姓名：王大锤</span><span>性别：男</span><span>年龄：25岁</span></div>
+            </div>
+            <div class="layui-card-body">
+                <p>入院记录内容</p>
+            </div>
+        </div> -->
+    </div>
+    <div class="p-sm">
+        <div id="emrPage" style="position:absolute; right:30px;"></div>
+    </div>
+</div>
+<script type="text/javascript">
+    var keyword = "";
+    var orderBy = "createTime DESC";
+    layui.use(['element', 'form', 'laypage'], function () {
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var emrPageCount = 0;
+
+        //初始化加载
+        // search(keyword, orderBy, 1, 5);
+
+        //查询按钮
+        $("#serach-btn").click(function () {
+            keyword = $("#keyword").val();
+            search(keyword, orderBy, 1, 5);
+        });
+        //回车查询
+        $(document).keydown(function (event) {
+            if (event.keyCode == 13) {
+                if ($(event.target).attr("id") == "keyword") {
+                    keyword = $("#keyword").val();
+                    search(keyword, orderBy, 1, 5);
+                }
+            }
+        });
+        //排序事件
+        $(".sort-item > i").click(function () {
+            var sortRule = "";
+            if ($(this).hasClass("layui-icon-down")) {
+                $(this).removeClass("layui-icon-down").addClass("layui-icon-up");
+            } else {
+                $(this).removeClass("layui-icon-up").addClass("layui-icon-down");
+                sortRule = " DESC";
+            }
+            orderBy = $(this).attr("sort-field") + sortRule;
+            search(keyword, orderBy, 1, 5);
+        });
+
+
+        //查询病历
+        function search(keyword, orderBy, pageNumber, pageSize) {
+            var params = {keyword: keyword, orderBy: orderBy, pageNumber: pageNumber, pageSize: pageSize};
+            console.log(params);
+            common.requestServer("../patient/emrSearchData.jo", params, function (result) {
+                var cc = JSON.stringify(result);
+                if (result.code === "0") {
+                    emrPageCount = result.count;
+                    laypage.render();
+                    buildResultItem(keyword, result.data, pageNumber, pageSize);
+                    // 分页组件
+                    laypage.render({
+                        elem: 'emrPage'
+                        , count: result.count //数据总数，从服务端得到
+                        , limit: pageSize
+                        , curr: pageNumber
+                        , layout: ['count', 'prev', 'page', 'next', 'skip']
+                        , jump: function (obj, first) {
+                            //首次不执行
+                            if (!first) {
+                                search(keyword, orderBy, obj.curr, obj.limit);
+                            }
+                        }
+                    });
+                } else {
+                    common.open("查询失败", 0);
+                }
+            });
+        }
+
+        //生成查询结果集页面元素
+        function buildResultItem(keyword, data) {
+            var html = [];
+            console.log(html);
+            $.each(data, function (i, v) {
+                var value = stressKeywords(keyword, v.emrFullHtmlContent);
+                console.log(value);
+                html.push('<div class="layui-card">'
+                        + '<div class="layui-card-header">'
+                        + '<input type="hidden" value="' + v.patientHospitalEmrId + '" id="patientHospitalEmrId"'
+                        + '<input type="checkbox" lay-skin="primary" emr-id="' + v.patientHospitalEmrId + '">'
+                        + '<h3 class="item-title">' + v.emrTlpName + '</h3>'
+                        + '</div>'
+                        + '<div class="layui-card-body">'
+                        + '<div>' + getFormatDate(new Date(v.createTime), "yyyy-MM-dd HH:mm") + '&nbsp;&nbsp;&nbsp;&nbsp;' + value['title'] + '</div>'
+                        + '<div>' + value['content'] + '</div>'
+                        + '</div>'
+                        + '</div>');
+            });
+            $(".result-content").html(html.join(""));
+            form.render('checkbox');
+
+            //点击标题 查看详情
+            $(".item-title").click(function () {
+                var patientHospitalEmrId = $(this).parent().find("#patientHospitalEmrId").val();
+                //标签栏不同，打开tab调用方法不同
+                if (typeof parent.openTab === "function") {
+                    parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&patientHospitalEmrId=' + patientHospitalEmrId, $(this).text() + "详情", '');
+                } else if (typeof createMenuItem === "function") {
+                    createMenuItem($(this).text() + "详情", contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&patientHospitalEmrId=' + patientHospitalEmrId);
+                }
+            });
+        }
+
+    })
+
+
+    //标红病历内容的关键字,并截取内容片断
+    function stressKeywords(keyword, content) {
+        var keywords = keyword.split(" ");
+        var preIndex = 0, nextIndex = 0;
+        var minLength = 400;//最小长度
+        var maxIndex = 0;
+        var value = {
+            title: $(content).first().html().replace( /<\/?.+?>/g, "" )
+        };
+		content = content.replace( /<\/?.+?>/g, "" );
+        $.each(keywords, function (i, v) {
+            var index = content.indexOf(v);
+            if (index < preIndex || preIndex === 0) {
+                preIndex = index;
+            }
+            var lastIndex = content.lastIndexOf(v) + v.length;
+            if (lastIndex > nextIndex) {
+                nextIndex = lastIndex;
+            }
+        });
+        content = '...' + content.substring(preIndex > 5? preIndex - 5: 0, nextIndex + 5 > content.length? nextIndex: nextIndex + 5) + '...';
+        $.each(keywords, function (i, v) {
+            if (!v) {
+                return false;
+            }
+            var re = new RegExp(v, "gi");
+            content = content.replace(re, '<span style="color:red;">' + v + '</span>');
+            // var index = content.lastIndexOf("</span>");
+            // if (index > maxIndex) {
+            //     maxIndex = index;
+            // }
+        });
+        //截取病历内容片断
+        // if (maxIndex !== 0 && maxIndex > minLength) {
+        //     content = content.substring(0, maxIndex + 20) + "...";
+        // } else if (content.length > minLength) {
+        //     content = content.substring(0, minLength) + "...";
+        // }
+        value['content'] = content;
+        return value;
+    }
+
+    function closeHTML(str) {
+        var arrTags = ["span", "font", "b", "u", "i", "h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "ul", "table", "div", "tbody"];
+        for (var i = 0; i < arrTags.length; i++) {
+            var intOpen = 0;
+            var intClose = 0;
+            var re = new RegExp("\\<" + arrTags[i] + "( [^\\<\\>]+|)\\>", "ig");
+            var arrMatch = str.match(re);
+            if (arrMatch != null) intOpen = arrMatch.length;
+            re = new RegExp("\\<\\/" + arrTags[i] + "\\>", "ig");
+            arrMatch = str.match(re);
+            if (arrMatch != null) intClose = arrMatch.length;
+            for (var j = 0; j < intOpen - intClose; j++) {
+                str += "</" + arrTags[i] + ">";
+            }
+            /*for(var j=(intOpen-intClose-1);j>=0;j--){
+            str+="</"+arrTags[i]+">";
+            }*/
+        }
+        return str;
+    }
+</script>
+</body>
+
+</html>

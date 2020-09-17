@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table td, .layui-table th{padding: 9px 5px}
+</style>
+</head>
+<body>
+<form class="layui-form full-height" id="editForm">
+    <div class="layui-row full-height-scroll p-xs" style="height: calc(100% - 65px);">
+        #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+        <div class="layui-card m-b-n border-bottom">
+            <div class="layui-card-body p-b-n">
+                <div class="layui-row">
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">术前诊断</label>
+                        <div class="layui-input-block">
+                            #formTextInput("beforeDiagnosis" "#htmlEscape($!inpatientInhospital.beforeDiagnosis)" "class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术时间</label>
+                        <div class="layui-input-block">
+                            #formTextInput("surgeryDate" "#htmlEscape($!inpatientInhospital.surgeryDate)" "id='surgeryDate' class='layui-input' lay-verify='required' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术室</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryOfficeId" "" $!dicData.dicOrderState "lay-verify='required' id='surgeryOfficeId' lay-filter='orderState'" "手术室")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">全程时间</label>
+                        <div class="layui-input-block">
+                            #formTextInput("beforeDiagnosis" "#htmlEscape($!inpatientInhospital.beforeDiagnosis)" "class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm12">
+                        <div class="layui-input-block" style="margin-left: 30px;">
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='补录'" "")
+                           #formSimpleCheckbox("urgencySurgeryFlag" "1" "" "lay-skin='primary' title='急诊'" "")
+                           #formSimpleCheckbox("fastFlag" "1" "" "lay-skin='primary' title='加急'" "")
+                           #formSimpleCheckbox("selectiveSurgeryFlag" "1" "" "lay-skin='primary' title='择期'" "")
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='日间'" "")
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='麻醉'" "")
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='特殊'" "")
+                           |&nbsp;&nbsp;&nbsp;
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='多重耐药感染'" "")
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='冰冻'" "")
+                           #formSimpleCheckbox("" "1" "" "lay-skin='primary' title='需要麻醉师'" "")
+                           #formSimpleCheckbox("nonPlanedResurgeryFlag" "1" "" "lay-skin='primary' title='本次住院期间计划二次'" "")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card m-b-n border-bottom">
+            <div class="layui-card-body p-b-n">
+                <div class="layui-row">
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术台次</label>
+                        <div class="layui-input-block">
+                            #formIntZeroInput("inhospitalNum" "$!{inpatientInhospital.inhospitalNum}" "maxlength='3' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">台类型</label>
+                        <div class="layui-input-block">
+                            #formIntZeroInput("inhospitalNum" "$!{inpatientInhospital.inhospitalNum}" "maxlength='3' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术组别</label>
+                        <div class="layui-input-block">
+                            #formTextInput("visitCardNo" "#htmlEscape($!{inpatientInhospital.visitCardNo})" "maxlength='30' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">特殊染病</label>
+                        <div class="layui-input-block">
+                            #formTextInput("specialInfect" "#htmlEscape($!{inpatientInhospital.patientMedicalNo})" "maxlength='40' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术名称</label>
+                        <div class="layui-input-block">
+                            #formTextInput("surgeryName" "#htmlEscape($!{inpatientInhospital.surgeryName})" "lay-verify='required' id='surgeryName' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术部位</label>
+                        <div class="layui-input-block">
+                            #formTextInput("" "#lookUpDict($dicData.dicInpatientWardAll $!inpatientInhospital.wardId)" "lay-verify='required' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术级别</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryLevelId" "" $!dicData.dicSurgeryIncisionLevel "lay-verify='required' id='orderState' lay-filter='orderState'" "手术级别")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">体位代码</label>
+                        <div class="layui-input-block">
+                            #formTextInput("position" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称1</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgeryOne" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称2</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgeryTwo" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称3</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgeryThree" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称4</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgeryFour" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称5</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgeryFive" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">辅手术名称6</label>
+                        <div class="layui-input-block">
+                            #formTextInput("assistSurgerySix" "" "class='layui-input' maxlength='100'")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card m-b-n border-bottom">
+            <div class="layui-card-body p-b-n">
+                <div class="layui-row">
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">手术医师</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryDoctorId" "" $!dicData.dicDoctor "lay-verify='required' id='orderState' lay-filter='orderState'" "手术医师")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">麻醉方式</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("narcosisMode" "" $!dicData.dicNarcosisMode "id='orderState' lay-filter='orderState'" "麻醉方式")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">ASA分级</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("narcosisMode" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState'" "ASA分级")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">风险等级</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("narcosisMode" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState'" "手术风险等级（NNIS分级）")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">第一助手</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryAidOneId" "" $!dicData.dicSysUser "id='orderState' lay-filter='orderState'" "第一助手")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">第二助手</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryAidTwoId" "" $!dicData.dicSysUser "id='orderState' lay-filter='orderState'" "第二助手")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">第三助手</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryAidThereId" "" $!dicData.dicSysUser "id='orderState' lay-filter='orderState'" "第三助手")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">第四助手</label>
+                        <div class="layui-input-block">
+                            #formSingleSelectFirstNone("surgeryAidFourId" "" $!dicData.dicSysUser "id='orderState' lay-filter='orderState'" "第四助手")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm6">
+                        <label class="layui-form-label">辅助人员</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm6">
+                        <div class="layui-input-block m-l-lg">
+                           #formSimpleCheckbox("instrumentNurseFlag" "1" "" "lay-skin='primary' title='需要机械护士'" "")
+                           #formSimpleCheckbox("circulatingNurseFlag" "1" "" "lay-skin='primary' title='急需要巡回护士'" "")
+                           #formSimpleCheckbox("useSelfPayingFalg" "1" "" "lay-skin='primary' title='同意使用自费项目'" "")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-card m-b-n border-bottom">
+            <div class="layui-card-body p-b-n">
+                <div class="layui-row">
+                    <div class="layui-col-sm12">
+                        <label class="layui-form-label">手术要求</label>
+                        <div class="layui-input-block">
+                            #formTextInput("" "#htmlEscape($!{inpatientInhospital.patientName})" "maxlength='10' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm12">
+                        <label class="layui-form-label">特殊机械</label>
+                        <div class="layui-input-block">
+                            #formTextInput("specialInstrument" "" "maxlength='40' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">抗生素</label>
+                        <div class="layui-input-block">
+                            #formTextInput("" "$!appDateUtils.getAgeByBirthday($!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">危急值</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm6">
+                        <div class="layui-input-block m-l-lg">
+                            #formSimpleCheckbox("prepareBloodFlag" "1" "" "lay-skin='primary' title='备血'" "")
+                            #formSimpleCheckbox("extraCirculationFlag" "1" "" "lay-skin='primary' title='体外循环'" "")
+                            #formSimpleCheckbox("isolationFlag" "1" "" "lay-skin='primary' title='隔离'" "")
+                            #formSimpleCheckbox("miniSurgeryFlag" "1" "" "lay-skin='primary' title='微创手术'" "")
+                            #formSimpleCheckbox("autobloodFlag" "1" "" "lay-skin='primary' title='自体血回收'" "")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">HbsAg</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">HCV-Ab</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">HIV-Ab</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">霉素</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">血型</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">RH血型</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">体重</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm3">
+                        <label class="layui-form-label">活动性肺结核</label>
+                        <div class="layui-input-block">
+                            #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd', $!inpatientInhospital.patientBirth)" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-col-sm12">
+                        <label class="layui-form-label">备注</label>
+                        <div class="layui-input-block">
+                            #formTextInput("remark" "#htmlEscape($!{inpatientInhospital.remark})" "class='layui-input' maxlength='500'")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+      </div>
+    <div class="tool-bottom-fixed">
+        <button class="layui-btn layui-btn-sm" id="btn_save" lay-submit lay-filter="btn_save" type="button" operate-type="0"> 保 存  </button>
+        <button class="layui-btn layui-btn-sm" id="btn_submit" type="button" operate-type="1"> 提 交  </button>
+    </div>
+</form>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    autocomplete: 'modules/autocomplete'
+}).use(['form', 'element', 'laydate', 'autocomplete'], function(){
+    var laydate = layui.laydate, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+    // 绑定手术时间输入框
+    laydate.render({elem: '#surgeryDate',trigger: 'click', type: 'datetime', istime: true});
+
+    // 绑定检索手术名称
+    autocomplete.render({
+        cache: false,
+        method: 'post',
+        searchField: 'surgeryName',
+        elem: $('#surgeryName')[0],
+        url: '../inpatient/inpatientInhospitalPage.jo',
+        template_val: '{{d.surgeryName}}',
+        template_txt: '{{d.surgeryName}}',
+        onselect: function (obj) { searchCall(obj); }
+    });
+
+    // 初始化tr的诊断时间
+    $('#diagnosisEnterList > tr').each(function (){
+        var diagnosisTime = $(this).find('input[name="diagnosisTime"]')[0];
+        if (!$(diagnosisTime).val()) {
+            laydate.render({elem: diagnosisTime,trigger: 'click', type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+        }
+    });
+
+    // 添加一行初步诊断
+    $('#btn_add_tr').click(function(){
+        $('#diagnosisEnterList').append(templateTr);
+        var lastTr = $('#diagnosisEnterList > tr:last');
+        // 序号
+        var index = lastTr.index() + 1;
+        $(lastTr).find('span#tr-index').html(index);
+        // 绑定诊断时间
+        var diagnosisTime = $(lastTr).find('input[name="diagnosisTime"]')[0];
+        laydate.render({elem: diagnosisTime,trigger: 'click', type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+    });
+
+    // 返回按钮
+    $('#btn_back').click(function (){
+        window.location.href = "../inpatient/inpatientWizardList.do?inhospitalId=" + $('#inhospitalId').val();
+    });
+
+    // 监听保存按钮
+    form.on('submit(btn_save)', function(data){alert(3232);
+    	  console.log(data.elem) //被执行事件的元素DOM对象，一般为button对象
+    	  console.log(data.form) //被执行提交的form对象，一般在存在form标签时才会返回
+    	  console.log(data.field) //当前容器的全部表单字段，名值对形式：{name: value}
+    	  return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+    	});
+});
+</script>
+</html>

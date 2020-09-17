@@ -1,0 +1,1202 @@
+<script type="text/javascript">
+    var YES_FLAG = "${CONST.AppConstants.YES_FLAG}";
+    var MEDICAL_TECH_INSPECT = "${CONST.AppConstants.MEDICAL_TECH_INSPECT}";
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson( $dicData.dicOffice)');
+    var dicDoctorOrderSubtype = JSON.parse('$dicTools.changeMapToJson( $dicData.dicDoctorOrderSubtype)');
+    var dicLisTestTube = JSON.parse('$dicTools.changeMapToJson( $dicData.dicLisTestTube)');
+    var dicBodyPartClassifyLis = JSON.parse('$dicTools.changeMapToJson( $dicData.dicBodyPartClassifyLis)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson( $dicData.dicPayFeeState)');
+    var loadTree; //加载左侧检验分类
+    var loadOutTech; //右侧已申请的检验单
+    var treeNodeClickEvent; //树节点点击事件-渲染右侧检验明细列表
+    var outTechLisTrClickEvent; //已下达的申请单回显
+    var outTechLisShow; //已下达的申请单回显
+    var queryOutTechItem; //获取申请单的明细
+    var randerTechItem;//渲染申请单回显
+    var randerTechItemCommon;//回显公共属性的值
+    var verifyTechItem;//验证医技明细参数
+    var centerTop;//中间顶部表单
+    var cacheCenterTop;//缓存中间顶部表单jq对象
+    var cloneCenterTop;//复制中间顶部表单jq对象
+    var editApplay;//修改申请
+    var winClose;
+    var key;
+    var zTree_Menu;
+    var outMainWin = parent.parent; //门诊医生主窗口页面对象
+    var getInpatientOrderParam, getOutTechParam;
+    var selectedData = [];
+    var closeFlag = '0';
+    var dicBodyPartClassifyLisArray = [];
+    for (var key in dicBodyPartClassifyLis) {
+        dicBodyPartClassifyLisArray.push({
+            name: key,
+            value: dicBodyPartClassifyLis[key]
+        })
+    }
+    var rowData; //当前行数据
+    var patientType = '$!{patientType}';
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        eleTree: 'modules/eleTree',
+        layuiTableColumnEdit:'modules/layuiTableColumnEdit'
+    }).use(['form', 'element', 'eleTree', 'table', 'layuiTableColumnEdit'], function () {
+        var eleTree = layui.eleTree, form = layui.form, layuiTableColumnEdit = layui.layuiTableColumnEdit;
+        var table = layui.table;
+        var submit = '0';
+
+        var urgentFlag;
+
+        $("#btn_add").click(function () {
+			common.confirm("新增会清除掉当前页面内容，请先确认是否已保存数据，确认新增检验吗？", function () {
+				window.location.reload();
+			});
+		});
+
+        // 初始化表格列表模板
+        var tempEle = $('#lisItemList > tr:last');
+        $(tempEle).find('div.layui-form-select').remove();
+        $(tempEle).find('div.layui-form-checkbox').remove();
+        var templateTr = $(tempEle).prop("outerHTML");
+        $(tempEle).remove();
+//var el ;
+        //加载左侧检验分类
+        loadTree = function () {
+            var zNodes = [];
+            var topNode = {id: 9999, pId: 0, name: '检验单', open: true};
+            zNodes.push(topNode);
+            // 加载检验单类型树型菜单
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/basDic/basDicList.jo',
+                data: {dicTypeId: 36},
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    if (!result || !result.data) {
+                        return;
+                    }
+                    $(result.data).each(function (i, nData) {
+                        nData.id = nData.dicCode;
+                        nData.name = nData.dicName;
+                        nData.pId = topNode.id;
+                        nData.open = true;
+                        zNodes.push(nData);
+                    });
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+
+            zTree_Menu = $.fn.zTree.init($("#treeDemo"), setting, zNodes);
+        }
+
+        function showIconForTree(treeId, treeNode) {
+            return !treeNode.isParent;
+        }
+
+
+        var setting = {
+            data: {
+                key: {
+                    title: "t"
+                },
+                simpleData: {
+                    enable: true
+                }
+            },
+            view: {
+                fontCss: getFontCss
+                , showLine: false
+                , showTitle: false
+                , showIcon: showIconForTree
+            },
+            callback: {
+                onClick: function (event, treeId, treeNode) {
+                    //树节点点击事件-渲染右侧检验明细列表
+                    //var show = false;
+                    //treeNodeClickEvent(treeNode, show);
+                    $("#doctorOrderSubtype").val(treeNode.dicCode);
+                    $("#techApplyName").val(treeNode.dicName);
+                    $("#btn_query").click();
+                }
+            }
+        };
+
+
+        function getFontCss(treeId, treeNode) {
+            return (!!treeNode.highlight) ? {color: "#A60000", "font-weight": "bold"} : {
+                color: "#333",
+                "font-weight": "normal"
+            };
+        }
+
+
+        queryOutTechItem = function (techRow) {
+            var medicalTechItemListData;
+            var params = {outpatientTechId: techRow.outpatientTechId, pageSize: 50}
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/medicalTechItemListData.jo',
+                data: params,
+                dataType: "json",
+                async: false, //默认是true：异步，false：同步。
+                success: function (result) {
+                    medicalTechItemListData = result;
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+            return medicalTechItemListData;
+        }
+
+        queryInpatientOrderItem = function (techRow) {
+            var inpatientOrderListData;
+            var params = {orderGroupNo: techRow.orderGroupNo, orderGroupFlag: 0}
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/inpatient/inpatientOrderListDate.jo',
+                data: params,
+                dataType: "json",
+                async: false, //默认是true：异步，false：同步。
+                success: function (result) {
+                    inpatientOrderListData = result;
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+            return inpatientOrderListData;
+        }
+
+        //已下达的申请单回显
+        outTechLisTrClickEvent = function () {
+            $('tbody.outTechList>tr td div').click(function () {
+                var outTechTr = $(this).parent().parent();
+                outTechTr.addClass('active').siblings().removeClass('active');
+                var techRow = outTechTr.data('row');
+                var techItemListData, dataList;
+                if (outMainWin.grobalModel == null) {
+                    $('#urgentFlag').attr("checked", techRow.urgentFlag === '1');
+                    techItemListData = queryInpatientOrderItem(techRow);
+                    dataList = [];
+                    for (var i = 0; i < techItemListData.length; i++) {
+                        var data = techItemListData[i];
+                        dataList.push({
+                            bodyPartClassify: data.bodyPartClassify,
+                            chargeName: data.orderName,
+                            chargeItemId: data.chargeItemId,
+                            giveTotalQuantity: 1,
+                            orderId: data.orderId
+                        });
+                    }
+                } else {
+                    $('#outpatientTechId').val(techRow.outpatientTechId);
+                    $('#urgentFlag').attr("checked", techRow.testEmFlag === '1');
+                    techItemListData = queryOutTechItem(techRow);
+                    dataList = [];
+                    for (var i = 0; i < techItemListData.data.length; i++) {
+                        var data = techItemListData.data[i];
+                        dataList.push({
+                            bodyPartClassify: data.bodyPartClassify,
+                            chargeName: data.orderName,
+                            giveTotalQuantity: 1,
+                            chargeItemId: data.chargeItemId,
+                            outpatientTechItemId: data.outpatientTechItemId
+                        });
+                    }
+                }
+                $('#lisItemList').html('');
+                buildTrHtml(dataList);
+                //主信息参数
+                $('#exeOfficeId').val(techRow.exeOfficeId);
+                $('#orderName').val(techRow.orderName);
+                $('#orderId').val(techRow.orderId);
+                $('#outpatientTechId').val(techRow.outpatientTechId);
+                $('#techExamApplyId').val(techRow.techExamApplyId);
+                form.render('select');
+                form.render('checkbox');
+            });
+        }
+
+        form.on('checkbox(urgentFlag)', function (data) {
+            if (data.elem.checked == true) {
+                urgentFlag = "1";
+            } else {
+                urgentFlag = "0";
+            }
+        });
+
+
+        //渲染申请单回显
+        randerTechItem = function (item) {
+            var chargeItemIdInput = $('input[name="chargeItemId"][value="' + item.chargeItemId + '"]:first');
+            var techItemTd = chargeItemIdInput.parent();
+            var techItemTr = chargeItemIdInput.parent().parent();
+            var tdColVal = techItemTd.attr('col');
+            var tdCol = techItemTr.find('[col="' + tdColVal + '"]');
+
+            tdCol.find('span[name="orderName"]').html(item.chargeName);
+            tdCol.find('input[name="lisItem"]').prop('checked', true);
+            tdCol.find('input[name="outpatientTechItemId"]').val(item.outpatientTechItemId);
+            tdCol.find('input[name="itemPrice"]').val(item.itemPrice);
+            tdCol.find('input[name="orderName"]').val(item.orderName);
+            tdCol.find('input[name="chargeItemId"]').val(item.chargeItemId);
+            tdCol.find('input[name="doctorOrderSubtype"]').val(item.doctorOrderSubtype);
+            tdCol.find('input[name="chargeGroupId"]').val(item.chargeGroupId);
+            tdCol.find('input[name="giveTotalQuantity"]').val(item.giveTotalQuantity ? item.giveTotalQuantity : 1);
+            tdCol.find('select[name="bodyPartClassify"]').siblings('.layui-form-select').find('dl dd[lay-value="' + item.bodyPartClassify + '"]').click();
+            form.render('select');
+            form.render('checkbox');
+            // 监听加急复选框，选中赋值1否则0
+        }
+
+        //已下达的申请单回显
+        outTechLisShow = function (techItemListData) {
+            if (techItemListData.count == 0) {
+                return;
+            }
+            $(techItemListData.data).each(function (index, techItem) {
+                randerTechItem(techItem);
+            });
+            randerTechItemCommon(techItemListData.data[0]);
+        }
+
+        //回显公共属性的值
+        randerTechItemCommon = function (techItem) {
+            $('.layui-form input[name=remark]').val(techItem.remark);
+            $('select[name="exeOfficeId"]').siblings('.layui-form-select').find('dl dd[lay-value="' + techItem.exeOfficeId + '"]').click();
+            $('input[name="urgentFlag"]').val(techItem.urgentFlag);
+            if (techItem.urgentFlag == '1') {
+                $('input[name="urgentFlag"]').prop('checked', true);
+            } else {
+                $('input[name="urgentFlag"]').prop('checked', false);
+            }
+            form.render('checkbox');
+            form.on('checkbox(urgentFlag)', function (data) {
+                $(this).val(data.elem.checked ? '1' : '0');
+            });
+        }
+
+        //树节点点击事件-渲染右侧检验明细列表
+        treeNodeClickEvent = function (treeNode, isShow) {
+
+            // 监听左边树型点击事件
+            if (!treeNode.dicCode) {
+                return;
+            }
+            if (!$('#doctorOrderType').val()) {
+                common.alert('医嘱类型：参数无效', 2);
+                return;
+            }
+            common.requestServer(contextPath + '/bas/lisChargeItemJsonList.jo', {
+                lisGroup: treeNode.dicCode,
+                doctorOrderType: '03'
+            }, function (result) {
+                $('#lisItemList').html('');
+                if (!result || !result.data) {
+                    return;
+                }
+                buildTrHtml(result.data);
+                $('#orderId').val('');
+                $('#techExamApplyId').val('');
+                $('#outpatientTechId').val('');
+
+                //判断是否需要回显
+                if (!isShow) {
+                    //公共表单还原
+                    var centerTop = cloneCenterTop();
+                    $('.center-top').empty().append(centerTop.html());
+                    $('tbody.outTechList>tr.active').removeClass('active');//移除右侧已选中的项
+                    //节点选中设置值
+                    $('#orderGroupNo').val(treeNode.dicCode);
+                    $('#examApplyName').val(treeNode.name);
+                    if (outMainWin.grobalModel) {
+                        $('#orderNameDiv').remove();
+                    }
+                    form.render('select');
+                    form.render('checkbox');
+                    return false;
+                }
+
+                var techRow = {outpatientTechId: $('#outpatientTechId').val()};
+                var techItemListData = queryOutTechItem(techRow);
+                //已下达的申请单回显
+                outTechLisShow(techItemListData);
+
+            });
+        }
+
+        // 创建检验项目列表
+        function buildTrHtml(dataList) {
+            var html = [];
+            var curBody = $('#lisItemList');
+            var len = dataList.length;
+            for (var i = 0; i < len; i++) {
+                var data = dataList[i];
+
+                //回显第一列的数据
+                var lastTr;
+                if (i % 2 === 0) {
+                    curBody.append(templateTr);
+                    lastTr = $('#lisItemList > tr:last');
+                    $(lastTr).find('input[name="unitPrice"]:first').val(data.unitPrice);
+                    $(lastTr).find('span[name="orderName"]:first').html(data.chargeName);
+                    $(lastTr).find('input[name="orderName"]:first').val(data.chargeName);
+                    $(lastTr).find('input[name="orderId"]:first').val(data.orderId);
+                    $(lastTr).find('input[name="outpatientTechItemId"]:first').val(data.outpatientTechItemId);
+                    $(lastTr).find('input[name="chargeItemId"]:first').val(data.chargeItemId);
+                    $(lastTr).find('input[name="doctorOrderSubtype"]:first').val(data.doctorOrderSubtype);
+                    $(lastTr).find('input[name="chargeGroupId"]:first').val(data.chargeGroupId);
+                    $(lastTr).find('input[name="giveTotalQuantity"]:first').val(data.giveTotalQuantity ? data.giveTotalQuantity : 1);
+                    $(lastTr).find('select[name="bodyPartClassify"]:first').val(data.bodyPartClassify ? data.bodyPartClassify : '');
+                } else {
+                    //回显第二列的数据
+                    lastTr = $('#lisItemList > tr:last');
+                    $(lastTr).find('input[name="unitPrice"]:last').val(data.unitPrice);
+                    $(lastTr).find('span[name="orderName"]:last').html(data.chargeName);
+                    $(lastTr).find('input[name="orderName"]:last').val(data.chargeName);
+                    $(lastTr).find('input[name="orderId"]:last').val(data.orderId);
+                    $(lastTr).find('input[name="outpatientTechItemId"]:last').val(data.outpatientTechItemId);
+                    $(lastTr).find('input[name="chargeItemId"]:last').val(data.chargeItemId);
+                    $(lastTr).find('input[name="doctorOrderSubtype"]:last').val(data.doctorOrderSubtype);
+                    $(lastTr).find('input[name="chargeGroupId"]:last').val(data.chargeGroupId);
+                    $(lastTr).find('input[name="giveTotalQuantity"]:last').val(data.giveTotalQuantity ? data.giveTotalQuantity : 1);
+                    $(lastTr).find('select[name="bodyPartClassify"]:last').val(data.bodyPartClassify ? data.bodyPartClassify : '');
+                }
+            }
+
+            // 删除最后一行没有检验项目的列
+            var hasChargeItemId = $('#lisItemList > tr:last').find('input[name="chargeItemId"][field-name="lisItem_two"]').val();
+            if (dataList.length % 2 === 1) {
+                var lastTd = $('#lisItemList > tr:last').find('td');
+                if (lastTd.length <= 0) {
+                    return;
+                }
+                for (var i = lastTd.length / 2; i < lastTd.length; i++) {
+                    lastTd[i].remove();
+                }
+            }
+
+            form.render('select');
+            form.render('checkbox');
+
+        }
+
+
+        loadOutTech = function (localFreshen) {
+            var params;
+            if (outMainWin.grobalModel == null) {
+                params = {
+                    inhospitalId: '$!{inhospitalId}',
+                    lisFlag: '1',
+                    orderGroupFlag: '1',
+                    doctorOrderType: '03'
+                    , validFlag: '${CONST.AppConstants.YES_FLAG}'
+                }
+            } else {
+                params = {
+                    registerId: outMainWin.grobalModel.registerId
+                    , validFlag: '${CONST.AppConstants.YES_FLAG}'
+                    , doctorOrderType: '03'
+                }
+            }
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/outpatientTechListData.jo',
+                data: params,
+                dataType: "json",
+                success: function (result) {
+
+                    var lisTbody = $('.layui-table .outTechList');
+
+                    var emptyTr = $('.layui-table .data-empty');
+                    if (localFreshen) {
+                        $('.outTechList tr:gt(0)').remove();//移除tr内容
+                    }
+
+                    if (result.data.length == 0) {
+                        return false;
+                    }
+                    $(result.data).each(function (index, row) {
+                        var newTr = $('.table-tpl .tr-tpl').clone();
+                        if (outMainWin.grobalModel == null) {
+                            newTr.find('.examApplyName').append($('<div class="comment"><div>').html(index + 1));
+                            if (row.payFeeFlag === '0') {
+                                newTr.find('.editApply').find('i').attr('outpatient-tech-id', row.outpatientTechId || row.orderId);
+                            } else {
+                                newTr.find('.editApply').html('');
+                            }
+                            newTr.find('.payFeeFlag').html(dicPayFeeState[row.payFeeFlag]);
+                            newTr.find('.editApply').append($('<div class="comment"><div>').html(index + 1));
+                            newTr.find('.lisType').append($('<div class="comment"><div>').html(row.techApplyName));
+                            newTr.find('.proName').append($('<div class="comment"><div>').html(row.proName || row.orderName));
+                            newTr.removeClass('tr-tpl').removeClass('layui-hide');
+                            newTr.data('row', row);
+                            lisTbody.append(newTr);
+                        } else {
+							newTr.find('.examApplyName').append($('<div class="comment"><div>').html(row.techApplyName));
+							newTr.find('.payFeeFlag').html(dicPayFeeState[row.payFeeFlag]);
+							newTr.find('.proName').append($('<div class="comment"><div>').html(row.chargeGroupName));
+							newTr.removeClass('tr-tpl').removeClass('layui-hide');
+							newTr.data('row', row);
+							lisTbody.append(newTr);
+                        }
+                    });
+                    emptyTr.remove();
+                    //outTechLisTrClickEvent();
+                    if (localFreshen) {
+                        $('.outTechList tr:eq(1) td div').click();
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        //获取当前分类下要提交的参数
+        getOutpatientTechParam = function () {
+            var isPass = true;
+            var outpatientTechId = $('#outpatientTechId').val() ? $('#outpatientTechId').val() : '';
+            if (outMainWin.grobalModel == null) {
+                if (!'$!{inhospitalId}') {
+                    common.msg('请选择挂号患者', 0);
+                    return false;
+                }
+            } else {
+                if (!outMainWin.grobalModel.registerId) {
+                    common.msg('请选择挂号患者', 0);
+                    return false;
+                }
+            }
+
+            if (!$('#exeOfficeId').val()) {
+                common.msg('请选择执行科室', 0);
+                return false;
+            }
+
+            var params = [];
+            var allBasChargeItems = table.cache.basChargeItemGrid;
+            var BasChargeItemObj = {};
+            $.each(allBasChargeItems, function (index, basChargeItem) {
+                if (!BasChargeItemObj[basChargeItem.chargeGroupId]) {
+                    BasChargeItemObj[basChargeItem.chargeGroupId] = [];
+                }
+                BasChargeItemObj[basChargeItem.chargeGroupId].push(basChargeItem);
+            });
+            $.each(selectedData, function (index, data) {
+                var outpatientTechItemArr = $.map(BasChargeItemObj[data.chargeGroupId] ||[], function (item, index) {
+					if (item.medicineId) {
+						return;
+					}
+                    return {
+                        chargeItemId: item.chargeItemId
+                        , medicineId: item.medicineId
+                        , pharmacyId: item.pharmacyId
+                        , chargeGroupId: data.chargeGroupId
+						, chargeGroupName: data.chargeGroupName
+                        , outpatientTechId: $('#outpatientTechId').val()
+                        , outpatientTechItemId: ''//outpatientTechItemId
+                        , exeOfficeId: $('#exeOfficeId').val()
+                        , hospitalId: '$currentUser.unitOrgId'
+                        , unitPrice: item.unitPrice
+                        , orderGroupId: ''
+                        , orderName: item.chargeName
+                        , orderItemId: ''
+                        , doctorOrderType: $('#doctorOrderType').val()
+                        , doctorOrderSubtype: data.doctorOrderSubtype
+                        , medicalTechFlag: MEDICAL_TECH_INSPECT
+                        , lisFlag: '${CONST.AppConstants.YES_FLAG}'
+                        , examFlag: '${CONST.AppConstants.NO_FLAG}'
+                        , surgeryFlag: '${CONST.AppConstants.NO_FLAG}'
+                        , patientId: outMainWin.grobalModel.patientId
+                        , patientName: outMainWin.curPatient.patientName
+                        , inhospitalId: '$!{inhospitalId}'
+                        , registerId: '$!{registerId}'
+                        , urgentFlag: Number($("#urgentFlag").is(":checked"))
+                        , bodyPartClassify: item.bodyPartClassify
+                        , perOrderCount: item.chargeItemCount
+                        , giveTotalQuantity: item.chargeItemCount
+                        , usageQuantity: item.chargeItemCount
+                        , remark: $('#remark').val()
+                        , techApplyName: (dicDoctorOrderSubtype[data.doctorOrderSubtype] || "")
+                        , inhospitalChargeGroupCode: item.inhospitalChargeGroupCode
+                        , docChargeGroupCode: item.docChargeGroupCode
+                    };
+                })
+                var outpatientTech = {
+                    outpatientTechId: $('#outpatientTechId').val()
+					, chargeGroupId: data.chargeGroupId
+					, chargeGroupName: data.chargeGroupName
+					, bodyPartClassify: data.bodyPartClassify
+                    , exeOfficeId: $('#exeOfficeId').val()
+                    , makeExamDoctorId: '$currentUser.userId'
+                    , hospitalId: '$currentUser.unitOrgId'
+                    , medicalTechFlag: MEDICAL_TECH_INSPECT
+                    , orderGroupId: ''
+                    , outpatientOfficeId: '$currentUser.sysOrg.orgId'
+                    , patientId: outMainWin.grobalModel.patientId
+                    , patientName: outMainWin.curPatient.patientName
+                    , inhospitalId: '$!{inhospitalId}'
+                    , registerId: '$!{registerId}'
+                    , urgentFlag: Number($("#urgentFlag").is(":checked"))
+                    , testOfficeId: $('#exeOfficeId').val()
+                    , lisFlag: '${CONST.AppConstants.YES_FLAG}'
+                    , examFlag: '${CONST.AppConstants.NO_FLAG}'
+                    , treatFlag: '${CONST.AppConstants.NO_FLAG}'
+                    , doctorOrderType: $('#doctorOrderType').val()
+                    , techApplyName: (dicDoctorOrderSubtype[data.doctorOrderSubtype] || "")
+                };
+
+                //检验申请单参数对象
+                var techApply = {
+                    applyDoctorId: '$currentUser.userId'
+                    , applyDoctorName: '$currentUser.name'
+                    , applyTime: new Date().format('yyyy-MM-dd hh:mm:ss')
+                    , techExamApplyId: $('#techExamApplyId').val()
+                    , examApplyName: $('#examApplyName').val()
+                    , finishFlag: '${CONST.AppConstants.NO_FLAG}'//
+                    , hospitalId: '$currentUser.unitOrgId'
+                    , inhospitalId: '$!{inhospitalId}'
+                    , registerId: '$!{registerId}'
+                    , patientId: outMainWin.grobalModel.patientId
+                    , patientName: outMainWin.curPatient.patientName
+                    , visitCardNo: outMainWin.curPatient.visitCardNo
+                    , patientType: '${CONST.AppConstants.PATIENT_TYPE_OUTPATIENT}'//
+                    , printFlag: '${CONST.AppConstants.NO_FLAG}'//
+                    , urgentFlag: urgentFlag ? urgentFlag : "0"
+                    , visitOfficeId: '$currentUser.sysOrg.orgId'
+                    , doctorOrderType: $('#doctorOrderType').val()
+                    , orderGroupNo: $('#orderGroupNo').val()
+                    , remark: $('#remark').val()
+                }
+
+                if (!isPass) {
+                    return false;
+                }
+                params.push({
+                    techExamApplyOutEditInfoJson: JSON.stringify(techApply)
+                    , outpatientTechInfoJson: JSON.stringify(outpatientTech)
+                    , outpatientTechItemListJson: JSON.stringify(outpatientTechItemArr)
+                    , outpatientTechItemArr: outpatientTechItemArr
+                });
+            });
+            return params;
+        }
+
+        //获取住院检验提交的参数
+        getInpatientOrderParam = function () {
+            var isPass = true;
+            if (!$('#exeOfficeId').val()) {
+                common.msg('请选择执行科室', 0);
+                return false;
+            }
+
+            if (!$('#orderName').val()) {
+                common.msg('请填写检验项目', 0);
+                return false;
+            }
+
+            var inpatientOrderEditChildren = [];
+            var orderId = $('#orderId').val() ? $('#orderId').val() : '';
+            //检验申请单参数对象
+            var inpatientOrderEdit = {
+                makeOrderDoctorId: '$currentUser.userId'
+                , makeOrderDoctorName: '$currentUser.name'
+                , makeOrderDate: new Date().format('yyyy-MM-dd hh:mm:ss')
+                , techExamApplyId: $('#techExamApplyId').val()
+                , orderId: orderId
+                , exeOfficeId: $('#exeOfficeId').val()
+                , orderName: $('#orderName').val()
+                , finishFlag: '${CONST.AppConstants.NO_FLAG}'//
+                , hospitalId: '$currentUser.unitOrgId'
+                , inhospitalId: '$!{inhospitalId}'
+                , patientId: '$!{patientId}'
+                , patientName: '$!{patientName}'
+                , visitCardNo: '$!{visitCardNo}'
+                , patientType: '${CONST.AppConstants.PATIENT_TYPE_OUTPATIENT}'//
+                , printFlag: '${CONST.AppConstants.NO_FLAG}'//
+                , urgentFlag: urgentFlag ? urgentFlag : "0"
+                , visitOfficeId: '$currentUser.sysOrg.orgId'
+                , doctorOrderType: $('#doctorOrderType').val()
+                , orderGroupNo: $('#examApplyName').val()
+                , remark: $('#remark').val()
+            }
+
+            var listItemDoms;
+            if (orderId) {
+                listItemDoms = $('input[name = "lisItem"]');
+            } else {
+                listItemDoms = $('input[name = "lisItem"]:checked')
+            }
+            //循环选中的项
+            listItemDoms.each(function (i, v) {
+                var curTr = $(this).parent().parent();
+                var indexKey = $(this).attr('name') + "_" + $(this).attr('index-key');
+                var orderId = $(this).find('.orderId').val() ? $(this).find('.orderId').val() : '';
+                var bodyPartClassify = $(this).find('.bodyPartClassify').val() ? $(this).find('.bodyPartClassify').val() : '';
+                //医技明细参数对象
+                var outpatientTechItem = {
+                    chargeGroupId: ''
+                    , chargeItemId: ''
+                    , outpatientTechId: $('#outpatientTechId').val()
+                    , exeOfficeId: $('#exeOfficeId').val()
+                    , hospitalId: '$currentUser.unitOrgId'
+                    , giveTotalQuantity: '1'//需要手动设置
+                    , orderGroupNo: $('#examApplyName').val()
+                    , doctorOrderType: $('#doctorOrderType').val()
+                    , lisFlag: '${CONST.AppConstants.YES_FLAG}'
+                    , examFlag: '${CONST.AppConstants.NO_FLAG}'
+                    , surgeryFlag: '${CONST.AppConstants.NO_FLAG}'
+                    , patientId: '$!{patientId}'
+                    , orderId: orderId
+                    , inhospitalId: '$!{inhospitalId}'
+                    , urgentFlag: urgentFlag ? urgentFlag : "0"
+                    , bodyPartClassify: bodyPartClassify
+                    , remark: $('#remark').val()
+                }
+
+                $(curTr).find('input[field-name="' + indexKey + '"], select[field-name="' + indexKey + '"], span[field-name="' + indexKey + '"]').each(function (i) {
+                    var name = $(this).attr('name');
+                    if (!name) {
+                        return true;//继续循环
+                    }
+                    outpatientTechItem[name] = $(this).is('span') ? $(this).text() : $(this).val();
+                });
+
+
+                if (!verifyTechItem(outpatientTechItem)) {
+                    isPass = false;
+                    return false;//跳出循环
+                }
+                inpatientOrderEditChildren.push(outpatientTechItem);
+            });//循环选中的项
+
+            if (!isPass) {
+                return false;
+            }
+            inpatientOrderEdit['inpatientOrderEditListJson'] = JSON.stringify(inpatientOrderEditChildren);
+            return inpatientOrderEdit;
+        }
+
+        //验证选中项
+        verifyTechItem = function (techItem) {
+            if (!techItem.bodyPartClassify) {
+                common.msg('所选项目存在未选择样本！', 0);
+                return false;
+            }
+            if (!techItem.giveTotalQuantity) {
+                common.msg('所选项目存在未填写次数！', 0);
+                return false;
+            }
+            return true;
+        }
+
+
+        // 提交门诊检验
+        function outpatientFormSubmit(optFlag) {
+
+            var param = getOutpatientTechParam();
+            if (!param) return false;
+            /*
+                    if (param.outpatientTechItemArr <= 0) {
+                        common.msg('请选择检验项目', 0);
+                        return false;
+                    }*/
+            // if (! $("#examApplyName").val()) {
+            //    common.msg('请选择检验项目', 0);
+            //    return false;
+            // }
+            var techIframe = $('div[lay-id=tech] iframe', window.parent.parent.document);
+            var emrIframe = $('div[lay-id=outpatientEmr] iframe', window.parent.parent.document);
+            if (outMainWin.grobalModel == null) {
+
+            } else {
+                var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+            }
+
+            common.requestServer('$contextPath/outpatient/saveOutpatientTech.jo', {data: JSON.stringify(param)}, function (result) {
+                if (result.code == "0") {
+                    $('#component-tabs', parent.document).click();
+                    common.msg("保存成功", 1, function () {
+                        if (optFlag == '1') {
+							location.reload();
+                            //保存并刷新
+                        } else if (optFlag == '0') {
+                            winClose();//保存完成并关闭
+                        }
+                        if (outMainWin.grobalModel == null) {
+
+                        } else {
+                            emrEditWin.getEmrOutTechInspect($("#inhospitalId").val());
+                        }
+                        $('#btn_refresh', techIframe.contents()).click();//.contents(): 取iframe里面的html内容
+                    })
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        // 提交住院检验
+        function inpatientFormSubmit(optFlag) {
+            closeFlag = optFlag;
+            $("#btn_save_inpatientOrder").click();
+        }
+
+        //缓存中间顶部表单jq对象
+        cacheCenterTop = function () {
+            centerTop = $('.center-top').clone();
+        }
+
+        cloneCenterTop = function () {
+            return centerTop.clone();
+        }
+
+        winClose = function () {
+            var index = parent.parent.layer.getFrameIndex(parent.window.name);
+            parent.parent.layer.close(index);
+        }
+
+        $(window).resize(function () {
+            $('#projectTable').height($('.inpatientOrder').height() - $('#headerBar').height() - 10);
+        })
+        //页面初始化
+        $(document).ready(function () {
+            //缓存中间顶部表单jq对象
+            cacheCenterTop();
+            //加载左侧检验分类
+            loadTree();
+            //加载已添加的申请单
+            loadOutTech();
+
+            if (outMainWin.grobalModel == null) {
+                // 保存按钮
+                $('#btn_save').click(function () {
+                    if (submit === '1') {
+                        return;
+                    }
+                    inpatientFormSubmit('0');
+                });
+
+                // 提交按钮
+                $('#btn_submit').click(function () {
+                    if (submit === '1') {
+                        return;
+                    }
+                    inpatientFormSubmit('1');
+                });
+            } else {
+                $('#orderNameDiv').remove();
+                // 保存按钮
+                $('#btn_save').click(function () {
+                    if (submit === '1') {
+                        return;
+                    }
+                    outpatientFormSubmit('0');
+                });
+
+                // 提交按钮
+                $('#btn_submit').click(function () {
+                    if (submit === '1') {
+                        return;
+                    }
+                    outpatientFormSubmit('1');
+                });
+            }
+            $(window).resize();
+
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('#basLisChargeItem_queryForm').parent().height() - $('#basLisChargeItem_queryForm').height();
+        }
+
+        function getItemTableHgt() {
+            return $("#inpatientOrder_editForm").parent().height() - $("#inpatientOrder_editForm").height() - $("#selectedItem").height()-10;
+        }
+
+        $(window).resize(function () {
+            table.reload('basLisChargeItemGrid', {
+                height: getTableHgt()
+            })
+            table.reload('basChargeItemGrid', {
+                height: getItemTableHgt()
+            })
+        })
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                doctorOrderSubtype: '',
+                lisFlag: YES_FLAG,
+                keyWord: ''
+            }, common.serializeObject($('#basLisChargeItem_queryForm')));
+        }
+        $('#q_keyWord').on('keydown',function(event){
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        })
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basLisChargeItemGrid', {
+                url: contextPath + '/bas/basChargeGroupListData.jo',
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basLisChargeItem_queryForm');
+        })
+
+        function addBasChargeItem(basChargeItem) {
+            var html = [];
+            html.push('<button class="layui-btn layui-btn-xs" ' + 'subchargeitemid="' + basChargeItem.chargeGroupId + '">');
+            html.push(basChargeItem.chargeGroupName);
+            html.push('<span class="layui-bg-red"><i class="layui-icon layui-unselect layui-tab-close">ဆ</i></span>');
+            html.push('</button>');
+            $('#selectedItem').append(html.join(''));
+			$('#selectedItem .layui-btn .layui-bg-red .layui-tab-close').unbind("click");
+            $('#selectedItem .layui-btn .layui-bg-red .layui-tab-close').click(function () {
+                var subchargeitemid = $(this).parent().parent().attr('subchargeitemid');
+				cancelSelected(layui.table.cache.basLisChargeItemGrid, subchargeitemid);
+                deleteBasChargeItem(subchargeitemid);
+                $(this).parent().parent().remove();
+            });
+            refreshTable();
+        }
+
+        function deleteBasChargeItem(subchargeitemid) {
+            $('#selectedItem button[subchargeitemid=' + subchargeitemid + ']').remove();
+            selectedData = selectedData.filter(function (data) {
+                return data.chargeGroupId != subchargeitemid;
+            });
+            console.log(selectedData)
+            refreshTable();
+        }
+
+        function cancelSelected(data, subchargeitemid) {
+            $.each(data, function (index, value) {
+                if (value.chargeGroupId == subchargeitemid) {
+                    $('div[lay-id="basLisChargeItemGrid"] tr[data-index=' + index + '] td input[type=checkbox]').attr('checked', false);
+                }
+            });
+            form.render('checkbox');
+        }
+
+//表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basLisChargeItemGrid',
+            height: getTableHgt(),
+            limit: 10,
+            data: [],
+            cols: [[{
+                type: 'checkbox'
+            }, {
+                field: 'doctorOrderSubtype',
+                title: '医嘱类型',
+                width: '60',
+                templet: function (row) {
+                    return dicDoctorOrderSubtype[row.doctorOrderSubtype] || ""
+                }
+            }, {
+                field: 'chargeGroupName',
+                title: '医疗项目',
+				minWidth: 300
+            }, {
+                field: 'bodyPartClassify',
+                title: '标本部位',
+				width: '100',
+                templet: function (row) {
+                    return dicBodyPartClassifyLis[row.bodyPartClassify] || ""
+                }
+            }, {
+                field: 'lisTestTube',
+                title: '试管类型',
+				width: '100',
+                templet: function (row) {
+                    return dicLisTestTube[row.lisTestTube] || ""
+                }
+            }, {
+				field: 'needAttention',
+				title: '注意事项',
+				width: '200'
+			}
+            ]], done: function (res, curr, count) {
+                var selectedData = $('#selectedItem').find('button').map(function () {
+                    return $(this).attr('chargeGroupId');
+                }).get();
+                $.each(res.data, function (index, value) {
+                    if (selectedData.contains(value.chargeGroupId)) {
+                        $('div[lay-id="basLisChargeItemGrid"] tr[data-index=' + index + '] td input[type=checkbox]').attr('checked', true);
+                    }
+                });
+				$('input[lay-filter="layTableAllChoose"]').parent().html('');
+                form.render('checkbox');
+            }
+        }));
+
+        table.on('checkbox(basLisChargeItemGrid)', function (obj) {
+			console.log(obj);
+            if (obj.checked) {
+                var isExist = selectedData.filter(function (currentValue, index, arr) {
+                    return currentValue.chargeGroupId == obj.data.chargeGroupId;
+                }).length > 0;
+                if(!isExist) {
+                    selectedData.push(obj.data);
+                    addBasChargeItem(obj.data);
+                }
+                if (obj.data.exeOfficeIdStr) {
+					var exeOfficeIds = obj.data.exeOfficeIdStr.split(',');
+					$("#exeOfficeId").val(exeOfficeIds[0]);
+                }
+                form.render('select');
+            } else {
+                deleteBasChargeItem(obj.data.chargeGroupId);
+            }
+        });
+
+        function refreshTable() {
+			//组套ID
+			var chargeGroupIds = $.map(selectedData, function (item) {
+				return  item.chargeGroupId;
+			});
+            table.reload('basChargeItemGrid', {
+				url: '$contextPath/bas/getBasChargeGroupInfo.jo',
+				where: {chargeGroupIds: chargeGroupIds.join()},
+                done: function (res) {
+                    var that = this;
+                    var chargeItems = table.checkStatus('basChargeItemGrid').data;
+                    //存放需要合并的username
+                    var chargeGroupIds = layui.$.unique(layui.$.map(res.data, function (item) {
+                        return item.chargeGroupId;
+                    }));
+                    //合并显示单元格字段
+                    var groupCells = ['chargeGroupName', 'bodyPartClassify'];
+                    //合并关键字段
+                    var groupKeyWord = 'chargeGroupId';
+                    layui.each(chargeGroupIds, function (index, contains) {
+                        var tr = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains + ')').filter(function () {
+                            return $(this).text() == contains;
+                        }).parents('tr');
+                        layui.each(groupCells, function (i, field) {
+                            tr.find('td[data-field="' + field + '"]').first().attr('rowspan', tr.length).end().not(":first").remove();
+                        });
+                    });
+
+                    layuiTableColumnEdit.render({
+                        id:'#basChargeItemGrid',
+                        type:'select',
+                        field:'bodyPartClassify',
+                        data:dicBodyPartClassifyLisArray,
+                        where:{},
+                        callback:function (obj) {
+                            $.each(table.cache.basChargeItemGrid, function (index, item) {
+                                if (item.chargeGroupId === rowData.data.chargeGroupId) {
+                                    item.bodyPartClassify = obj.select.name;
+                                }
+                            });
+                            //把选择的数据更新到行数据中
+                            rowData.update({bodyPartClassify:parseInt(obj.select.name)});
+                            //把选择的显示数据更新到单元格中显示
+                            obj.update();
+                        }
+                    });
+                }
+            });
+
+            //监听行单击事件（双击事件为：rowDouble）
+            table.on('row(basChargeItemGrid)', function(obj) {
+                rowData = obj;
+            });
+
+            //监听行单击事件
+            table.on('edit(basChargeItemGrid)', function(obj) {
+                if (!validate(obj.value)) {
+                    obj.data.chargeItemCount = '';
+                    obj.value = '';
+                    obj.tr.find('td[data-field="chargeItemCount"] div').html('111');
+                }
+                // obj.update({chargeItemCount: obj.data.chargeItemCount}); //修改当前行数据
+            });
+        }
+
+        function validate(value){
+            var reg = new RegExp("^[0-9]*$");
+            if(!reg.test(value)){
+                common.msg("请输入数字!", 0);
+                return false;
+            }
+            return true;
+        }
+
+        editApplay = function(dom) {
+            var outpatientTechId = $(dom).attr('outpatient-tech-id');
+            common.requestServer('$contextPath/outpatient/selectOutpatientTechInfo.jo', {outpatientTechId: outpatientTechId}, function (result) {
+                if (result.code === "0") {
+                    var outpatientTech = result.data.outpatientTech;
+                    var outpatientTechItemList = result.data.outpatientTechItemList;
+                    var basChargeGroups = result.data.basChargeGroups;
+                    selectedData = [];
+                    selectedData.push(basChargeGroups);
+                    $.each(outpatientTechItemList, function (index, item) {
+                        addBasChargeItem(item);
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        };
+
+        // 设置编辑表单参数对象
+        function setEditParams(data) {
+            var editForm = $('#inpatientOrder_editForm');
+            editForm.find('[name="orderId"]').val(data.orderId);
+            editForm.find('[name="orderGroupNo"]').val(data.orderGroupNo);
+            editForm.find('[name="orderName"]').val(data.orderName);
+            editForm.find('[name="bodyPartClassify"]').val(data.bodyPartClassify);
+
+            editForm.find('[name="techExamApplyId"]').val(data.orderId);
+            editForm.find('[name="examApplyName"]').val(data.examApplyName);
+            editForm.find('[name="outpatientTechId"]').val(data.outpatientTechId);
+            form.render();
+        }
+
+        // 获取编辑表单参数对象
+        function getEditParams() {
+            var params = [];
+            var allBasChargeItems = table.cache.basChargeItemGrid;
+            var BasChargeItemObj = {};
+            $.each(allBasChargeItems, function (index, basChargeItem) {
+                if (!BasChargeItemObj[basChargeItem.chargeGroupId]) {
+                    BasChargeItemObj[basChargeItem.chargeGroupId] = [];
+                }
+                BasChargeItemObj[basChargeItem.chargeGroupId].push(basChargeItem);
+            });
+            $.each(selectedData, function (index, data) {
+                var formData = common.serializeObject($('#inpatientOrder_editForm'));
+                var inpatientOrders = $.map(BasChargeItemObj[data.chargeGroupId], function (item, index) {
+                    return $.extend({
+                        orderId: item.orderId
+                        , chargeItemId: item.chargeItemId
+						, medicineId: item.medicineId
+						, pharmacyId: item.pharmacyId
+                        , orderName: item.chargeName
+                        , chargeGroupName: data.chargeGroupName
+                        , chargeGroupId: data.chargeGroupId
+						, bodyPartClassify: data.bodyPartClassify
+                        , techApplyName: (dicDoctorOrderSubtype[data.doctorOrderSubtype] || "")
+                        , inhospitalChargeGroupCode: item.inhospitalChargeGroupCode
+                        , docChargeGroupCode: item.docChargeGroupCode
+                        , unitPrice: item.unitPrice
+                        , giveTotalQuantity: item.chargeItemCount
+                        , bodyPartClassify: item.bodyPartClassify
+                        , perOrderCount: item.chargeItemCount
+                        , usageQuantity: item.chargeItemCount
+                        , doctorOrderSubtype: data.doctorOrderSubtype
+                        , exeOfficeId: $('#exeOfficeId').val()
+                        , urgentFlag: urgentFlag
+                    }, formData);
+                });
+                formData.orderName = data.chargeGroupName;
+                formData.chargeGroupName = data.chargeGroupName;
+                formData.chargeGroupId = data.chargeGroupId;
+                formData.bodyPartClassify = data.bodyPartClassify;
+                formData.techApplyName = (dicDoctorOrderSubtype[data.doctorOrderSubtype] || "");
+                formData.inhospitalChargeGroupCode = data.basChargeItems[0].inhospitalChargeGroupCode;
+                formData.docChargeGroupCode = data.basChargeItems[0].docChargeGroupCode;
+                formData.doctorOrderSubtype = data.doctorOrderSubtype;
+                formData.exeOfficeId = $('#exeOfficeId').val();
+                formData.urgentFlag = urgentFlag;
+                params.push($.extend({inpatientOrders: inpatientOrders}, formData));
+            });
+            return params;
+        }
+
+        //提交表单
+        function saveInpatientOrderTechApplyLis() {
+            var param = getEditParams();
+            common.openLoad();
+            common.requestServer('$contextPath/inpatient/saveInpatientOrderApplyLis.jo', {jsonData: JSON.stringify(param)}, function (result) {
+                if (result.code === "0") {
+                    common.msg("保存成功", 1, function () {
+                        if (closeFlag === '1') {
+                            location.reload()
+                            //保存并刷新
+                        } else if (closeFlag === '0') {
+                            winClose();//保存完成并关闭
+                        }
+                        $('#btn_refresh', parent.parent.$('iframe[id=3801]').contents()).click();
+                        common.closeLoad();
+                    })
+                } else {
+                    common.alert(result.msg, 0);
+                    common.closeLoad();
+                }
+            });
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save_inpatientOrder)', function (data) {
+            saveInpatientOrderTechApplyLis();
+            return false
+        });
+
+        //表格设置
+        table.render($.extend(singlePageTable, {
+            elem: '#basChargeItemGrid',
+            height: getItemTableHgt(),
+            data: [],
+            totalRow: true, //开启合计行
+            limit: 100,
+            cols: [[{
+                type: 'checkbox',
+                LAY_CHECKED: true,
+                hide: true
+            },
+                {
+                    field: 'chargeGroupId',
+                    hide: true
+                }, {
+                    field: 'chargeGroupName',
+                    title: '检查项目',
+                    width: '300'
+                }, {
+                    field: 'bodyPartClassify',
+                    title: '检验样本',
+					width: '100'
+                }, {
+                    field: 'chargeName',
+                    title: '收费项目',
+					width: '300'
+                }, {
+                    field: 'chargeItemCount',
+                    title: '数量',
+                    // edit: 'text',
+					width: '40',
+					templet: function (row) {
+						return row.chargeItemCount || 1;
+					}
+                }, {
+                    field: 'chargeItemUnit',
+                    title: '单位',
+					width: '40'
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+					width: '60',
+                    totalRow: true
+                }]]
+        }));
+
+    });
+</script>

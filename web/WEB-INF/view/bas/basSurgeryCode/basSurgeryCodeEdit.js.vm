@@ -1,0 +1,73 @@
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var DIC_TYPE_SURGERY_CLASSIFY = "$!{CONST.AppConstants.DIC_TYPE_SURGERY_CLASSIFY}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form)
+
+        //初始化手术分类名称 请求参数
+        var surgeryClassifyOption = {
+            url: contextPath + '/basDic/basDicListData.jo?validFlag=1&dicTypeId=' + DIC_TYPE_SURGERY_CLASSIFY,
+            data: {
+                dicCodeEqu: $("#surgeryClassify").val()
+            },
+            success: function (result) {
+                var data = result.data;
+                if (data && data.length > 0) {
+                    $("#surgeryClassifyName").val(data[0].dicName);
+                    $("#surgeryClassify").val(data[0].dicCode);
+                }
+            }
+        }
+        if (surgeryClassifyOption.data.dicCodeEqu) {
+            common.requestServer(surgeryClassifyOption.url, surgeryClassifyOption.data, surgeryClassifyOption.success);
+        }
+
+        //打开选择手术分类页面
+        $("#surgeryClassifyName,#surgeryClassifyName~.choose").click(function () {
+            top.common.open('$contextPath' + '/basDic/basDicSelectTree.do?dicTypeIds=' + DIC_TYPE_SURGERY_CLASSIFY, '选择手术分类', {
+                area: ['50%', '70%'],
+                success: function (layero, index) {
+                    var iframeWindow = top.window['layui-layer-iframe' + index];
+                    //重点2 jsonpCallback 公用子页面回调方法；如果在这里定义了这个方法，那么子页面就会调用这个方法
+                    iframeWindow.jsonpCallback(function (data) {
+                        surgeryClassifyOption.success({data: [data]});
+                    })
+                }
+            })
+        });
+
+        //清空 手术分类
+        $('#surgeryClassifyName+.caller-icon').click(function () {
+            $("#surgeryClassifyName").val("");
+            $("#surgeryClassify").val("");
+        })
+
+
+        //提交表单
+        function saveBasSurgeryCode() {
+            var basSurgeryCodeParams = common.serializeObject($('#basSurgeryCodeForm'))
+            common.requestServer(contextPath + '/bas/saveBasSurgeryCode.jo', basSurgeryCodeParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasSurgeryCode()
+            return false
+        })
+    })
+</script>

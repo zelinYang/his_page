@@ -1,0 +1,315 @@
+<script>
+
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var index;
+    var aae140, yab139, ykb065;// 分别是险种类型，参保所属机构，执行社会保险办法
+    var mbfParam = {
+        "insure_type": "GXYHJK",
+        "bus_code": "I0001",
+        "control": {
+            "edition": "",
+            "ykf008": "",
+            "yab278": "",
+            "aae011": "$!{curUser.userId}",
+            "ykc141": "$!{curUser.name}",
+            "aae036": ""
+        },
+        "input": {}
+    };
+
+    //=========== 报价器实现begin ============
+    var BS_TdBjq;
+    $(document).ready(function () {
+        //报价器需要在加载完页面后初始化下面这两行代码
+        // BS_TdBjq = new ActiveXObject("Tdbjq.BS_Tdbjq");
+        // BS_TdBjq.BS_dsbdll(0, "&TLINK$");
+    });
+
+    //报价
+    $('#btn_quotedPrice').click(function () {
+        //患者姓名
+        var patientName = "$!inhospital.patientName";
+        //应收款
+        var actualChargeAmount = $("#actualChargeAmount").val();
+
+        BS_TdBjq.BS_dsbdll(0, "&Sc$");
+        BS_TdBjq.BS_dsbdll(0, "&C21您好，请稍等！$");
+        BS_TdBjq.BS_dsbdll(0, "A1");
+        BS_TdBjq.BS_dsbdll(0, "&Sc$");
+        BS_TdBjq.BS_dsbdll(0, "&C11尊敬的"+ patientName +"，您好！$");
+        BS_TdBjq.BS_dsbdll(0, actualChargeAmount + "J");
+    });
+
+    //找零
+    $('#btn_smallChange').click(function () {
+
+        //实收款
+        var actualCharge = $("#actualCharge").val();
+        actualCharge = actualCharge ? actualCharge : 0;
+        //找零
+        var changeCharge = $("#changeCharge").val();
+
+        changeCharge = changeCharge ? changeCharge : 0;
+        BS_TdBjq.BS_dsbdll(0, actualCharge + "Y");
+        BS_TdBjq.BS_dsbdll(0, changeCharge + "Z");
+    });
+    //=========== 报价器实现end ============
+
+    layui.use(['jquery', 'table', 'element', 'form', 'laydate', 'util'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var element = layui.element;
+        var util = layui.util;
+        element.render();
+
+        $(function () {
+            var cutSettlementSum = parseFloat('$!settlement.cutSettlementSum');
+            console.log(cutSettlementSum);
+            if (cutSettlementSum > 0) {
+                $('#refundEdit').find('input').each(function (index, dom) {
+                    $(dom).attr('readonly', 'readonly');
+                });
+            } else {
+                $('#feeEdit').find('input').each(function (index, dom) {
+                    $(dom).attr('readonly', 'readonly');
+                });
+                $('#changeCharge').val(cutSettlementSum * -1);
+            }
+        });
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#payInTab'
+            , defaultToolbar: []
+            , height: 'full-20'//高度
+            , url: '../inpatient/payInListData.jo' //数据接口
+            , limit: 200
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , where: common.serializeObject($('#payInFrom'))
+            , totalRow: true
+            , cols: [[ //表头
+                {type: 'numbers', title: '序号', width: 60, totalRowText: '合计'}
+                , {field: 'payInDate', title: '缴款日期', width: 150, templet:function(row){return util.toDateString(row.payInDate)}}
+                , {field: 'prepaySum', title: '缴款金额', totalRow: true}
+                , {
+                    field: 'selfPrepayInWay', title: '缴款方式', templet: function (row) {
+                        return dicPaymentMethod[row.selfPrepayInWay];
+                    }
+                }
+                , {field: 'prepayReceiptNo', title: '收据号码'}
+                , {field: 'operPrepayUserId', title: '工号'}
+
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });
+
+        var ybjsfsTab = table.render({
+            elem: '#ybjsfsTab'
+            , defaultToolbar: []
+            , height: '200'//高度
+            , url: '../basDic/basDicList.jo' //数据接口
+            , limit: 200
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , where: {dicTypeId: 280}
+            , cols: [[ //表头
+                {field: 'dicName', title: '名称', width: '50%', align: 'center'}
+                , {field: 'amount', title: '金额', align: 'center'}
+
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });
+
+        var feeSett = function () {
+            var actualCharge = $('#actualCharge').val();
+            var changeCharge = $('#changeCharge').val();
+            var payInWay = $('#payInWay').val();
+            var param = {
+                inhospitalId: '$!inhospital.inhospitalId',
+                actualCharge: actualCharge,
+                changeCharge: changeCharge,
+                selfPayInWay: $("input[name='selfPayInWay']:checked").val(),
+                authCode: $('#QRCode').val()
+            };
+
+            $.ajax({
+                type: "POST",
+                url: '../inpatient/inpatientSettlementPay.jo',
+                data: param,
+                dataType: "json",
+                async: false,//同步 请求
+                success: function (result) {
+                    if (result.code == '0') {
+                    	common.alertCall(result.msg, 1, function () {
+							parent.closeWindow();
+						})
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        };
+
+
+        //页面初始化
+        $(document).ready(function () {
+            $('#btn_feeSett').click(feeSett);
+            $('#btn_cancel').click(function () {
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);//关闭当前页
+            });
+        });
+        var actualCharge = $('#cutSettlementSum').val();
+        $('#actualCharge').val(actualCharge);
+
+        // 下拉框改变事件
+        form.on('select(payInWay)', function (data) {
+            if (data.value == 2) {
+                var url = '$contextPath/inpatient/wxPayView.do?inhospitalId=' +$!inhospital.inhospitalId;
+                index = layer.open({
+                    title: '微信当面付',
+                    type: 2,
+                    area: ['40%', '30%'],
+                    content: url,
+                });
+                console.log('index', index)
+            } else if (data.value == 3) {//支付宝当面付
+                var url = '$contextPath/inpatient/aliPayView.do?inhospitalId=' +$!inhospital.inhospitalId;
+                index = layer.open({
+                    title: '支付宝当面付',
+                    type: 2,
+                    area: ['40%', '30%'],
+                    content: url,
+                });
+                //console.log('index', index)
+            }
+        });
+
+        /* 挂号缴费方式 */
+        form.on('radio(payMode)', function (data) {
+            //不是现金的查询支付状态
+            if (data.value != 1) {
+                $('.payCode').show()
+            } else {
+                $('.payCode').hide()
+            }
+        });
+
+		$("#actualCharge").on('input propertychange', function () {
+			$("#changeCharge").val(Number($("#totalPrepaySum").val() + $("#actualCharge").val() - $("#actualChargeAmount").val()).toFixed(2));
+		});
+
+    });
+
+    function closeWXpayview() {
+        common.msg('支付成功！', iconType.success);
+        console.log("父页面关闭");
+        layer.close(index);
+    }
+
+    $(function() {
+        function initWS() {
+            ws = new WebSocket("ws://127.0.0.1:8080/bfweb");
+            ws.onopen = function (e) {
+                console.log("Openened connection to websocket");
+                console.log(e);
+                // initializationMbf();
+            };
+            ws.onclose = function () {
+                console.log("Close connection to websocket");
+                // 断线重连
+                initWS();
+            };
+
+            ws.onmessage = function (e) {
+                console.log("收到",e.data);
+                var div=$("<div>");
+                var data=e.data;
+                $("#messages").append(div);
+            };
+        }
+
+        // initWS();
+        $('#preSettlement').click(function() {
+            uploadData();
+        });
+
+        $('#readCard').click(function() {
+            readCard();
+        });
+    });
+
+    function readCard() {
+        ws.onmessage = function (e) {
+            console.log("读卡收到", e.data);
+            mbfData = e.data;
+            aae140 = mbfData.output.rows.row.aae140; //险种类型
+            yab139 = mbfData.output.rows.row.yab139; //参保所属机构
+            ykb065 = mbfData.output.rows.row.ykb065; //执行社会保险办法
+        };
+        mbfParam.bus_code = 'I0001';
+        mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+        mbfParam.input.aae140 = "310";
+        ws.send(JSON.stringify(mbfParam));
+    }
+
+    function uploadData() {
+        ws.onmessage = function (e) {
+            console.log("预结算收到:", e.data);
+            settlement(e.data, '0');
+        };
+        mbfParam.bus_code = 'M0002';
+        mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+        common.requestServer(contextPath + '/mbf/getUploadMbfInsureInterfaceParam.jo', {recipeIds: recipeIds, techIds: techIds}, function(result) {
+            if (result.code === '0') {
+                console.log(result.data);
+                var inputData = {
+                    aaz217: mbfData.aaz217,
+                    aac001: mbfData.aac001,
+                    ykc010: $('#visitCardNo').val(),
+                    ykc173: '',
+                    aka130: '',
+                    aka120: $('#diseaseCode').val(),
+                    aae140: aae140,
+                    djxxrows: result.data
+                };
+                mbfParam.input = inputData;
+                ws.send(JSON.stringify(mbfParam));
+            } else {
+                common.msg('获取参数失败', 2);
+            }
+        });
+    }
+
+    function settlement(data, type) {
+        ws.onmessage = function (e) {
+            console.log("预结算收到:", e.data);
+        };
+        mbfParam.bus_code = 'M0003';
+        mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+        mbfParam.input = {
+            "aac001": data.output.aac001,
+            "aaz217": data.output.aaz217,
+            "qrcode": "",
+            "ykb065": data.output.ykb065,
+            "aka130": data.output.aka130,
+            "hisfye": "HIS费用总额",
+            "zsjsbz": type,// 正式结算标志(1表示正式结算，0表示预结算)
+            "grzhbz": "1",
+            "yac112": "",
+            "amc010": ""
+        };
+        ws.send(JSON.stringify(mbfParam));
+    }
+
+</script>

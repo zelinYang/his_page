@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>调拨申请未提交</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<form class="layui-form" action="" id="editForm">
+					<div class="layui-row-query search-term border-b-n">
+						<div class="layui-form-item">
+							#formHiddenInput("pharmacyAllotId" "" "id='pharmacyAllotId'")
+							#formHiddenInput("pharmacyId" "" "id='pharmacyId'")
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()申请药房</label>
+								<div class="layui-input-inline">
+									#formTextInput("applyPharmacyName" "" "id='applyPharmacyName' class='layui-input' placeholder='申请药房' autocomplete='off' readonly ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()目标医院</label>
+								<div class="layui-input-inline">
+									#formTextInput("allotOutHospitalName" "" "id='allotOutHospitalName' class='layui-input' placeholder='目标医院' autocomplete='off' readonly ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()目标药房</label>
+								<div class="layui-input-inline">
+									#formTextInput("allotOutPharmacyName" "" "id='allotOutPharmacyName' class='layui-input' placeholder='目标药房' autocomplete='off' readonly ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()申请日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("applyDate" "" "id='applyDate' class='layui-input' disabled ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()出库日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("allotOutDate" "" "id='allotOutDate' class='layui-input' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">备注</label>
+								<div class="layui-input-inline">
+									#formIntZeroInput("remark" "" "id='remark' class='layui-input' placeholder='备注' autocomplete='off' ")
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="itemTable" lay-filter="itemTable"></table>
+				<form class="layui-form" action="" id="btnForm" style="height: 35px;">
+					<div class="layui-form-item text-center search-term">
+						<div class="layui-inline">
+							<button type="button" id="btn_confirm" class="layui-btn layui-btn-sm" style="display: none;"><span>确认入库</span></button>
+						</div>
+					</div>
+				</form>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="queryForm" class="layui-form">
+                            #formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+                            #formHiddenInput("submitFlag" "${CONST.AppConstants.YES_FLAG}" "")
+                            #formHiddenInput("allotOutFlag" "${CONST.AppConstants.YES_FLAG}" "")
+                            #formHiddenInput("allotInFlag" "${CONST.AppConstants.NO_FLAG}" "")
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()申请药房</label>
+										<div class="layui-input-inline">
+											<select id="applyPharmacyId" name="applyPharmacyId" lay-filter="applyPharmacyId" class=“layui-input”>
+												<option value="">请选择</option>
+                                                #foreach($pharmacy in $pharmacyList)
+													<option value="$!{pharmacy.pharmacyId}">$!{pharmacy.pharmacyName}</option>
+                                                #end
+											</select>
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()目标医院</label>
+										<div class="layui-input-inline">
+											<select id="allotOutHospitalId" name="allotOutHospitalId" lay-filter="allotOutHospitalId" class=“layui-input”>
+												<option value="">请选择</option>
+                                                #foreach($org in $orgList)
+                                                    #if($!{org.orgId} == $!{currentHospitalId})
+														<option value="$!{org.orgId}" selected>本院</option>
+                                                    #else
+														<option value="$!{org.orgId}">$!{org.name}</option>
+                                                    #end
+                                                #end
+											</select>
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()目标药房</label>
+										<div class="layui-input-inline">
+											<select id="allotOutPharmacyId" name="allotOutPharmacyId" lay-filter="allotOutPharmacyId"></select>
+										</div>
+									</div>
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+										<button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+					</div>
+				</div>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+    #parse("./pharmacy/allot/pharmacyAllotInList.js.vm")<!-- 页面js -->
+</body>
+</html>

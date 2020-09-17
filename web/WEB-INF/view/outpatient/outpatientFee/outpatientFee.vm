@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-门诊收费</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.min.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style type="text/css">
+        /*价格字体颜色*/
+        .recipeTotalPrice {
+            display: inline;
+            /*left: 20px;*/
+            /*position: absolute;*/
+            /*top: 6px;*/
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .recipeTotalPriceValue {
+            color: red;
+        }
+
+        /*就诊卡号查询输入框*/
+        .visitCardNo {
+            width: 220px;
+        }
+        /*诊断输入框*/
+        .outpatientDiagnosis {
+            width: 568px;
+        }
+        .layui-form-label { padding: 5px 10px 5px 0; width: 60px; }
+        #outpatientFeeGroup_queryForm .layui-form-label { padding: 5px 10px;  }
+        .layui-row-query { padding: 10px 0 0 0; background: #fff}
+        .layui-row-query.search-term label { min-width: 60px; width: auto;}
+
+
+
+
+        @media screen and (max-width: 1400px) {
+            .outpatientDiagnosis {
+                width: 312px;
+            }
+        }
+        @media screen and (max-width: 1024px) {
+            .visitCardNo {
+                width: 210px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .outpatientDiagnosis {
+                width: 268px;
+            }
+            /*就诊卡号查询输入框*/
+            .visitCardNo {
+                width: 120px;
+            }
+            .tool-bottom-fixed .layui-input-inline{width: 100px;}
+            .visitCardNo{width:120px}
+
+        }
+
+        .layui-input-block {
+            min-height: 30px;
+        }
+
+        .webui-popover .webui-popover-content {
+            overflow: hidden;
+        }
+        #outpatientFeeGroupForm .layui-input-inline {
+            min-width: 0;
+            width: auto!important;
+        }
+    </style>
+</head>
+<body >
+
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4 layui-col-xs5">
+                <!--搜索条件 开始-->
+                <form id="outpatientFeeGroup_queryForm" class="layui-form queryForm">
+                    <div class="layui-row-query" >
+                        <div class="layui-form-item ">
+                            <div class="layui-inline" style="margin-left: 5px;">
+                                <div class="layui-input-inline wd-220">
+                                    <input type="text" name="keyWord" value="" class="layui-input" id="q_keyWord" autocomplete="off" maxlength="40" placeholder="姓名/电话/身份证/就诊卡号/医保号/健康卡" lay-tips="支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询">
+                                </div>
+                            </div>
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                                <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <form id="outpatientFeeGroupForm" class="layui-form ">
+                    #formHiddenInput("patientId" "" " id='patientId' ")
+                    <div class="layui-row-query" >
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">就诊卡号</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("visitCardNo" "" "id='visitCardNo' class='layui-input' readonly size='5'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">证件号码</label>
+                                <div class="layui-input-inline" >
+                                    #formTextInput("patientIdCard" "" "id='patientIdCard' class='layui-input' readonly size='5'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">姓名</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("patientName" "" "id='patientName' class='layui-input' readonly size='5'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">性别</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("patientSex" "" "id='patientSex' class='layui-input' readonly size='5'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">年龄</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("patientAge" "" "id='patientAge' readonly class='layui-input' size='5'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">发票号码</label>
+                                <div class="layui-input-inline">#formTextInput("billNum" ""
+                                    "id='billNum' maxlength='20' autocomplete='off' class='layui-input' readonly size='5'")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!-- 列表表格 begin -->
+                <div class="layui-bg-white">
+                    <table id="outpatientFeeGroupListGrid" lay-filter="outpatientFeeGroupListGrid"></table>
+                </div>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md8 layui-col-xs7">
+                <!--搜索条件 开始-->
+                <form id="billRecipient_queryForm" class="layui-form layui-bg-white p-t-xs m-b-sm">
+                    <div class="layui-form-item search-term" style="text-align: center;">
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: 60px">缴费方式</label>
+                            <div class="layui-input-block" style="margin-left: 70px;">
+                                #formRadioGroup("dicPatientKind" "" ${dicData.dicPatientKind} "lay-filter='dicPatientKind'")
+                                #formRadioGroup("payMode" "$!{CONST.AppConstants.PAY_IN_WAY_CASH}" ${dicData.dicOutPayInWay} "lay-filter='payMode'")
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="layui-row p-b-sm text-center">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">付款码</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("QRCode" "" "class='layui-input' id='QRCode' autocomplete='off' readonly")
+                            </div>
+                        </div>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-danger" id="btn_settlement">结  算</button>
+                        <button type="button" class="layui-btn layui-btn-sm" id="btn_quotedPrice">报  价</button>
+                        <button type="button" class="layui-btn layui-btn-sm" id="btn_smallChange">找  零</button>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+
+                <!-- 操作栏操作按钮 -->
+                <script type="text/html" id="operatebar">
+                    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i class="layui-icon"></i></a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_delete"><i class="layui-icon layui-icon-delete"></i></a>
+                </script>
+                <!-- 列表表格 工具栏 结束-->
+                <!-- 列表表格 begin -->
+                <div class="layui-bg-white" id="recipeDiv" style="height: calc(50% - 30px)">
+                    <table id="billRecipientListGrid" lay-filter="billRecipientListGrid"></table>
+                </div>
+                <div class="layui-bg-white" id="techDiv" style="height: calc(50% - 30px)">
+                    <table id="techItemTable" lay-filter="techItemTable"></table>
+                </div>
+                <!--  列表表格 end -->
+            </div>
+        </div>
+        <div class="tool-bottom-fixed ">
+            <div class="recipeTotalPrice">合计：<span class="recipeTotalPriceValue"></span></div>
+            <div class="layui-inline" style="margin-left: 60px;">
+                <label class="layui-form-label">应收款</label>
+                <div class="layui-input-inline ">
+                    <input type="number" id="actualChargeAmount" value="$!{actualChargeAmount}" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">#requiredTag()实际收款</label>
+                <div class="layui-input-inline ">
+                    <input type="number" id="actualCharge" value="" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">找零金额</label>
+                <div class="layui-input-inline ">
+                    <input type="number" id="changeCharge" value="0" class="layui-input">
+                </div>
+            </div>
+            <!--            <div class="recipeTotalPrice">合计：<span class="recipeTotalPriceValue"></span></div>-->
+            <!--            <button type="button" class="layui-btn layui-btn-sm" id="btn_settlement">结算</button>-->
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="settlementTpl">
+    <input type="checkbox" lay-filter="settlement" name="hisOrdNum" value="{{d.hisOrdNum}}" payNameType="{{d.payNameType}}" lay-skin="primary" checked="">
+</script>
+<!-- 本页面js -->
+    #parse("./outpatient/outpatientFee/outpatientFee.js.vm")
+</body>
+</html>

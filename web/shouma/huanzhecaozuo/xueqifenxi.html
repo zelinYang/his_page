@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>血气分析</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-row">
+            <div class="layui-card layui-form">
+                <div class="layui-card-body">
+                    <table class="layui-table layui-table-view m-n">
+                        <thead>
+                        <tr>
+                            <th>血气分析项目</th>
+                            <th>项目名称</th>
+                            <th>参考数值</th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+
+                <div class="layui-card-body">
+                    <form class="layui-form autoWidth">
+                        <div class="layui-form-item">
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal"> 新 增 </button>
+                            </div>
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal"> 确 定 </button>
+                            </div>
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" class="layui-btn layui-btn-sm layui-btn-normal"> 刷 新 </button>
+                            </div>
+                        </div>
+                    </form>
+
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+<script src="../../resource/layuiadmin/layui/layui.js"></script>
+<script>
+    layui.config({
+        base: '../../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['index', 'form', 'laydate'], function(){
+        var $ = layui.$
+            ,admin = layui.admin
+            ,element = layui.element
+            ,form = layui.form
+            ,laydate = layui.laydate;
+
+        form.render(null, 'component-form-element');
+        element.render('breadcrumb', 'breadcrumb');
+
+        laydate.render({
+            elem: '#format-date1'
+            ,format: 'yyyy-MM-dd'
+        });
+
+        form.on('submit(component-form-element)', function(data){
+            layer.msg(JSON.stringify(data.field));
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

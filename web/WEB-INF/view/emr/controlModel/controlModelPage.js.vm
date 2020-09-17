@@ -1,0 +1,220 @@
+<script>
+    $(function() {
+        //将桌面选项卡名称改为 控件模板
+        $("a[data-id='home.html']",parent.document).text('控件模板');
+    });
+    var dicControlModelType = JSON.parse('$dicTools.changeMapToJson($dicData.dicControlModelType)');
+    layui.use(['form', 'table'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        $("#modelName").keyup(function(event){
+            (event.key== "Enter") && $("#btn_query").click();
+          });
+        function getTableHgt(){
+            return ($('body').height()- $('#queryForm').height()- 10)
+        }
+        $(window).resize(function(){
+            table.reload('emrTlp',{
+                height: getTableHgt()
+            })
+        })
+        table.render({
+            elem: '#emrTlp'
+            ,url:'../controlModel/controleModelPageData.jo'
+            ,toolbar: '#toolbarDemo'
+            ,title: '用户数据表'
+            //,totalRow: true
+            ,limit : 20
+            ,height: getTableHgt()
+            ,defaultToolbar: ['filter', 'print', 'test']
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,response: {
+                countName: 'total' //规定数据总数的字段名称，默认：count
+                ,dataName: 'rows' //规定数据列表的字段名称，默认：data
+            }
+            ,cols: [[
+                {type: 'radio', fixed: 'left'}
+                ,{field:'modelName', title:'名称'}
+                ,{field:'modelType', title:'类型', templet: function(res){
+                    return dicControlModelType[res.modelType];
+                }}
+                ,{field:'description', title:'描述'}
+                ,{field:'className', title:'类名'}
+                ,{field:'fieldName', title:'字段名'}
+                ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+            ]]
+            ,page: true
+        });
+
+        $('.demoTable .layui-btn').on('click', function(){
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+
+        //监听搜索
+        form.on('submit(LAY-search)', function (data) {
+            var field = data.field;
+
+            //执行重载
+            table.reload('emrTlp', {
+                where: field
+            });
+        });
+
+        //工具栏事件
+        table.on('toolbar(emrTlp)', function(obj){
+            var checkStatus = table.checkStatus(obj.config.id);
+            var data = checkStatus.data;
+            console.log(obj.event);
+            switch(obj.event){
+                case 'btn_add':
+                editControlModel();
+                break;
+            };
+        });
+        //操作事件
+        table.on('tool(emrTlp)', function(obj){
+            switch(obj.event){
+                case 'edit':
+                editControlModel(obj.data);
+                break;
+                case 'del':
+                deleteControlModel(obj.data);
+                break;
+            };
+        });
+    });
+    // 编辑电子病历
+    function editControlModel(data) {
+        var title = '新增模板控件';
+        url = contextPath + '/controlModel/editEmrControlModel.do';
+        if (data) {
+            title = data.modelName;
+            url += '?controlModelId=' + data.controlModelId;
+        }
+
+        layer.open({
+            type: 2
+            ,title: title
+            ,content: url
+            ,shade:false
+            ,resize:true
+            ,moveOut: true
+            ,area: ['88.6%', '80%']
+            ,btn: ['确定', '取消']
+            ,yes: function(index, layero){
+                var iframeWindow = window['layui-layer-iframe'+ index]
+                ,submitID = 'LAY-emr-submit'
+                ,submit = layero.find('iframe').contents().find('#'+ submitID);
+
+                //监听提交
+                iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                    var field = data.field; //获取提交的字段
+                    if (field.dataType !== 'on') {
+                        field.className = field.classNameForNoDatabase;
+                        field.fieldName = field.fieldNameForNoDatabase;
+                    }
+                    if (field.modelType !== '1') {
+                        field.verifyFormat = '';
+                    }
+                    if (field.modelType !== '3') {
+                        field.dateFormat = '';
+                    }
+                    var controlParam = {};
+                    switch (field.modelType) {
+                        case '1':
+                            controlParam.defaultValue = field.defaultValue;
+                            break;
+                        case '2':
+                            controlParam = {
+                                labelName: field.labelName? field.labelName: '',
+                                functionName: field.functionName? field.functionName: '',
+                                sectionType: field.sectionType? field.sectionType: ''
+                            };
+                            break;
+                        case '4':
+                        case '5':
+                        case '6':
+                            var options = [];
+                            layero.find('iframe').contents().find("#options").children("div").each(function(index){
+                                var option = {
+                                    value: $(this).children('div').eq(0).children('input').eq(0).val(),
+                                    label: $(this).children('div').eq(1).children('input').eq(0).val(),
+                                };
+                                options.push(option);
+                            })
+                            if (options.length > 0) {
+                                field.bindingData = JSON.stringify(options);
+                            }
+                            break;
+                        case '7':
+                            controlParam = {
+                                labelName: field.labelName? field.labelName: '',
+                                functionName: field.functionName? field.functionName: '',
+                                fieldShowName: field.fieldShowName? field.fieldShowName: ''
+                            };
+                            break;
+                        case '8':
+                            controlParam = {
+                                formulaType: field.formulaType? field.formulaType: ''
+                            };
+                            break;
+                        default:
+                    }
+                    controlParam.dataType = field.dataType === 'on'? '1': '0';
+                    field.controlParam = JSON.stringify(controlParam);
+                    //提交 Ajax 成功后，静态更新表格中的数据
+                    $.post("../controlModel/saveEmrControleModelSave.jo", field,  function (result) {
+                        if (result.code == "0") {
+                            common.alertCall("保存成功!", 1, function (){
+                                if($('#btn_query').length > 0 ) {
+                                    $('#btn_query').click();
+                                }
+                                // 关闭窗口
+                                layer.close(index);
+                            });
+                        } else {
+                            common.alert(result.msg,0);
+                        }
+                    }, "json");
+                });
+
+                submit.trigger('click');
+            }
+            ,success: function(layero, index){
+
+            }
+        });
+    }
+
+    // 编辑电子病历属性
+    ## function editControlModel(data) {
+    ##     var url = contextPath + '/controlModel/editEmrControlModel.do?controlModelId=' + data.controlModelId;
+    ##     var title = data.modelName;
+    ##     ## createMenuItem(title, url);
+    ##     common.open(url, title, {area: ['88.6%', '87%']});
+    ## }
+
+    // 删除电子病历模板内容
+    function deleteControlModel(data) {
+        common.confirm("您确定要删除这个模板控件吗？", function () {
+            $.post('../controlModel/deleteEmrControlModel.jo', {controlModelId: data.controlModelId}, function(result){
+                if (result.code == "0") {
+                    common.alertCall(result.msg, 1, function (){
+                        $('#btn_query').click();
+                    });
+                } else {
+                    common.alert(result.msg,0);
+                }
+            }, "json").error(function (e){jqueryPostError(e)});
+        });
+    }
+
+    //查询电子病历列表
+    function queryData() {
+        $('#btn_query').click();
+    }
+</script>

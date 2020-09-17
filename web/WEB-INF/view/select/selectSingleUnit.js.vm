@@ -1,0 +1,31 @@
+<script>
+$(document).ready(function () {
+	// 初始化单位树形
+	$("#deptTree").jstree({
+		"core": {"themes" : { "responsive" : false },
+			'data': function(obj, callback) {
+				var jsonstr = "[]";
+				var jsonarray = eval('(' + jsonstr + ')');
+				$.ajax({
+					type : "GET",
+					url : "../sys/getUnitTree.jo",
+					dataType : "json",
+					async : false,
+					success : function(result) {
+						var root = { "id":result[0].id, "parent":result[0].pid == "" ? "#" : result[0].pid, "text":result[0].name, "type":result[0].iconSkin, "state": {"opened" : true}, children:result[0].children}
+                        jsonarray.push(root);
+					}
+				});
+				callback.call(this, jsonarray);
+			}
+		}, "plugins" : ["dnd", "types"]
+	}).bind("activate_node.jstree", function(event, data) {
+		if (parent.selectSingleUnitBack && typeof(parent.selectSingleUnitBack) == "function") {
+			parent.selectSingleUnitBack(data.node.original);
+			// 关闭窗口
+			var index = parent.layer.getFrameIndex(window.name);
+	        parent.layer.close(index); 
+		}
+	});
+});
+</script>

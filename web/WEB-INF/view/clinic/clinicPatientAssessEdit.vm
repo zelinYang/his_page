@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style>
+		* {box-sizing: border-box;}
+		.layui-table th, .layui-table td { padding: 3px 9px; height: 21px; line-height:21px;}
+		.layui-form-checkbox { display: block; margin-bottom: 10px;}
+	</style>
+</head>
+<body>
+<form class="layui-form" action="" id="editForm">
+    #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+    #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+    #formHiddenInput("clinicPathStageId" "$!clinicPatientStage.clinicPathStageId" "id='clinicPathStageId'")
+    #formHiddenInput("clinicPathId" "$!clinicPatientPath.clinicPathId" "id='clinicPathId'")
+    #formHiddenInput("clinicPatientPathId" "$!clinicPatientPath.clinicPatientPathId" "id='clinicPatientPathId'")
+    #formHiddenInput("currentPatientStageId" "$!clinicPatientPath.currentPatientStageId" "id='currentPatientStageId'")
+    <table id="clinicPathTable" lay-filter="clinicPathTable"></table>
+	<div class="layui-form-item">
+		<label class="layui-form-label">时间进度</label>
+		<div class="layui-input-block">
+			<input type="radio" name="pathStageTimeAssess" lay-filter="pathStageTimeAssess" value="1" title="正常进入下一天" checked>
+			<input type="radio" name="pathStageTimeAssess" lay-filter="pathStageTimeAssess" value="2" title="提前进入下一阶段">
+			<input type="radio" name="pathStageTimeAssess" lay-filter="pathStageTimeAssess" value="3" title="下一天的阶段延后（继续当前阶段）">
+		</div>
+	</div>
+	<div class="layui-form-item">
+		<label class="layui-form-label">总体结果</label>
+		<div class="layui-input-block">
+			<input type="radio" name="pathStageResultAssess" lay-filter="pathStageResultAssess" value="1" title="正常" checked>
+			<input type="radio" name="pathStageResultAssess" lay-filter="pathStageResultAssess" value="2" title="变异后继续">
+			<input type="radio" name="pathStageResultAssess" lay-filter="pathStageResultAssess" value="3" title="变异后退出">
+			<input type="radio" name="pathStageResultAssess" lay-filter="pathStageResultAssess" value="4" title="提前完成">
+		</div>
+	</div>
+	<div class="layui-form-item" id="reasonDiv">
+		<label class="layui-form-label">评估备注</label>
+		<div class="layui-input-block m-b-sm">
+			<textarea name="patientStageAssessRemark" placeholder="请输入评估备注" class="layui-textarea"></textarea>
+		</div>
+	</div>
+	<div id="reasonList" class="lujingbianyi" style="display:none;"></div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    var pathStageType = '$!{clinicPathStage.pathStageType}';
+    var getParams;
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'autocomplete', 'table'], function() {
+        var form = layui.form;
+        var table = layui.table;
+        var autocomplete = layui.autocomplete;
+        var $ = layui.$;
+        layui.form.render('select');
+
+		form.on('radio(pathStageResultAssess)', function(data){
+			if (data.value !== '1') {
+				$(".lujingbianyi").show();
+			} else {
+				$(".lujingbianyi").hide();
+			}
+		});
+
+		$(function () {
+			initData();
+		})
+
+		// 初始化数据
+		function initData() {
+			$.ajax({
+				type: "POST",
+				url: contextPath + '/clinic/getVariantEtiologyData.jo',
+				contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+				data: {
+					"clinicPatientPathId": $("#clinicPatientPathId").val(),
+					"inhospitalId": $("#inhospitalId").val()
+				},
+				dataType: "json",
+				async: true,
+				success: function (result) {
+
+					if (result.code === '0') {
+						console.log(result.data.clinicPatientPath)
+
+						if (result.data.clinicPathStage) {
+							$("#sort").html(result.data.clinicPathStage.sort);
+							$("#pathStageContent").html(result.data.clinicPathStage.pathStageContent);
+						}
+
+						// 构建组件
+						$.each(result.data.reasonType, function (index, item) {
+							var inputItem = "";
+							$.each(result.data.reasonList, function (index, val) {
+								if (val.variationFactor == item.dicCode) {
+									if (val.variationReasonContent == "其他")  {
+										inputItem = inputItem + "<input type='checkbox' lay-filter='other' name='otherReasonIds' value='" + val.clinicVariationReasonId + "' title='" + val.variationReasonContent + "' data-type='" + item.dicCode + "' data-typename='" + item.dicName + "' lay-skin='primary'>";
+										inputItem = inputItem + "<input type='text' readonly class='layui-input ' data-type='" + item.dicCode + "'  name='otherReasonContents' data-type='" + item.dicCode + " placeholder='请录入其他因素'>";
+									} else {
+										inputItem = inputItem + "<input type='checkbox' name='reasonIds' value='" + val.clinicVariationReasonId + "' title='" + val.variationReasonContent + "' data-type='" + item.dicCode + "' lay-skin='primary'>";
+									}
+								}
+							});
+							var content = "<div class='layui-card'>\n" +
+									"<input type='hidden' name='otherReasonContents' data-type='" + item.dicCode + " placeholder='请录入其他因素'>" +
+									"<div class='layui-card-header'>" + item.dicName +"</div>\n" +
+									"<div class='layui-card-body'>\n" + inputItem + "</div>\n" + "</div>";
+							$("#reasonList").append(content);
+						});
+						form.render();
+
+						// 添加选择其他的点击事件
+						form.on('checkbox(other)', function (data) {
+							var obj = $(this).parent().find("input[name = 'otherReasonContents']");
+							if (data.elem.checked) {
+								$(obj).attr("readonly", false);
+							} else {
+								$(obj).attr("readonly", true);
+							}
+							$(obj).val("")
+							form.render('checkbox');
+						});
+					} else {
+						common.alert(result.msg, 0);
+					}
+				}
+			});
+		}
+
+		getParams = function () {
+			var reasonIds = [];
+			var otherReasonIds = [];
+			var otherReasonContents = [];
+			var validFlag = true;
+			$("#reasonList").find('input[name=reasonIds]').each(function (index, elem) {
+				if (elem.checked) {
+					reasonIds.push(elem.value);
+				}
+			});
+			$("#reasonList").find('input[name=otherReasonIds]').each(function (index, elem) {
+				if (elem.checked) {
+					otherReasonIds.push(elem.value);
+					if ($(elem).parent().find('input[name=otherReasonContents]').val()) {
+						otherReasonContents.push($(elem).parent().find('input[name=otherReasonContents]').val());
+					} else {
+						$(elem).parent().find('input[name=otherReasonContents]').focus();
+						validFlag = false;
+					}
+				}
+			})
+			return {
+				reasonIds: reasonIds.join(','),
+				otherReasonIds: otherReasonIds.join(','),
+				otherReasonContents: otherReasonContents.join(','),
+				validFlag: true
+			};
+		}
+    });
+</script>
+</body>

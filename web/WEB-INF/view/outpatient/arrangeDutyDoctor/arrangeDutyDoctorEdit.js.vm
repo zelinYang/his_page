@@ -1,0 +1,234 @@
+<script>
+$(document).ready(function () {
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+     $('#jstree').jstree({
+         'core' : {
+                'data' :{
+                    'url' : '../onDutyDoctor/getDepTree.do'
+                }
+         },
+         'plugins': ['types', 'dnd'],
+         'types': {
+                'default': {
+                    "icon" : false  // 关闭默认图标
+                },
+                'hospital': {
+                    'icon': 'fa fa-hospital-o'
+                },
+                'office': {
+                    'icon': 'fa fa-medkit'
+                },
+                'consultRoom': {
+                    'icon': 'fa fa-stethoscope'
+                },
+                'doctor': {
+                    'icon': 'fa fa-user-md'
+                }
+            }
+     }).bind("activate_node.jstree", function (obj, e) {
+             var queryParams={};
+            // 获取当前节点
+            var currentNode = e.node;
+            if(currentNode.icon=="fa fa-hospital-o"){
+                //医院
+            }else if(currentNode.icon=="fa fa-medkit"){
+                queryParams={office: currentNode.id}
+                //科室
+            }else if(currentNode.icon=="fa fa-stethoscope"){
+                var parentNode = $('#jstree').jstree().get_node("#"+currentNode.parent);
+                queryParams={office: parentNode.id, consultingRoomId: currentNode.id}
+            }
+            var options = { url : "../onDutyDoctor/sysUserListData.jo", silent: false, query: queryParams};
+            $('#sysUserListGrid').bootstrapTable('refresh', options);
+        }).on('changed.jstree', function (e, data) {
+            $(".title-name").text(data.instance.get_path(data.selected[0],"  > ",0))
+        });
+    
+             //表列表
+            $('#sysUserListGrid').bootstrapTable(
+                $.extend(singlePageTable, {
+                    url : "../onDutyDoctor/sysUserListData.jo",
+                     queryParams : function (params){
+                        var requestParams = common.serializeObject($('#sysUser_queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    singleSelect: false,
+                    search: true,
+                    columns : [
+                    {checkbox : true} ,
+                    {
+                        field : 'userId',
+                        title : '医生id',
+                        visible: false
+                    },
+                    {
+                        field : 'name',
+                        title : '医生姓名'
+                    },
+                    {
+                        field : 'sex',
+                        title : '性别'
+                    },
+                    {
+                        field : 'phone',
+                        title : '手机'
+                    }
+                              ],
+                        onCheck:function(row){
+                            //单行勾选
+                            selectDoctor(row);
+                    },
+                    onUncheck:function(row){
+                        //单行取消勾选
+                        cancelDoctor(row.userId);
+                    },
+                    onCheckAll:function(rows){
+                        //全行勾选
+                       $.each(rows,function(i,row){
+                           selectDoctor(row);
+                       　　});
+                    },
+                    onUncheckAll:function(rows){
+                        //全行取消勾选
+                        $.each(rows,function(i,row){
+                            cancelDoctor(row.userId);
+                           　　});
+                    },
+                    onDblClickRow : function (row, element){
+                    },
+                    onLoadSuccess : function(){
+                        sysUserListGrid()
+                        
+                    }
+                }
+                )//extends
+              );//bootstapTable
+});
+//激活行
+function trtrActive() {
+    $('tbody tr').click(function() {
+        $(this).addClass('trActive').siblings().removeClass('trActive');
+    });
+}
+
+//新增行数据
+function addTr(){
+  var newTr = $('.tpl_row').clone();
+  newTr.removeClass('tpl_row');
+  $('.tbody-data').append(newTr);
+  reApplyPlugins();
+  newTr.click();
+}
+
+//重新渲染插件
+function reApplyPlugins() {
+    //复选框、单选美化
+    $('.i-checks').iCheck({
+        checkboxClass : 'icheckbox_square-green',
+        radioClass : 'iradio_square-green',
+    });
+    trtrActive();//激活行
+}
+   
+//移除行
+function removeTr() {
+   var trActive = $('.tbody-data tr.trActive');
+   if (trActive.hasClass('tpl_row')) {
+      return;
+   }
+   var next = trActive.next();
+   var prev = trActive.prev();
+   if(next.length>0){
+       next.addClass('trActive')
+   } else if(prev.length>0){
+       prev.addClass('trActive')
+   }
+   trActive.remove();//移除元素
+}
+      //单击选中医生
+      function selectDoctor(row){
+    	  console.log(row);
+          addTr();
+          var trActive = $('tr.trActive');
+          var isExist = true;
+           //验证是否存在相同项
+           $('.tbody-data tr').each(function () {
+          var doctorId = $(this).find('input[name="doctorId"]').val();
+          if(doctorId == row.userId){
+              isExist = false;
+              removeTr();
+          }
+          });
+	      if(isExist){
+	        //插入行数据
+	          trActive.attr('id',"_doctorId_"+row.userId);//tr id
+	          trActive.find('input[name="doctorId"]').val(row.userId);//医生id
+	          trActive.find('input[name="doctorName"]').val(row.name);//医生姓名
+	          var onDutyDoctorParams={
+	    			  doctorId:row.userId
+	    	  }
+	    	  common.requestServer(contextPath + '/outpatient/officeConsultingRoomByDoctorIdList.jo', onDutyDoctorParams, function(result){
+	    		  for (var Key in result){
+	    		     trActive.find('input[name="doctorOfficeId"]').val(result[Key]);//科室姓名
+	    		    }
+	    	    });
+	         
+	       }
+      }
+      //单击取消选中医生
+      function cancelDoctor(userId){
+          //当前元素的父级的父级的元素（一行，移除
+           $("#selectDoctor tr#_doctorId_"+userId).remove();
+      }
+      //单击删除医生
+      function delDoctor(del){
+          //当前元素的父级的父级的元素（一行，移除)
+          var userId = Number($(del).parents("tr").find('input[name="doctorId"]').val());//医生id
+          $("#sysUserListGrid").bootstrapTable("uncheckBy", {field:"userId", values:[userId]})
+          $(del).parents("tr").remove();
+      }
+    // table高度
+    function sysUserListGrid(){
+         var height = ($('#sysUserListGrid').parents("body").height() - $('#sysUser_queryForm').parents(".ibox").first().height()  - 73);
+         $('#sysUserListGrid').bootstrapTable('resetView', {height: height});
+    }
+
+    // 获取坐标回调函数
+    function selectMapCoordinateBack(lng, lat) {
+        $('#longitude').val(lng);
+        $('#latitude').val(lat);
+    }
+
+    // 提交表单
+    function saveOnDutyDoctor() {
+        var onDutyDoctorParams = common.serializeObject($('#onDutyDoctorForm'));
+
+        common.requestServer(contextPath + '/outpatient/saveArrangeDutyDoctor.jo', onDutyDoctorParams, function(result){
+            if (result.code == "0") {
+                common.alertCall("保存成功。", 1, function (){
+                    $('#btn_query', window.parent.document).click();
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+
+    }//save function
+    // 保存按钮
+    $(document).ready(function () {
+        // 初始化要校验的表单
+        validate.init($('#onDutyDoctorForm'));
+        // 保存按钮
+        $('#btn_save').click(function (){
+            validate.valid(saveOnDutyDoctor, function (m, o){parent.common.alert(m, 0);});
+        });
+    });
+    $(window).resize(function() { 
+        sysUserListGrid();
+        })
+</script>

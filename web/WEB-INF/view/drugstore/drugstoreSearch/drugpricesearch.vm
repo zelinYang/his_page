@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+<body>
+    #parse("./common/layuiJs.vm")
+    #parse("./common/common.js.vm")
+<!-- 药库/耗材库调价冲红查询 -->
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space10">
+        <div class="layui-col-sm5 layui-col-xs5">
+            <form class="layui-form layui-bg-white" id="queryForm">
+                 <div class="layui-row-query layui-form-item search-term">
+                        <div class="layui-inline m-b-xs">
+                            <label class="layui-form-label" style="width: 120px;font-weight: bold">按审核日期查找</label>
+                            <div class="layui-input-inline">
+                                <input class="layui-input"  id="demoReload" autocomplete="off">
+                            </div>
+                            <button  id="search" class="layui-btn layui-btn-sm"  title="搜索"> <i class="layui-icon layui-icon-search "></i></button>
+                        </div>
+                </div>
+            </form>
+            <table id="TJZB" class="layui-table m-n" lay-filter="TJZB"></table>
+        </div>
+
+        <div class="layui-col-sm7 layui-col-xs7">
+            <div id="queryHead">
+                <fieldset class="layui-elem-field layui-field-title">
+                    <legend>入库明细表</legend>
+                </fieldset>
+                <div class="layui-inline m-b-xs">
+    ##                <label class="layui-form-label" style="width: 90px;font-weight: bold">按药名查找</label>
+    ##                <div class="layui-input-inline">
+    ##                    <input class="layui-input"  id="demoReload1" autocomplete="off" style="margin-left: 20px">
+    ##                </div>
+    ##                <button  id="searchBy" class="layui-btn" style="margin-left: 20px" title="搜索"> <i class="layui-icon layui-icon-search "></i></button>
+                </div>
+            </div>
+            <!-- 明细表tab -->
+            <div id="tab-hide" class="layui-bg-white">
+                <div class="layui-tab m-n" lay-filter="demo" lay-allowclose="true">
+                    <ul class="layui-tab-title" >
+
+                    </ul>
+                    <div class="layui-tab-content ">
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!--主表监听器-->
+<script>
+    // $(document).ready(function(){
+    //     $("#btn_searchItem").click(function(){
+    //         $('#test-hide').removeClass('layui-hide').toggle();
+    //         $('#tab-hide').removeClass('layui-hide').toggle();
+    //     });
+    //
+    // });
+
+    layui.use(['table','element'],function(){
+        var table = layui.table;
+
+        var $ = layui.jquery,element = layui.element;
+        var drugstoreTable = table.render($.extend(basePageTable,{
+            elem: '#TJZB'
+            ,height: getTableHgt()
+            // ,width:860
+            ,url: '../drugstoreSearch/drugPriceHedge.jo' //数据接口
+            ,page: true //开启分页
+            ,id:'testReload'
+            ,cols: [[ //表头
+                {field: 'drugstorePriceHedgeId', title: '序号', width:80, sort: true, fixed: 'left'}
+                ,{
+                    field: 'auditDateBegin',
+                    title: '审核日期',
+                    width:180,
+                    templet: function(res){
+                        return layui.util.toDateString(res.auditDateBegin, 'yyyy-MM-dd');
+                    }
+                }
+                ,{
+                    field: 'priceAdjustDateBegin',
+                    title: '调价日期',
+                    width:180,
+                    templet: function(res){
+                        return layui.util.toDateString(res.priceAdjustDateBegin, 'yyyy-MM-dd');
+                    }
+                }
+                ,{
+                    field: 'exeDateBegin',
+                    title: '执行日期',
+                    width:180,
+                    templet: function(res){
+                        return layui.util.toDateString(res.exeDateBegin, 'yyyy-MM-dd');
+                    }
+                }
+            ]]
+        }));
+
+
+        $('#search').on('click', function(){
+            var demoReload = $("#demoReload");
+            //执行重载
+
+            drugstoreTable.reload({
+                page: {
+                    curr: 1 //重新从第一页开始
+                },
+                where: {
+                    auditDateBegin:demoReload.val()
+                }
+
+            });
+        });
+
+        //监听行单击事件（单击事件为：row）
+        table.on('row(TJZB)', function(obj){
+            var data = obj.data;
+
+            var has_id = 0;
+
+            $(".layui-tab-title>li").each(function () {
+                console.log($(this).attr("lay-id") + '----' + data.drugstorePriceHedgeId);
+                if ($(this).attr("lay-id") == data.drugstorePriceHedgeId) {
+                    has_id = 1;
+                }
+            });
+            console.log("has_id="+has_id)
+            if(has_id == 1){
+                $("#layui-tab-title").hide();
+                element.tabChange('demo', data.drugstorePriceHedgeId);
+            }else{
+                element.tabAdd('demo', {
+                    title:data.drugstorePriceHedgeId+"-号"
+                    , content:
+                            "<div class='layui-tab-item layui-show'>" +
+                            "   <div style='padding: 0px 0px'>" +
+                            "       <table id='TJMX" + data.drugstorePriceHedgeId + "' class='layui-table'></table>" +
+                            "   </div>" +
+                            "</div>"
+                    , id: data.drugstorePriceHedgeId //使用规定好的id
+
+                })
+                element.tabChange('demo', data.drugstorePriceHedgeId);
+            }
+
+            var f1 =data.drugstorePriceHedgeId;
+            console.log($('#TJMX' + f1));
+
+            var DrugMXTable = table.render({
+                elem: '#TJMX' + f1
+                ,height: 'full-180'
+                // ,width:1500
+
+                ,url: '../drugstoreSearch/drugPriceHedgeDetail.jo?drugstorePriceHedgeId='+f1 //数据接口
+
+                ,cols: [[ //表头
+                    {field: 'medicineName', title: '药品通用名称', width:200}
+                    ,{field: 'adjustCount', title: '调价数量', width:120, sort: true}
+                    ,{field: 'medicineSpec', title: '药品规格', width: 150}
+                    ,{field: 'medicineUnit', title: '药品单位', width: 80}
+                    ,{field: 'dosageUnit', title: '剂量单位', width: 80}
+                    ,{field: 'dosageForm', title: '药品剂型', width:80}
+                    ,{field: 'medicineDosage', title: '药品剂量', width: 80}
+                    ,{field: 'billNo', title: '发票号码', width: 80}
+                    ,{field: 'origTradePrice', title: '原批发价', width: 80}
+                    ,{field: 'newTradePrice', title: '新批发价', width: 80}
+                    ,{field: 'origRetailPrice', title: '原零售金额', width:80}
+                    ,{field: 'newRetailPrice', title: '新零售价', width: 80}
+
+
+                ]]
+            });
+            $('#searchBy').on('click', function(){
+                var demoReload = $("#demoReload1");
+                //执行重载
+                console.log("bb")
+                DrugMXTable.reload({
+                    page: {
+                        curr: 1 //重新从第一页开始
+                    },
+                    where: {
+                        medicineName:demoReload.val()
+                    }
+
+                });
+            });
+            // //Hash地址的定位
+            // var layid = location.hash.replace(/^#test=/, '');
+            // element.tabChange('test', layid);
+            //
+            // element.on('tab(test)', function(elem){
+            //     location.hash = 'test='+ $(this).attr("lay-id");
+            // });
+
+            // layer.alert(JSON.stringify(data), {
+            //     title: '当前行数据：'
+            // });
+
+
+            //标注选中样式
+            // obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+    });
+    // 获取表格高度
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 15)
+    };
+    function getTableHgt1() {
+        return ($('body').height() - $('#queryHead').height() - 79)
+    };
+</script>
+
+</html>

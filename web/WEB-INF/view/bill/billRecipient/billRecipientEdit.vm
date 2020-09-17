@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-票据领用-编辑</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .layui-form .layui-input-inline {
+            height: 30px;
+        }
+    </style>
+</head>
+
+<body>
+<form class="layui-form" id="billRecipientForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("billRecipientId" "$!{billRecipient.billRecipientId}" " id='billRecipientId' ")
+    #formHiddenInput("recipientTime" $!{billRecipient.recipientTime} " id='recipientTime' ")
+    #formHiddenInput("usageFinishFlag" "$!{billRecipient.usageFinishFlag}" " id='usageFinishFlag' ")
+    #formHiddenInput("validFlag" "$!{billRecipient.validFlag}" " id='validFlag' ")
+    #if($!{billRecipient} && 0 != $!{billRecipient.billUseNum})
+    ##设置编辑表单只读 票据使用张数不为零
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()领用人 </label>
+            <div class="layui-input-inline">
+                #formHiddenInput("recipientNameId" "$!currentUser.userId" "id='recipientNameId'")
+                #formTextInput("" "$!currentUser.name" " class='layui-input'
+                readonly='readonly' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">票据类型</label>
+            <div class="layui-input-inline">#formHiddenInput("billType" "$!{billRecipient.billType}") #formTextInput(""
+                "#lookUpDict(${dicData.dicBillType} ${billRecipient.billType})" " class='layui-input'
+                readonly='readonly' ")
+            </div>
+        </div>
+        #if($!{billRecipient.billType} == $!{CONST.AppConstants.BILL_TYPE_INHOSPITAL})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()使用方式</label>
+            <div class="layui-input-inline">#formHiddenInput("usageMode" "$!{billRecipient.usageMode}")
+                #formTextInput("" "#lookUpDict(${dicData.dicUsageMode} ${billRecipient.usageMode})" "
+                class='layui-input' readonly='readonly' ")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()起始票据号</label>
+            <div class="layui-input-inline">#formIntZeroInput("startNum" "$!{billRecipient.startNum}" " id='startNum'
+                maxlength='20' lay-verify='required|startNum' autocomplete='off' placeholder='' class='layui-input
+                billNum' readonly='readonly'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()当前票据号 </label>
+            <div class="layui-input-inline">#formIntZeroInput("currentNum" "$!{billRecipient.currentNum}" "
+                id='currentNum' maxlength='20' lay-verify='required|currentNum' autocomplete='off' placeholder=''
+                class='layui-input billNum'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()结束票据号 </label>
+            <div class="layui-input-inline">#formIntZeroInput("endNum" "$!{billRecipient.endNum}" " id='endNum'
+                maxlength='20' lay-verify='required|endNum' autocomplete='off' placeholder='' class='layui-input
+                billNum' readonly='readonly'")
+            </div>
+        </div>
+    </div>
+    #else
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()领用人 </label>
+            <div class="layui-input-inline">
+                #formHiddenInput("recipientNameId" "$!currentUser.userId" "id='recipientNameId'")
+                #formTextInput("" "$!currentUser.name" " class='layui-input'
+                readonly='readonly' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">票据类型</label>
+            <div class="layui-input-inline" >#formRadioGroup("billType" "$!{billRecipient.billType}"
+                ${dicData.dicBillType} "lay-filter='billType' check-msg='请选择票据类型' lay-verify='reqRedio'")
+            </div>
+        </div>
+        <script type="text/html" id="usageModelTpl">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()使用方式</label>
+                <div class="layui-input-inline" >#formRadioGroup("usageMode" "$!{billRecipient.usageMode}"
+                    ${dicData.dicUsageModeEdit} " check-msg='请选择使用方式' lay-verify='reqRedio'")
+                </div>
+            </div>
+        </script>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()起始票据号</label>
+            <div class="layui-input-inline">#formIntZeroInput("startNum" "$!{billRecipient.startNum}" " id='startNum'
+                maxlength='20' lay-verify='required|startNum' autocomplete='off' placeholder='' class='layui-input
+                billNum'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()当前票据号</label>
+            <div class="layui-input-inline">#formIntZeroInput("currentNum" "$!{billRecipient.currentNum}" "
+                id='currentNum' maxlength='20' lay-verify='required|currentNum' autocomplete='off' placeholder=''
+                class='layui-input billNum'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()结束票据号 </label>
+            <div class="layui-input-inline">#formIntZeroInput("endNum" "$!{billRecipient.endNum}" " id='endNum'
+                maxlength='20' lay-verify='required|endNum' autocomplete='off' placeholder='' class='layui-input
+                billNum'")
+            </div>
+        </div>
+    </div>
+    #end
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">票据张数</label>
+            <div class="layui-input-inline">#formIntZeroInput("" "" " readonly id='billNum' maxlength='22'
+                lay-verify='required' autocomplete='off' placeholder='' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()使用票据数</label>
+            <div class="layui-input-inline">#formIntZeroInput("billUseNum" "$!{billRecipient.billUseNum}" " readonly
+                id='billUseNum' maxlength='22' lay-verify='required' autocomplete='off' placeholder=''
+                class='layui-input'")
+            </div>
+        </div>
+        #if(${billRecipient})
+        <div class="layui-inline">
+            <label class="layui-form-label">作废票据数</label>
+            <div class="layui-input-inline">#formIntZeroInput("cancelBillNum" "$!{billRecipient.cancelBillNum}" "
+                readonly class='layui-input'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-inline " style="width: 440px;">#formTextarea("remark"
+            "#htmlEscape($!{billRecipient.remark})" "id='remark' class='layui-textarea' maxlength='200'
+            autocomplete='off' placeholder='请输入内容，字数最多200字'")
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+</body>
+#parse("./bill/billRecipient/billRecipientEdit.js.vm")
+</html>

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生诊室设置</title>
+    #parse("./common/pageCss.vm")
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #parse("./common/pageJs.vm")
+    <script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+    <style>
+        .tree {
+            height: calc(100vh - 63px);
+            overflow-y: auto;
+            overflow-x: auto;
+        }
+
+        @media screen and (min-width: 992px) {
+            .tree {
+                height: calc(100vh - 63px);
+            }
+        }
+
+        .layui-card-header .layui-btn-group {
+            height: 33px;
+            float: right;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-xs3">
+                <div class="layui-card">
+                    <div class="layui-card-header">门诊科室
+                        <div class="layui-btn-group">
+                            <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" lay-tips="刷新"
+                                    id="btn_refresh">
+                                <i class="layui-icon layui-icon-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="layui-card-body tree">
+                        <ul id="emrTypeTree" class="ztree"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md9  layui-col-xs9">
+                <!--搜索条件 开始-->
+                <form id="consultingRoomDoctor_queryForm" class="layui-form autoWidth">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">诊室</label>
+                                <div class="layui-input-inline wd-220">
+                                    <div id="consultingRoomIds" style="height: 30px;"></div>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">医生</label>
+                                <div class="layui-input-inline wd-220">
+                                    <div id="doctorIds" style="height: 30px;"></div>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-btn-group">
+                                    <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i
+                                            class="layui-icon layui-icon-search "></i></button>
+                                    <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                                        <i class="iconfont icon-qingchu"></i></button>
+                                </div>
+                                <button id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" type="button"
+                                        lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!-- 操作栏按钮模板 -->
+                <script type="text/html" id="operateTpl">
+                    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+                        <i class="layui-icon layui-icon-delete"></i></a>
+                </script>
+                <!-- 列表表格 工具栏 结束-->
+                <!-- 列表表格 begin -->
+                <table id="consultingRoomDoctorListGrid" lay-filter="consultingRoomDoctorListGrid"></table>
+                <!--  列表表格 end -->
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./outpatient/consultingRoomDoctor/consultingRoomDoctorList.js.vm")
+</body>
+</html>

@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-治疗管理-治疗查询</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4 layui-col-xs3">
+                <!-- 列表表格 begin -->
+                <table id="treatApply_ListGrid" lay-filter="treatApply_ListGrid"></table>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md8 layui-col-xs9">
+                <!--搜索条件 开始-->
+                <form id="treatRecord_queryForm" class="layui-form">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">治疗日期</label>
+                                <div class="layui-input-inline wd-100">
+                                    #formLayDateInput("therapyTimeBegin" "" " maxlength='17' autocomplete='off'
+                                    class='layui-input' ")
+                                </div>
+                                <div class="layui-form-mid">至</div>
+                                <div class="layui-input-inline wd-100">
+                                    #formLayDateInput("therapyTimeEnd" "" " maxlength='17' autocomplete='off'
+                                    class='layui-input' ")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">治疗类型</label>
+                                <div class="layui-input-inline">
+                                    #formSingleSelectSearchFirstNone("treatDicTypeId" "" $!dicData.dicTreatDicTypeId
+                                    "id='q_variationFactor'
+                                    lay-filter='q_variationFactor' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">治疗措施</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("treatMeasures" "" "class='layui-input' id='q_treatMeasures'
+                                    autocomplete='off' maxlength='40'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">治疗部位</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("cureBodyPart" "" "class='layui-input' id='q_cureBodyPart' autocomplete='off'
+                                    maxlength='40'")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">理疗方法</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("therapyMethod" "" "class='layui-input' id='q_therapyMethod'
+                                    autocomplete='off' maxlength='40'")
+                                </div>
+                            </div>
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                        class="layui-icon layui-icon-search"></i></button>
+                                <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i
+                                        class="iconfont icon-qingchu"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!-- 列表表格 工具栏-->
+                <!-- 列表表格 工具栏 结束-->
+                <!-- 列表表格 begin -->
+                <table id="treatRecord_ListGrid" lay-filter="treatRecord_ListGrid"></table>
+                <!--  列表表格 end -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 性别模板 -->
+<script type="text/html" id="sexTpl">
+    <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+</script>
+<!-- 本页面js -->
+<script>
+    var APPOINT_REGISTER_FLAG_APPOINT = "${CONST.AppConstants.APPOINT_REGISTER_FLAG_APPOINT}"
+    var dicTreatDicTypeId = JSON.parse('$dicTools.changeMapToJson($dicData.dicTreatDicTypeId)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicTreatFinishFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicTreatFinishFlag)');
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#treatRecord_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#treatApply_ListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/surgery/treatApplyPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 100
+            }, {
+                field: 'patientBirth',
+                title: '出生年月',
+                minWidth: 100,
+                templet: function (d) {
+                    return d.therapyTime ? util.toDateString(d.therapyTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                width: 60,
+                templet: '#sexTpl'
+            }, {
+                field: 'applyTime',
+                title: '申请日期',
+                minWidth: 100,
+                templet: function (d) {
+                    return d.applyTime ? util.toDateString(d.applyTime, 'yyyy-MM-dd') : '';
+                }
+            }, {
+                field: 'applyOfficeName',
+                title: '申请科室名称',
+                minWidth: 100
+            }, {
+                field: 'applyDoctorName',
+                title: '申请医生姓名',
+                minWidth: 100
+            }, {
+                field: 'diseaseName',
+                title: '诊断名称',
+                minWidth: 100
+            }, {
+                field: 'surgeryName',
+                title: '操作名称',
+                minWidth: 100
+            }, {
+                field: 'treatPart',
+                title: '操作部位',
+                minWidth: 100
+            }, {
+                field: 'involvedMedicine',
+                title: '介入物名称',
+                minWidth: 100
+            }, {
+                field: 'treatOperateDesc',
+                title: '操作方法描述',
+                minWidth: 100
+            }, {
+                field: 'pharmacyFreqId',
+                title: '治疗频率',
+                minWidth: 100
+            }, {
+                field: 'orderDay',
+                title: '治疗天数',
+                minWidth: 100
+            }, {
+                field: 'doctorOrderRemark',
+                title: '医嘱使用备注',
+                minWidth: 100
+            }, {
+                field: 'treatSchedule',
+                title: '今后治疗方案',
+                minWidth: 100
+            }, {
+                field: 'followVisitWay',
+                title: '随访方式',
+                minWidth: 100
+            }, {
+                field: 'followVisitDate',
+                title: '随访日期',
+                minWidth: 100,
+                templet: function (d) {
+                    return d.followVisitDate ? util.toDateString(d.followVisitDate, 'yyyy-MM-dd') : '';
+                }
+            }, {
+                field: 'followVisitPeriod',
+                title: '随访周期建议',
+                minWidth: 100
+            }, {
+                field: 'orderExeUserName',
+                title: '医嘱执行者签名',
+                minWidth: 100
+            }, {
+                field: 'exeOfficeName',
+                title: '执行科室',
+                minWidth: 100
+            }, {
+                field: 'orderExeTime',
+                title: '执行时间',
+                minWidth: 130,
+                templet: function (d) {
+                    return d.orderExeTime ? util.toDateString(d.orderExeTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }, {
+                field: 'treatFinishFlag',
+                title: '治疗完成标志',
+                minWidth: 100,
+                templet: function (d) {
+                    return dicTreatFinishFlag[d.treatFinishFlag] || '';
+                }
+            }]], done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                treatDicTypeId: '',
+                treatMeasures: '',
+                cureBodyPart: '',
+                therapyMethod: '',
+                therapyTimeBegin: '',
+                therapyTimeEnd: ''
+            }, common.serializeObject($('#treatRecord_queryForm')));
+        }
+
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('treatRecord_ListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('treatRecord_queryForm');
+        })
+
+        //表格设置
+        var treatRecord_ListGrid = table.render($.extend(basePageTable, {
+            elem: '#treatRecord_ListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/surgery/treatRecordPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field: 'treatDicTypeId',
+                title: '治疗类型',
+                minWidth: 100,
+                templet: function (d) {
+                    return dicTreatDicTypeId[d.dicTreatDicTypeId] || '';
+                }
+            }, {
+                field: 'treatDicCode',
+                title: '治疗项目',
+                minWidth: 100
+            }, {
+                field: 'treatMeasures',
+                title: '治疗措施',
+                minWidth: 100
+            }, {
+                field: 'cureBodyPart',
+                title: '治疗部位',
+                minWidth: 100
+            }, {
+                field: 'therapyMethod',
+                title: '理疗方法',
+
+            }, {
+                field: 'therapyTotalTime',
+                title: '治疗用时',
+
+            }, {
+                field: 'therapyDosage',
+                title: '治疗用量',
+
+            }, {
+                field: 'therapyFrequency',
+                title: '治疗频次',
+
+            }, {
+                field: 'therapyReaction',
+                title: '治疗反应',
+
+            }, {
+                field: 'therapyResult',
+                title: '治疗结果',
+
+            }, {
+                field: 'therapyNote',
+                title: '治疗处置注意事项',
+
+            }, {
+                title: '治疗时间',
+                width: 150,
+                templet: function (d) {
+                    return d.therapyTime ? util.toDateString(d.therapyTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }]], done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>
+</body>
+</html>

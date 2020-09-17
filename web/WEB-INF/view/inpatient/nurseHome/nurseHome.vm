@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .layui-form-label {
+            padding-left: 0px;
+        }
+
+        #queryForm {
+            background: #fdfdfd;
+            border-bottom: 1px solid #dddddd;
+            /*padding-right: 90px;*/
+        }
+
+        /* #nurseLevel_0 + div i{ background-color:#000;color:#fff } */
+
+        /*导航*/
+        .layui-tab-content {
+            padding: 0;
+            height: calc(100% - 52px)
+        }
+
+        .layui-tab-card {
+            border: 0;
+            border-radius: 0;
+            box-shadow: inherit
+        }
+
+        .layui-tab-title.btn {
+            padding: 10px 10px 5px;
+        }
+
+        /*开始 tab 右侧按钮*/
+        .layui-tab > .layui-btn-container {
+            position: relative;
+            top: -36px;
+            float: right;
+            height: 0;
+        }
+
+        /*结束 tab 右侧按钮*/
+    </style>
+</head>
+
+<body>
+<div class="full-height">
+    #formHiddenInput("" "" "id='temp_inhospitalId'")
+    #formHiddenInput("" "" "id='temp_bedNo'")
+    #formHiddenInput("" "" "id='temp_inhospitalNo'")
+    #formHiddenInput("" "" "id='temp_bedUsageFlag'")
+    <form class="layui-form p-t-n" id="queryForm">
+        <div class="layui-row-query search-term p-b-n p-t-xs">
+            <div class="layui-form-item ">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()住院病区</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelect("currentWardId" "" $!wardMap "id='currentWardId' lay-filter='currentWardId' ")
+                    </div>
+                </div>
+                <div class="layui-inline" for-tab="allocatedBed,leaveHospitalPatient">
+                    <label class="layui-form-label">入院时间</label>
+                    <div class="layui-input-inline input-inline-long" style="width:180px;">
+                        #formTextInput("" "" "class='layui-input layer-date' tag='inhospitalDateBegin,inhospitalDateEnd' id='inhospitalDate' autocomplete='off' placeholder='入院时间范围' ")
+                    </div>
+                </div>
+                <div class="layui-inline layui-hide" for-tab="leaveHospitalPatient">
+                    <label class="layui-form-label">出院时间</label>
+                    <div class="layui-input-inline input-inline-long" style="width:180px;">
+                        #formTextInput("" "" "class='layui-input layer-date ' tag='outhospitalDateBegin,outhospitalDateEnd' id='outhospitalDate' autocomplete='off' placeholder='出院时间范围' ")
+                    </div>
+                </div>
+                <div class="layui-inline" for-tab="allocatedBed,leaveHospitalPatient">
+                    <label class="layui-form-label">责任护士</label>
+                    <div class="layui-input-inline input-inline-short">
+                        #formSingleSelectFirstNone("dutyNurserRange" "" $!dicData.dicDutyNurserRange "id='dutyNurserRange' lay-filter='dutyNurserRange' " "全部")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">床位号</label>
+                    <div class="layui-input-inline input-inline-short">
+                        #formTextInput("currentBedNo" "" " class='layui-input' id='q_currentBedNo' autocomplete='off'")
+                    </div>
+                </div>
+                <div class="layui-inline" for-tab="allocatedBed,leaveHospitalPatient">
+                    <div class="layui-input-inline wd-220">
+                        #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/住院流水号/医保号/健康卡' lay-tips='姓名/电话/身份证/就诊卡号/住院流水号/社保号/健康卡查询'")
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                    <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline" for-tab="allocatedBed" placeholder="">
+                <div class="layui-inline">
+                    <label class="layui-form-label">护理级别</label>
+                    <div class="layui-input-inline input-inline-auto">
+                        #formCheckboxeGroup("nurseLevels" "" $!dicData.dicNurseLevel "lay-skin='primary' lay-filter='nurseLevels'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">患者情况</label>
+                    <div class="layui-input-inline input-inline-auto">
+                        #formCheckboxeGroup("inpatientConditions" "" $!dicData.dicPatientCondition "lay-skin='primary' lay-filter='inpatientConditions'")
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline" for-tab="allocatedBed" placeholder="">
+                <div class="layui-inline">
+                    <label class="layui-form-label">在院状态</label>
+                    <div class="layui-input-inline input-inline-auto">
+                        #set($inhospitalStates=["$!{CONST.AppConstants.INHOSPITAL_STATE_IN}", "$!{CONST.AppConstants.INHOSPITAL_STATE_PASS_OUT}", "$!{CONST.AppConstants.INHOSPITAL_STATE_CONFIRM_OUT}",
+                        "$!{CONST.AppConstants.INHOSPITAL_STATE_EXPECT_BALANCE}", "$!{CONST.AppConstants.INHOSPITAL_STATE_UNBALANCEED}"])
+                        #formCheckboxeGroup("inhospitalStates" $inhospitalStates $!dicData.dicInhospitalStatePatient "lay-skin='primary' lay-filter='inhospitalStates'")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="nurseHome-content">
+        <div class="layui-tab layui-tab-card full-height m-n" lay-filter="nurseNav">
+            <ul class="layui-tab-title btn">
+                <li tab="allocatedBed" class="layui-this" lay-attr="../inpatient/nurseWardList.do">已分配床位</li>
+                <li tab="unallocatedBed" lay-attr="../inpatient/nurseEmptyWardList.do">未分配床位</li>
+                <li tab="leaveHospitalPatient" lay-attr="../inpatient/leaveHospitalPatientList.do">出院患者</li>
+            </ul>
+            <div class='layui-btn-container' id="btn-group" style="margin-right: 60px">
+                <button type="button" id="changeOfficeBed" class="layui-btn layui-btn-sm " for-tab="allocatedBed">转 科</button>
+                <button type="button" id="changeBed" class="layui-btn layui-btn-sm " for-tab="allocatedBed">换 床</button>
+                <button type="button" id="btn_backInHospital" class="layui-btn layui-btn-sm " for-tab="allocatedBed">取消入科</button>
+                <button type="button" id="leaveHospital" class="layui-btn layui-btn-sm layui-btn-danger" for-tab="allocatedBed">出院办理</button>
+                <button type="button" id="arrangeBed" class="layui-btn layui-btn-sm layui-hide" for-tab="unallocatedBed">分配床位</button>
+            </div>
+            <div class="view-show layui-btn-container" for-tab="allocatedBed">
+                <button class="layui-btn layui-btn-normal layui-btn-sm "  data-model="fluid" lay-tips="列表式">
+                    <i class="layui-icon layui-icon-align-left"></i>
+                </button>
+                <button class="layui-btn layui-btn-normal layui-btn-sm layui-hide" data-model="table"  lay-tips="平铺式">
+                    <i class="layui-icon layui-icon-user"></i>
+                </button>
+            </div>
+            <div class="layui-tab-content">
+                <div tab="allocatedBed" class="layui-tab-item full-height layui-show">
+                    <iframe id="inpatientList" mode-id="listMode" #iframeAttr></iframe>
+                </div>
+                <div tab="unallocatedBed" class="layui-tab-item full-height ">
+                    <iframe #iframeAttr></iframe>
+                </div>
+                <div tab="leaveHospitalPatient" class="layui-tab-item full-height ">
+                    <iframe #iframeAttr></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./inpatient/nurseHome/nurseHome.js.vm")
+
+</html>

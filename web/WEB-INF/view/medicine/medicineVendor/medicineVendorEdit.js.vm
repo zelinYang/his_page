@@ -1,0 +1,28 @@
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl;
+
+        common.verify(form)
+
+        //提交表单
+        function saveMedicineVendor() {
+            var basDicTypeParams = common.serializeObject($('#medicineVendorForm'))
+            var url = contextPath + '/medicine/saveMedicineVendor.jo';
+            common.requestServerHandler(url, basDicTypeParams, "保存成功", function (result) {
+                $('#btn_query', window.parent.document).click()
+                var index = parent.layer.getFrameIndex(window.name)
+                parent.layer.close(index)
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveMedicineVendor()
+            return false
+        })
+    })
+</script>

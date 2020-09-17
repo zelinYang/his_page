@@ -1,0 +1,56 @@
+  <script>
+  layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).use(['form','layer'], function(){
+      var form = layui.form;
+      if ("" == $("#emrTlpClassifyId").val()) {
+          $("#emrTlpClassifyId").val(parent.$("#emrTlpClassifyId").val());
+      }
+      if ("" == $("#emrTlpClassifyName").val()) {
+          $("#emrTlpClassifyName").val(parent.$("#emrTlpClassifyName").val());
+      }
+      //选择电子病历模板类型
+      $('#emrTlpClassifyName').click(function() {
+          layer.open({
+              type: 2
+              ,title: '选择病历类别'
+              ,content: '../emr/emrTlpClassifySelectTree.do'
+              ,area: ['300px', '400px']
+              ,btn: ['确定', '取消','清空']
+              ,yes: function(index, layero){
+                var iframeWindow = window['layui-layer-iframe'+ index]
+                  ,submitID = 'LAY-emr-classify-submit'
+                  ,submit = layero.find('iframe').contents().find('#'+ submitID);
+                //监听提交
+                iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                  var field = data.field; //获取提交的字段
+                  console.log(field);
+                  $('#emrTlpClassifyId').val(field.emrTlpClassifyId);
+                  $('#emrTlpClassifyName').val(field.emrTlpClassifyName);
+                  layer.close(index);
+                });
+
+                submit.trigger('click');
+              }
+              ,btn3: function(index, layero){
+                $('#emrTlpClassifyId').val(null);
+                $('#emrTlpClassifyName').val(null);
+              }
+          });
+      });
+
+      //根据是否单项否决项显示或隐藏乙类和丙类的达标数量
+      form.on('radio(negateFlag)', function(data) {
+          if (data.value == "1") {
+              $("#negativeNumDiv").css("display", "inline");
+              $("#twoNegativeNum").val("").attr("lay-verify", "required");
+              $("#threeNegativeNum").val("").attr("lay-verify", "required");
+          } else {
+              $("#negativeNumDiv").css("display", "none");
+              $("#twoNegativeNum").val("0").attr("lay-verify", "");
+              $("#threeNegativeNum").val("0").attr("lay-verify", "");
+          }
+      });
+
+  })
+  </script>

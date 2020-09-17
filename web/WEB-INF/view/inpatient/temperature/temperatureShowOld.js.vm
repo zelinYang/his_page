@@ -1,0 +1,622 @@
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var weeksMap = JSON.parse('$dicTools.changeMapToJson($!weeksMap)');
+var Report;
+var reportViewer;
+
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+
+layui.use(['element','form','table','layer'], function(){
+    var table = layui.table;
+    var form = layui.form;
+    var layer = layui.layer;
+    
+    var inhospitalId = "$!inpatientInhospital.inhospitalId";
+    
+  /*   $("#btn_edit").click(function(){
+       var temperatureDate = $("#startTime").val();
+       parent.common.open(contextPath + '/inpatient/temperatureEdit.do?inhospitalId=' + inhospitalId + '&temperatureDate=' + today, '编辑三测单', {area:['700px','430px']});
+    }); */
+    
+    form.on("select(weekNo)",function(obj){
+        if(obj.value){
+	        $("#beginDate").val(obj.value);
+        }
+        loadReport(obj.value);
+    });
+    
+    //日期控件初始化
+    laydate.render({elem: '#beginDate', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+        //日期被选中事件
+        ,done: function (value, date, endDate){
+            var beginDate
+            if(date.year){
+                beginDate = date.year+"-"+date.month+"-"+date.date;
+                $("#beginDate").val(beginDate);
+                $("#weekNo").val("");
+                form.render("select");
+            }else{
+                $("#beginDate").val("");
+            }
+            loadReport(beginDate);
+        }
+    });
+    
+    
+    
+    /****** 体温单报表 ******/
+    var reportViewer = window.rubylong.grhtml5.insertReportViewer("temperatureReport", "../report/grf/temperatureChart2-5.grf", "");
+    reportViewer.reportPrepared = false; //指定报表生成需要加载报表模板
+    reportViewer.dataPrepared = false;   //指定报表生成需要加载报表数据 
+    Report = reportViewer.report;
+    //关联报表事件
+    Report.OnControlCustomDraw = OnControlCustomDraw;
+    
+    //停止报表，加载报表数据，并启动报表
+    var beginDate = $("#beginDate").val();
+    loadReport(beginDate);
+    
+    function loadReport(beginDate){
+        //停止报表
+        reportViewer.stop();
+        //加载数据
+        $.ajax({
+            type: "GET",
+            url: "../inpatient/temperatureChartData.do?inhospitalId=" + inhospitalId + "&beginDate=" + beginDate,
+            data: "",
+            success: function (data) {
+	            console.log(data);
+                if(data.code != -1){
+		            reportViewer.loadData(data);
+		            //启动报表运行
+		            reportViewer.start();
+                } else {
+                    common.alert(data.msg,"0");
+                }
+            }
+        });
+    }
+});
+
+
+function OnControlCustomDraw(Sender, Graphics){
+    if (Sender.Name == "sbTiWenDan")
+    {   
+        var Left = Graphics.Left;
+        var Top = Graphics.Top;
+        var Width = Graphics.Width-5;
+        var Height = Graphics.Height;
+        console.log("width:"+Width+"   height:"+Height);
+        var Bottom = Top + Height;
+        var Right = Left + Width;
+        
+        var Days = Report.ParameterByName("Days").AsInteger;     //天数
+        var BeginDateStr = Report.ParameterByName("BeginDate").AsString; //开始日期
+        var BeginDate = new Date(BeginDateStr); //不能用这个变量来赋值，会导致其改变。
+        var BeginHour = Report.ParameterByName("BeginHour").AsInteger; //开始小时
+        var HourSpan = 4; //每次之间小时间隔
+        var MaxTemp = 42; //最大温度
+        var MinTemp = 34; //最小温度
+        var TempScale = 5;   //1度的刻度数 
+        var HourScale = 24 / HourSpan; //每天的小时刻度数
+        var RowHeight = 20; //默认的行高度，底部文字行的高度
+        
+        var MaiBoColWidth = 34; //脉搏列的宽度
+        var TempColWidth = 60;  //温度列的宽度
+        var OutColWidth = 20;   //出量列的宽度
+        var BottomRows = 11;   //下部行数，不包括呼吸次数行
+        var TitleRowHeight = RowHeight + 10; //表头(脉搏、体温与小时文字)行高
+        var HuxiRowHeight = RowHeight + 10;  //呼吸行的高度
+        
+        var GridCols = Days * (24 / HourSpan);            //网格列数
+        var GridRows = (MaxTemp - MinTemp) * TempScale + 3; //网格行数，顶部多3行
+        var TitleTop = Top + RowHeight;                    //标题(即日期行)的上部位置
+        var HuxiBottom = Bottom; //呼吸行的底部位置
+        var GridLeft = Left + MaiBoColWidth + TempColWidth; //网格左边位置
+        var GridRight = Left + Width;                       //网格右边位置
+        var GridTop = TitleTop + TitleRowHeight;         //网格顶边位置      
+        var GridBottom = Bottom - HuxiRowHeight;     //网格底边位置      
+        var GridWidth = GridRight - GridLeft;            //网格的宽度    
+        var GridHeight = GridBottom - GridTop;           //网格的高度        
+        var GridRowHeight = GridHeight / GridRows;       //网格的行宽度    
+        var GridColWidth = GridWidth / GridCols;         //网格的列宽度   
+        
+        var SquareSize = 8;  //数据点的正方形区域边长
+
+        //var TextFormat = Report.Utility.CreateTextFormat();
+        //注意：一定要调用Clone方法，不然会影响到部件框本身的文字格式定义
+        var TextFormat = Sender.AsTextBox.TextFormat.Clone(); 
+        var TextFormat2 = TextFormat.Clone();
+
+        var i;
+        var j;
+        var x, y, w, h; //位置输出的左，上，宽，高变量
+        var x2; 
+        var w2;
+        var xPrior;
+        var yPrior;
+        var ColNo;
+        var val;
+        var OutText;
+
+        var Recordset = Report.DetailGrid.Recordset;
+        var riqi = Report.FieldByName("temperatureDate");
+        var times = Report.FieldByName("temperatureTimeSort");
+        var tiwen = Report.FieldByName("animalHeat");
+        var maibo = Report.FieldByName("pluse");
+        var huxi = Report.FieldByName("breathing");
+        var beizhu = Report.FieldByName("remark");
+        /*var tszl = Report.FieldByName("tszl");
+        var dbcs = Report.FieldByName("dbcs");
+        var cll = Report.FieldByName("cll");
+        var ctl = Report.FieldByName("ctl");
+        var cyll = Report.FieldByName("cyll");
+        var cotl = Report.FieldByName("cotl");
+        var czl = Report.FieldByName("czl");
+        var rl = Report.FieldByName("rl");
+        var xueya = Report.FieldByName("xueya");
+        var tizhong = Report.FieldByName("tizhong");
+        var ssts = Report.FieldByName("ssts");*/
+
+        var TempDateParam = Report.ParameterByName("TempDate");
+        var TempHourParam = Report.ParameterByName("TempHour");
+        var TempFloatParam = Report.ParameterByName("TempFloat");
+        
+        //{{画表格黑色线//////////////////////////////////////////////////
+        Graphics.SelectPen(0.5, Report.Utility.ColorFromRGB(0, 0, 0), 0); //grpsSolid
+        
+        //首先画表格头横线
+        Graphics.MoveTo(Left, TitleTop);
+        Graphics.LineTo(GridRight, TitleTop);
+        Graphics.MoveTo(Left, GridTop);
+        Graphics.LineTo(GridRight, GridTop);
+        
+        //<<画底部的行线
+        //画呼吸次数下的行线
+        y = GridBottom;
+        Graphics.MoveTo(Left, y);
+        Graphics.LineTo(GridRight, y);
+        Graphics.MoveTo(Left, HuxiBottom);
+        Graphics.LineTo(GridRight, HuxiBottom);
+        /*
+        y = HuxiBottom;
+        for (i=0; i<BottomRows; ++i)
+        {
+            x = Left;
+            if (i>=3 && i<8)
+              x += OutColWidth;
+            Graphics.MoveTo(x, y);
+            Graphics.LineTo(GridRight, y);
+            y += RowHeight;
+        }
+        
+        //画"出量"列的竖线,奇怪，这里输出了出异常
+        x = Left + OutColWidth;
+        Graphics.MoveTo(x, HuxiBottom + RowHeight*2);
+        Graphics.LineTo(x, HuxiBottom + RowHeight*8);
+        //>>画底部的行线
+        */
+        //画前2列的竖线
+        x = Left + MaiBoColWidth;
+        Graphics.MoveTo(x, TitleTop);
+        Graphics.LineTo(x, GridBottom);
+        x += TempColWidth;
+        Graphics.MoveTo(x, Top);
+        Graphics.LineTo(x, HuxiBottom);
+        
+        Graphics.RestorePen();
+        //}}画表格黑色线//////////////////////////////////////////////////
+        
+        //{{画Grid的线段//////////////////////////////////////////////////
+        Graphics.SelectPen(0.5, Report.Utility.ColorFromRGB(0, 0, 0), 0); //grpsSolid
+        
+        //画细横线
+        y = GridTop + GridRowHeight;
+        for (i=1; i<GridRows; ++i)
+        {
+            if ((i+2)%TempScale != 0)
+            {
+                Graphics.MoveTo(GridLeft, y);
+                Graphics.LineTo(GridRight, y);
+            }
+            y += GridRowHeight;
+        }
+        
+        //画细竖线
+        x = GridLeft + GridColWidth;
+        for (i=1; i<GridCols; ++i)
+        {
+            if (i%HourScale != 0)
+            {
+                Graphics.MoveTo(x, TitleTop);
+                Graphics.LineTo(x, HuxiBottom);
+            }
+            x += GridColWidth;
+        }
+        
+        Graphics.RestorePen();
+        
+        //画粗横线
+        Graphics.SelectPen(1.5, Report.Utility.ColorFromRGB(0, 0, 0), 0);
+        y = GridTop + GridRowHeight*3;
+        for (i=3; i<GridRows; i+=TempScale)
+        {
+            Graphics.MoveTo(GridLeft, y);
+            Graphics.LineTo(GridRight, y);
+            y += GridRowHeight*TempScale;
+        }
+        Graphics.RestorePen();
+        
+        //画粗竖线
+        Graphics.SelectPen(1.5, Report.Utility.ColorFromRGB(255, 0, 0), 0);
+        x = GridLeft + GridColWidth*HourScale;
+        for (i=HourScale; i<GridCols; i+=HourScale)
+        {
+            Graphics.MoveTo(x, Top);
+            Graphics.LineTo(x, HuxiBottom);
+            x += GridColWidth*HourScale;
+        }
+        
+        Graphics.RestorePen();
+        //}}画Grid的线段//////////////////////////////////////////////////
+        
+        //{{输出静态文字//////////////////////////////////////////////////
+        //<<第一行,即日期行
+        x = Left;
+        y = Top;
+        w = GridLeft;
+        h = RowHeight;
+        Graphics.DrawText("日  期", x, y, w, h, 34, false);
+        var TempDate = new Date(BeginDateStr);
+        var year;
+        var month;
+        x = GridLeft;
+        w = GridColWidth * HourScale;
+        for (i=0; i<Days; ++i)
+        {
+            var DateText = "";
+            var cur_year = TempDate.getFullYear();
+            var cur_month = TempDate.getMonth()+1;
+            var cur_day = TempDate.getDate();
+            if (year != cur_year)
+            {
+                year = cur_year;
+                DateText = year + ".";
+            }
+            if (month != cur_month)
+            {
+                month = cur_month;
+                DateText += month + ".";
+            }
+            DateText += cur_day;
+            
+            Graphics.DrawText(DateText, x, y, w, h, 34, false);
+
+            x += w;
+            TempDate.setDate(cur_day+1);
+
+        }
+        //>>第一行,即日期行
+
+        //<<第二行,即脉搏、体温，小时行
+        x = Left;
+        y = TitleTop;
+        w = MaiBoColWidth;
+        h = TitleRowHeight;
+        Graphics.DrawText("脉搏", x, y, w, h, 34, false);
+
+        x = Left + MaiBoColWidth;
+        w = TempColWidth;
+        Graphics.DrawText("体  温", x, y, w, h, 34, false);
+
+        //小时,这里需要改小字体
+        var Font = Sender.Font.Clone(); //注意：一定要调用Clone方法，不然会影响到部件框本身的字体定义
+        Font.Point = 7.5;
+        Graphics.SelectFont( Font );
+        w = GridColWidth;
+        for (i=0; i<Days; ++i)
+        {
+            x = GridLeft + GridColWidth*i*HourScale;
+            TempHourParam.AsInteger = BeginHour;
+            for (j=0; j<HourScale; ++j)
+            {
+                TempHourParam.AsInteger = HourSpan*j;
+                OutText = TempHourParam.DisplayText;
+                Graphics.DrawText(OutText, x, y, w, h, 34, false);
+                x += GridColWidth;
+            }
+        }
+        Graphics.RestoreFont();
+        //>>第二行,即脉搏、体温，小时行
+
+        //<<脉搏文字列: 画出脉搏列的度量文字
+        Font.Point = 9; //7.5; //75000;
+        Graphics.SelectFont( Font );
+        Graphics.SelectTextColor( Report.Utility.ColorFromRGB(255, 0 ,0) );
+        x = Left;
+        w = MaiBoColWidth;
+        h = GridRowHeight*2;
+        y = GridTop + GridRowHeight*2;
+        TempHourParam.AsInteger = 180;
+        for (i=0; i<=MaxTemp-MinTemp; ++i)
+        {
+            var HourText = TempHourParam.DisplayText;
+            Graphics.DrawText(HourText, x, y, w, h, 34, false);
+            y += GridRowHeight*TempScale;
+            if (i+1 == MaxTemp-MinTemp)
+                y -= GridRowHeight;
+            TempHourParam.AsInteger -= 20;
+        }
+        Graphics.RestoreTextColor();
+        Graphics.RestoreFont();
+        //>>脉搏文字列: 画出脉搏列的度量文字
+
+        //<<体温文字列: 画出体温的度量文字
+        x = Left + MaiBoColWidth;
+        w = TempColWidth*3/5;
+        h = GridRowHeight*2;
+        y = GridTop;
+        x2 = x + w; 
+        w2 = TempColWidth - w;
+        Graphics.DrawText("F", x, y, w, h, 34, false);
+        Graphics.DrawText("C", x2, y, w2, h, 34, false);
+
+        y += h;
+        for (i=MaxTemp; i>=MinTemp; --i)
+        {
+            TempFloatParam.AsFloat = i*1.8 + 32;    // ℃ × 1.8 + 32
+            OutText = TempFloatParam.DisplayText;
+            Graphics.DrawText(OutText, x+8, y, w, h, 34, false);
+
+            TempFloatParam.AsFloat = i;
+            OutText = TempFloatParam.DisplayText;
+            Graphics.DrawText(OutText, x2+8, y, w2, h, 34, false);
+
+            y += GridRowHeight*TempScale;
+            if (i-1 == MinTemp)
+                y -= GridRowHeight;
+        }
+        //>>体温文字列: 画出体温的度量文字
+        //}}输出静态文字//////////////////////////////////////////////////
+
+        //{{输出动态数据//////////////////
+        //呼吸次数前面文字
+        x = Left;
+        y = GridBottom;
+        w = MaiBoColWidth + TempColWidth;
+        h = HuxiRowHeight;
+        Graphics.DrawText("呼吸(次/分)", x, y, w, h, 34, false);
+    
+        //输出呼吸次数与备注数据
+        Font.Point = 7; //7.5
+        Graphics.SelectFont( Font );
+        w = GridColWidth;
+        h = HuxiRowHeight / 2;
+        y = GridBottom;
+        Recordset.First();
+        var bgDate = new Date(BeginDateStr);
+        bgDate.setHours(0);
+        while ( !Recordset.Eof() )
+        {
+//            ColNo = (riqi.getDate() - BeginDate)*HourScale + times.AsInteger;
+            var tempDate = new Date(riqi.AsString);
+            tempDate.setHours(0);
+            var dayDif = Math.round((tempDate.getTime() - bgDate.getTime())/1000/60/60/24); //第一天到这条记录的天数差
+            ColNo = (dayDif)*HourScale + times.AsInteger;
+            x = GridLeft + GridColWidth*(ColNo-1);
+            val=huxi.AsInteger;
+            //呼吸次数数据
+            if (huxi.AsInteger > 0)
+            {
+                TempHourParam.AsInteger = huxi.AsInteger;
+                y = GridBottom;
+                if (ColNo%2 != 0)
+                    y += h;
+                OutText = TempHourParam.DisplayText;
+                Graphics.DrawText(OutText, x+1, y, w, h, 34, false);
+            }
+            
+
+            //输出备注文字数据
+            if ( !beizhu.IsNull ) //(OutText != "")
+            {
+                OutText = beizhu.AsString;
+                y = GridTop + 3*GridRowHeight + 2;
+                TextFormat.TextOrientation = 5; //grtoU2DL2R0 5 
+                TextFormat.TextAlign = 18; //grtaTopLeft=17  grtaTopCenter=18 
+                Graphics.DrawFormatText(OutText, x+1, y, w, GridHeight, TextFormat);
+            }
+
+            Recordset.Next();
+        }
+        Graphics.RestoreFont();
+
+
+        //<<输出脉搏图形
+        Graphics.SelectPen(1, Report.Utility.ColorFromRGB(255, 0, 0), 0);
+        Graphics.SelectFillColor( Report.Utility.ColorFromRGB(255, 0, 0) );
+        
+        xPrior = 0;
+        yPrior = 0;
+        Recordset.First();
+        while ( !Recordset.Eof() )
+        {
+            val = maibo.AsFloat;
+            if (val > 0)
+            {
+                
+                var tempDate = new Date(riqi.AsString);
+                tempDate.setHours(0);
+                var dayDif = Math.round((tempDate.getTime() - bgDate.getTime())/1000/60/60/24); //第一天到这条记录的天数差
+                ColNo = (dayDif)*HourScale + times.AsInteger;
+                x = GridLeft + GridColWidth*(ColNo-1) + GridColWidth/2;
+                y = GridTop + ((180.0 - val)*TempScale/20 + 3) * GridRowHeight;
+                //连线
+                if (xPrior > 0)
+                {
+                    Graphics.MoveTo(xPrior, yPrior);
+                    Graphics.LineTo(x, y);
+                }
+                xPrior = x;
+                yPrior = y;
+            }
+
+            Recordset.Next();
+        }
+        
+        Recordset.First();
+        while ( !Recordset.Eof() )
+        {
+            
+            val = maibo.AsFloat;
+            if (val > 0)
+            {
+                var tempDate = new Date(riqi.AsString);
+                tempDate.setHours(0);
+                var dayDif = Math.round((tempDate.getTime() - bgDate.getTime())/1000/60/60/24); //第一天到这条记录的天数差
+                ColNo = (dayDif)*HourScale + times.AsInteger;
+                x = GridLeft + GridColWidth*(ColNo-1) + GridColWidth/2;
+                y = GridTop + ((180.0 - val)*TempScale/20 + 3) * GridRowHeight;
+
+                Graphics.Ellipse(x-SquareSize/2, y-SquareSize/2, SquareSize, SquareSize, true);
+            }
+
+            Recordset.Next();
+        }
+        
+        Graphics.RestoreFillColor();
+        Graphics.RestorePen();
+        //>>输出脉搏图形
+
+        //<<输出体温图形
+        Graphics.SelectPen(1, Report.Utility.ColorFromRGB(0, 0, 0), 0);
+        
+        xPrior = 0;
+        yPrior = 0;
+        Recordset.First();
+        
+        while (!Recordset.Eof())
+        {
+            
+            val = tiwen.AsFloat;
+            if (val > 0)
+            {
+                var tempDate = new Date(riqi.AsString);
+                tempDate.setHours(0);
+                var dayDif = Math.round((tempDate.getTime() - bgDate.getTime())/1000/60/60/24); //第一天到这条记录的天数差
+                ColNo = (dayDif)*HourScale + times.AsInteger;
+                x = GridLeft + GridColWidth*(ColNo-1) + GridColWidth/2;
+                y = GridTop + ((MaxTemp - val)*TempScale + 3) * GridRowHeight;
+                //连线
+                y += SquareSize/2;
+                if (xPrior > 0)
+                {
+                    Graphics.MoveTo(xPrior, yPrior);
+                    Graphics.LineTo(x, y);
+                }
+                xPrior = x;
+                yPrior = y;
+            }
+
+            Recordset.Next();
+        }
+        
+        Recordset.First();
+        while ( !Recordset.Eof() )
+        {
+            val = tiwen.AsFloat;
+            if (val > 0)
+            {
+                var tempDate = new Date(riqi.AsString);
+                tempDate.setHours(0);
+                var dayDif = Math.round((tempDate.getTime() - bgDate.getTime())/1000/60/60/24); //第一天到这条记录的天数差
+                ColNo = (dayDif)*HourScale + times.AsInteger;
+                x = GridLeft + GridColWidth*(ColNo-1) + GridColWidth/2;
+                y = GridTop + ((MaxTemp - val)*TempScale + 3) * GridRowHeight;
+
+                x -= SquareSize/2; 
+                y -= SquareSize/2; 
+                Graphics.FillRect(x-1, y-1, SquareSize+2, SquareSize+2, Report.Utility.ColorFromRGB(255, 255, 255));
+                Graphics.MoveTo(x, y);
+                Graphics.LineTo(x+SquareSize, y+SquareSize);
+                Graphics.MoveTo(x+SquareSize, y);
+                Graphics.LineTo(x, y+SquareSize);
+            }
+
+            Recordset.Next();
+        }
+        Graphics.RestorePen();
+        //>>输出体温图形
+  
+        /*
+        //输出底部行的文字
+        x = Left;
+        y = HuxiBottom;
+        w = MaiBoColWidth + TempColWidth;
+        h = RowHeight;
+        x2 = x + OutColWidth;
+        w2 = w - OutColWidth;
+        Graphics.DrawFormatText("特 殊 治 疗", x, y + RowHeight*0, w, h, TextFormat2);
+        Graphics.DrawFormatText("大 便 次 数", x, y + RowHeight*1, w, h, TextFormat2);
+        Graphics.DrawFormatText("尿 量(毫升)", x2, y + RowHeight*2, w2, h, TextFormat2);
+        Graphics.DrawFormatText("痰 量(毫升)", x2, y + RowHeight*3, w2, h, TextFormat2);
+        Graphics.DrawFormatText("引流量(毫升)", x2, y + RowHeight*4, w2, h, TextFormat2);
+        Graphics.DrawFormatText("呕吐量(毫升)", x2, y + RowHeight*5, w2, h, TextFormat2);
+        Graphics.DrawFormatText("总 量(毫升)", x2, y + RowHeight*6, w2, h, TextFormat2);
+        Graphics.DrawFormatText("入 量(毫升)", x, y + RowHeight*7, w, h, TextFormat2);
+        Graphics.DrawFormatText("血压(mmHg)", x, y + RowHeight*8, w, h, TextFormat2);
+        Graphics.DrawFormatText("体 重(Kg)", x, y + RowHeight*9, w, h, TextFormat2);
+        Graphics.DrawFormatTextShrinkToFit("手术后天数(按需缩小显示)", x, y + RowHeight*10, w, h, TextFormat2); //这里目的是示例 DrawFormatTextShrinkToFit 方法的用法
+
+        x = Left;
+        y = HuxiBottom + RowHeight*2;
+        w = OutColWidth;
+        h = RowHeight*5;
+        TextFormat.TextOrientation = 5; //grtoU2DL2R0 5 
+        TextFormat.TextAlign = 17; //grtaTopLeft  17 
+        Graphics.DrawFormatText("出    量", x+4, y+20, w, GridHeight, TextFormat);
+
+
+        //输出体温图形
+        Recordset.First();
+        while ( !Recordset.Eof() )
+        {
+            //数据假设都是记录在每天的第一次数据上
+            if (times.AsInteger == 1)
+            {
+                x = GridLeft + GridColWidth * (riqi.AsInteger - BeginDate)*HourScale;
+                y = HuxiBottom;
+                w = GridColWidth * HourScale;
+                h = RowHeight;
+                if ( !tszl.IsNull )
+                    Graphics.DrawText(tszl.AsString, x, y + RowHeight*0, w, h, 34, false);
+                if ( !dbcs.IsNull )
+                    Graphics.DrawText(dbcs.AsString, x, y + RowHeight*1, w, h, 34, false);
+                if ( !cll.IsNull )
+                    Graphics.DrawText(cll.AsString, x, y + RowHeight*2, w, h, 34, false);
+                if ( !ctl.IsNull )
+                    Graphics.DrawText(ctl.AsString, x, y + RowHeight*3, w, h, 34, false);
+                if ( !cyll.IsNull )
+                    Graphics.DrawText(cyll.AsString, x, y + RowHeight*4, w, h, 34, false);
+                if ( !cotl.IsNull )
+                    Graphics.DrawText(cotl.AsString, x, y + RowHeight*5, w, h, 34, false);
+                if ( !czl.IsNull )
+                    Graphics.DrawText(czl.AsString, x, y + RowHeight*6, w, h, 34, false);
+                if ( !rl.IsNull )
+                    Graphics.DrawText(rl.AsString, x, y + RowHeight*7, w, h, 34, false);
+                if ( !xueya.IsNull )
+                    Graphics.DrawText(xueya.AsString, x, y + RowHeight*8, w, h, 34, false);
+                if ( !tizhong.IsNull )
+                    Graphics.DrawText(tizhong.AsString, x, y + RowHeight*9, w, h, 34, false);
+                if ( !ssts.IsNull )
+                    Graphics.DrawText(ssts.AsString, x, y + RowHeight*10, w, h, 34, false);
+            }
+
+            Recordset.Next();
+        }
+        */
+        //}}输出动态数据//////////////////
+    }
+}
+</script>

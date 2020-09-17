@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .dicType-search {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            cursor: pointer;
+        }
+        .dicType-search-.layui-input {
+            padding-right: 32px;
+        }
+    </style>
+</head>
+<body>
+    <form class="layui-form" lay-filter="" id="basDicForm" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("dicId" "$!{basDic.dicId}" " id='dicId'")
+        #formHiddenInput("dicTypeId" "$!{basDic.dicTypeId}$!{basDicType.dicTypeId}" " id='dicTypeId'")
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()字典名称</label>
+                <div class="layui-input-inline">#formTextInput("dicName" "$!{basDic.dicName}" " id='dicName' maxlength='50' lay-verify='required' autocomplete='off' placeholder='' class='layui-input unique'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()字典编码</label>
+                <div class="layui-input-inline">#formNotInChineseInput("dicCode" "$!{basDic.dicCode}" " lay-verify='required' lay-verify='required' maxlength='24' autocomplete='off' class='layui-input unique' ")
+
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()字典分类</label>
+                <div class="layui-input-inline">#formTextInput("dicTypeName" "$!{basDic.dicTypeName}$!{basDicType.dicTypeName}" " id='dicTypeName' disabled lay-verify='required' ts-selected='$!{basDic.dicTypeId}$!{basDicType.dicTypeId}' maxlength='50' autocomplete='off' class='layui-input' style='padding-right: 32px;'")
+                    <i class="layui-icon layui-icon-more dicType-search" title="选择字典分类"></i>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">排序号</label>
+                <div class="layui-input-inline">#formNotInChineseInput("treeSort" "$!{basDic.treeSort}" " id='treeSort' maxlength='18' autocomplete='off' class='layui-input'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">评分分值</label>
+                <div class="layui-input-inline">#formFloInput("dicScore" "$!{basDic.dicScore}" " maxlength='2' autocomplete='off' class='layui-input'")</div>
+            </div>
+        #if(${basDic})
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()是否有效</label>
+                <div class="layui-input-block" id="validFlag">#formRadioGroup("validFlag" "$!{basDic.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+            </div>
+              #end
+        </div>
+      
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">注释</label>
+            <div class="layui-input-inline " style="width: 440px;">#formTextarea("dicNote" "#htmlEscape($!{basDic.dicNote})" "id='dicNote' class='layui-textarea' maxlength='100' placeholder='请输入内容，字数最多100字'")</div>
+        </div>
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+        </div>
+    </form>
+    #parse("./bas/basDic/basDicEdit.js.vm")
+</body>
+</html>

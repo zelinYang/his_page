@@ -1,0 +1,240 @@
+<html>
+<head>
+    <title>医院等级评审 （日常统计学评价）辅助系统 - 运行监测</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./datacenter/hospitalReview/datacenter.css.vm")
+</head>
+<body layadmin-themealias="default">
+<div class="dataDisplay">
+  <div class="dataDisplay-head">
+    <div class="title">医院运营基本监测指标</div>
+    <div class="layui-form">
+      <div class="layui-form-item">
+        <div class="layui-inline">
+          <label class="layui-form-label">当前日期</label>
+          <div class="layui-input-inline">
+            <div id="currentDate"></div>
+          </div>
+        </div>
+        <div class="layui-inline">
+          <label class="layui-form-label">科室</label>
+          <div class="layui-input-inline">
+            <div id="officeIds"></div>
+          </div>
+        </div>
+        <div class="layui-inline">
+          <label class="layui-form-label">医生</label>
+          <div class="layui-input-inline">
+            <div id="doctorIds"></div>
+          </div>
+        </div>
+        <div class="layui-inline">
+          <button class="layui-btn layui-btn-sm" lay-submit="" lay-filter="btn_query" id="btn_query">
+            <i class="layui-icon layui-icon-search  "></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="layui-row dataDisplay-body layui-col-space1">
+    <div>
+      <div class="layui-col-md6 ">
+        <div class="layadmin-contact-box" style="height: 350px">
+          <iframe name="body-iframe"
+                  src="http://192.168.0.47:8080/RDP-SERVER/bddpshow/show/869bb534d9e1ac306337944908941ef7"
+                  frameborder="0" class="layadmin-iframe" scrolling="no"></iframe>
+        </div>
+      </div>
+      <div class="layui-col-md6 ">
+        <div class="layadmin-contact-box" style="height: 350px">
+          <iframe name="body-iframe"
+                  src="http://192.168.0.47:8080/RDP-SERVER/rdppage/main/493ba9b5e4e2511e100a09090721e3c8"
+                  frameborder="0" class="layadmin-iframe" scrolling="no"></iframe>
+        </div>
+      </div>
+      <div class="layui-col-md6 ">
+        <div class="layadmin-contact-box" style="height: 350px">
+          <iframe name="body-iframe"
+                  src="http://192.168.0.47:8080/RDP-SERVER/rdppage/main/90ee7fc977a12dd33bdde0df87613115"
+                  frameborder="0" class="layadmin-iframe" scrolling="no"></iframe>
+        </div>
+      </div>
+      <div class="layui-col-md6 ">
+        <div class="layadmin-contact-box" style="height: 350px">
+          <iframe name="body-iframe"
+                  src="http://192.168.0.47:8080/RDP-SERVER/rdppage/main/3da7180291385516cdac38233a8c01c9"
+                  frameborder="0" class="layadmin-iframe" scrolling="no"></iframe>
+        </div>
+      </div>
+      <div class="layui-col-md12">
+        <div class="layadmin-contact-box" style="height: 350px">
+          <iframe name="body-iframe"
+                  src="http://192.168.0.47:8080/RDP-SERVER/rdppage/main/f58aea0c5a7a37eff25bea0accc5dd6e"
+                  frameborder="0" class="layadmin-iframe" scrolling="no"></iframe>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index', //主入口模块
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'laydate', 'xmSelect', 'util'], function () {
+        var form = layui.form, laydate = layui.laydate, xmSelect = layui.xmSelect, util = layui.util;
+        //当前日期
+        var currentDate = xmSelect.render({
+            el: '#currentDate',
+            size: 'small',
+            theme: {
+                color: '#1E9FFF'
+            },
+            content: '<div id="laydate" />',
+            height: 'auto',
+            model: {
+                label: {
+                    type: 'block',
+                    block: {
+                        //是否显示删除图标
+                        showIcon: false,
+                    }
+                }
+            },
+            name: 'currentDate',
+            layVerify: 'required'
+        })
+        laydate.render({
+            elem: '#laydate',
+            position: 'static',
+            theme: '#1E9FFF',
+            showBottom: false,
+            max: 0,
+            value: new Date(),
+            done: function (date) {
+                currentDate.update({
+                    data: [{
+                        name: date,
+                        value: date,
+                        selected: true,
+                    }]
+                })
+            },
+            ready: function () {
+                this.done(util.toDateString(this.value, this.format));
+            }
+        })
+
+        // 科室
+        var officeIds = xmSelect.render({
+            el: '#officeIds',
+            size: 'small',
+            theme: {
+                color: '#1E9FFF'
+            },
+            toolbar: {
+                show: true
+            },
+            filterable: true,
+            model: {
+                label: {
+                    type: 'block',
+                    block: {
+                        //最大显示数量, 0:不限制
+                        showCount: 1,
+                        //是否显示删除图标
+                        showIcon: false,
+                    }
+                }
+            },
+            name: 'officeIds'
+            , on: function (data) {
+                //arr:  当前多选已选中的数据
+                var arr = data.arr;
+                var officeData = Boolean(arr.length) ? arr : officeIds.options.data;
+                var doctorData = $.map(officeData, function (item) {
+                    return item.data;
+                });
+                doctorIds.update({
+                    data: doctorData,
+                    tips: '所有值（' + (doctorData.length + 1) + '）',
+                })
+            },
+        })
+
+        // 医生
+        var doctorIds = xmSelect.render({
+            el: '#doctorIds',
+            size: 'small',
+            theme: {
+                color: '#1E9FFF'
+            },
+            toolbar: {
+                show: true
+            },
+            filterable: true,
+            model: {
+                label: {
+                    type: 'block',
+                    block: {
+                        //最大显示数量, 0:不限制
+                        showCount: 1,
+                        //是否显示删除图标
+                        showIcon: false,
+                    }
+                }
+            },
+            name: 'doctorIds'
+        });
+
+        /**
+         *  获取科室医生数据
+         * */
+        $.ajax({
+            type: "post",
+            url: contextPath + '/datacenter/selectOfficeDoctorListData.jo',
+            success: function (result) {
+                var officeData = result.data;
+                officeIds.update({
+                    data: officeData,
+                    tips: '所有值（' + (officeData.length + 1) + '）',
+                });
+                var doctorData = $.map(officeData, function (item) {
+                    return item.data;
+                });
+                doctorIds.update({
+                    data: doctorData,
+                    tips: '所有值（' + (doctorData.length + 1) + '）',
+                })
+            }
+        });
+
+        //监听查询
+        form.on('submit(btn_query)', function (data) {
+            /*$.ajax({
+                type: "post",
+                url: contextPath + '/datacenter/resourceAllocation.jo',
+                data: data.field,
+                success: function (result) {
+                    var resourceAllocationList = result.data["resourceAllocationList"];
+                    if (resourceAllocationList) {
+                        $("#resourceAllocationList").html($.map(resourceAllocationList, function (item) {
+                            return '<tr><td>' + item.name + '</td><td>' + item.currentValue + '</td></tr>';
+                        }));
+                    }
+                    console.log(result)
+                }
+            });*/
+            return false;
+        });
+        $("#btn_query").click();
+    });
+</script>
+
+</body>
+</html>

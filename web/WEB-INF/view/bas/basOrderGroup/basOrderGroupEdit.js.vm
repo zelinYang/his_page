@@ -1,0 +1,587 @@
+<script type="text/javascript">
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var medicineRowSelect;
+    var removeTrOrderItem;
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+    var firstMedicineTypeMaps = JSON.parse('$dicTools.changeMapToJson($firstMedicineTypeMaps)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)'); //药品数量单位
+    var dicPharmacyFreqDayFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqDayFreq)'); //用药频率对应的数量
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)'); //药品类型
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');//药房名称
+    var dicPharmacyFreq  = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');//给药频次
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');//给药途径
+    var mapRecipePharmacy = JSON.parse('$dicTools.changeMapToJson($recipePharmacyMap)');//处方id=药房名称
+	var dicPharmacyFreqDayFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqDayFreq)'); //用药频率对应的数量
+
+    //显示Popover
+    function initShowMedicineNamePopover(dom) {
+		var settings = $.extend({}, medicineIframeSettings);
+		// 选择药品
+		initPopover(dom, settings, 'queryMedicine');
+    }
+
+    layui.use(['form', 'table', 'laydate', 'element'], function(){
+        var table = layui.table,  element = layui.element,laydate = layui.laydate,form = layui.form;
+        element.render();
+        form.verify({});
+
+        //监听提交
+        form.on('submit(btn_save)', function(data){
+            saveBasOrderGroup();
+            return false;
+        });
+
+		//页面初始化
+		$(function() {
+			setTableHgt();
+			checkCommonMedicineFlagChange();
+			initShowMedicineNamePopover($(".tbody-data tr td input[name=orderName]"));
+			initDosageChange();
+			bindCountChangeEvent();//频次选择事件
+			//药物使用途径
+			loadSelectGroup('doseWayCode');
+			activeTrFun($('.table-data .tbody-data tr td input[name=orderName]'));
+			$('#btn_add').click(function() {
+				addTr();
+			});
+
+			//行按钮添加行
+			$(".table-data .tbody-data tr").find('.btn_add_tr').click(function () {
+				addTr('', $(this).parents('tr'));
+			});
+		});
+
+		//根据name 归类下拉框
+		function loadSelectGroup(name) {
+			var selectElem = $('select[name=' + name + ']');
+			//多个选项组合
+			selectElem.children('option').each(function () {
+				var options = $(this).siblings('[value^="'+ $(this).val() + '"]');
+				if(options.length > 0) {
+					$('<optgroup value="'+ $(this).val() +'" label="'+ $(this).text() +'"></optgroup>').replaceAll(this).append(options);
+				}
+			});
+			//单个选项作为本身
+			selectElem.children('option').each(function () {
+				if($(this).val()) {
+					$('<optgroup value="' + $(this).val() + '" label="' + $(this).text() + '"></optgroup>').replaceAll(this).append(this);
+				}
+			})
+			form.render();
+		}
+
+		//新增处方行
+		function addTr(item, mainTr){
+			console.log(mainTr);
+			if (mainTr) {
+				var sysGuid = $(mainTr).find('input[name="orderGroupNo"]').val();
+				buildChildTr(item, sysGuid, mainTr);
+			} else {
+				// 先从后台服务获取医嘱组号再新增子医嘱
+				common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result) {
+					if (!result.sysGuid) {
+						return;
+					}
+					buildChildTr(item, result.sysGuid, mainTr);
+				});
+			}
+		}
+
+		// 根据当前行清空数据
+        function emptyTr(elemTr) {
+            elemTr.find('input[name="chargeItemId"]').val("");
+            elemTr.find('input[name="medicineId"]').val("");//药品ID
+            elemTr.find('input[name="orderName"]').val("");//药品名称
+            elemTr.find('input[name="doctorOrderType"]').val("");//医嘱项目类型
+            elemTr.find('input[name="medicineRecipeClassify"]').val("");//药品名称
+            elemTr.find('input[name="antibiosisLockFlag"]').val("");
+            elemTr.find('input[name="antibioticFlag"]').val("");
+            elemTr.find('input[name="drugTherapyType"]').val("");
+            elemTr.find('input[name="injectionFlag"]').val("");
+            elemTr.find('input[name="medicineGrade"]').val("");
+            elemTr.find('input[name="medicineFlag"]').val("");
+            elemTr.find('input[name="producingAreaId"]').val("");
+            elemTr.find('input[name="riskMedicineFlag"]').val("");
+            elemTr.find('input[name="specialMedicineFlag"]').val("");
+            elemTr.find('input[name="transfuseFlag"]').val("");
+            //elemTr.find('select[name="medicineType"]').val("");//药品类型
+            elemTr.find('input[name="medicineSpec"]').val("");//规格
+            elemTr.find('input[name="perOrderCount"]').val("");
+            elemTr.find('input[name="minMedicineUnit"]').val("");
+            elemTr.find('input[name="minMedicineUnitText"]').val("");
+            elemTr.find('input[name="dosage"]').val("");//剂量单位
+            elemTr.find('input[name="dosageUnit"]').val("");//剂量单位
+            elemTr.find('input[name="dosageUnitText"]').val("");//剂量单位
+            elemTr.find('select[name="doseWayCode"]').val("");//
+            elemTr.find('select[name="pharmacyFreqId"]').val('qd');//
+            elemTr.find('input[name="usageQuantity"]').val("");//剂量数量
+            elemTr.find('select[name="orderDay"]').val("");
+            elemTr.find('input[name="giveTotalQuantity"]').val("");
+            elemTr.find('select[name="giveTotalQuantityUnit"]').html("");
+            elemTr.find('select[name="needSkinTestFlag"]').val("");
+            elemTr.find('input[name="medicineUnit"]').val("");
+            elemTr.find('input[name="medicineUnitText"]').val("");
+            elemTr.find('input[name="producingAreaId"]').val("");// 药物使用-总数量  使用总量 =1
+            elemTr.find('span[id="producingAreaIdText"]').text("");// 药物使用-总数量  使用总量 =1
+            elemTr.find('input[name="minRetailPrice"]').val("");// 药品单价-库存零售价
+            elemTr.find('input[name="retailPrice"]').val("");
+            elemTr.data('rowData',"");
+        }
+		function buildChildTr(item, sysGuid, mainTr) {
+			var newTr;
+			if (mainTr) {
+				newTr = $('.rowTpl').find('tr').clone();
+				var childTr = $(mainTr).nextAll().find('input[name="validFlag"][value="' + 1 + '"]').last().parents('tr');
+				if (childTr.length > 0) {
+					$(childTr).after(newTr);
+				} else {
+					$(mainTr).after(newTr);
+				}
+				$(newTr).find('input[name="orderGroupFlag"]').val('0');
+				console.log($(newTr).find('i.btn_add_tr'));
+				$(newTr).find('i.btn_add_tr').remove();
+			} else {
+				var newTbody = $('.rowTpl').find('tbody').clone();
+				$('.table-data').append(newTbody);
+				newTr = newTbody.find('tr');
+				$(newTr).find('input[name="orderGroupFlag"]').val('1');
+			}
+
+			$(newTr).find('input[name="orderGroupNo"]').val(sysGuid);
+
+			bindAddTr(newTr);
+
+			//数量变化事件
+			bindCountChangeEvent();
+			randerPlugins(newTr);
+            //监听药品类型并清空当前行数据
+            form.on('select(medicineType)', function (data){
+                var currentTr = $(this).parents('tr');
+                emptyTr(currentTr);
+                var elem = currentTr.find("td input[name='orderName']");
+                var settings = medicineIframeSettings;
+                var queryFun = 'queryMedicine';
+                if(data.value == 5) {
+                    settings = basChargeItemIframeSettings;
+                    queryFun = 'query';
+                }
+                elem.webuiPopover('destroy');
+                initPopover(elem, settings, queryFun);
+                activeTrFun();
+            });
+			initShowMedicineNamePopover(newTr.find('input[name=orderName]'));
+            activeTrFun();
+			//药物使用途径
+			loadSelectGroup('doseWayCode');
+		}
+
+		//绑定新增行
+		function bindAddTr(elem) {
+			elem.find('.btn_add_tr').click(function (){
+				addTr('', $(this).parents('tr'));
+			});
+		}
+
+        //获取处方明细数据列表 isCheckData=true:表示取选中的行，否则取否有行
+        function getOrderItemArray(isCheckData) {
+            var orderGroupItemCheckArray = [];
+            var recipeItemArray = common.buildTrInputJSON($('.table-data .tbody-data'));
+            $('.table-data .tbody-data tr').each(function(index, data) {
+                recipeItemArray[index].pharmacyFreqName = $(this).find('select[name=pharmacyFreqId]').find("option:selected").text();
+                recipeItemArray[index].doctorOrderType = $('#doctorOrderType').val();//01=药品
+                recipeItemArray[index].validFlag = Number($(this).find(':checkbox[name=validFlag]').is(':checked'))
+                recipeItemArray[index].showSort = index + 1;//排序
+                if ($(this).find('input[name=isCheck]').prop('checked')) {//如果checkBox选中
+                    orderGroupItemCheckArray.push(recipeItemArray[index]);
+                }
+            });
+            return isCheckData ? orderGroupItemCheckArray : recipeItemArray;
+        }
+
+        //计算单行总价
+        function calcItemTotalPrice(curTr) {
+            var perOrderCount = curTr.find('input[name=perOrderCount]').val();//每次数量
+            var dosage = curTr.find('input[name=dosage]').val();//药品数量
+            var pharmacyFreqId = curTr.find('select[name=pharmacyFreqId] option:selected').val();//频次id
+            var orderDay = curTr.find('select[name=orderDay] option:selected').val();//天数
+			if (!perOrderCount || !pharmacyFreqId ) {
+				return false;
+			}
+			var freqCount = dicPharmacyFreqDayFreq[pharmacyFreqId];//周频次对应的数量
+			var usageQuantity = parseFloat(perOrderCount) * parseFloat(dosage) * parseFloat(freqCount);
+			console.log(usageQuantity);
+			curTr.find('input[name=usageQuantity]').val(usageQuantity);//设置单行药品每日剂量
+
+			if (!orderDay ) {
+				return false;
+			}
+
+            var giveTotalQuantity = parseFloat(perOrderCount) * parseFloat(freqCount) * parseFloat(orderDay);
+			console.log(giveTotalQuantity);
+			curTr.find('input[name=giveTotalQuantity]').val(giveTotalQuantity);//总量
+        }
+
+        //通过剂量的值 取得 总量、总价等参数值
+        function initDosageChange() {
+            var orderItemTr =  $('.tbody-data tr');
+            orderItemTr.each(function(index) {
+                var curDosageElem = $(this).find('input[name=dosage]');
+                dosageChangeEvent(curDosageElem);
+            });
+        }
+
+        function dosageChangeEvent(curDosageElem) {
+            var dosage = curDosageElem.val();//药品数量
+            if (!dosage) return false;
+            var curTr = curDosageElem.parents('tr');
+            var medicineId = $.trim(curTr.find('input[name=medicineId]').val());
+            if(medicineId) {
+                var medicineIds = [medicineId];//药品ids
+                //根据药品ids查询药品信息、库存
+                var medicineInfoArray = selectRecipeMedicineInfo(medicineIds.join(','));
+                var medicineDosage = medicineInfoArray[0].medicineDosage;
+                var usageQuantity = parseFloat(dosage) / parseFloat(medicineDosage);//药品剂量
+                curDosageElem.siblings('input[name=usageQuantity]').val(usageQuantity);//设置药品数量
+            }
+            calcItemTotalPrice(curTr); //计算单行总价
+        }
+
+
+        //频次选择事件
+		 function bindCountChangeEvent() {
+            form.on('select(pharmacyFreqId)', function(data){
+                var curTr = $(data.elem).parents('tr');
+				console.log(curTr);
+                calcItemTotalPrice(curTr); //计算单行总数
+            });
+			$('.tbody-data tr input[name=perOrderCount]').each(function () {
+				console.log(1111);
+				$(this).on('input propertychange', function () {
+					var curTr = $(this).parents('tr');
+					console.log(curTr);
+					calcItemTotalPrice(curTr); //计算单行总数
+				});
+			});
+			//处方天数选择事件
+			form.on('select(orderDay)', function (data) {
+				var curTr = $(data.elem).parents('tr');
+				console.log(curTr);
+				calcItemTotalPrice(curTr); //计算单行总价
+			});
+			//总量单位选择事件
+			form.on('select(giveTotalQuantityUnit)', function (data) {
+				var curTr = $(data.elem).parents('tr');
+				calcItemTotalPrice(curTr); //计算单行总价
+			});
+        }
+
+        function activeTrFun() {
+            $('table tr td input[name=orderName]').click(function () {
+                currentTr = $(this).parents('tr');
+                $(this).parents('tr').addClass('active').parents('tbody').siblings().find('tr').removeClass('active');
+            });
+        }
+
+        //选择药品回调函数(库存药品)
+        medicineRowSelect = function(medicine) {
+            WebuiPopovers.hideAll();
+            var trActive = $('tr.active');
+            console.log(trActive);
+            var isExist = false;
+            //验证未保存的医嘱里是否存在相同药品 ，
+            $('.table-data .tbody-data tr input[name="orderItemId"]').each(function () {
+                var tr = $(this).parent().parent();
+                var medicineId = tr.find('input[name="medicineId"]').val();
+                if(medicineId == medicine.medicineId){
+                    isExist = true;
+                    return false;
+                }
+            });
+
+            if (isExist) {
+                common.msg('新增医嘱中所选药品已存在！', 0);
+                return false;
+            }
+			addTrData(medicine, trActive);
+            //插入行数据
+            ## if (drugstoreMedicineRel.medicineId) {
+            ##     common.requestServer('../medicine/getMedicineInfo.jo', {medicineId: drugstoreMedicineRel.medicineId}, function (result){
+            ##         if (null == result || null == result.data || null == result.data.medicine) {
+            ##             if (null != result.msg && "$!{CONST.AppConstants.RESULT_SUCCESS_CODE}" != result.code) {
+            ##                 common.alert(result.msg, iconType.warn);
+            ##             }
+            ##             return;
+            ##         }
+            ##         addTrData(result.data.medicine, trActive);
+			##
+            ##     });
+            ## }
+        }
+
+        //新增处方行数据
+        function addTrData(medicine, elemTr){
+			console.log(medicine);
+			console.log(elemTr);
+            if (!medicine) {
+                return false;
+            }
+            //插入行数据
+			elemTr.find('input[name="medicineId"]').val(medicine.medicineId);//药品ID
+            elemTr.find('input[name="orderName"]').val(medicine.medicineName);//药品名称
+			elemTr.find('input[name="doctorOrderType"]').val(medicine.doctorOrderType);//医嘱项目类型
+            elemTr.find('input[name="medicineRecipeClassify"]').val(medicine.medicineRecipeClassify);//药品名称
+            elemTr.find('input[name="antibiosisLockFlag"]').val(medicine.antibiosisLockFlag);
+            elemTr.find('input[name="antibioticFlag"]').val(medicine.antibioticLevel == '0'? '0': '1');
+            elemTr.find('input[name="drugTherapyType"]').val(medicine.drugTherapyType);
+            elemTr.find('input[name="injectionFlag"]').val(medicine.injectionFlag);
+            elemTr.find('input[name="medicineGrade"]').val(medicine.medicineGrade);
+            elemTr.find('input[name="medicineFlag"]').val(medicine.medicineFlag);
+            elemTr.find('input[name="producingAreaId"]').val(medicine.producingAreaId);
+            elemTr.find('input[name="riskMedicineFlag"]').val(medicine.riskMedicineFlag);
+            elemTr.find('input[name="specialMedicineFlag"]').val(medicine.specialMedicineFlag);
+            elemTr.find('input[name="transfuseFlag"]').val(medicine.transfuseFlag);
+			//elemTr.find('select[name="medicineType"]').val(medicine.medicineType);//药品类型
+			elemTr.find('input[name="medicineSpec"]').val(medicine.medicineSpec);//规格
+			elemTr.find('input[name="perOrderCount"]').val(1);
+			elemTr.find('input[name="minMedicineUnit"]').val(medicine.minMedicineUnit || '');
+			elemTr.find('input[name="minMedicineUnitText"]').val(dicDrugNumUnit[medicine.minMedicineUnit] || '');
+			elemTr.find('input[name="dosage"]').val(medicine.medicineDosage);//剂量单位
+			elemTr.find('input[name="dosageUnit"]').val(medicine.dosageUnit);//剂量单位
+			elemTr.find('input[name="dosageUnitText"]').val(dicDrugNumUnitDosageUnit[medicine.dosageUnit] || "");//剂量单位
+			elemTr.find('select[name="doseWayCode"]').val(medicine.doseWayCode);//
+			elemTr.find('select[name="pharmacyFreqId"]').val('qd');//
+			elemTr.find('input[name="usageQuantity"]').val(medicine.medicineDosage);//剂量数量
+			elemTr.find('select[name="orderDay"]').val(1);
+			elemTr.find('input[name="giveTotalQuantity"]').val(1);
+			var unitOptions = [];
+			if (medicine.outpatientUnpackFlag === '1') {
+				unitOptions.push('<option value="' + medicine.minMedicineUnit + '">' + dicDrugNumUnit[medicine.minMedicineUnit] + '</option>');
+			}
+			unitOptions.push('<option value="' + medicine.medicineUnit + '">' + dicDrugNumUnit[medicine.medicineUnit] + '</option>');
+			elemTr.find('select[name="giveTotalQuantityUnit"]').html(unitOptions.join(' '));
+			elemTr.find('select[name="needSkinTestFlag"]').val(medicine.needSkinTestFlag === '1'? '1': '0');
+			elemTr.find('input[name="medicineUnit"]').val(medicine.medicineUnit || '');
+			elemTr.find('input[name="medicineUnitText"]').val(dicDrugNumUnit[medicine.medicineUnit] || '');
+			elemTr.find('input[name="producingAreaId"]').val(medicine.producingAreaId);// 药物使用-总数量  使用总量 =1
+			elemTr.find('span[id="producingAreaIdText"]').text(dicProducingArea[medicine.producingAreaId] || "");// 药物使用-总数量  使用总量 =1
+			elemTr.find('input[name="minRetailPrice"]').val(medicine.minRetailPrice || '');// 药品单价-库存零售价
+			elemTr.find('input[name="retailPrice"]').val(medicine.retailPrice || '');
+            elemTr.data('rowData',medicine);
+            form.render();
+        }
+        //选择诊疗项目回调函数
+        window.basChargeItemRowSelect = function(basChargeItem) {
+            WebuiPopovers.hideAll();
+            var trActive = $('tr.active');
+            console.log(trActive);
+            var isExist = false;
+            //验证未保存的医嘱里是否存在相同药品 ，
+            $('.table-data .tbody-data tr input[name="orderItemId"]').each(function () {
+                var tr = $(this).parent().parent();
+                var chargeItemId = tr.find('input[name="chargeItemId"]').val();
+                if(chargeItemId == basChargeItem.chargeItemId){
+                    isExist = true;
+                    return false;
+                }
+            });
+
+            if (isExist) {
+                common.msg('新增医嘱中所选诊疗已存在！', 0);
+                return false;
+            }
+            addTrBasChargeItemData(basChargeItem, trActive);
+        }
+        //新增处方行数据
+        function addTrBasChargeItemData(basChargeItem, elemTr){
+            console.log(basChargeItem);
+            console.log(elemTr);
+            if (!basChargeItem) {
+                return false;
+            }
+            //插入行数据
+            elemTr.find('input[name="chargeItemId"]').val(basChargeItem.chargeItemId);
+            elemTr.find('input[name="medicineId"]').val("");//药品ID
+            elemTr.find('input[name="orderName"]').val(basChargeItem.chargeName);//药品名称
+            elemTr.find('input[name="doctorOrderType"]').val(basChargeItem.doctorOrderType);//医嘱项目类型
+            elemTr.find('input[name="medicineRecipeClassify"]').val(99);//药品处方分类 99=其他
+            elemTr.find('input[name="antibiosisLockFlag"]').val("");
+            elemTr.find('input[name="antibioticFlag"]').val("");
+            elemTr.find('input[name="drugTherapyType"]').val("");
+            elemTr.find('input[name="injectionFlag"]').val("");
+            elemTr.find('input[name="medicineGrade"]').val("");
+            elemTr.find('input[name="medicineFlag"]').val(NO_FLAG);
+            elemTr.find('input[name="producingAreaId"]').val("");
+            elemTr.find('input[name="riskMedicineFlag"]').val("");
+            elemTr.find('input[name="specialMedicineFlag"]').val("");
+            elemTr.find('input[name="transfuseFlag"]').val("");
+            //elemTr.find('select[name="medicineType"]').val("");//药品类型
+            elemTr.find('input[name="medicineSpec"]').val("");//规格
+            elemTr.find('input[name="perOrderCount"]').val(1);
+            elemTr.find('input[name="minMedicineUnit"]').val('');
+            elemTr.find('input[name="minMedicineUnitText"]').val("");
+            elemTr.find('input[name="dosage"]').val("");//剂量单位
+            elemTr.find('input[name="dosageUnit"]').val("");//剂量单位
+            elemTr.find('input[name="dosageUnitText"]').val("");//剂量单位
+            elemTr.find('select[name="doseWayCode"]').val("");//
+            elemTr.find('select[name="pharmacyFreqId"]').val('qd');//
+            elemTr.find('input[name="usageQuantity"]').val("");//剂量数量
+            elemTr.find('select[name="orderDay"]').val(1);
+            elemTr.find('input[name="giveTotalQuantity"]').val(1);
+            var unitOptions = ['<option value="' + basChargeItem.chargeItemUnit + '">' + dicDrugNumUnit[basChargeItem.chargeItemUnit] + '</option>'];
+            elemTr.find('select[name="giveTotalQuantityUnit"]').html(unitOptions.join(' '));
+            elemTr.find('select[name="giveTotalQuantityUnit"]').html("");
+            elemTr.find('select[name="needSkinTestFlag"]').val("");
+            elemTr.find('input[name="medicineUnit"]').val(basChargeItem.chargeItemUnit);
+            elemTr.find('input[name="medicineUnitText"]').val(dicDrugNumUnit[basChargeItem.chargeItemUnit] || '');
+            elemTr.find('input[name="producingAreaId"]').val("");// 药物使用-总数量  使用总量 =1
+            elemTr.find('span[id="producingAreaIdText"]').text("");// 药物使用-总数量  使用总量 =1
+            elemTr.find('input[name="minRetailPrice"]').val("");// 药品单价-库存零售价
+            elemTr.find('input[name="retailPrice"]').val(basChargeItem.unitPrice || '');
+            elemTr.data('rowData',basChargeItem);
+            form.render();
+        }
+        //选择处方的药品详细信息
+        function selectRecipeMedicineInfo(medicineIds) {
+            var recipeMedicineInfoArray = [];
+            $.ajax({
+                type: "POST",
+                url: '../outpatient/selectRecipeMedicineInfo.jo',
+                data: {medicineIds:medicineIds},
+                dataType:"json",
+                async:false,//同步 请求
+                success: function(data){ recipeMedicineInfoArray = data;},
+                error: function(res){jqueryPostError(res);}
+            });//ajax end
+            return recipeMedicineInfoArray;
+        }
+
+        //重新渲染插件
+        function randerPlugins(dom) {
+            element.init();
+            form.render();
+            activeTrFun(dom);//激活行
+        }
+
+        //常用药复选框 ，选中则修改值
+        function checkCommonMedicineFlagChange() {
+            form.on('checkbox(commonMedicineFlag)', function(data){
+                if(data.elem.checked){
+                    $(data.elem).val('1');
+                } else{
+                    $(data.elem).val('0');
+                }
+            });
+        }
+
+        // 提交表单
+        function saveBasOrderGroup() {
+            //表单参数
+            var basOrderGroupParams = common.seriElemObject('.order-group');
+            var recipeItemArray = getOrderItemArray();
+			console.log(recipeItemArray);
+            var pass = true;
+			$(recipeItemArray).each(function(index, data) {
+				if (!data.orderName) {
+					common.alert('第'+(index+1) +'行未选择项目', 0);
+					pass =  false;
+					return false;//跳出循环
+				}
+			});
+			if (!pass) {
+				return;
+            }
+            if (recipeItemArray.length > 0) {
+                basOrderGroupParams.itemJsonData = JSON.stringify(recipeItemArray);
+            }
+            var url = contextPath + '/bas/saveBasOrderGroup.jo', msg = "保存成功";
+            common.confirm('确认保存吗？', function () {
+				common.requestServerHandler(url, basOrderGroupParams, msg, function(result) {
+					if(parent.queryRecipeGroup){
+						//嘱套维护页面查询方法
+						parent.queryRecipeGroup();
+					}
+					if(parent.editRecipeGroup){
+						//嘱套维护页面查询方法
+						parent.editRecipeGroup(result.data.orderGroupId);
+					}
+					var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+					if(index){
+						parent.layer.close(index);
+					}
+				})
+			});
+        }//save function
+
+        //移除医嘱项行
+        removeTrOrderItem = function (btnElem) {
+			var orderItemIds = [];
+			var paidRecipeArr = [];
+			var content = '';
+			var trDoms = [];
+            var trDom = $(btnElem).parent().parent();
+            var orderGroupFlag = trDom.find('input[name="orderGroupFlag"]').val();
+            var orderGroupNo = trDom.find('input[name="orderGroupNo"]').val();
+			if (orderGroupFlag === '1') {
+				content = '选中的处方有主处方，删除主处方会将它的所有子厨房一起删除，';
+				trDom.parent().find('input[name="orderGroupNo"][value="' + orderGroupNo + '"]').each(function (index, dom) {
+					getOrderItemIdFromTrDom($(this).parent().parent(), orderItemIds, trDoms, paidRecipeArr)
+				});
+			} else {
+				getOrderItemIdFromTrDom(trDom, orderItemIds, trDoms, paidRecipeArr)
+			}
+			//删除处方
+			common.confirm(content + '确认删除吗？', function () {
+				delOrderItem(orderItemIds, trDoms);
+			});
+        }
+
+		function getOrderItemIdFromTrDom(trDom, orderItemIds, trDoms, paidRecipeArr) {
+			var orderItemId = trDom.find('input[name="orderItemId"]').val();
+			if (orderItemId && !orderItemIds.contains(orderItemId)) {
+				orderItemIds.push(orderItemId)
+			}
+			trDoms.push(trDom);
+			var payFeeFlag = trDom.find('input[name="payFeeFlag"]').val();
+			if (payFeeFlag !== '0') {
+				paidRecipeArr.push(trDom.find('input[name="orderName"]').val());
+			}
+		}
+
+        //删除组套明细
+        function delOrderItem(orderItemIds, trDoms) {
+			if (orderItemIds.length > 0) {
+				common.requestServer('../bas/deleteOrderItem.jo', {orderItemIds: orderItemIds.join(',')}, function (result) {
+					if (result.code === '0') {
+						common.msg(result.msg);
+						$.each(trDoms, function() {
+							$(this).remove();
+						});
+					} else {
+						common.alert(result.msg);
+					}
+				});
+			} else {
+				$.each(trDoms, function() {
+					$(this).remove();
+				});
+			}
+        }
+
+
+        // 获取表格高度
+        function setTableHgt() {
+            var height = $('body').height() - ($('.layui-card .layui-card-header').outerHeight() + $("#searchTerm").outerHeight() + $(".tool-bottom-fixed").outerHeight());
+            $("#searchTbody").css("height",height).css('overflow-x','scroll');
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            setTableHgt()
+        })
+
+    });//layui.use end
+
+
+</script>

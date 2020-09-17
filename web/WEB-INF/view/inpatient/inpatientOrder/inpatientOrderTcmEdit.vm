@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>草药处方</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2"></script>
+</head>
+<body class="white-bg">
+<div class="main" style="height: calc(100% - 40px)">
+    <div class="layui-col-xs3">
+        <form id="queryForm" class="layui-form-item search-form p-xs">
+            #formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+            #formHiddenInput("inhospitalId" "$!inhospitalId" " id='inhospitalId' ")
+            <div class="layui-btn-group">
+                <button class="layui-btn layui-btn-sm " lay-tips="刷新" id="btn_reset" style="margin-left: auto;">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                </button>
+            </div>
+        </form>
+        <table id="tcmOrder" class="layui-table layui-hide" lay-filter="tcmOrder" ></table>
+    </div>
+    <div class="layui-col-xs9 full-height">
+        <form id="tcmOrderForm" class="layui-form full-height p-t-xs">
+            <div class="main_top">
+                <div class="layui-form-item">
+                    #formHiddenInput("orderGroupNo" "$!orderGroupNo" " id='orderGroupNo' ")
+                    #formHiddenInput("" "" " id='orderState' ")
+                    #formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+                    #formHiddenInput("inhospitalId" "$!inhospitalId" " id='inhospitalId' ")
+                    #formHiddenInput("orderClassify" "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}" " id='orderClassify' ")
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag用法</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone( "herbUsageWay" "$!herbUsageWay" $dicData.dicHerbUsage "id='herbUsageWay' class='layui-input'" "")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag剂数</label>
+                        <div class="layui-input-inline">
+                            #if($!recipe.orderDay)
+                                #formIntInput("orderDay" "$!orderDay" "id='orderDay' class='layui-input' ")
+                  	        #else
+                                #formIntInput("orderDay" "7" "id='orderDay' class='layui-input' ")
+                            #end
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">医生说明</label>
+                        <div class="layui-input-inline" style="width: 439px;">
+                            #formTextInput("orderDesc" "$!orderDesc" "id='orderDesc' class='layui-input' ")
+                        </div>
+                    </div>
+                </div>
+            </div><!-- main_top -->
+            <div class="main-center">
+                <table class="layui-table" table-eidt style="min-width: 493px;">
+                    <colgroup>
+                        <col data-index="1" width="30">
+                        <col data-index="2" width="180">
+                        <col data-index="3" width="80">
+                        <col data-index="4" width="100">
+                        <col data-index="5" width="50">
+                        <col data-index="6" width="100">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th data-index="1"><i id="btn_add" class="layui-icon layui-icon-add-1 icon-btn"></i></th>
+                        <th data-index="2">医嘱内容</th>
+                        <th data-index="3">药品规格</th>
+                        <th data-index="4">#requiredTag每付剂量</th>
+                        <th data-index="5">单价</th>
+                        <th data-index="6">特殊煎法</th>
+                    </tr>
+                    </thead>
+                    <tbody class="tbody-data">
+                    </tbody>
+                </table>
+
+                <!-- 表格模板 -->
+                <table class="rowTpl layui-hide">
+                    <tbody>
+                    <tr class="trRow tplRow">
+                        <td data-index="1">
+                            <i class="layui-icon layui-icon-delete icon-btn icon-red  "
+                               onclick="removeTrRecipeItem(this)"></i>
+                            <i class="layui-icon layui-icon-ok icon-btn layui-hide"></i>
+                        </td>
+                        <td data-index="2">
+                            #formHiddenInput("orderId" "" "")
+                            #formHiddenInput("medicineId" "" "")
+                            #formHiddenInput("medicineType" "" "")
+                            #formTextInput( "orderName" "" "class='layui-input' autocomplete='off' ")
+                        </td>
+                        <td data-index="3">#formTextInput( "medicineSpec" "" "class='layui-input' readonly")</td>
+                        <td data-index="4">
+                            #formFloInput("dosage" "" "class='wd-80 edit-bg' maxlength='5'")
+                            #formHiddenInput("dosageUnit" "" "placeholder='单位' class='wd-30' readonly")
+                            #formTextInput("dosageUnitText" "" "placeholder='单位' class='wd-50' readonly")
+                        </td>
+                        <td data-index="5">
+                            #formTextInput("unitPrice" "" "class='layui-input' style='width: 100%;display: inline;' readOnly")
+                        </td>
+                        <td data-index="6">
+                            #formSingleSelectFirstNone("herbCookingCode" "" $dicData.dicHerbCooking "class='layui-input' style='border:0;' lay-filter='herbCookingCode'  " "")
+                            #formHiddenInput("pharmacyId" "" "class='layui-input' readonly")
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </form>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button class="layui-btn layui-btn-sm" type="button" id="btn_submit"> 保 存</button>
+        <button class="layui-btn layui-btn-sm" type="button" id="btn_save"> 保存并关闭</button>
+        <button class="layui-btn layui-btn-sm" type="button" id="btn_close" onclick="winClose()">关闭</button>
+    </div>
+</div><!-- main -->
+</body>
+<script>
+    var MEDICINE_TYPE_TCM_MEDICINE = "${CONST.AppConstants.MEDICINE_TYPE_TCM_MEDICINE}";
+    var ORDER_TYPE_TCM_MEDICINE = "${CONST.AppConstants.ORDER_TYPE_TCM_MEDICINE}";
+    var ORDER_STATE_CHECKED = "${CONST.AppConstants.ORDER_STATE_CHECKED}";
+    var removeTrOrderItem;//移除处方内容行
+    var medicineRowSelect;//选择药品回调函数(库存药品)
+    var saveTcmOrder;//保存处方
+    var tcmDiagnosisRowSelect;//中医证型诊断列表名称 row选择回调
+    var winClose;
+    var _this;//用于保存$(this)
+    var pharmacyStockRowSelect;
+
+    var iframeSettings = {
+        width: '60%',//医嘱名称内容propover 弹框参数
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../pharmacy/pharmacyStockPopover.do?medicineType='+ MEDICINE_TYPE_TCM_MEDICINE
+    };
+
+
+    layui.use(['jquery', 'table', 'laypage', 'element', 'form', 'util'], function () {
+        var layer = layui.layer;
+        var element = layui.element, table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var util = layui.util;
+        element.render();
+
+        //移除上级行
+        removeTrOrderItem = function (btnElem) {
+            $(btnElem).parent().parent().remove();
+        }
+
+        $("#btn_reset").click(function () {
+            location.reload();
+        })
+
+        var tableIns = table.render({
+            elem: '#tcmOrder'
+            ,id: 'tcmOrder'
+            ,defaultToolbar: []
+            ,height: 'full-81'//高度
+            ,url: '../inpatient/getTcmDiagnosisOrderList.jo' //数据接口
+            ,where:common.serializeObject($('#queryForm'))
+            ,limit:200
+            ,cellMinWidth : 80
+            ,request: {pageName: 'pageNumber' ,limitName: 'pageSize' }
+            ,cols: [[ //表头
+                {type:'numbers'}
+                ,{field : 'orderGroupNo', hide: true}
+                ,{field : 'makeOrderDate',title : '开方时间', templet: function (row) {
+                        return util.toDateString(row.inpatientOrders[0].makeOrderDate, 'yyyy-MM-dd HH:mm');
+                    }
+                }
+                ,{field : 'orderName',title : '名称',
+                    templet :function (row) {
+                        return row ? '中药处方' : "";
+                    }
+                }
+
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            ,done: function(res, curr, count){
+            }
+        });
+
+        table.on('row(tcmOrder)', function(obj){
+            var allTr = $('.tbody-data .trRow');
+            allTr.remove();
+            $("orderGroupNo").val(obj.data.orderGroupNo);
+            if(obj.data.inpatientOrders && obj.data.inpatientOrders.length > 0) {
+                var inpatientOrder = obj.data.inpatientOrders[0];
+                $("#herbUsageWay").val(inpatientOrder.herbUsageWay);
+                $("#orderDay").val(inpatientOrder.orderDay);
+                $("#orderDesc").val(inpatientOrder.orderDesc);
+            }
+            $(obj.data.inpatientOrders).each(function (i, v) {
+                addTr(v);
+            });
+
+            $('.tbody-data tr').each(function (index, data) {
+                $(this).find('.layui-icon-ok').removeClass('layui-hide');
+                $(this).find('.layui-icon-delete').addClass('layui-hide');
+            });
+
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //medicineUsage 药品用法，获取值需要处理
+        var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+        var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+        var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)'); //药品数量单位
+        var dicHerbCooking = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbCooking)');//中药煎法
+
+        //代煎复选框 ，选中则修改值
+        function checkTakeBoilFlagChange() {
+            form.on('checkbox(takeBoilFlag)', function (data) {
+                if (data.elem.checked) {
+                    $(data.elem).val('1');
+                } else {
+                    $(data.elem).val('0');
+                }
+            });
+        }
+
+        //ctrl + S 保存
+        document.onkeydown = function (e) {
+            var keyCode = e.keyCode || e.which || e.charCode;
+            var altKey = e.altKey
+            if (altKey && e.keyCode == 83) {
+                e.preventDefault()
+                $('#btn_save').click();
+            }
+        };
+
+
+        //中医证型诊断列表名称 row选择回调
+
+        $(document).ready(function () {
+            randerPlugins();//重新渲染插件
+            initSearchMedicineNamePopover();
+            initShowMedicineNamePopover();
+
+            //保存并关闭处方
+            $('#btn_save').click(function () {
+                _this = $(this);
+                saveTcmOrder();
+            });
+
+            //保存处方
+            $('#btn_submit').click(function () {
+                _this = $(this);
+                saveTcmOrder();
+            });
+
+            //新增行
+            $('#btn_add').click(function () {
+                addTr();
+            });
+
+            //表格高度
+            $('.main-center').height($('#tcmOrderForm').height() - $('.main_top').height() - 5)
+
+        });
+        $(window).resize(function () {
+            $('.main-center').height($('#tcmOrderForm').height() - $('.main_top').height() - 5)
+        })
+
+        getMedicineType = function () {
+            return $("input[name='medicineType']:checked").val();
+        }
+
+        winClose = function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+
+
+        //显示Popover
+        function initShowMedicineNamePopover() {
+            var inputBoxList = $(".tbody-data tr td input[name=orderName]");
+            inputBoxList.each(function (index) {
+                var elem = $(this);
+                elem.webuiPopover('destroy').webuiPopover($.extend({}, iframeSettings));
+            });
+        }
+
+        //绑定显示Popover
+        function bindShowMedicineNamePopover(elem) {
+            elem.webuiPopover('destroy').webuiPopover($.extend({}, iframeSettings));
+        }
+
+        //初始化搜索Popover
+        function initSearchMedicineNamePopover() {
+            $('input[name=orderName]').on('input propertychange', function () {
+                var popoverId = $(this).attr('data-target');
+                $('#' + popoverId + ' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+                $('#' + popoverId + ' iframe')[0].contentWindow.query(); //调用iframe的方法
+            });
+        }
+
+        //bind搜索Popover
+        function bindSearchMedicineNamePopover(elem) {
+            elem.on('input propertychange', function () {
+                var popoverId = $(this).attr('data-target');
+                $('#' + popoverId + ' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+                $('#' + popoverId + ' iframe')[0].contentWindow.query(); //调用iframe的方法
+            });
+        }
+
+
+        //保存数据到页面
+        saveTcmOrder = function () {
+            var btnId = _this.attr("id");//获取当前点击的buttonId
+            if(ORDER_STATE_CHECKED == $("#orderState").val()) {
+                common.msg(0,"护士已复核，不能新增医嘱！");
+                return false;
+            }
+            var orderParams = getTcmOrderFormParam();
+
+            var orderItemArray = getTcmOrderItemArray();
+            if (!orderParams.herbUsageWay) {
+                common.msg('请选择用法！', 0);
+                return false;
+            }
+
+            if (!orderParams.orderDay) {
+                common.msg('请选择剂数！', 0);
+                return false;
+            }
+
+            //验证处方药品内容
+            if (!validOrderItem(orderItemArray)) {
+                return false;
+            }
+            orderParams.inpatientOrderJson = JSON.stringify(orderItemArray)
+
+            calculateTheTotalPrice(orderParams.orderDay, orderItemArray);
+
+            common.requestServer('$contextPath/inpatient/saveOrderForMedicine.jo', orderParams, function (result) {
+                if (result.code == "0") {
+                    common.alertCall("保存成功。", 1, function () {
+                        var order = result.data;
+                        $('.tbody-data tr').each(function (index, data) {
+                            $(this).find('.layui-icon-ok').removeClass('layui-hide');
+                            $(this).find('.layui-icon-delete').addClass('layui-hide');
+                        });
+                        table.reload('tcmOrder');
+                        $('#btn_refresh', parent.document).click();
+
+                        //如果当前点击的是保存并关闭 则保存后关闭窗口
+                        if (btnId == "btn_save") {
+                            winClose();
+                        }
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }//save function
+
+        //计算药品总价
+        function calculateTheTotalPrice(orderDay, orderItemArray) {
+            $(orderItemArray).each(function (i, v) {
+                v.actualPrice = v.unitPrice * v.dosage * orderDay;
+            });
+        }
+
+
+        //获取表单参数
+        function getTcmOrderFormParam() {
+            var tcmOrderParams = {};
+            var tcmOrderFormParams = common.serializeObject($('#tcmOrderForm'));
+            tcmOrderParams.orderDay = tcmOrderFormParams.orderDay;
+            tcmOrderParams.inhospitalId = tcmOrderFormParams.inhospitalId;
+            tcmOrderParams.orderGroupNo = tcmOrderFormParams.orderGroupNo;
+            tcmOrderParams.patientId = tcmOrderFormParams.patientId;
+            tcmOrderParams.herbUsageWay = tcmOrderFormParams.herbUsageWay;
+            tcmOrderParams.medicineType = MEDICINE_TYPE_TCM_MEDICINE
+            tcmOrderParams.accountBookType = tcmOrderFormParams.accountBookType;
+            tcmOrderParams.specialRemark = tcmOrderFormParams.specialRemark;
+            tcmOrderParams.orderClassify = tcmOrderFormParams.orderClassify;
+            return tcmOrderParams;
+        }
+
+        // 获取药品数组
+        function getTcmOrderItemArray() {
+            var orderItemArray = common.buildTrInputJSON($('.tbody-data'));
+            var medicineIds = [];
+            $(orderItemArray).each(function (index, data){
+                medicineIds.push(data.medicineId);
+            });
+
+            var medicineInfoArray = selectOrderMedicineInfo(medicineIds.join(','));
+
+            var orderItemMap = convertOrderItemMap(medicineInfoArray);
+
+            $(orderItemArray).each(function (index, orderItam) {
+                var pharmacyStock = orderItemMap[orderItam.medicineId];
+                orderItam.examFlag = 0;
+                orderItam.injectionFlag = 0;
+                orderItam.surgeryFlag = 0;
+                orderItam.lisFlag = 0;
+                orderItam.exeOrderStartTime = new Date();
+                orderItam.orderName = pharmacyStock.medicine.medicineName;
+                orderItam.makeOrderFlag = 1;
+                orderItam.overdueBillFlag = 0;
+                orderItam.medicalTechFlag = 0;
+                orderItam.medicineFlag = 1;
+                orderItam.urgentFlag = 0;
+                orderItam.orderClassify = $('#orderClassify').val();
+                orderItam.doctorOrderType = ORDER_TYPE_TCM_MEDICINE;
+                orderItam.medicineType = MEDICINE_TYPE_TCM_MEDICINE
+                orderItam.orderState = 0;
+                orderItam.orderGroupNo = $('#orderGroupNo').val();
+                orderItam.herbUsageWay = $('#herbUsageWay').val();
+                orderItam.orderDay = $('#orderDay').val();
+                orderItam.orderDesc = $('#orderDesc').val();
+                orderItam.producingAreaId = pharmacyStock.producingAreaId;
+                orderItam.medicineSpec = pharmacyStock.medicineSpec;
+            })
+            return orderItemArray;
+        }
+
+        //选择处方的药品详细信息
+        function selectOrderMedicineInfo(medicineIds) {
+            var ordeerMedicineInfoArray = [];
+            $.ajax({
+                type: "POST",
+                url: '../pharmacy/pharmacyStockListData.jo',
+                data: {medicineIds: medicineIds},
+                dataType:"json",
+                async:false,//同步 请求
+                success: function(result){ ordeerMedicineInfoArray = result.data;},
+                error: function(res){jqueryPostError(res);}
+            });//ajax end
+            return ordeerMedicineInfoArray;
+        }
+
+        function convertOrderItemMap(medicineInfoArray) {
+            var orderItemMap = {};
+            $(medicineInfoArray).each(function (i, v) {
+                orderItemMap[v.medicine.medicineId] = v;
+            });
+            return orderItemMap;
+        }
+
+
+        //验证处方药品内容
+        function validOrderItem(orderItemArray) {
+            var pass = true;
+            if (!orderItemArray || orderItemArray.length <= 0) {
+                common.alert('请添加药品', 0);
+                return false;
+            }
+            if (orderItemArray) {
+                $(orderItemArray).each(function (index) {
+                    //选择药品
+                    if (!this.medicineId) {
+                        common.alert('第' + (index + 1) + '行未选择药品', 0);
+                        pass = false;
+                        $('.tbody-data tr:eq(' + index + ')').click();
+                        return false;//跳出循环
+                    }
+                    //每次剂量/用量
+                    if (!this.dosageUnit || !this.dosage) {
+                        common.alert('第' + (index + 1) + '行请填写每次剂量/用量', 0);
+                        pass = false;
+                        $('.tbody-data tr:eq(' + index + ')').click();
+                        return false;
+                    }
+                });
+            }
+            return pass;
+        }
+
+
+        function activeTrFun() {
+            $('.tbody-data tr td input[name=orderName]').click(function () {
+                $(this).parents('tr').addClass('active').siblings().removeClass('active');
+            });
+        }
+
+
+
+        pharmacyStockRowSelect = function (pharmacyStockRow) {
+            WebuiPopovers.hideAll();
+            var trActive = $('tr.active');
+            var isExist = false;
+            //验证是否存在相同药品
+            $('.tbody-data tr').each(function () {
+                var medicineId = $(this).find('input[name="medicineId"]').val();
+                if (medicineId == pharmacyStockRow.medicineId) {
+                    isExist = true;
+                    return false;
+                }
+            });
+
+            if (isExist) {
+                common.alert('所选药品已存在！', 0);
+                return false;
+            }
+            pharmacyStockRow.orderName = pharmacyStockRow.medicineName;
+            pharmacyStockRow.dosageUnit = pharmacyStockRow.minMedicineUnit;
+            pharmacyStockRow.unitPrice = pharmacyStockRow.minRetailPrice;
+            //插入行数据
+            addTrData(pharmacyStockRow, trActive);
+        }
+
+
+        //新增处方行
+        function addTr(orderItem) {
+            var newTr = $('.tplRow').clone();
+            newTr.removeClass('tplRow');
+            addTrData(orderItem, newTr)
+            bindShowMedicineNamePopover(newTr.find('input[name=orderName]'));
+            bindSearchMedicineNamePopover(newTr.find('input[name=orderName]'));
+            //如果存在新行，但未选择药品，不能新增行
+            var unSlectMedicine = $('.tbody-data tr input[name=medicineId][value=""]');
+            if (unSlectMedicine.size() >= 1) {
+                return false;
+            }
+            $('.tbody-data').append(newTr);
+
+            randerPlugins();
+        }
+
+        //新增处方行数据
+        function addTrData(recipeItem, elemTr){
+            if (!recipeItem) {
+                return false;
+            }
+            //插入行数据
+            elemTr.find('input[name="orderId"]').val(recipeItem.orderId);//医嘱
+
+            elemTr.find('input[name="medicineId"]').val(recipeItem.medicineId);//药品ID
+            elemTr.find('input[name="medicineType"]').val(recipeItem.medicineType);//药品类型
+            elemTr.find('input[name="orderName"]').val(recipeItem.orderName);//药品名称
+            elemTr.find('input[name="medicineSpec"]').val(recipeItem.medicineSpec);//规格
+            //dosage 每次使用剂量
+            recipeItem.hasOwnProperty('dosage') && elemTr.find('input[name="dosage"]').val(recipeItem.dosage);//剂量单位
+            elemTr.find('input[name="dosageUnit"]').val(recipeItem.dosageUnit);//剂量单位
+            elemTr.find('input[name="dosageUnitText"]').val(dicDrugNumUnitDosageUnit[recipeItem.dosageUnit]);//剂量单位
+            elemTr.find('input[name="unitPrice"]').val(recipeItem.unitPrice);// 药物使用-总数量  使用总量 =1
+            elemTr.find('select[name="herbCookingCode"]').val(recipeItem.herbCookingCode);//
+            elemTr.find('input[name="pharmacyId"]').val(recipeItem.pharmacyId);//药房id
+
+        }
+
+        //重新渲染插件
+        function randerPlugins() {
+            element.init();
+            form.render();
+            activeTrFun();//激活行
+        }
+
+
+
+        function activeNextTd(curTd) {
+            var nextFocusElem = curTd.nextAll().find('input,.layui-unselect').not('[readonly]').not('[type^=hidden]').first();
+            if (nextFocusElem.length == 0) return false;
+            $('.curFocus').removeClass('curFocus');
+            nextFocusElem.addClass('curFocus');
+            //如果是layui-unselect
+            if (nextFocusElem.hasClass('layui-unselect')) {
+                nextFocusElem.find('.layui-edge').click();
+            } else {
+                //一般的input
+                nextFocusElem.focus();
+            }
+            return true;
+        }
+
+        //回车焦点移至同列下一行单元格的输入框，如果到了底部，则焦点移至下一列第一行的单元格输入框
+        $(document).keydown(function (event) {
+            if (event.keyCode == 13) {
+                var inputFocus = $(event.target);
+                var curTd;
+                var nextFocusElem;
+
+                //td的input元素下一个input框
+                nextFocusElem = inputFocus.nextAll().not('[readonly]').first();
+                if (nextFocusElem.length > 0) {
+                    nextFocusElem.focus();
+                    return true;
+                }
+
+                //下一个td的input元素的第一个input框或者select控件
+                curTd = inputFocus.parent();
+                if (activeNextTd(curTd)) return true;
+                curTd = $('.curFocus').parents('td');
+                if (activeNextTd(curTd)) return true;
+                addTr();//
+            }
+        });
+
+
+
+    });//layui.use end
+</script>
+</html>

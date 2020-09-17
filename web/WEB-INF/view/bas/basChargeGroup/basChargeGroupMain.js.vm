@@ -1,0 +1,72 @@
+<script>
+    /************************ 导航 ********************************/
+    var childrenNav = [
+        {
+            'id': 'exam',
+            'text': '检查',
+            'href': 'bas/basChargeGroupExamList.do'
+        },{
+            'id': 'lis',
+            'text': '检验',
+            'href': 'bas/basChargeGroupLisList.do'
+        }, {
+            'id': 'treat',
+            'text': '治疗',
+            'href': 'bas/basChargeGroupTreatList.do'
+        }, {
+            'id': 'surgery',
+            'text': '手术',
+            'href': 'bas/basChargeGroupSurgeryList.do'
+        }, {
+            'id': 'transfusion',
+            'text': '输血',
+            'href': 'bas/basChargeGroupTransfusionList.do'
+        }
+    ]
+
+    layui.use(['element', 'layer'], function () {
+        var element = layui.element
+        $ = layui.$
+        //监听导航菜单点击事件
+        element.on('tab(basDoctorRoleMainNav)', function (data) {
+            data.elem.find('.layui-tab-content iframe').eq(data.index).not('[src]').attr('src', function () {
+                return $(this).attr('lay-src')
+            })
+        })
+        //是否有数据
+        if (childrenNav.length) {
+            loadbasDoctorRoleMainNav(childrenNav)
+            //打开首个tab
+            $('[lay-filter="basDoctorRoleMainNav"]').find('.layui-tab-title li').first().click()
+        }
+
+        //新增iframe 页面标签
+        function addTab (url, text, iframeId) {
+            //新增一个Tab项
+            element.tabAdd('basDoctorRoleMainNav', {
+                id: iframeId,
+                title: text,
+                content: '<iframe lay-src="' + url + '"></iframe>'
+            })
+        }
+
+        //加载tab
+        function loadbasDoctorRoleMainNav (childrenNav) {
+            $.each(childrenNav, function (index, item) {
+                addTab(contextPath + '/' + item.href, item.text, item.id)
+            })
+        }
+
+        // 打开一个新的选项卡窗口，一般在子窗口调用
+        window.openTab = function (url, text, iframeId) {
+            //遍历页签选项卡
+            var isExistTab = ($('#basDoctorRoleMainNav>ul.layui-tab-title>li[lay-id="' + iframeId + '"]').length > 0)
+            if (!isExistTab) {
+                addTab(url, text, iframeId)
+            }
+            element.tabChange('basDoctorRoleMainNav', iframeId) //切换到导航
+        }
+    })
+
+</script>
+

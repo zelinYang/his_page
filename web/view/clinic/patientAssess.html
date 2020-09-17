@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>出院患者科室百分比</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+    <script src="../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../resource/hplus/js/jquery-3.3.1.min.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echartsTheme.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echarts.js"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+
+            <div style="margin: 0px 10px 10px -15px;">
+                <form class="layui-form">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">出院日期</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="beginDate" id="date1" lay-verify="date" placeholder="yyyy-MM-dd"
+                                   autocomplete="off" class="layui-input">
+                        </div>
+                        至
+                        <div class="layui-input-inline">
+                            <input type="text" name="endDate" id="date2" lay-verify="date" placeholder="yyyy-MM-dd"
+                                   autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-input-inline" style="margin-left: 20px;">
+                            <input type="radio" name="flagSign" value="1" title="按科室" checked="">
+                            <input type="radio" name="flagSign" value="2" title="按病种">
+                            <input type="checkbox" name="isAssess" lay-skin="primary" title="通过审核">
+                            <button type="submit" class="layui-btn layui-btn-xs" lay-submit="" lay-filter="demo1">获取数据
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <!--柱状图-->
+            <div id="main" style="width: 100%;height:300px;margin-left: 10px;margin-top: 10px;"></div>
+
+            <!--列表 begin-->
+            <div style="margin-left: 20px;margin-right: 20px;">
+                <table id="guidingTableListGrid" class="layui-table-tabs" lay-filter="guidingTableListGrid"></table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>
+</script>
+
+<script>
+    var pathName = window.document.location.pathname;
+    //获取带"/"的项目名，如：/cloud_his
+    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+
+    // 基于准备好的dom，初始化echarts实例
+    var myChart = echarts.init(document.getElementById('main'));
+
+    // 指定图表的配置项和数据
+    var option = {
+        title: {
+            text: '出院患者科室百分比'
+        },
+        tooltip: {},
+        legend: {
+            data: ['百分比']
+        },
+        xAxis: {
+            data: []
+        },
+        yAxis: {},
+        series: [{
+            name: '百分比',
+            type: 'bar',
+            data: [],
+            itemStyle: {
+                normal: {
+                    label: {
+                        show: true, //开启显示
+                        position: 'top', //在上方显示
+                        textStyle: { //数值样式
+                            color: 'black',
+                            fontSize: 16
+                        }
+                    }
+                }
+            },
+        }],
+
+    };
+
+    // 使用刚指定的配置项和数据显示图表。
+    myChart.setOption(option);
+    var names = [];    //类别数组（实际用来盛放X轴坐标值）
+    var nums = [];    //销量数组（实际用来盛放Y坐标值）
+
+
+    $.ajax({
+        type: "post",
+        async: true,
+        url: projectName + '/clinicPatientAssess/getClinicPatientAssessPer.jo',
+        data: {},
+        dataType: "json",        //返回数据形式为json
+        success: function (result) {
+            //请求成功时执行该函数内容，result即为服务器返回的json对象
+            if (result) {
+                console.log(result)
+                for (var i = 0; i < result.name.length; i++) {
+                    names.push(result.name[i]);    //挨个取出类别并填入类别数组
+                }
+                for (var i = 0; i < result.per.length; i++) {
+                    nums.push(result.per[i] * 100);    //挨个取出销量并填入销量数组
+                }
+                myChart.hideLoading();    //隐藏加载动画
+                myChart.setOption({        //加载数据图表
+                    title: {
+                        text: '出院患者科室百分比'
+                    },
+                    tooltip: {},
+                    legend: {
+                        data: ['百分比']
+                    },
+                    xAxis: {
+                        data: names
+                    },
+                    yAxis: {},
+                    series: [{
+                        name: '百分比',
+                        type: 'bar',
+                        data: nums,
+                        itemStyle: {
+                            normal: {
+                                label: {
+                                    show: true, //开启显示
+                                    position: 'top', //在上方显示
+                                    textStyle: { //数值样式
+                                        color: 'black',
+                                        fontSize: 16
+                                    }
+                                }
+                            }
+                        },
+                    }],
+                });
+
+            }
+
+        },
+        error: function (errorMsg) {
+            //请求失败时执行该函数
+            layer.msg("图表请求数据失败!");
+            myChart.hideLoading();
+        }
+    })
+
+
+    layui.use(['table', 'layedit', 'laydate'], function () {
+        var that = this
+        var table = layui.table;
+        var form = layui.form
+            , layer = layui.layer
+            , layedit = layui.layedit
+            , laydate = layui.laydate;
+        //日期
+        laydate.render({
+            elem: '#date1'
+            ,value: '2000-01-01'
+        });
+
+        laydate.render({
+            elem: '#date2'
+            ,value: new Date()
+        });
+        table.render({
+            elem: '#guidingTableListGrid'
+            , url: projectName + '/clinicPatientAssess/clinicPatientAssessPageData.jo'
+            , cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [[
+                {field: 'patientId', title: '患者ID'}
+                , {field: 'inhospitalNum', title: '住院次数'}
+                , {field: 'inhospitalNo', title: '患者住院号'}
+                , {field: 'patientName', title: '患者姓名'}
+                , {
+                    field: 'patientSex', title: '性别',
+                    templet: function (row) {
+                        return row.patientSex == 1 ? '男' : '女';
+                    }
+                } //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+                // ,{field:'experience', title: '费别'}
+                , {field: 'age', title: '年龄'}
+                , {field: 'clinicPathName', title: '临床路径病种'}
+                , {field: 'variationDiseaseName', title: '第一出院诊断'}
+                , {
+                    field: 'quitPathFlag', title: '完成情况',
+                    templet: function (row) {
+                        return row.quitPathFlag == 1 ? '完成' : '未完成';
+                    }
+                }
+                , {field: 'reasonProblem', title: '退出原因'}
+                , {
+                    field: 'leaveHospitalDate', title: '退出住院日',
+                    templet: function (row) {
+                        return row.leaveHospitalDate ? layui.util.toDateString(row.leaveHospitalDate, 'yyyy-MM-dd') : '';
+                    }
+                }
+                , {field: 'assess', title: '审核结果'}
+                , {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 150}
+            ]]
+            , page: true
+            , height: getTableHgt(),
+        });
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#main').height() - 70)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basDiseaseListGrid', {
+                height: height
+            })
+        })
+
+        //监听提交
+        form.on('submit(demo1)', function (data) {
+
+            $.ajax({
+                type: "post",
+                async: true,
+                url: projectName + '/clinicPatientAssess/getClinicPatientAssessPer.jo',
+                data: {
+                    "beginDate": data.field.beginDate,
+                    "endDate": data.field.endDate,
+                    "flagSign": data.field.flagSign,
+                    "isAssess": data.field.isAssess
+                },
+                dataType: "json",        //返回数据形式为json
+                success: function (result) {
+                    //请求成功时执行该函数内容，result即为服务器返回的json对象
+                    if (!result.hasOwnProperty("name")) layer.msg("无满足条件的数据")
+                    if (result) {
+                        names = [];
+                        nums = [];
+                        console.log(result)
+                        for (var i = 0; i < result.name.length; i++) {
+                            names.push(result.name[i]);    //挨个取出类别并填入类别数组
+                        }
+                        for (var i = 0; i < result.per.length; i++) {
+                            nums.push(result.per[i] * 100);    //挨个取出销量并填入销量数组
+                        }
+                        var option = {        //加载数据图表
+                            title: {
+                                text: '出院患者科室百分比'
+                            },
+                            tooltip: {},
+                            legend: {
+                                data: ['百分比']
+                            },
+                            xAxis: {
+                                data: names
+                            },
+                            yAxis: {},
+                            series: [{
+                                name: '百分比',
+                                type: 'bar',
+                                data: nums,
+                                itemStyle: {
+                                    normal: {
+                                        label: {
+                                            show: true, //开启显示
+                                            position: 'top', //在上方显示
+                                            textStyle: { //数值样式
+                                                color: 'black',
+                                                fontSize: 16
+                                            }
+                                        }
+                                    }
+                                },
+                            }],
+                        };
+                        var myChart = echarts.init(document.getElementById('main'));
+                        myChart.setOption(option);
+                    }
+
+                },
+                error: function (errorMsg) {
+                    layer.msg("请求失败");
+                }
+            })
+            return false;
+        });
+    });
+
+
+</script>

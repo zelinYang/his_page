@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+    <style>
+        /*.layui-form-item.search-term .layui-inline { margin-bottom: 0}*/
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!-- 医嘱查询条件 -->
+        <form class="layui-form" id="queryForm">
+            #formHiddenInput("doctorId" "$!{currentUser.userId}" "")
+            #formHiddenInput("createTimeEnd" "" "id='createTimeEnd'")
+            #formHiddenInput("createTimeBegin" "" "id='createTimeBegin'")
+          <div class="layui-row-query search-term">
+           <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">常用短语</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("doctorDicContent" "" "id='doctorDicContent' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline ">
+                    <label class="layui-form-label">医嘱类型</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("doctorOrderType" "" $!dicData.dicDoctorOrderType "id='doctorOrderType' lay-filter='doctorOrderType'" "")
+                    </div>
+                </div>
+                <div class="layui-inline ">
+                    <label class="layui-form-label">录入日期</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("" "" "id='createTime' class='layui-input' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group fr">
+                    <button class="layui-btn layui-btn-sm fl" id="btn_add" type="button" title="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    <button class="layui-btn layui-btn-sm fr" type="button" id="btn_refresh" title="刷新"><i class="layui-icon layui-icon-refresh"></i></button>
+                </div>
+
+            </div>
+          </div>
+        </form>
+        <!-- 医嘱列表 -->
+        <table class="layui-hide full-height" id="doctorDicList" lay-filter="doctorDicList"></table>
+    </div>
+</div>
+
+</body>
+<script type="text/html" id="operateBar">
+    <a class="layui-btn layui-btn-xs" title="编辑" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" title="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form', 'laydate', 'table'], function(){
+    var laydate = layui.laydate, form = layui.form, table = layui.table;
+    // 初始化医嘱表格列表数据
+    var tableListUrl = contextPath + '/inpatient/doctorDicJsonList.jo'
+
+    // 获取表格高度
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 12)
+    };
+    // 重置表格高度
+    $(window).resize(function () {
+        var height = getTableHgt()
+        table.reload('doctorDicList', {
+            height: height
+        })
+    });
+
+
+
+    var tableIns = table.render($.extend(basePageTable, {
+        id: 'doctorDicList',
+        elem: '#doctorDicList',
+        height: getTableHgt(),
+        where: common.serializeObject($('#queryForm')),
+        url: tableListUrl,
+        done: function (){},
+        cols : [ [
+            {
+                field : 'doctorDicContent',
+                //width : 230,
+                title : '常用短语'
+            }, {
+                field : 'doctorOrderType',
+                width : 120,
+                title : '医嘱类型',
+                templet :function (row) {
+                    if (row.doctorOrderType) {
+                    	return $('select#doctorOrderType > option[value="' + row.doctorOrderType + '"]').text();
+                    }
+                    return "";
+                }
+            }, {
+                field : 'createTime',
+                width : 200,
+                title : '录入时间',
+                templet :function (row) {
+                    if (row.createTime) return getFormatDateByLong(row.createTime, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            },
+            {fixed: 'right', title:'操作', toolbar: '#operateBar', width:160}
+        ] ]
+    }));
+
+    //监听行工具事件(编辑和删除)
+    table.on('tool(doctorDicList)', function(obj){
+        if(obj.event === 'del'){
+            common.confirm("确定要删除吗？", function (){
+                common.requestServer(contextPath + '/inpatient/deleteDoctorDic.jo', {ids: obj.data.doctorDicId}, function (result){
+                    if (result.code == "0") {
+                        $('#btn_refresh').click();
+                    } else {
+                        common.alert(result.msg, 2)
+                    }
+                });
+        	});
+        } else if(obj.event === 'edit'){
+            common.open(contextPath + '/inpatient/doctorDicEdit.do?doctorDicId=' + obj.data.doctorDicId, "编辑", {area:['650px', '420px']});
+        }
+    });
+
+    // 新增
+    $('#btn_add').click(function (){
+        common.open(contextPath + '/inpatient/doctorDicEdit.do', "编辑", {area:['650px', '420px']});
+    });
+
+    // 刷新按钮
+    $('#btn_refresh').click(function (){
+        common.cleanForm('queryForm');
+        form.render('select');
+        reloadList();
+    });
+
+    // 重载刷新医嘱列表
+    function reloadList() {
+        var params = common.serializeObject($('#queryForm'));
+        tableIns.reload({url: tableListUrl, page: {curr: 1}, where: params});
+    }
+
+    // 按医嘱类型查询
+    form.on('select(doctorOrderType)', function (){
+        reloadList();
+    });
+    // 按医嘱项目和医嘱开始日期查询
+    $('#doctorDicContent').bind('input propertychange', function (){
+        reloadList();
+    });
+    //按日期范围查询
+    laydate.render({elem: '#createTime',trigger:'click', range: true, done: function (value, begin, end) {
+    	var items = value.split(' - ');
+        $('#createTimeEnd').val(items[1]);
+    	$('#createTimeBegin').val(items[0]);
+    	reloadList();
+    }});
+});
+</script>
+</html>

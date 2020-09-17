@@ -1,0 +1,51 @@
+  <script>
+	  var queryMedicineVendor;//查询药品库存
+
+	  layui.use(['jquery','table', 'laypage','element','form'], function(){
+		  var table = layui.table;
+		  var element = layui.element;
+		  var form = layui.form;
+		  var laypage = layui.laypage;
+		  var $ = layui.$;
+
+		  element.render();
+		  //第一个实例
+		  var tableIns = table.render({
+			  elem: '#medicineVendorTable'
+			  //,toolbar: '#toolbarDemo'
+			  ,defaultToolbar: []
+			  //,height: '230'//高度
+			  ,height: 'full-1'//高度
+			  ,url: contextPath + '/medicine/medicineVendorJsonList.jo' //数据接口
+			  //,page: true //开启分页
+			  ,limit:200
+			  ,request: {
+				  pageName: 'pageNumber' //页码的参数名称，默认：page
+				  ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			  }
+			  ,cols: [[ //表头
+				  {field : 'medicineVendorName',title : '供应商名称', width:150, templet :function (row) {return row.medicineVendorName? row.medicineVendorName: '';;}}
+				  ,{field : 'medicineVendorAbb', title : '名称缩写', templet :function (row) {return row.medicineVendorAbb? row.medicineVendorAbb: '';;}}
+				  ,{field : 'vendorAddr', title : '地址', templet :function (row) {return row.vendorAddr? row.vendorAddr: '';;}}
+			  ]]
+			  //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+			  ,done: function(res, curr, count){
+			  }
+		  });
+
+
+		  //查询列表
+		  queryMedicineVendor = function() {
+			  var queryParams = common.serializeObject($('#medicineVendor_queryForm'));
+			  tableIns.reload({ where: queryParams });
+		  }
+
+
+		  //监听行单击事件
+		  table.on('row(medicineVendorTable)', function(obj){
+			  var medicineVendor = obj.data;
+			  parent.medicineVendorRowSelect(medicineVendor);
+		  });
+
+	  });//layui.use
+  </script>

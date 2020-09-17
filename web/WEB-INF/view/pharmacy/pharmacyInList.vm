@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>药房入库</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport"
+		  content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+<body>
+<div class="layui-fluid">
+	<div id="container" class="main full-height">
+		<div class="ui-layout-center full-height">
+			<iframe id="pharmacyInEdit" src="" class="resizeiframe" style="height: calc(100% - 3px);" width="100%"  scrolling="no" frameborder="0" ></iframe>
+		</div>
+
+		<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+			<div class="layui-card" >
+				<div class="layui-card-body p-n">
+					<!-- 查询表单 -->
+					<form id="queryForm" class="layui-form">
+                        #formHiddenInput("pharmacyInFlag" "${CONST.AppConstants.NO_FLAG}" "")
+						<div class="layui-row-query search-term">
+							<div class="layui-form-item">
+								<div class="layui-inline">
+									<label class="layui-form-label">出库方式</label>
+									<div class="layui-input-inline">
+                                        #formSingleSelectFirstNone("drugstoreOutWaySearch" "1" $!dicData.dicDrugStoreOutFlag "id='drugstoreOutWaySearch' class='layui-input' lay-filter='drugstoreOutWaySearch' lay-verify='required'" "" )
+									</div>
+								</div>
+								<div class="layui-inline">
+									<label class="layui-form-label">药库/耗材库</label>
+									<div class="layui-input-inline">
+                                        #formHiddenInput("drugstoreName" "$!storeIn.drugstoreName" "id='drugstoreName'")
+										<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" lay-verify="required" class="layui-input">
+											<option value="">请选择</option>
+                                            #foreach($drugstore in $drugstoreList)
+												<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+                                            #end
+										</select>
+									</div>
+								</div>
+								<div class="layui-inline">
+									<label class="layui-form-label">领药药房</label>
+									<div class="layui-input-inline">
+                                        #formHiddenInput("pharmacyName" "$!storeIn.pharmacyName" "id='pharmacyName'")
+										<select id="pharmacyId" name="pharmacyId" lay-filter="pharmacyId" lay-verify="required" class="layui-input">
+											<option value="">请选择</option>
+                                            #foreach($pharmacy in $pharmacyList)
+												<option value='${pharmacy.pharmacyId}'>${pharmacy.pharmacyName}</option>
+                                            #end
+										</select>
+									</div>
+								</div>
+								<div class="layui-inline layui-btn-group fr" >
+									<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+									<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+								</div>
+							</div>
+						</div>
+					</form>
+					<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+    #parse("./common/commonSelect.js.vm")
+    #parse("./pharmacy/pharmacyInList.js.vm")
+</html>

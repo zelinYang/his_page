@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/visualizationCss.vm")
+<style type="text/css">
+.layui-table td, .layui-table th{padding: 9px 5px}
+</style>
+</head>
+<body>
+    <div class="layui-tab layui-tab-card full-height m-n" style="height: calc(100% - 50px);"">
+         #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+         <div class="full-height p-r-n p-l-n" id="designContent" style="width:100%; margin:0 auto;">$!emrTlp.emrTlpContent</>
+    </div>
+    <div class="tool-bottom-fixed">
+        #formHiddenInput("" "$!inhospital.inhospitalId" "id='inhospitalId'")
+        <button class="layui-btn layui-btn-sm" id="btn_save" type="button" operate-type="0"> 保 存  </button>
+        <button class="layui-btn layui-btn-sm" id="btn_submit" type="button" operate-type="1"> 提 交  </button>
+        <button class="layui-btn layui-btn-sm" id="btn_inpatientDiagnosis" type="button"> 出院诊断  </button>
+        <button class="layui-btn layui-btn-sm" id="btn_back" type="button"> 返 回  </button>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./common/visualizationJs.vm")
+<script>
+    var formDesign = new formDesign('designContent', {
+        mode: 'EDITOR',
+        width: 650,
+        initData: $!ermData,
+        commonObjField: 'content',
+        commonObjName: 'emrContent',
+        iframeJs: ["$!contextPath/resource/hplus/js/jquery-3.3.1.min.js"],
+        saveUrl: '../inpatient/saveInpatientInhospitalWizard.jo',
+        baseFormParams: {emrTlpId:"$!emrTlp.emrTlpId", inhospitalId:"$!inhospital.inhospitalId", patientId:"$!inhospital.patientId", contentId:"$!emrContent.contentId"}
+    });
+</script>
+<script type="text/javascript">
+var layer;
+layui.use(['element', 'layer'], function(){
+    var templateTr = $('#diagnosisEnterList > tr:last').prop("outerHTML");
+    var element = layui.element;
+    layer = layui.layer;
+
+    // 返回按钮
+    $('#btn_back').click(function (){
+        window.location.href = "../inpatient/inpatientWizardList.do?inhospitalId=" + $('#inhospitalId').val();
+    });
+
+    // 保存按钮
+    $('#btn_save, #btn_submit').click(function (){
+        var base = formDesign.baseFormParams;
+        if (!base.emrTlpId || !base.inhospitalId || !base.patientId) {
+            common.alert('参数无效，请检查模板、住院、患者对应的编号是否存在', 0);
+            return ;
+        }
+
+        formDesign.baseFormParams.operateType = $(this).attr('operate-type');
+        formDesign.save();
+    });
+
+    // 入院诊断
+    $('#btn_inpatientDiagnosis').click(function (){
+    	if (!$('#inhospitalId').val()) {
+    		common.alert('参数无效，请检查住院编号是否存在', 0);
+            return ;
+    	}
+    	common.open(contextPath + '/inpatient/diagnosisEnter.do?saveBtn=1&defDiagnosis=2&inhospitalId=' + $('#inhospitalId').val(), $(this).text(), {area:['80%','90%']})
+    });
+});
+</script>
+</html>

@@ -1,0 +1,165 @@
+<script>
+/************************ 导航 ********************************/
+var layer;
+var tabChange;//切换菜单方法
+var tabAdd;
+var editDrugAllergy;
+var refreshOutRigTab;
+var tabAddpatSettNav;//主导航添加导航项
+var randerTopNav;//渲染顶部导航栏
+var buildLeftMenu;
+var workNavClickEvent;
+ 
+ 
+//主页导航栏菜单[患者列表、门诊日志、处方、检查、检验、手术...]
+var mainTab = {
+    layFilter:'patSettNav',
+    menu:{
+        outAppoint:{
+             layId:'outAppoint'
+            ,url:'../register/outAppointEdit.do'}
+        ,medicalDoc:{
+             layId:'medicalDoc'
+            ,url:'../outpatient/medicalDoc.do'}
+    }
+}
+
+ function closeWindow() {
+	 $("#btn_query" , parent.document).click();
+	 layer.close(layer.getFrameIndex(window.name));//弹窗
+	 parent.layer.close(parent.layer.getFrameIndex(window.name));//关闭当前页
+ }
+
+
+
+layui.use(['element', 'layer','table'], function(){
+    var element = layui.element; 
+    $ = layui.$;
+    layer = layui.layer;
+    table = layui.table;
+    element.render();
+
+    //第一个实例
+    table.render({
+        elem: '#feeItem'
+        ,height:getBillItemTableHgt()
+        ,data: $!{inpatientSettlementGroupList} //数据接口
+        ,page: true //开启分页
+        ,cols: [[ //表头
+            {type: 'numbers'}
+            // ,{field: 'inhospitalFeeItemId', title: 'ID', width:80, sort: true, fixed: 'left'}
+            ,{field: 'inhospitalChargeGroupName', title: '费用名称'}
+            ,{field: 'feeGroupAmount', title: '费用金额'}
+            ,{field: 'feeGroupAmount', title: '自付金额'}
+        ]]
+    });
+
+    // 获取表格高度
+    function getBillItemTableHgt() {
+        return ($('#feeOverview').height() - $('#reg_patient_queryForm').height() - 100)
+    }
+    
+    /* 切换到指定Tab项 */
+    tabChange = function (filter, layid) {
+        element.tabChange(filter, layid);
+    }
+    
+    //监听导航菜单点击事件
+    element.on('tab(patSettNav)', function(elem){ 
+        var layId = $(this).attr('lay-id');
+        var href = $(this).attr('href');
+        var patient = $(this).attr('patient');
+        
+        if (href) {
+            url = href; //使用已有的url
+        } else {
+            if (patient) {//必须带当前患者的参数
+                //需要判断患者是否存在，不存在则返回
+                url = mainTab.menu[layId].url   + common.objToParamStr(grobalModel)
+            } else {
+                url = mainTab.menu[layId].url 
+            }
+        }
+        
+        reqIframe(layId,url);
+    });
+    
+    //iframe请求页
+    function reqIframe(layId,url,force) {
+      var destIframe = $('div[lay-id="'+layId+'"] iframe');
+      if(!destIframe.attr('src') || force) {
+          destIframe.attr('src',url);
+      }
+    }
+    
+    //动态添加tab
+    tabAdd = function(layId,tabTitle,url,force,layFilter, curPatientId){
+       if (!layId) { //layId必填
+           console.log('layId必填');
+           return false;
+       } 
+       if (!tabTitle) { //tab的标题必填
+           console.log('tab的url必填');
+           return false;
+       } 
+       if (!url) { //tab的url必填
+           console.log('tab的url必填');
+           return false;
+       } 
+        
+       //去UL > LI 的对应 href 
+       var href = $('.layui-tab-title>li[lay-id='+layId+']').attr('href');
+       if (href) {
+           if (href != url) { //url不相同，删除后新建
+               element.tabDelete(layFilter, layId);
+           } else {
+               if (force) {//强制新建
+                   element.tabDelete(layFilter, layId);
+               }else {
+                   element.tabChange(layFilter,layId);  
+                   return; //返回
+               }
+           }
+       }  
+       
+       var content = '<iframe src="' + url +'" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+       if (curPatientId) { //必须包含当前所选的患者ID
+           content = '<iframe src="' + url +'" patientId=" ' + curPatientId + ' " width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+       }
+       element.tabAdd(layFilter, { id: layId ,title: tabTitle ,content: content});
+       
+       var layFilterNav = $('.' + layFilter); 
+       layFilterNav.find('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href',url);
+       layFilterNav.find('.layui-tab-title>li:last').trigger('click');
+       layFilterNav.find('.layui-tab-content>div:last').attr('lay-id',layId);
+       //element.tabChange(mainTab.layFilter,layId);  
+    } 
+    
+    //动态添加patSettNav的tab选项卡
+    tabAddpatSettNav = function(layId,tabTitle,url,force){
+        tabAdd(layId, tabTitle, url, force, mainTab.layFilter);  
+    }
+    
+    
+    showFirstLi = function() {
+        $('.layui-tab-title li:eq(0)').click();
+    }
+    
+    //页面初始化
+    $(document).ready(function() {
+        showFirstLi();
+    });
+    
+    
+    
+    //页面初始化
+    $(document).ready(function() {
+        $('#btn_settlement').click(function() {
+            var url = '$contextPath/inpatient/feeSettement.do?inhospitalId=$!inhospital.inhospitalId';
+            common.open(url, '结算处理', {area : [ '95%', '95%' ] });
+        });
+    });
+    
+});
+
+</script>

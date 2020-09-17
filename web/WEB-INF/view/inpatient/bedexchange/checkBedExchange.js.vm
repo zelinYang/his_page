@@ -1,0 +1,100 @@
+<script>
+
+    laydate.render({elem: '#startDate', type: 'datetime', value:new Date(), istime: true, max: getSmpFormatNowDate(true)});
+    var users = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+
+
+    //转出科室
+    function caseSelect(wardId){
+        $.post("../inpatient/selectInpatientWardOfficeMap.jo",{wardId:wardId},function(data){
+            //加载科室列表
+            var targetEle = $('#afterOfficeId');
+            $(targetEle).empty();
+            $(targetEle).append("<option value=''>请选择科室</option>");
+            if (data == null || targetEle == "" || targetEle == undefined) {
+                return false;
+            }
+            console.log(JSON.stringify(data));
+            $.each(data,function(key,value) {
+                var  jqOption = "<option value='" + key + "'>" + value + "</option>";
+                $(targetEle).append(jqOption);
+            });
+            $(targetEle).trigger("chosen:updated");
+        },"json");
+
+        $.post("../inpatient/selectInpatientWardBedMap.jo",{wardId:wardId},function(data){
+            //加载床位列表
+            var targetEle = $('#afterBedNum');
+            $(targetEle).empty();
+            $(targetEle).append("<option value=''>请选择床号</option>");
+            if (data == null || targetEle == "" || targetEle == undefined) {
+                return false;
+            }
+            console.log(JSON.stringify(data));
+            $.each(data,function(key,value) {
+                var  jqOption = "<option value='" + value + "'>" + value + "</option>";
+                $(targetEle).append(jqOption);
+            });
+            $(targetEle).trigger("chosen:updated");
+        },"json");
+    }
+
+    // 提交表单
+    function submitForm() {
+        var params = common.serializeObject($('#editForm'));
+        if(params.currentBedNo==null||params.currentBedNo==""){
+            common.msg("请选择转后床位号",0);
+            return ;
+        }/*
+        if(params.currentOfficeId==null||params.currentOfficeId==""){
+            common.alert("请选择转后科室",0);
+            return ;
+        }
+        if(params.currentWardId==null||params.currentWardId==""){
+            common.alert("请选择转后病区",0);
+            return ;
+        }
+        if(params.inhospitalId==null||params.inhospitalId==""){
+            common.alert("住院流水号丢失",0);
+            return ;
+        }
+        params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+        params['archiaterDoctorName'] = users[params['archiaterDoctorId']];
+        params['managerDoctorName'] = users[params['managerDoctorId']];
+        params['dutyNurserName'] = users[params['dutyNurserId']];
+        params['headNurserName'] = users[params['headNurserId']];
+        params['bedDoctorName'] = users[params['bedDoctorId']];
+
+        console.log(params);*/
+        common.requestServer('../inpatient/saveOfficeBedExchange.jo', params, function(result){
+            if (result.code == "0") {
+                parent.common.alertCall("换床成功。", 1, function (){
+                    $('#btn_query', window.parent.document).click()
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+            } else {
+                parent.common.alert(result.msg, 0);
+            }
+        });
+    }
+
+    $(document).ready(function(){
+
+
+    });
+    layui.use(['element','form'], function(){
+        var element = layui.element;
+        var form = layui.form;
+
+        $('#btn_subim').on('click',function(){
+            submitForm();
+        });
+        $('#btn_cancel').on('click',function(){
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+
+    });
+</script>

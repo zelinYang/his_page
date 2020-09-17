@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-治疗管理-治疗查询</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md6 layui-col-xs6">
+                <!--搜索条件 开始-->
+                <form id="treatApply_queryForm" class="layui-form">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">申请日期</label>
+                                <div class="layui-input-inline wd-100">
+                                    #formLayDateInput("applyTimeBegin" "" " maxlength='17' autocomplete='off'
+                                    class='layui-input' ")
+                                </div>
+                                <div class="layui-form-mid">至</div>
+                                <div class="layui-input-inline wd-100">
+                                    #formLayDateInput("applyTimeEnd" "" " maxlength='17' autocomplete='off'
+                                    class='layui-input' ")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-input-inline wd-220">
+                                    #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off'
+                                    maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡'
+                                    lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+                                </div>
+                            </div>
+                            <div class="layui-inline layui-btn-group">
+                                <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                        class="layui-icon layui-icon-search"></i></button>
+                                <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i
+                                        class="iconfont icon-qingchu"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!-- 列表表格 工具栏-->
+                <!-- 列表表格 工具栏 结束-->
+                <!-- 列表表格 begin -->
+                <table id="treatApply_ListGrid" lay-filter="treatApply_ListGrid"></table>
+                <!--  列表表格 end -->
+                <!-- 操作栏操作按钮 -->
+                <script type="text/html" id="operateTpl">
+                    <a class="layui-btn layui-btn-xs" lay-tips="预约" lay-event="btn_appoint">预约</a>
+                </script>
+            </div>
+            <div class="layui-col-md6 layui-col-xs6">
+                <div class="layui-card">
+                    <div class="layui-card-header">治疗时段
+                        <div class="fr workTime">
+                            <p style="color: black;">上午：$!dicData.dicVisitTimeRange.get('1') &nbsp;&nbsp;&nbsp;&nbsp;
+                                下午：$!dicData.dicVisitTimeRange.get('2') </p>
+                        </div>
+                    </div>
+                    <div class="layui-card-body p-n ">
+                        <table id="appointResourceTable" lay-filter="appointResourceTable"></table>
+                    </div>
+                </div>
+
+                <div class="tool-bottom-fixed " style="position: sticky;">
+                    <button class="layui-btn layui-btn-sm layui-btn-danger" lay-submit lay-filter="btn_save"
+                            id="btn_save"> 预 约
+                    </button>
+                    <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" id="btn_cancel">取消预约</button>
+                    <button type="button" id="btn_refresh" class="layui-btn layui-btn-sm " style="margin-left: 30px"
+                            onclick="location.reload()" lay-tips="刷新">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 性别模板 -->
+<script type="text/html" id="sexTpl">
+    <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+</script>
+<!-- 本页面js -->
+##parse("./treat/treatApply/treatApplyList.js.vm")
+<script>
+    var APPOINT_REGISTER_FLAG_APPOINT = "${CONST.AppConstants.APPOINT_REGISTER_FLAG_APPOINT}"
+    var dicTreatDicTypeId = JSON.parse('$dicTools.changeMapToJson($dicData.dicTreatDicTypeId)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicVisitTimeRange = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeRange)');
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util, xmSelect = layui.xmSelect;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#treatApply_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                applyTimeBegin: '',
+                applyTimeEnd: ''
+            }, common.serializeObject($('#treatApply_queryForm')));
+        }
+
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('treatApply_ListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('treatApply_queryForm');
+        })
+
+        //表格设置
+        var treatApply_ListGrid = table.render($.extend(basePageTable, {
+            elem: '#treatApply_ListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/surgery/treatApplyPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'radio'
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 70
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                width: 60,
+                templet: '#sexTpl'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号'
+            },{
+                field: 'applyTime',
+                title: '申请日期',
+                minWidth: 85,
+                templet: function (res) {
+                    return res.applyTime ? layui.util.toDateString(res.applyTime, "yyyy-MM-dd") : ''
+                }
+            }, {
+                title: '申请医生',
+                field: 'applyDoctorName',
+                minWidth: 70,
+            }, {
+                title: '申请科室',
+                field: 'applyOfficeName',
+                minWidth: 70,
+            }/*, {
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }*/]], done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        //操作栏操作按钮的事件
+        table.on('tool(treatApply_ListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open(contextPath + '/drugstore/treatApplyPageData.do?drugstoreMedicineRelId=' + row.drugstoreMedicineRelId, '编辑', {
+                        area: ['99%', '99%'],
+                        scroll: true
+                    })
+                    break;
+            }
+        });
+
+
+        //监听号源表行单击事件
+        table.on('row(treatApply_ListGrid)', function (obj) {
+            var data = obj.data;
+            //$("#").next('.layui-table-view').find('.layui-table-click').length
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //号源表格
+        var appointResourceTable = table.render({
+            elem: '#appointResourceTable'
+            ,url:'../surgery/treatAppointResourceListData.jo'
+            , where: function (){
+                return {applyOfficeId : $('input[name="applyOfficeId"]').val()}
+            }
+            , page: false //开启分页
+            , limit: 99999
+            , height: TableHgt()
+            , cols: [[ //表头
+                {  type: 'radio', title: '序号', width: 60}
+                , {
+                    field: 'therapyAppointTime', title: '时间', templet:function (row) {
+                        return row.therapyAppointTime ? layui.util.toDateString(row.therapyAppointTime,'yyyy-MM-dd HH:mm') : "";
+                    }
+                }
+                , {field: 'patientName', title: '患者'}
+            ]]
+        });
+
+        function TableHgt() {
+            return ($('body').height() - 84)
+        }
+
+        //监听号源表行单击事件
+        table.on('row(appointResourceTable)', function (obj) {
+            var data = obj.data;
+            var flag = Boolean(data.patientName);
+            //如果有预约记录，加载患者信息到表单
+            $('#btn_save').prop('disabled', flag)[flag ? 'addClass' : 'removeClass']('layui-btn-disabled');
+            $('#btn_cancel').prop('disabled', !flag)[!flag ? 'addClass' : 'removeClass']('layui-btn-disabled');
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        $('#btn_cancel').click(function (){
+            var appoint = table.checkStatus(appointResourceTable.config.id).data[0];
+            if (!appoint) {
+                common.msg("请选择预约患者", 0)
+                return ;
+            }
+            var params  = {
+                treatReportId: appoint.treatReportId,
+            }
+            common.requestServer(contextPath + '/surgery/delTreatRecordAppoint.jo', params, function (result) {
+                if (result.code == '0') {
+                    common.msg('取消预约成功。', 1, function () {
+                        appointResourceTable.reload();
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        })
+        $('#btn_save').click(function (){
+            var treatApply = table.checkStatus(treatApply_ListGrid.config.id).data[0];
+            if (!treatApply) {
+                common.msg("请选择患者", 0)
+                return ;
+            }
+            var appoint = table.checkStatus(appointResourceTable.config.id).data[0];
+            if (!appoint) {
+                common.msg("请选择号源", 0)
+                return ;
+            }
+            var params  = {
+                treatApplyId: treatApply.treatApplyId,
+                therapyAppointTime: layui.util.toDateString(appoint.therapyAppointTime,'yyyy-MM-dd HH:mm:ss'),
+            }
+            common.requestServer(contextPath + '/surgery/saveTreatRecordAppoint.jo', params, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query').click();
+                        appointResourceTable.reload();
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        })
+    })
+</script>
+</body>
+</html>

@@ -1,0 +1,47 @@
+<script type="text/javascript">
+var initLayout;
+initLayout = function() {
+    $('#container').layout({
+        west__size: 810//pane的大小 
+       ,togglerContent_open: "<div class='blue'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content   
+       ,togglerContent_closed: "<div class='blue'>▶</div>"//pane关闭时，同上。  
+       ,spacing_open:8//边框的间隙 
+       ,resizerTip:"拖动调整大小"
+       ,maskIframesOnResize:".resizeiframe"
+    });
+}
+
+layui.use(['jquery','table', 'laypage','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var laypage = layui.laypage; 
+    var $ = layui.$;
+    
+    element.render();
+    form.verify({});
+    
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+       saveConsultOpinion();
+       return false;
+    });
+    
+    //ajax请求
+    function saveConsultOpinion() {
+        //表单参数
+        var consultParams = common.serializeObject($('#consultForm'));
+        common.fullDateTime(consultParams);
+        common.post('$!contextPath/consultationApply/saveConsultOpinion.jo', consultParams, function(result){
+            common.responseAtcion(result);
+        }); 
+    }
+    
+});//layui.use
+
+//页面初始化
+$(document).ready(function() {
+    initLayout();
+});
+
+</script>

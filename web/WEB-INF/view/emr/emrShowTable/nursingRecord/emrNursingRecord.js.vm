@@ -1,0 +1,81 @@
+<script type="text/javascript">
+//护理记录单列表
+function nursingRecord(self){
+	if (self.nursingRecordJSON != '' && self.nursingRecordJSON !=null) {
+	    console.log("护理记录单列表");
+	    var nursingRecordList = JSON.parse(self.nursingRecordJSON);
+	    var tbody = $("#ueditor_0").contents().find('.sde-table').children("tbody:first-child");
+	    var trs = tbody.children('tr');
+	    var lackTrCount = nursingRecordList.length-(trs.length-2);
+	    console.log(lackTrCount);
+	    if(lackTrCount > 0){
+	        for(var i=0;i<lackTrCount;i++){
+	            var trTpl = tbody.children('tr:last').clone();
+	            tbody.append(trTpl)
+	        }
+	    }
+	    tbody.children('tr').each(function (index, dom) {
+	        var count = index - 2;
+	        if (count < 0 || count >= nursingRecordList.length) {
+	            return true;
+	        }
+	        console.log(count);
+	        console.log($(this).find('td'));
+	        $(this).find('td').each(function (index, dom) {
+	            switch(index) {
+	            case 0: {
+	                $(this).html(new Date(nursingRecordList[count].recordTime).Format("yyyy-MM-dd"));
+	                break;
+	            }
+	            case 1: {
+	                $(this).html(new Date(nursingRecordList[count].recordTime).Format("HH:mm"));
+	                break;
+	            }
+	            case 2: {
+	                $(this).html(nursingRecordList[count].temperature);
+	                break;
+	            }
+	            case 3: {
+	                $(this).html(nursingRecordList[count].pulseRate);
+	                break;
+	            }
+	            case 4: {
+	                $(this).html(nursingRecordList[count].breathing);
+	                break;
+	            }
+	            case 5: {
+	                $(this).html();
+	                break;
+	            }
+	            case 6: {
+	                $(this).html(nursingRecordList[count].bloodPressureAm+"/"+nursingRecordList[count].bloodPressureAmTwo);
+	                break;
+	            }
+	            case 7: {
+	                $(this).html(nursingRecordList[count].enterQuantity);
+	                break;
+	            }
+	            case 8: {
+	                $(this).html(nursingRecordList[count].cvpInput);
+	                break;
+	            }
+	            case 9: {
+	                $(this).html(nursingRecordList[count].shitOutputDetail);
+	                break;
+	            }
+	            case 10: {
+	                $(this).html(nursingRecordList[count].cvpOutput);
+	                break;
+	            }
+	            case 11: {
+	                $(this).html(nursingRecordList[count].diseaseObservationOne+"<br>"
+	                        +nursingRecordList[count].recordUserId);
+	                break;
+	            }
+	            }
+	        });
+	    });
+	    
+	}
+}
+</script>

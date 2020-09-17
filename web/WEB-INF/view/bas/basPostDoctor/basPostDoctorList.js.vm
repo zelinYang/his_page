@@ -1,0 +1,228 @@
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 列表表格 工具栏 结束-->
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="查看" lay-event="btn_show"><i
+            class="layui-icon layui-icon-about"></i></a>
+    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+            class="layui-icon"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+        // 科室
+        var officeIds = xmSelect.render({
+            el: '#officeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'officeIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../org/sysOrgListData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.name, value: item.orgId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+        // 获取查询表单参数对象
+        window.getQueryParams = function (params) {
+            return $.extend({
+                officeId: '',
+                doctorName: '',
+                doctorPost: '',
+                doctorSign: '',
+                chargeItemId: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, params || common.serializeObject($('#basPostDoctor_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_doctorName").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basPostDoctorListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basPostDoctor_queryForm');
+            officeIds.setValue([]);
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/bas/basPostDoctorAdd.do', '设置医生诊查费', {
+                area: ['90%', '90%'],
+                scroll: true
+            });
+        })
+
+        // 职称诊查费按钮
+        $('#btn_postFee').click(function () {
+            common.open('$contextPath' + '/bas/basPostFeeAdd.do', '设置职称诊查费', {
+                area: ['80%', '80%'],
+                scroll: true
+            });
+        })
+        // 职称电子病历签名按钮
+        $('#btn_postEmrSign').click(function () {
+            common.open('$contextPath' + '/bas/basPostEmrSignAdd.do', '设置职称电子病历签名', {
+                area: ['700px', '400px'],
+                scroll: true
+            });
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basPostDoctorListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basPostDoctorListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    title: '科室',
+                    minWidth: 200,
+                    templet: function (d) {
+                        return $.map(d.orgMap, function (name) {
+                            return name;
+                        }).join();
+                    }
+                }, {
+                    field: 'doctorName',
+                    title: '医生',
+                    minWidth: 200
+                }, {
+                    field: 'doctorPost',
+                    title: '职称',
+                    templet: function (d) {
+                        return dicDoctorPost[d.doctorPost] || '';
+                    }
+                }, {
+                    field: 'doctorSign',
+                    title: '电子病历签名',
+                    templet: function (d) {
+                        return dicDoctorSignType[d.doctorSign] || '';
+                    }
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 120,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#basPostDoctor_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/updateBasPostDoctorValidFlag.jo', {
+                doctorId: data.doctorId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basPostDoctorListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/bas/basPostDoctorShow.do?doctorId=' + row.doctorId, '医生诊查费详情', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/bas/basPostDoctorEdit.do?doctorId=' + row.doctorId, '医生诊查费', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../bas/delBasPostDoctor.jo', {
+                            ids: row.doctorId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+    })
+</script>

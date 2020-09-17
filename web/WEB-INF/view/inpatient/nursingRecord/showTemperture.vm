@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title> 
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-form-label{width: 90px;}
+    .layui-form-item .layui-input-inline {width: 50%;}
+</style>
+</head>
+<body class="gray-bg">
+    <!-- 医嘱查询条件 -->
+    <div class="layui-row p-t-xs white-bg">
+        <form class="layui-form" id="queryForm">
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("temperatureDateEnd" "$!date.format('yyyy-MM-dd', $!temperatureDateEnd)" "id='temperatureDateEnd'")
+            #formHiddenInput("temperatureDateBegin" "$!date.format('yyyy-MM-dd', $!temperatureDateBegin)" "id='temperatureDateBegin'")
+            <div class="layui-form-item search-term">
+                <div class="layui-inline m-b-xs" style="width: 350px">
+                    <label class="layui-form-label">开始日期</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("" "$!date.format('yyyy-MM-dd', $!temperatureDateBegin) - $!date.format('yyyy-MM-dd', $!temperatureDateEnd)" "id='temperatureDate' class='layui-input' readOnly")
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="layui-row m-t-xs white-bg text-center full-height-scroll" style="height: calc(100% - 50px);">
+        <div id="temp"></div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script src="$!contextPath/resource/svg/d3.v3.min.js" ></script>
+<script src="$!contextPath/resource/svg/temperature.js" ></script>
+<script type="text/javascript">
+//测试数据： 
+layui.use(['laydate', 'form'], function(){
+	var laydate = layui.laydate, form = layui.form;
+	//按日期范围查询
+    laydate.render({elem: '#temperatureDate',trigger:'click', range: true, done: function (value, date, endDate){
+        var item = value.split(" - ");
+        $('#temperatureDateEnd').val(item[1]);
+        $('#temperatureDateBegin').val(item[0]);
+        buildTemperatureList();
+    }});
+
+    function buildTemperatureList() {
+        var params = common.serializeObject($('#queryForm'));
+        common.requestServer('../inpatient/temperatureData.jo', params, function (data){
+            if (!data) { return ;}
+            $("#temp").html('');
+            //console.log(data)
+            var tempFootData = {shitCount:{title:'大便次数'}, bloodP: {title:'血压mmHg'}, height: {title:'身高cm'}, weight: {title:'体重kg'}};
+            new temperature("#temp", {}).initTemp(tempFootData).initData(data);
+        });
+	}
+
+    // 
+    buildTemperatureList();
+	
+});
+
+</script>
+</html>

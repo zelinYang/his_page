@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>排班医生</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="http://at.alicdn.com/t/font_1218915_itvpa1gvem.css" media="all">
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <style>
+        @font-face {
+            font-family: 'iconfont';  /* project id 1218915 */
+            src: url('//at.alicdn.com/t/font_1218915_uoztv16bsg.eot');
+            src: url('//at.alicdn.com/t/font_1218915_uoztv16bsg.eot?#iefix') format('embedded-opentype'),
+            url('//at.alicdn.com/t/font_1218915_uoztv16bsg.woff2') format('woff2'),
+            url('//at.alicdn.com/t/font_1218915_uoztv16bsg.woff') format('woff'),
+            url('//at.alicdn.com/t/font_1218915_uoztv16bsg.ttf') format('truetype'),
+            url('//at.alicdn.com/t/font_1218915_uoztv16bsg.svg#iconfont') format('svg');
+        }
+        .zbb-table td a button.enabled {
+            cursor: pointer;
+            position: absolute;
+            top: 7px;
+            z-index: 5;
+            right: 9px;
+            width: 18px;
+            border: 0;
+            height: 18px;
+            line-height: 18px;
+            display: inline-block;
+            font-size: 12px;
+            text-align: center;
+            background-color: #FF5722;
+            color: #fff;
+            border-radius: 2px;
+        }
+
+        .ys-card.activate {background-color: #cbdaf8; cursor: pointer; }
+    </style>
+
+</head>
+<body style="overflow: hidden">
+<div class="zbb-row">
+    <div class="zbb-ks-list">
+        <div class="layui-card full-height overflow-y-h overflow-x-h">
+            <div class="layui-card-header">门急诊科室 > <span style="color: #01AAED;" class="title-name"></span></div>
+            <div class="layui-card-body">
+                <div class="layui-row full-height">
+                    <ul id="emrTypeTree" class="ztree white-bg full-scroll"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="zbb-section">
+        <div class="zbb-card">
+            <div class="zbb-card-header">
+                <form class="layui-form" id="arrangeDutyDoctorQueryForm" action="../outpatient/arrangeDutyDoctorMain.do">
+                    <input type="hidden" id="days" name="days" value="0">
+                    <input type="hidden" id="onclickRecord" name="onclickRecord" value="$!date.format('yyyy-MM-dd', $!{onclickRecord})">
+                    <div class="header-left">
+                    #*
+                                    <button  type="hidden" name="submitState"  lay-submit lay-filter="submitState" >
+                    *#
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal iconfont" lay-tips="上周" id="lastWeek">&#xe603;</button>
+                        <button type="button" class="layui-btn layui-btn-sm" id ="thisWeek">本周</button>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal iconfont" lay-tips="下周" id="nextWeek">&#xe604;</button>
+                        <!--<button type="button" class="layui-btn layui-btn-sm layui-icon layui-icon-refresh" id="Refresh" lay-tips="清空所有条件" ></button>-->
+                                        <button type="button" class="layui-btn layui-btn-sm layui-icon layui-icon-refresh" id="refresh" lay-tips="刷新" ></button>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-warm iconfont" lay-tips="历史排班记录" id="arrangeRecords">&#xe637;</button>
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-danger"  id="btn_GenerateNextWeek">生成下周</button>
+
+                    </div>
+                </form>
+                <div class="header-text">今天日期：$!date.format('yyyy-MM-dd', ${curDate}) #lookUpDict($dicData.dicVisitTimeFlag "$!{curAmPm}")         第${weekObject.yearWeekNum}周 </div>
+                <div class="header-right">
+                    <!-- <button type="button" class="layui-btn layui-btn-md layui-btn-normal">保存</button> -->
+                </div>
+            </div>
+            <div class="zbb-card-body">
+                <div id="zbbThead">
+                    <table width="100%" cellspacing="0" cellpadding="0" class="zbb-table">
+                        <colgroup>
+                            <col width="3%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col>
+                        </colgroup>
+                        <thead>
+                        <tr>
+                            <th class="time"></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.monday})</time><span>星期一</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.tuesday})</time><span>星期二</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.wednesday})</time><span>星期三</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.thursday})</time><span>星期四</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.friday})</time><span>星期五</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.saturday})</time><span>星期六</span></th>
+                            <th><time>$!date.format('yyyy-MM-dd', $!{weekmap.sunday})</time><span>星期日</span></th>
+                        </tr>
+                        </thead>
+                    </table>
+                </div>
+                <div id="zbbTbody">
+                    <table width="100%" cellspacing="0" cellpadding="0" class="zbb-table">
+                        <colgroup>
+                            <col width="3%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col width="12%">
+                            <col>
+                        </colgroup>
+                        <tbody>
+                            <tr>
+                                <td class="time"><span>上午</span></td>
+
+                                <td><!-- 周一上午 -->
+                                    <div class="zzb-list" id="mondayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.mondayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.monday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.monday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周二上午 -->
+                                    <div class="zzb-list" id="tuesdayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.tuesdayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.tuesday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.tuesday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周三上午 -->
+                                    <div class="zzb-list" id="wednesdayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.wednesdayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.wednesday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.wednesday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周四上午 -->
+                                    <div class="zzb-list" id="thursdayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.thursdayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.thursday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.thursday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周五上午 -->
+                                    <div class="zzb-list" id="fridayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.fridayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.friday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.friday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周六上午 -->
+                                    <div class="zzb-list" id="saturdayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.saturdayMorning)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.saturday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.saturday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周日上午 -->
+                                    <div class="zzb-list" id="sundayMorning">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.sundayMorning)
+                                        <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                            #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                        </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.sunday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.sunday}),1" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                            </tr>
+                            <tr>
+                                <td class="time"><span>下午</span></td>
+
+                                <td><!-- 周一下午 -->
+                                    <div class="zzb-list"id="mondayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.mondayAfternoon)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.monday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.monday}),2"  class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周二下午 -->
+                                    <div class="zzb-list" id="tuesdayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.tuesdayAfternoon)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.tuesday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.tuesday}),2"  class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周三下午 -->
+                                    <div class="zzb-list" id="wednesdayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.wednesdayAfternoon)
+                                        <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                            #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                        </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.wednesday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.wednesday}),2"  class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周四下午 -->
+                                    <div class="zzb-list" id="thursdayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.thursdayAfternoon)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.thursday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.thursday}),2"  class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周五下午 -->
+                                    <div class="zzb-list" id="fridayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.fridayAfternoon)
+                                            <a>
+                                                <small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.friday})))
+                                    <button type="button"  value="$!date.format('yyyy-MM-dd', $!{weekmap.friday}),2" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周六下午 -->
+                                    <div class="zzb-list" id="saturdayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.saturdayAfternoon)
+                                            <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                                #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                            </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.saturday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.saturday}),2" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                                <td><!-- 周日下午 -->
+                                    <div class="zzb-list" id="sundayAfternoon">
+                                        #foreach($ArrangeDutyDoctor in $angeDutyDoctorGroupList.sundayAfternoon)
+                                        <a><small arrangeDutyDoctorId="$!ArrangeDutyDoctor.arrangeDutyDoctorId">$!ArrangeDutyDoctor.doctorName <span>$!ArrangeDutyDoctor.consultingRoomName</span></small>
+                                            #if(${CONST.AppConstants.YES_FLAG} == $!ArrangeDutyDoctor.validFlag)
+                                                <button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button>
+                                                #else
+                                                <button type="button" class="enabled" lay-tips="单击取消停诊" lay-direction="2">停</button>
+                                                #end
+                                        </a>
+                                        #end
+                                    </div>
+                                    #if(0 >= $!date.format('yyyy-MM-dd', ${curDate}).compareTo($!date.format('yyyy-MM-dd', $!{weekmap.sunday})))
+                                    <button type="button" value="$!date.format('yyyy-MM-dd', $!{weekmap.sunday}),2" class="layui-btn zbry" lay-tips="添加值班人员" lay-direction="2"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    #end
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $('#zbbTbody').on('scroll',function () {
+        $('#zbbThead').scrollLeft($('#zbbTbody').scrollLeft())
+    })
+</script>
+    #parse("./outpatient/arrangeDutyDoctor/arrangeDutyDoctorMain.js.vm")
+<script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+</body>
+</html>

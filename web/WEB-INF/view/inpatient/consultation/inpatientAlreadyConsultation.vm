@@ -1,0 +1,177 @@
+#parse("./common/pageCss.vm")
+<title>已会诊患者报表查询 </title>
+<style>
+    .layui-table > thead > tr > th {
+        text-align: center;
+    }
+
+    .layui-table > tbody > tr > td {
+        text-align: center;
+    }
+</style>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <form class="layui-form" id="queryForm">
+                #formHiddenInput("consultationStateFlag" "4" "id='consultationStateFlag' class='layui-input' readOnly")
+              <div class="layui-row-query search-term">
+                  <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请科室</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("applyOfficeId" "" $!dicData.dicOffice
+                                    "id='applyOfficeId' lay-filter='applyOfficeId' " "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">病 区</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("currentWardId" "" $!dicData.dicInpatientWardAll
+                                    "id='currentWardId' lay-filter='currentWardId'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">会诊日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" ""
+                                    "id='consultationTime' tag='consultationTimeBegin,consultationTimeEnd' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn layui-btn-sm" type="button" id="btn_refresh" title="刷新"><i class="layui-icon layui-icon-refresh"></i></button>
+                        </div>
+                    </div>
+              </div>
+            </form>
+            <table class="layui-hide" id="consultationList" lay-filter="consultationList"></table>
+        </div>
+    </div>
+</div>
+
+
+
+
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+    var dicConsttStateFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttStateFlag)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+    layui.use(['table', 'form', 'laydate'], function () {
+        var laydate = layui.laydate, form = layui.form, table = layui.table;
+        var tableUrl = '../consultationApply/inConsultationApplyListData.jo';
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('consultationList', {
+                height: height
+            })
+        });
+        function getTableHgt(){
+            return $('body').height() - $('#queryForm').height() - 5 // 获取表格高度
+        }
+
+        table.render($.extend(basePageTable, {
+            id: 'consultationList',
+            elem: '#consultationList',
+          height:  getTableHgt(), // 获取表格高度
+            where: common.serializeObject($('#queryForm')),
+            url: tableUrl,
+            cols: [[
+                {
+                    field: 'applyOfficeName',
+                    width: 100,
+                    title: '申请科室'
+                }, {
+                    field: 'currentWardName',
+                    width: 130,
+                    title: '病区'
+                }, {
+                    field: 'currentBedNo',
+                    width: 100,
+                    title: '床号',
+                }, {
+                    field: 'patientName',
+                    width: 80,
+                    title: '姓名'
+                }, {
+                    field: 'patientSex',
+                    width: 60,
+                    title: '性别',
+                    templet: function (row) {
+                        if (row.patientSex) return dicSex[row.patientSex];
+                    }
+                }, {
+                    field: 'consultationStateFlag',
+                    title: '状态',
+                    width: 100,
+                    templet: function (row) {
+                        if (row.consultationStateFlag) return dicConsttStateFlag[row.consultationStateFlag] ? dicConsttStateFlag[row.consultationStateFlag] : '';
+                    }
+                }, {
+                    field: 'applyTime',
+                    width: 160,
+                    title: '申请时间'
+                }, {
+                    field: 'consultationTime',
+                    title: '会诊时间',
+                    width: 160
+                }, {
+                    field: 'consultationAim',
+                    title: '会诊目的',
+                }, {
+                    field: 'consultationDoctor',
+                    title: '会诊医生',
+                }, {
+                    field: 'manageDoctorName',
+                    title: '上级医师'
+                }
+            ]]
+        }));
+
+        function queryList() {
+            if (table) {
+                table.reload('consultationList', {
+                    url: tableUrl,
+                    page: {curr: 1},
+                    where: common.serializeObject($('#queryForm'), ['consultationTime'])
+                });
+            }
+        }
+
+        //单击查看
+        table.on('row(consultationList)', function (obj) {
+            var data = obj.data;
+            var params = "inhospitalId=" + data.inhospitalId + "&emrTlpId=" + data.patientHospitalEmr.emrTlpId + "&patientHospitalEmrId=" + data.patientHospitalEmrId + "&patientId=" + data.patientId;
+            parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, data.patientName + "会诊申请", '');
+        });
+
+        $('#btn_clean').click(function () {
+            queryList();
+        });
+
+        // 科室
+        form.on('select(applyOfficeId)', function (data) {
+            queryList();
+        });
+        // 病区
+        form.on('select(currentWardId)', function (data) {
+            queryList();
+        });
+
+        $('#btn_refresh').click(function () {
+            window.location.href = window.location.href;
+        });
+
+        laydate.render({
+            elem: '#consultationTime', range: true, done: function (value, date, endDate) {
+                queryList()
+            }
+        });
+    });
+
+
+</script>

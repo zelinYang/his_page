@@ -1,0 +1,641 @@
+<script type="text/javascript">
+    var _patientHospitalEmr; //正在审阅的病历
+//    var _patientEmrDefect; //缺陷主表
+    var _patientHospitalEmrArray = []; //患者已存在的病历
+    var _patientEmrDefectItem; //要编辑的缺陷项目
+    var _patientEmrDefectItemArray= [];
+    var loadTree;
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicQualityCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicQualityCode)');
+
+    // 全屏显示
+    $('#btn_full_screen').click(function () {
+        parent.currentTabId = window.frameElement && window.frameElement.id || '';
+        parent.common.open(contextPath + '/emrdefect/patientEmrEndQualityMain.do?fullScreenFlag=1&inhospitalId=' + $('#inhospitalId').val(), '终末质控-' + $('#div_patientName').html(), {});
+    });
+
+    //手动缺陷列表的配置信息
+    var manualDefectItemRenderObj = {
+        elem : '#manualDefectListGrid',
+        limit : 20,
+        id : 'manualDefectListGrid',
+        where : {
+            'defectMode' : '$!{CONST.AppConstants.DEFECT_MODE_MANUAL}'
+        },//默认有效
+        cols : [ [ {
+            width : 30,
+            title : '<i onclick="javascript:addItem();" class="layui-icon layui-icon-add-1 btn-img-green" title="新增" ></i>',
+            toolbar: '<a><i class="layui-icon layui-icon-delete btn-img-red" title="删除" lay-tips="删除"   lay-event="del"></i></a>'
+        }
+        ,{
+            field : 'emrTlpName',
+            event : 'edit',
+            title : '缺陷病历'
+        }
+        ,{
+            field : 'defectName',
+            event : 'edit',
+            title : '缺陷项目'
+        }
+        ,{
+            field : 'emrDefectDesc',
+            event : 'edit',
+            title : '缺陷描述'
+        }
+        ,{
+            field : 'actualLossScore',
+            event : 'edit',
+            width : 80,
+            title : '缺陷扣分'
+        } ] ],
+        page : {
+            layout : [ 'prev', 'page', 'next', 'count' ]
+        },
+        //height : 'full-60',
+        request : {
+            pageName : 'pageNumber' //页码的参数名称，默认：page
+            ,
+            limitName : 'pageSize' //每页数据量的参数名，默认：limit
+        }
+    };
+
+    //自动缺陷列表的配置信息
+    var autoDefectItemRenderObj = {
+        elem : '#autoDefectListGrid',
+        limit : 20,
+        id : 'autoDefectListGrid',
+        where : {
+            'defectMode' : '$!{CONST.AppConstants.DEFECT_MODE_AUTO}'
+        },//默认有效
+        cols : [ [{
+            width : 30,
+            title : '',
+            toolbar: '<a><i class="layui-icon layui-icon-delete btn-img-red" title="删除" lay-tips="删除"   lay-event="del"></i></a>'
+        }
+        ,{
+            field : 'defectName',
+            event : 'edit',
+            title : '缺陷项目'
+        }
+        ,{
+            field : 'actualLossScore',
+            event : 'edit',
+            width : 80,
+            title : '缺陷扣分'
+        } ] ],
+        page : {
+            layout : [ 'prev', 'page', 'next', 'count' ]
+        },
+        //height : 'full-60',
+        request : {
+            pageName : 'pageNumber' //页码的参数名称，默认：page
+            ,
+            limitName : 'pageSize' //每页数据量的参数名，默认：limit
+        }
+    };
+
+    //选择人员后的回调函数
+    var loadInpatient = function(){
+        selectManualDefectItems("$!{patientEmrDefect.patientEmrDefectId}");
+        selectAutoDefectItems("$!{patientEmrDefect.patientEmrDefectId}");
+        //访问后台获取电子病历数据并构造病历树
+        if ($("#inhospitalId").val() != null && $("#inhospitalId").val() != "") {
+            loadTree($("#inhospitalId").val());
+        }
+        if ('$!{fullScreenFlag}' === 1) {
+            $('#btn_full_screen').hide();
+        }
+    }
+
+    var initLayout = function() {
+        $('#container').layout({
+            west__size: 400//pane的大小
+            ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+            ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+            ,spacing_open:8//边框的间隙
+            ,maskIframesOnResize:".resizeiframe"
+        });
+    }
+
+    layui.use(['element', 'layer', 'table', 'util'], function(){
+        var element = layui.element,
+        $ = layui.$,
+        layer = layui.layer,
+        table = layui.table;
+        element.render();
+        loadInpatient();
+    });
+
+    //初始化手动缺陷列表数据
+    function selectManualDefectItems(patientEmrDefectId) {
+        if (typeof(patientEmrDefectId) == "undefined" || "" === patientEmrDefectId) {
+            _patientEmrDefectItemArray.length = 0;
+            manualDefectItemRenderObj.data = [];
+            layui.table.render(manualDefectItemRenderObj);
+            return;
+        }
+        //获取缺陷列表,手动构造缺陷表格
+        common.requestServer('../emrdefect/patientEmrDefectItemListData.jo', {
+            'validFlag' : '$!{CONST.AppConstants.YES_FLAG}',
+            'defectMode' : '$!{CONST.AppConstants.DEFECT_MODE_MANUAL}',
+            'defectFixFlagNotEqu' : '$!{CONST.AppConstants.DEFECT_FIX_FLAG_FIXSUCESS}',
+            'patientEmrDefectId' : patientEmrDefectId
+        }, function(result) {
+            _patientEmrDefectItemArray = result.data;
+            manualDefectItemRenderObj.data = result.data;
+            layui.table.render(manualDefectItemRenderObj);
+            //重新绑定列表记录的js方法
+            layui.table.on('tool(manualDefectListGrid)', function (obj) {
+                switch (obj.event) {
+                    case 'edit':
+                        editItem(obj);
+                        break;
+                    case 'del':
+                        delItem(obj, "$!{CONST.AppConstants.DEFECT_MODE_MANUAL}");
+                        break;
+                }
+            });
+        });
+    }
+
+    //初始化自动缺陷列表数据
+    function selectAutoDefectItems(patientEmrDefectId) {
+        if (typeof(patientEmrDefectId) == "undefined" || "" === patientEmrDefectId) {
+            autoDefectItemRenderObj.data = [];
+            layui.table.render(autoDefectItemRenderObj);
+            return;
+        }
+        //获取缺陷列表,手动构造缺陷表格
+        common.requestServer('../emrdefect/patientEmrDefectItemListData.jo', {
+            'validFlag' : '$!{CONST.AppConstants.YES_FLAG}',
+            'defectMode' : '$!{CONST.AppConstants.DEFECT_MODE_AUTO}',
+            'defectFixFlagNotEqu' : '$!{CONST.AppConstants.DEFECT_FIX_FLAG_FIXSUCESS}',
+            'patientEmrDefectId' : patientEmrDefectId
+        }, function(result) {
+            autoDefectItemRenderObj.data = result.data;
+            layui.table.render(autoDefectItemRenderObj);
+            //重新绑定列表记录的js方法
+            layui.table.on('tool(autoDefectListGrid)', function (obj) {
+                if ('del' == obj.event) {
+                    delItem(obj, "$!{CONST.AppConstants.DEFECT_MODE_AUTO}");
+                }
+            });
+        });
+    }
+
+    //存放已存在的电子病历数据到页面变量中
+    function storeHospitalEmr(hospitalEmrData) {
+        //清空变更存放的电子病历数据
+        _patientHospitalEmrArray.length = 0;
+        if (null == hospitalEmrData || typeof(hospitalEmrData) == "undefined") {
+             return;
+        }
+        //遍历电子病历数据
+        var dataindex;
+        for (dataindex in hospitalEmrData) {
+            //排除非电子病历数据
+            if (typeof(hospitalEmrData[dataindex].validFlag) == "undefined" || hospitalEmrData[dataindex].validFlag == "1") {
+                continue;
+            }
+            var patientEmr = JSON.parse(hospitalEmrData[dataindex].remark);
+            patientEmr.title = hospitalEmrData[dataindex].title;
+            _patientHospitalEmrArray.push(patientEmr);
+        }
+    }
+
+    //页面初始化
+    $(document).ready(function() {
+        initLayout();
+    });
+
+    //新增手动缺陷明细
+    function addItem() {
+        //清空所有本地手动缺陷的正在编辑标识
+        for (var i = 0; i < _patientEmrDefectItemArray.length; i++) {
+            var defectItem = _patientEmrDefectItemArray[i];
+            defectItem.isEditObj = false;
+        }
+        //清空当前编辑缺陷项目
+        _patientEmrDefectItem = [];
+        var url = '$contextPath/emrdefect/patientEmrDefectItemEdit.do';
+        common.open(url, '新增缺陷', {
+            area : [ '750px', '500px' ],
+            btn : [ '确定' ],
+            yes : function(index, layero) {
+                editDefectItemCallback(index, layero);
+            }
+        });
+    }
+
+    //编辑手动缺陷明细
+    function editItem(obj) {
+        //根据选中的obj设置缺陷列表js对象数组中的对应缺陷项目为“正在编辑”
+        for (var i = 0; i < _patientEmrDefectItemArray.length; i++) {
+            var defectItem = _patientEmrDefectItemArray[i];
+            if (defectItem.patientHospitalEmrId == obj.data.patientHospitalEmrId
+                    && defectItem.emrDefectPrjItemId == obj.data.emrDefectPrjItemId) {
+                defectItem.isEditObj = true;
+            }
+        }
+        //赋值当前编辑的缺陷内容到本地变量_patientEmrDefectItem
+        _patientEmrDefectItem = obj.data;
+        var url = '$contextPath/emrdefect/patientEmrDefectItemEdit.do';
+        common.open(url, '编辑缺陷', {
+            area : [ '750px', '500px' ],
+            btn : [ '确定' ],
+            yes : function(index, layero) {
+                editDefectItemCallback(index, layero);
+            }
+        });
+    }
+
+    //删除手动缺陷明细
+    function delItem(obj, defectMode) {
+        common.confirm("确定要删除吗？", function () {
+            var url = '$contextPath/emrdefect/delPatientEmrDefectItem.jo', params = {
+                ids: obj.data.patientEmrDefectItemId
+            }, msg = "删除成功";
+            common.requestServerHandler(url, params, msg, function (result) {
+                //根据删除的列表列表重新构建列表
+                if (defectMode == "$!{CONST.AppConstants.DEFECT_MODE_AUTO}") {//自动缺陷列表重构
+                    obj.del();
+                } else {//手动缺陷列表重构
+                    //根据选择的要删除的明细记录,从本地手动明细列表变量中删除
+                    var spliceIndex;
+                    for (var i = 0; i < _patientEmrDefectItemArray.length; i++) {
+                        var defectItem = _patientEmrDefectItemArray[i];
+                        if (defectItem.patientHospitalEmrId == obj.data.patientHospitalEmrId
+                                && defectItem.emrDefectPrjItemId == obj.data.emrDefectPrjItemId) {
+                            spliceIndex = i;
+                            break;
+                        }
+                    }
+                    _patientEmrDefectItemArray.splice(i,1);
+                    //清空当前编辑的缺陷内容到本地变量_patientEmrDefectItem
+                    _patientEmrDefectItem = null;
+                    //重新构造手动缺陷列表表格
+                    manualDefectItemRenderObj.data = _patientEmrDefectItemArray;
+                    layui.table.render(manualDefectItemRenderObj);
+                    //重新绑定列表记录的js方法
+                    layui.table.on('tool(manualDefectListGrid)', function (object) {
+                        var data = object.data;
+                        switch (object.event) {
+                            case 'edit':
+                                editItem(object);
+                                break;
+                            case 'del':
+                                delItem(object, "$!{CONST.AppConstants.DEFECT_MODE_MANUAL}");
+                                break;
+                        }
+                    });
+                }
+                //重新查询质控实例并更新页面显示
+                var queryUrl = "$contextPath/quemrdefect/ndPatientEmrDefect.jo";
+                var queryParams = { "patientEmrDefectId" : obj.data.patientEmrDefectId };
+                common.requestServer(queryUrl, queryParams, function (queryResult) {
+                    if (null == queryResult.data) {
+                        return;
+                    }
+                    //赋值本地变量
+                    var patientEmrDefect = queryResult.data;
+                    //更新页面显示内容
+                    var pInfo = $('.p-info');
+                    pInfo.find('#div_controlNumber').html(patientEmrDefect.controlNumber);
+                    pInfo.find('#div_controlTime').html(layui.util.toDateString(patientEmrDefect.controlTime));
+                    pInfo.find('#div_controlUserName').html(patientEmrDefect.controlUserName);
+                    pInfo.find('#div_defectTotalScore').html(patientEmrDefect.defectTotalScore);
+                    if (typeof(patientEmrDefect.qualityGrade) != "undefined"
+                        && typeof(dicQualityCode[patientEmrDefect.qualityGrade]) != "undefined") {
+                        pInfo.find('#div_qualityGrade').html(dicQualityCode[patientEmrDefect.qualityGrade]);
+                    }
+                });
+            });
+        });
+    }
+
+    //新增缺陷内容
+    $("#btn_addItem").click(function() {
+        addItem();
+    });
+
+    //新增/编辑缺陷项目的回调函数
+    function editDefectItemCallback(index, layero) {
+        var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_add_prjItem', submit = layero.find('iframe').contents().find('#' + submitID);
+        //监听提交
+        iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+            if (iframeWindow.defectRepeatValid()) {
+                common.alert("缺陷项目已存在，请重新选择缺陷项目或缺陷电子病历", "2");
+                return;
+            }
+            //获取缺陷选择页面的数据
+            var defectData = {};
+            $.extend(defectData, iframeWindow._patientEmrDefectItem);
+            $.extend(defectData, data.field);
+            //新增或替换掉_patientEmrDefectItemArray中的对应缺陷项目
+            var addItemFlag = true;
+            for (var i = 0; i < _patientEmrDefectItemArray.length; i++) {
+                var originDefectData = _patientEmrDefectItemArray[i];
+                if (typeof(originDefectData.isEditObj) != "undefined" && originDefectData.isEditObj) {
+                    delete originDefectData.isEditObj;
+                    delete defectData.isEditObj;
+                    _patientEmrDefectItemArray[i] = defectData;
+                    addItemFlag = false;
+                    break;
+                }
+            }
+            if (addItemFlag) {
+                _patientEmrDefectItemArray.push(defectData);
+            }
+            //关闭编辑窗口
+            layer.close(index);
+            //$("#btn_submit").trigger('click');
+            submitItems();
+        });
+        submit.trigger('click');
+    }
+
+
+    //发送整改通知
+    $("#btn_reform").click(function() {
+        var inhospitalId = $("#inhospitalId").val();
+        if (null == inhospitalId || "" == inhospitalId) {
+            common.alert("请先选择患者", "2");
+            return;
+        }
+        var patientEmrDefectId = $("#patientEmrDefectId").val();
+        if (null == patientEmrDefectId || "" == patientEmrDefectId) {
+            common.alert("没有缺陷项目，不需要发送整改通知", "2");
+            return;
+        }
+        var url = '$contextPath/emrdefect/patientEmrReformEdit.do?patientEmrDefectId=' + $("#patientEmrDefectId").val();
+        common.open(url, '整改通知', {
+            area : [ '80%', '80%' ],
+            btn : [ '发送' ],
+            yes : function(index, layero) {
+                editReformCallback(index, layero);
+            }
+        });
+    });
+
+    //新增整改通知的回调函数
+    function editReformCallback(index, layero) {
+        var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_send_reform', submit = layero.find('iframe').contents().find('#' + submitID);
+        //监听提交
+        iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+            var url = contextPath + '/emrdefect/savePatientEmrReform.jo', params = data.field, msg = "发送整改通知成功";
+            common.requestServerHandler(url, params, msg, function (result) {
+                layer.close(index); //关闭弹层
+                //更新整改通知ID
+                $("#patientEmrReformId").val(result.data.patientEmrReformId);
+            })
+        });
+        submit.trigger('click');
+    }
+
+
+    //提交保存自动质控
+    $("#auto_submit").click(function() {
+        var inhospitalId = $("#inhospitalId").val();
+        if (typeof(inhospitalId) == "undefined" || "" === inhospitalId) {
+            common.alert("缺少患者信息", "2");
+            return;
+        }
+        var submitFlag = $("#submitFlag").val();
+        if (submitFlag == null || submitFlag == "$!{CONST.AppConstants.YES_FLAG}") {
+            common.alert("页面正在提交，请稍等", "2");
+            return;
+        }
+        $("#submitFlag").val("$!{CONST.AppConstants.YES_FLAG}");
+        $.ajax({
+            "type" : "POST",
+            "contentType" : "application/json",
+            "dataType" : "json",
+            "url" : "../emrdefect/saveAutoQualityInfo.jo",
+            "data" : JSON.stringify({
+                "emrDefectPrjClassifyId" : "$!{CONST.AppConstants.DEFECT_PRJ_CLASSIFY_FILE}",
+                "patientEmrDefectId" : "$!{patientEmrDefect.patientEmrDefectId}",
+                "inhospitalId" : $("#inhospitalId").val(),
+                "qualityControllerType" : "$!{CONST.AppConstants.QUALITY_CONTROLLER_TYPE_EXPERT}", //病案质控人类型默认为质控室
+                "qualityNodeType" : "$!{CONST.AppConstants.QUALITY_NODE_TYPE_END}", //病案质控环节类型默认为环节质控
+                "hospitalId" : $("#hospitalId").val()
+            }),
+            "success" : function(result) {
+                var patientEmrDefect = result.data.patientEmrDefect;
+                common.alert("提交成功", "1");
+                var pInfo = $('.p-info');
+                pInfo.find('#div_controlNumber').html(patientEmrDefect.controlNumber);
+                pInfo.find('#div_controlTime').html(layui.util.toDateString(patientEmrDefect.controlTime));
+                pInfo.find('#div_controlUserName').html(patientEmrDefect.controlUserName);
+                pInfo.find('#div_defectTotalScore').html(patientEmrDefect.defectTotalScore);
+                pInfo.find('#div_qualityGrade').html(dicQualityCode[patientEmrDefect.qualityGrade]);
+                $("#submitFlag").val("$!{CONST.AppConstants.NO_FLAG}");
+                var nofixAutoDefectItemList = [];
+                for (autoDefectItemIdx in result.data.autoDefectItemList) {
+                    //排除已确认修复的缺陷明细记录
+                    if (typeof(autoDefectItemIdx) != "undefined"
+                            && typeof(result.data.autoDefectItemList[autoDefectItemIdx].defectFixFlag) != "undefined"
+                            && result.data.autoDefectItemList[autoDefectItemIdx].defectFixFlag != "$!{CONST.AppConstants.DEFECT_FIX_FLAG_FIXSUCESS}") {
+                        nofixAutoDefectItemList.push(result.data.autoDefectItemList[autoDefectItemIdx]);
+                    }
+                }
+                autoDefectItemRenderObj.data = nofixAutoDefectItemList;
+                layui.table.render(autoDefectItemRenderObj);
+                //重新绑定列表记录的js方法
+                layui.table.on('tool(autoDefectListGrid)', function (obj) {
+                    if ('del' == obj.event) {
+                        delItem(obj, "$!{CONST.AppConstants.DEFECT_MODE_AUTO}");
+                    }
+                });
+            }
+        });
+    });
+
+    //保存手动质控方法
+    function submitItems(){
+        var submitFlag = $("#submitFlag").val();
+        if (submitFlag == null || submitFlag == "$!{CONST.AppConstants.YES_FLAG}") {
+            common.alert("页面正在提交，请稍等", "2");
+            return;
+        }
+        $("#submitFlag").val("$!{CONST.AppConstants.YES_FLAG}");
+        $.ajax({
+            "type" : "POST",
+            "contentType" : "application/json",
+            "dataType" : "json",
+            "url" : "../emrdefect/saveManualQualityInfo.jo",
+            //traditional : true,
+            "data" : JSON.stringify({
+                //"patientId" : "",
+                //"registerId" : "",
+                "emrDefectPrjClassifyId" : "$!{CONST.AppConstants.DEFECT_PRJ_CLASSIFY_FILE}",
+                "patientEmrDefectId" : "$!{patientEmrDefect.patientEmrDefectId}",
+                "inhospitalId" : $("#inhospitalId").val(),
+                "defectItemList" : _patientEmrDefectItemArray, //手动缺陷列表数据
+                "qualityControllerType" : "$!{CONST.AppConstants.QUALITY_CONTROLLER_TYPE_EXPERT}", //病案质控人类型默认为质控室
+                "qualityNodeType" : "$!{CONST.AppConstants.QUALITY_NODE_TYPE_END}", //病案质控环节类型默认为终末质控
+                "hospitalId" : $("#hospitalId").val(),
+                "outpatientOfficeId" : $("#currentOfficeId").val()
+            }),
+            "success" : function(result) {
+                var patientEmrDefect = result.data.patientEmrDefect;
+                _patientEmrDefectItemArray = result.data.manualDefectItemList;
+                if (null == _patientEmrDefectItemArray) {
+                    _patientEmrDefectItemArray = [];
+                }
+                common.alert("提交成功", "1");
+                $("#patientEmrDefectId").val(patientEmrDefect.patientEmrDefectId);
+                var pInfo = $('.p-info');
+                pInfo.find('#div_controlNumber').html(patientEmrDefect.controlNumber);
+                pInfo.find('#div_controlTime').html(layui.util.toDateString(patientEmrDefect.controlTime));
+                pInfo.find('#div_controlUserName').html(patientEmrDefect.controlUserName);
+                pInfo.find('#div_defectTotalScore').html(patientEmrDefect.defectTotalScore);
+                pInfo.find('#div_qualityGrade').html(dicQualityCode[patientEmrDefect.qualityGrade]);
+                $("#submitFlag").val("$!{CONST.AppConstants.NO_FLAG}");
+                //重新构造手动缺陷列表表格
+                manualDefectItemRenderObj.data = _patientEmrDefectItemArray;
+                layui.table.render(manualDefectItemRenderObj);
+                //重新绑定列表记录的js方法
+                layui.table.on('tool(manualDefectListGrid)', function (obj) {
+                    switch (obj.event) {
+                        case 'edit':
+                            editItem(obj);
+                            break;
+                        case 'del':
+                            delItem(obj, "$!{CONST.AppConstants.DEFECT_MODE_MANUAL}");
+                            break;
+                    }
+                });
+            }
+        });
+    }
+
+/////////////////////////////////////////电子病历树形菜单相关js///////////////////////////////////
+    //病历树形列表 z-tree
+     var setting = {
+         data: {key: {title: "text"},simpleData: {enable: true}},
+         view: {
+             fontCss: setFontCss,
+             selectedMulti : false,
+             showIcon: false,
+             addHoverDom: addHoverDom,
+             removeHoverDom: removeHoverDom
+         },
+         callback: {
+             onClick: function(event, treeId, treeNode) {
+                 showEmr(treeNode);
+                 //showPatientEmrDefectItemList(treeNode);
+             },
+             onDblClick: function(event, treeId, treeNode) {
+                 showEmr(treeNode);
+                 //showPatientEmrDefectItemList(treeNode);
+             }
+         }
+     };
+
+     function setFontCss(treeId, treeNode) {
+         return treeNode.validFlag == '0' ? {color:"#0bb5a5"} : {};
+     }
+
+     function addHoverDom(treeId, treeNode) {
+         if (treeNode.validFlag == '0') {
+             return ;
+         }
+         var aObj = $("#" + treeNode.tId + "_a");//得到节点的a标签节点
+         if ($("#diyBtn_"+treeNode.id).length>0) return;
+
+         var editStr = "<span id='diyBtn_space_" +treeNode.id+ "' > </span>";
+         aObj.append(editStr);
+
+         var btn = $("#diyBtn_"+treeNode.id);
+         if (btn){
+             btn.click(function () {
+
+                 addTab(treeNode);
+             });
+         }
+     };
+
+     function removeHoverDom(treeId, treeNode) {
+         $("#diyBtn_"+treeNode.id).unbind().remove();
+         $("#diyBtn_space_" +treeNode.id).unbind().remove();
+     };
+
+     function showEmr(treeNode) {
+         var remark = treeNode.remark;
+         if (remark) {
+              remark= remark.replace('\"','"');
+             var patientEmr = JSON.parse(remark);
+             _patientHospitalEmr = patientEmr;
+             var targetSrc=  $('#emrIframe').attr('targetSrc');
+             if (targetSrc) {
+                 targetSrc = targetSrc.replace('VemrTlpId',patientEmr.emrTlpId);
+                 targetSrc = targetSrc.replace('VpatientId',patientEmr.patientId);
+                 targetSrc = targetSrc.replace('VpatientHospitalEmrId',patientEmr.patientHospitalEmrId);
+                 if (patientEmr.inhospitalId) {
+                     targetSrc += '&inhospitalId='+ patientEmr.inhospitalId;
+                 } else {
+                     targetSrc += '&registerId='+ patientEmr.registerId;
+                 }
+                 $('#emrIframe').attr('src',targetSrc);
+             }
+         }
+     }
+
+     function showPatientEmrDefectItemList(treeNode) {
+         var remark = treeNode.remark;
+         if (remark) {
+             remark= remark.replace('\"','"');
+             _patientHospitalEmr = JSON.parse(remark);
+             $('div[tab=patientEmrDefect] iframe')[0].contentWindow.tableReload(); //调用iframe的方法 ,刷新病历缺陷列表
+         }
+     }
+
+     //新增tab
+     function addTab(treeNode) {
+         if (treeNode.validFlag != '1') {
+             return false;
+         }
+
+         var url = '../emr/emrDefectPrjManualList.do?emrTlpClassifyId='+treeNode.emrTlpClassifyId + '&emrTlpClassifyName='+ treeNode.title;
+
+         var defectLi = $('.layui-tab-title li[lay-id=defect]');
+         if (defectLi.length > 0) {
+             $('.docBorrow .layui-tab-content div[lay-id=defect] iframe').attr('src',url);
+             defectLi.click();
+             return;
+         }
+
+         var tabLi = $('<li lay-id="" href="" class="layui-this"></li>');
+         var tabContent = $('<div lay-id="" $layclass><iframe width="100%" height="100%" frameborder="0" scrolling="no" ></iframe></div>');
+
+         tabLi.html('病历缺陷管理');
+         tabLi.attr('lay-id', 'defect');
+         tabLi.attr('treeNodeId', treeNode.id);
+         tabLi.attr('href', url);
+
+         tabContent.attr('lay-id', 'defect');
+         tabContent.find('iframe').attr('src', url);
+
+         $('.docBorrow .layui-tab-title').append(tabLi);
+         $('.docBorrow .layui-tab-content').append(tabContent);
+         $('.docBorrow .layui-tab-title li').last().click();
+     }
+
+     loadTree = function (inhospitalId) {
+         // 加载检验单类型树型菜单
+         $.ajax({
+             type: "POST",
+             url : "../patient/getEmrTypeTree.jo",
+             data: {inhospitalId: inhospitalId},
+             dataType:"json",
+             async : false,
+             success: function(result){
+                 storeHospitalEmr(result);
+                 var zNodes = result;
+                 zTree_Menu = $.fn.zTree.init($("#emrTypeTree"), setting, zNodes);
+             },
+             error: function(res){jqueryPostError(res); }
+         });//ajax end
+     }
+</script>
+

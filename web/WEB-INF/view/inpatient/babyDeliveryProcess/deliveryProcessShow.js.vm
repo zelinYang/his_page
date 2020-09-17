@@ -1,0 +1,108 @@
+<script type="text/javascript">
+
+    var dicChildbirthWay  = JSON.parse('$dicTools.changeMapToJson($!dicData.dicChildbirthWay )');
+    var tableA;
+    layui.use(['element', 'form', 'table', 'layer'], function () {
+         var table = layui.table;
+     tableA=  table.render({
+            elem: '#deluveryProcessTable'
+            ,url: '../inpatient/babyDeliveryProcessListData.jo' //数据接口
+            ,limit:20
+            ,page : true
+            ,method:'post'
+            ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+            ,where: {pageSize : 24,inhospitalId: "$!inpatientInhospital.inhospitalId"}
+            ## ,width: 880
+            ,height:729
+            ,cols: [[ //表头
+                {field: 'createTime', title: '记录时间',width:150,templet : function (row) { if (row.createTime) return getSmpFormatDateByLong(row.createTime, 'yyyy-MM-dd'); else return ""}}
+                ,{field: 'uterineDurationTime', title: '规则宫缩时间',width:150}
+                ,{field: 'childbirthWay', title: '生产方式',width:105,templet :function (row) { if (row.childbirthWay) return dicChildbirthWay[row.childbirthWay];else return ""; }}
+                ,{field: 'babyHeadDown', title: '儿头下降',width:90}
+                ,{field: 'uterusOpened', title: '宫口开大',width:90}
+                ,{field: 'createUserName', title: '记录人'}
+                ,{field: 'uterusOpened', title: '开宫口'}
+                ,{field: 'babyHeadDown', title: '儿头下降',width:90}
+                ,{field: 'currentBedNo', title: '当前床号',width:90}
+                ,{field: 'diastolicNbp', title: '收缩压',width:90}
+                ,{field: 'createUserName', title: '记录人员签名',width:120}
+                ,{field: 'latestFlag', title: '最近操作标志',width:120}
+                ,{field: 'presentationHighLow', title: '先露高低',width:90}
+                ,{field: 'dilatationCervix', title: '宫口扩张',width:90}
+            ]]
+            ,done: function (result){
+                //初始化加载体温单
+                buildDeliveryProcessList(result.data);
+}
+     })
+    var table1= table.render({
+    elem: '#deluveryRecordTable'
+    ,url: '../inpatient/babyDeliveryRecordListData.jo' //数据接口
+    ,where: {pageSize : 24,inhospitalId: "$!inpatientInhospital.inhospitalId"}
+    ,width: 800
+    ,cols: [[ //表头
+     {field: 'gravidityNum', title: '孕次',width:105}
+    ,{field: 'parityNum', title: '产次',width:90}
+    ,{field: 'predeliveryDate', title: '待产日期时间',width:150,templet : function (row) { if (row.predeliveryDate) return getSmpFormatDateByLong(row.predeliveryDate, 'yyyy-MM-dd'); else return ""}}
+    ,{field: 'lastMenstrualTime', title: '末次月经日期',width:150,templet : function (row) { if (row.lastMenstrualTime) return getSmpFormatDateByLong(row.lastMenstrualTime, 'yyyy-MM-dd'); else return ""}}
+    ,{field: 'preParturitionDate', title: '预产期',width:150,templet : function (row) { if (row.preParturitionDate) return getSmpFormatDateByLong(row.preParturitionDate, 'yyyy-MM-dd'); else return ""}}
+    ,{field: 'parturitionTime', title: '临产日期时间',width:150,templet : function (row) { if (row.parturitionTime) return getSmpFormatDateByLong(row.parturitionTime, 'yyyy-MM-dd'); else return ""}}
+    ,{field: 'uterusCondition', title: '子宫情况',width:90}
+    ,{field: 'babyDeliveryWay', title: '胎儿娩出方式',width:90}
+    ,{field: 'deliveryBabyTime', title: '胎儿娩出日期吋间',width:150,templet : function (row) { if (row.deliveryBabyTime) return getSmpFormatDateByLong(row.deliveryBabyTime, 'yyyy-MM-dd'); else return ""}}
+    ]]
+    ,done: function (result){
+    //初始化加载体温单
+    ## buildDeliveryProcessList(result.data);
+}
+})
+
+
+        //获取产程记录，并生成产程图
+        function buildDeliveryProcessList(deluveryProcessList) {
+            if (!deluveryProcessList) {
+                return;
+            }
+            var params = {currentOfficeName: $('#currentOfficeName').val()};
+             if(params.currentOfficeName!="产科"){
+                $("#babyRecord").hide();
+            }
+            $("#temp").html('');
+            new deliveryProcess("#temp", {}).initDelivery().initData(deluveryProcessList);
+        }
+
+    // 重载刷新医嘱列表
+    function reloadOrderList() {
+## var params = common.serializeObject($('#inhospitalId')]);
+    var params = {inhospitalId: $('#inhospitalId').val()};
+    console.log(params);
+    tableA.reload({url: '../inpatient/babyDeliveryProcessListData.jo', where: params});
+## initOrderButton();
+}
+
+
+    // 重置医嘱编辑
+    $('#btn_reset').click(function (){
+    $('#editOrderList').html('');
+    ## $('#btn_add_tr').click();
+    $("#oderName").text("");
+    ## selectedinpatientOrderNo='';
+    ## additionFlagData='0';
+    ## additionFlag(additionFlagData);//设置为选中
+
+});
+    // 刷新列表
+    $('#btn_freshen').click(function () {
+    var params = {inhospitalId: $('#inhospitalId').val()};
+    console.log(params);
+    tableA.reload({url: '../inpatient/babyDeliveryProcessListData.jo', where: params});
+});
+
+    });
+    // 新增
+    $('#btn_add').click(function (){
+    common.open(contextPath + '/inpatient/addBabyDeliveryProcess.do', "新增", {area:['50%', '50%']});
+});
+
+
+</script>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>万能查询内容显示</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+  <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+  <script src="../../resource/layuiadmin/layui/layui.js"></script>
+  <script src="../../resource/hplus/js/jquery-3.3.1.min.js"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+  <div class="layui-fluid">
+    <div class="layui-bg-white">
+
+      <!--列表 begin-->
+      <div style="margin-left: 20px;margin-right: 20px;">
+        <table id="docSearchTableListGrid" class="layui-table-tabs" lay-filter="docSearchTableListGrid"></table>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
+
+
+<script>
+  var pathName = window.document.location.pathname;
+  //获取带"/"的项目名，如：/cloud_his
+  var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+  var fields = new Array();
+  $.ajax({
+    type: "POST",
+    url:  projectName+'/doc/searchSettingSqlPageData.jo',
+    contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+    data: null,
+    dataType: "json",
+    success: function (data) {
+      console.log(data.fieldList);
+      for (var i=0;i<data.fieldList.length;i++){
+          var str =data.fieldList[i];
+        fields.push({   field: "", title: data.fieldList[i] });
+      }
+     // var mapObject= new Array();
+     //  for(var key in data.fieldList){
+     //    var value = mapObject[ key ]; //注意是 [  ]
+     //    fields.push({   field: key, title: value });
+     //  }
+
+    },
+    error: function (e) {
+      console.log(e);
+    }
+  });
+
+  layui.use(['table', 'layedit', 'laydate'], function(){
+    var that = this
+    var table = layui.table;
+    var form = layui.form
+        ,layer = layui.layer
+        ,layedit = layui.layedit
+        ,laydate = layui.laydate;
+
+    table.render({
+      elem: '#docSearchTableListGrid'
+      // ,url:""
+      ,url: projectName+'/doc/searchSettingSqlPageData.jo'
+      ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+      ,cols:[fields]
+      // ,cols: [[
+      //   {field:'', title: '姓名'}
+      //   ,{field:'', title: '住院号'}
+      //   ,{field:'', title: '时间'}
+      // ]]
+      ,page: true
+      ,height : getTableHgt(),
+    });
+
+
+    // 获取表格高度
+    function getTableHgt() {
+      return ($('body').height() - $('#main').height() - 70)
+    }
+
+    // 重置表格高度
+    $(window).resize(function () {
+      var height = getTableHgt()
+      table.reload('basDiseaseListGrid', {
+        height: height
+      })
+    })
+
+
+  });
+
+
+</script>

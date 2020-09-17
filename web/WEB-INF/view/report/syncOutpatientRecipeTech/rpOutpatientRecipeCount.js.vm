@@ -1,0 +1,116 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+var dicMedicineGrade = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineGrade)');
+var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+var dicMedicineTypeInOrder = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineTypeInOrder)');
+var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+
+layui.use(['table', 'element', 'form'], function () {
+    var table = layui.table, form = layui.form;
+    var $ = layui.jquery, element = layui.element;
+    var techTable = table.render($.extend(basePageTable, {
+        elem: '#tech'
+        , id: 'tech'
+        , height: getTableHgt()
+        , url: '$contextPath/report/syncOutpatientRecipeTechListData.jo' //数据接口
+        , cols: [[ //表头
+            {field: '' ,type: 'numbers'},
+            {
+                field: 'outpatientOfficeName', title: '科室名称'
+            },{
+                field: 'makeOrderDoctorName', title: '开方医生'
+            },{
+                field: 'orderName', title: '药品名称'
+            },{
+                field:'producingAreaId',title:'药品产地',templet:function (res) {
+                    return dicProducingArea[res.producingAreaId] || '';
+                }
+            },{
+                field:'medicineType',title:'用药类型',templet:function (res) {
+                    return dicMedicineTypeInOrder[res.medicineType] || '';
+                }
+            },{
+                field:'dosageForm',title:'药品剂型',templet:function (res) {
+                    return dicDosageForm[res.dosageForm] == undefined ? '' : dicDosageForm[res.dosageForm];
+                }
+            },{
+                field:'medicineGrade',title:'药品档次',templet:function(res){
+                    return  dicMedicineGrade[res.medicineGrade] || '';
+                }
+            },{
+                field: 'unitPrice', title: '单价',width:80
+            },{
+                field: 'medicineDosage', title: '药品剂量'
+            },{
+                field: 'perOrderCount', title: '每次数量'
+            },{
+                field: 'minMedicineUnit', title: '数量单位',width:80,templet:function (res) {
+                    return dicDrugNumUnit[res.minMedicineUnit] || '';
+                }
+            },{
+                field:'actualPrice',title:'总金额'
+            },{
+                field:'latestTimeBegin',title:'最近操作时间',templet:function (res) {
+                    return layui.util.toDateString(res.latestTimeBegin, 'yyyy-MM-dd HH:mm');
+                }
+            }
+        ]]
+    }));
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 13);
+    }
+    // 重置表格高度
+    $(window).resize(function () {
+        var height = getTableHgt()
+        table.reload('tech', {
+            height: height
+        })
+    })
+
+    //监听搜索
+    $('#search').on('click', function () {
+        techTable.reload({
+            where: getQueryParams()
+        })
+    });
+
+    function getQueryParams() {
+        var params = $.extend({
+            orderName:'',
+            outpatientOfficeId:'',
+            makeOrderDoctorId:'',
+            medicineType:'',
+            medicineGrade:'',
+            dosageForm:'',
+            producingAreaId:''
+        }, common.serializeObject($('#queryForm')));
+        return params;
+    }
+    //日期时间范围
+    laydate.render({
+        elem: '#chargeDate',trigger: 'click'
+        , range: true
+    });
+
+    //新增事件
+    $('#btn_add').click(function() {
+        editBasDisease();
+    });
+    //编辑
+    function editBasDisease(data) {
+        var title = '导出数据'
+        var iframeEnvironment = 'I402880460168db4bdb4bec6b0168e2b6d8d04cce';
+        var content = diResource + iframeEnvironment
+        //true 执行
+        if (data) {
+            title = data.diseaseName;
+            content += '?regionPopuId=' + data.regionPopuId;
+        }
+        common.open(content, title, {
+            area : [ '1160px', '80%' ],
+            scroll:'yes'
+        });
+    }
+})
+</script>

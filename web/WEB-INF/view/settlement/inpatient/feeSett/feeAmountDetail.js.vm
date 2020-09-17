@@ -1,0 +1,98 @@
+ <script>
+   var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+   var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+   var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+
+   layui.use(['jquery','table', 'element', 'form', 'laydate'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate;
+      var form = layui.form;
+      var element = layui.element;
+      element.render();
+
+	 // 获取表格高度
+	 function getTableHgt() {
+	 return ($('body').height() - $('#patientFeePayedForm').height() - 56)
+ }
+	 // 重置表格高度
+	 $(window).resize(function () {
+	 var height = getTableHgt()
+	 table.reload('patientFeePayedTab', {
+	 height: height
+ })
+ })
+
+    //第一个实例
+      var tableIns = table.render({
+         elem: '#patientFeePayedTab'
+        ,defaultToolbar: []
+        ,height: 'full-108'//高度
+        ,url: '../inpatient/feeInListData.jo' //数据接口
+        ,page : true
+        ,limit:20
+        ,method:'post'
+        ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+        ,where: common.serializeObject($('#patientFeePayedForm'))
+        ,cols: [[ //表头
+             {field : 'inhospitalId',title : '住院号'}
+            ,{field : 'inhospitalBedNo',title : '床号'}
+            ,{field : 'patientName',title : '患者姓名'}
+            ,{field : 'patientKind',title : '性质',
+            	templet :function (row) {  return dicPatientKind[row.patientKind] ||'';
+            	}
+            }
+            ,{field : 'inhospitalDate',title : '入院日期'}
+            ,{field : 'outhospitalDate',title : '出院日期'}
+            ,{field : 'latestUserId',title : '经手人'}
+            ,{field : 'currentOfficeId',title : '科室',
+            	templet :function (row) {
+            		return dicOffice[row.currentOfficeId];
+            	}
+            }
+            ,{field : 'validFlag',title : '备注',
+          	  templet:function(row){
+          		  if(dicIsValid[row.validFlag] == "无效"){
+          			  return "已作废";
+          		  }else{
+          			  return "有效" ;
+          		 }
+          	 	 }
+          	 }
+        ]]
+
+        //res = 如果是异步请求数据，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){ }
+      });//table.render
+
+      // 刷新按钮
+      $('#btn_Refresh').click(function (){
+    	  Refresh();
+      });
+
+    //刷新列表
+      Refresh = function() {
+        tableIns.reload({ where: null });
+      }
+
+      // 查询按钮
+      $('#btn_query').click(function (){
+        query();
+      });
+
+      //查询列表
+      query = function() {
+        var queryParams = common.serializeObject($('#patientFeePayedForm'));
+        tableIns.reload({ where: queryParams });
+      }
+    //监听行单击事件
+      table.on('row(patientFeePayedTab)', function(obj) {
+          var row = obj.data;
+          obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+          setFeePatient(row);
+      });
+      function setFeePatient(row) {
+          window.parent.inhospitalFormDo(row.inhospitalId);//显示患者缴款信息
+      }
+  });
+
+</script>

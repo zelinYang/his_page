@@ -1,0 +1,240 @@
+<script>
+var deletedOnDutyIdArray = [];
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index', //主入口模块
+  }).use([ 'index','table', 'form','element','layer'], function(){
+      var $ = layui.$
+      ,form = layui.form
+      ,layer=layui.layer
+      ,table = layui.table
+      ,dataTable = layui.dataTable
+      ,element = layui.element; //Tab的切换功能，切换事件监听等，需要依赖element模块
+
+###################################################select AM doctor table begin
+    var tableSelect = layui.tableSelect;
+    tableSelect.render({
+      elem: '#amDoctorNames',
+      checkedKey: 'userId', //表格的唯一建值，非常重要，影响到选中状态 必填
+      searchKey: 'keyWord',//搜索关键字的参数名称
+      searchShow: true, //显示搜索框内容 true=显示，false=隐藏(默认)，用于输入框的内容存在多行叠加时使用
+      sureBtn: true,  //显示确定按钮true=显示，false=隐藏(默认),用于存在多行选中时使用
+      table: $.extend({}, basePageTable,{
+             url: '../outpatient/queryToArrangeDutyDoctorList.jo' //数据接口 、
+            ,where: common.serializeObject($('#queryForm'))
+            ,cols: [[ //表头
+               {type: 'checkbox'}
+              ,{field : 'code',title : '医生代码', width:100}
+              ,{field : 'name', title : '医生姓名', width:250}
+              ,{field : 'sex', title : '性别', width:250}
+              ,{field : 'age', title : '年龄', width:250}
+            ]]
+             ,page: false
+      }),
+      done: function (elem, data) {
+            var userNamesJson  = [];
+            var userIdsJson = [];
+            layui.each(data.data, function (index, item) {
+                userNamesJson.push(item.name);
+                userIdsJson.push(item.userId);
+            //上午排队添加新行
+            addAmOndutyTr("amOndutyDoctorTable", item, "1");
+            })
+            elem.val(userNamesJson.join(","));
+            $("#selectedDoctorIds").val(userIdsJson.join(","))
+            //动态添加完表单对象后，需要重新render,否则新的东西看不见。
+            form.render();
+      }
+    });
+###################################################select AM doctor table end
+
+###################################################select PM doctor table begin
+    var tableSelect = layui.tableSelect;
+    tableSelect.render({
+      elem: '#pmDoctorNames',
+      checkedKey: 'userId', //表格的唯一建值，非常重要，影响到选中状态 必填
+      searchKey: 'keyWord',//搜索关键字的参数名称
+      searchShow: true, //显示搜索框内容 true=显示，false=隐藏(默认)，用于输入框的内容存在多行叠加时使用
+      sureBtn: true,  //显示确定按钮true=显示，false=隐藏(默认),用于存在多行选中时使用
+      table: $.extend({}, basePageTable,{
+             url: '../outpatient/queryToArrangeDutyDoctorList.jo' //数据接口
+            ,where: common.serializeObject($('#queryForm'))
+            ,cols: [[ //表头
+               {type: 'checkbox'}
+              ,{field : 'code',title : '医生代码', width:100}
+              ,{field : 'name', title : '医生姓名', width:250}
+              ,{field : 'sex', title : '性别', width:250}
+              ,{field : 'age', title : '年龄', width:250}
+            ]]
+             ,page: false
+      }),
+      done: function (elem, data) {
+            var userNamesJson  = [];
+            var userIdsJson = [];
+            layui.each(data.data, function (index, item) {
+                userNamesJson.push(item.name);
+                userIdsJson.push(item.userId);
+            //下午排队添加新行
+            addAmOndutyTr("pmOndutyDoctorTable", item, "2");
+            })
+            elem.val(userNamesJson.join(","));
+            $("#selectedDoctorIds").val(userIdsJson.join(","))
+            //动态添加完表单对象后，需要重新render,否则新的东西看不见。
+            form.render();
+      }
+    });
+###################################################select PM doctor table end
+
+######################################################select table end
+
+
+
+    //重置查询表单并刷新表格
+      $("#btn_reset").click(function(){
+          setTimeout(function(){
+              $('#btn_query').click();
+              }, 50);
+      })
+      //监听 数据搜索
+        form.on('submit(btn_query)', function(data){
+          var field = data.field;
+          field.validFlag=field.validFlag||''
+          //执行重载
+          table.reload('pmPlantListGrid', {
+            where: field
+          });
+          return false;
+        });
+      
+    form.render();
+##############################################
+form.on('select(doctorOfficeId)', function(data){
+    console.log(data.elem); //得到select原始DOM对象
+    console.log(data.value); //得到被选中的值
+    console.log(data.othis); //得到美化后的DOM对象
+    console.log($("#doctorOfficeId").val()); //得到select原始DOM对象
+    console.log(data.elem.value); //得到select原始DOM对象
+    //alert($("#doctorOfficeId").val());
+    querySubmit();
+});
+
+form.render('select');
+
+$("#btn_save").on("click",function(){
+    form.on('submit(btn_save_amOndutyDoctorForm)', function(data) {
+        form.on('submit(btn_save_pmOndutyDoctorForm)', function(data) {
+            submitForm();
+        });
+        $('[lay-filter="btn_save_pmOndutyDoctorForm"]').click();
+    });
+    $('[lay-filter="btn_save_amOndutyDoctorForm"]').click();
+   
+});
+
+##############################################
+    }); ##layui end ####################################################################################
+#*
+    //选择科室
+    $("#doctorOfficeId").change(function(){
+        alert($(this).val());
+        querySubmit();
+    });
+*#
+    //选择改变日期按钮
+    $(".changeDateBtn").click(function(){
+        $("#arrangeDutyDate").val($(this).attr("changeDate"));
+        querySubmit();
+    });
+
+    //查询提交
+    function querySubmit() {
+        $('#queryForm').submit();
+    }
+
+    //改变日期
+    function selectDate(selectedDate) {
+        $("#arrangeDutyDate").val(selectedDate);
+        querySubmit();
+    }
+
+##############################################其他JS
+  //新增数据行
+  function addAmOndutyTr(tableID, sysUserItem,arrangeDutyType){
+    //判断有没有在列表中，如果在列表中，则不再新增。
+    var doctorIdArray = []; // 定义一个空数组
+    var doctorIdInputObjs = $('#' + tableID).find('input[name="doctorId"]'); // 获取所有医生ID字段
+    doctorIdInputObjs.each(function(){
+        doctorIdArray.push($(this).val());
+        ##alert("doctorId in arrays:" + $(this).val() + " sysUserItem.userId:" + sysUserItem.userId +    " in array:" + $.inArray(sysUserItem.userId, doctorIdArray));
+    });
+    
+    if (doctorIdArray.contains(sysUserItem.userId)) {
+        return;
+    }
+
+    var newTr = $('.tplRow').clone(); 
+    newTr.removeClass('tplRow');
+    setTrData(sysUserItem, newTr, arrangeDutyType);//1为上午
+##     alert(newTr.find('select[name="consultingRoomId"]').val())
+//    bindShowMedicineNamePopover(newTr.find('input[name=medicineName]'));
+//    bindSearchMedicineNamePopover(newTr.find('input[name=medicineName]'));
+//    bindAddTr(newTr);
+
+    $('#' + tableID).append(newTr);
+  }
+
+  //设置行数据
+  function setTrData(sysUserItem, tableRow, arrangeDutyType){
+    if (!sysUserItem) {
+        return false;
+    }
+    //设置表单元素数据
+    //tableRow.find('input[name="arrangeDutyDoctorId"]').val("");//新增为空,不写
+    tableRow.find('input[name="arrangeDutyType"]').val(arrangeDutyType);
+    tableRow.find('input[name="doctorOfficeId"]').val(sysUserItem.sysOrg.orgId);//
+    tableRow.find('input[name="doctorId"]').val(sysUserItem.userId);//
+    tableRow.find('input[name="doctorCode"]').val(sysUserItem.code);//
+    tableRow.find('input[name="doctorName"]').val(sysUserItem.name);//
+    //alert("sysUserItem.sysOrg.orgId:" + sysUserItem.sysOrg.orgId);
+    //tableRow.find('input[name="consultingRoomId"]').val(sysUserItem.consultingRoomId);//暂时自动放空，手选
+
+  }
+    //删除按钮所在级行
+    function removeBtnTableRow(btn) {
+        var delTableRow =  $(btn).parent().parent();
+        var onDutyId = delTableRow.find('input[name="arrangeDutyDoctorId"]').val();
+        //alert("onDutyId" + onDutyId);
+        if (onDutyId != "" && !deletedOnDutyIdArray.contains(onDutyId)) {
+            deletedOnDutyIdArray.push(onDutyId);
+        }
+        delTableRow.remove();
+    }
+
+    
+
+    // 提交表单
+    function submitForm() {
+        var amParams = common.buildTrInputJSON($('#amOndutyDoctorTable'));
+        var pmParams = common.buildTrInputJSON($('#pmOndutyDoctorTable'));
+        //console.log("amParams", amParams);
+        
+        var postParames = {};
+        postParames.amParams = JSON.stringify(amParams);
+        postParames.pmParams = JSON.stringify(pmParams);
+        postParames.deletedOnDutyIds = JSON.stringify(deletedOnDutyIdArray);
+        postParames.arrangeDutyDate = $("#arrangeDutyDate").val();
+        common.requestServer('../outpatient/saveArrangeDutyDoctorList.jo', postParames, function(result){
+            if (result.code == "0") {
+                common.alertCall("保存成功。", 1, function (){
+                    //删除数组清零
+                    deletedOnDutyIdArray = [];
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }
+
+</script>
+  

@@ -1,0 +1,542 @@
+<script type="text/javascript">
+    var dicDiagnosisClassifyFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiagnosisClassifyFlag)');
+    var saveOutpatientItem;//保存门诊诊断
+    var addTr;//添加诊断内容行 (数据数组)
+    var addTrData;//添加诊断内容行数据
+    var removeParentTr;//移除诊断内容行
+    var moveParentTr;//上下移内容行
+    var basDiseaseRowSelect;//诊断选择回调
+    var tabChange ;//切换导航菜单
+    var outpatientTabs = ['outLog','outItem'];//门诊日志导航菜单属性[日志-诊断]
+    var targetItemTabs = ['common','history'];//底部导航菜单属性[诊断历史-常用 ]
+    var initLayIfamePage;//初始化iframe页面
+    var initLayout;
+    var outMainWin = parent; //门诊医生主窗口页面对象
+    if (!outMainWin.grobalModel) {
+		outMainWin = parent.parent.parent;
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'jquery','table', 'laypage','form','element'], function(){
+        var element = layui.element;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        element.render();
+
+        //延迟加载Ifame页面
+        initLayIfamePage = function() {
+            function loadIfamePage() {
+                $('iframe[targetSrc]').each(function(index) {
+                    var elem = $(this);
+                    var src = elem.attr('targetSrc') + common.objToParamStr(outMainWin.grobalModel);
+                    elem.attr('src',src);
+                });
+            }
+            //延迟加载
+            setTimeout(function() {
+                loadIfamePage();
+            }, 500);
+        }
+
+
+        //初始化
+        $(document).ready(function () {
+            ckOutRegExist();//判断医生是否已选取患者、填写门诊日志
+            initLayIfamePage();
+            $('#btn_save').click(function () {
+                saveOutpatientItem();
+            });
+        });
+
+        //设置诊断的值
+        function setDiagnosisData() {
+            var outItemDiagArr =  buildTrInputJSON($('.tbody-data'));
+            //设置显示诊断内容的值
+            var firstDiagnosis = '';
+            var oneFirstDiagnosis = '';
+            var i = 0;
+            if (outItemDiagArr.length > 1) {
+                $(outItemDiagArr).each(function(index) {
+                    if(this.diseaseDiagnosisName || this.diseaseDiagnosisDesc){
+                        var diseaseDiagnosis = this.diseaseDiagnosisName ? this.diseaseDiagnosisName : this.diseaseDiagnosisDesc;
+                        i++;
+                        firstDiagnosis += i + '、'+ diseaseDiagnosis + '，   ';
+                        oneFirstDiagnosis += diseaseDiagnosis;
+                    }
+                });
+                firstDiagnosis = common.clearLastChar(firstDiagnosis,'，   ');
+            } else if (outItemDiagArr.length == 0){
+                firstDiagnosis = ''
+            } else {
+                firstDiagnosis = outItemDiagArr[0].diseaseDiagnosisName;
+            }
+            if(i == 1){
+                firstDiagnosis = oneFirstDiagnosis;
+            }
+            //要添加 设置门诊病历的值
+            $('#firstDiagnosis').val(firstDiagnosis);
+        }
+
+        //页面初始化
+        $(document).ready(function() {
+            $.layoutModel.init();
+
+            /* 切换到指定Tab项 */
+            tabChange = function (filter, layid) {
+                element.tabChange(filter, layid);
+            }
+
+            $('#btn_common, #btn_history').click(function() {
+                //切换到指定的tab
+                var targetTab = $(this).attr('target');
+                element.tabChange('outItemTabs', targetTab);
+                $.layoutModel.showSouth();
+            });
+
+        });
+
+
+        //*********************     诊断内容JS       ***********************/
+        $(document).ready(function () {
+            //应用插件
+            randerPlugins();
+            setDiagnosisData();
+            initShowPopover();
+
+            //移除选中行
+            $('#btn_del_outItem').click(function() {
+                common.confirm('确认删除吗？', function () {
+                    removeTr();
+                });
+            });
+
+            //底部添加行
+            $('#btn_add_outItem').click(function (){
+                addTr();
+            });
+
+            //行按钮添加行
+            $(".tbody-data tr").find('.btn_add_tr').click(function (){
+                addTr();
+            });
+            //全选-取消
+            checkAllReverse();
+        });
+
+        //ctrl + S 保存
+        document.onkeydown = function(e){
+            var keyCode = e.keyCode || e.which || e.charCode;
+            var altKey = e.altKey
+            if(altKey && e.keyCode == 83){
+                e.preventDefault()
+                saveOutpatientItem();
+            }
+        };
+
+        // 提交表单
+        saveOutpatientItem = function() {
+            var params = {};//传输参数
+
+            //获取门诊诊断内容
+            var result =  getOutItemParams();
+            if(!result.isSuccess){
+                return false;
+            }
+
+            params.patientId = outMainWin.grobalModel.patientId ;
+            params.registerId = outMainWin.grobalModel.registerId ;
+            params.outpatientDiagnoseListJson = JSON.stringify(result.diagnosisArray) ;
+            common.requestServer('$contextPath/outpatient/saveOutpatientDiagnose.jo', params, function(result){
+                if (result.code == "0") {
+                    common.alertCall("保存成功。", 1, function (){
+                        var outpatientDiagnoseList = result.data;
+                        console.log(outpatientDiagnoseList);
+						outMainWin.showFirstDiagnosis(null, $('#firstDiagnosis').val());//设置患者信息导航的诊断内容
+                        var emrIframe =  $('div[lay-id=outpatientEmr] iframe', outMainWin.document);
+                        var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+                        emrEditWin.getPatientFirstDiagnosis(outMainWin.grobalModel.registerId);//设置门诊病历诊断内容
+                        //设置处方明细 diagnosisId
+                        $('.tbody-data tr').each(function(index, data) {
+                            $(this).find('input[name=diagnosisId]').val(outpatientDiagnoseList[index].diagnosisId);
+                            $(this).find('.layui-icon-ok').removeClass('layui-hide');
+                            $(this).find('.layui-icon-delete').addClass('layui-hide');
+                        });
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }//save function
+
+
+        //保存数据到页面
+        function getOutItemParams() {
+            //预设处方明细的页面id ，保存成功后，通过此id的映射主键id，设置主键id的值
+            $('.tbody-data tr').each(function(index, data) {
+                $(this).find('input[name=diagnosisIdPage]').val(index);
+            });
+            var result = {};
+            var diagnosisArray = buildTrInputJSON($('.tbody-data'));
+            if (diagnosisArray) {
+                $(diagnosisArray).each(function(index) {
+                    diagnosisArray[index].patientId = outMainWin.grobalModel.patientId;
+                    diagnosisArray[index].registerId = outMainWin.grobalModel.registerId;
+                });
+            }
+            result.diagnosisArray = diagnosisArray;
+            result.isSuccess = outItemValid(diagnosisArray);
+            return result;
+        }
+
+        //全选-取消
+        function checkAllReverse() {
+            form.on('checkbox(checkAll)', function(data){
+                var isCheck = $('.tbody-data input[name=isCheck]');
+                if(data.elem.checked){
+                    $('.tbody-data input[name=isCheck]').next('.layui-form-checkbox:not(.layui-form-checked)').trigger('click');
+                } else{
+                    $('.tbody-data input[name=isCheck]').next('.layui-form-checked').trigger('click');
+                }
+            });
+        }
+
+        //新增行数据
+        addTr = function (diagnosisArr){
+            //如果存在新行，但未选择诊断，不能新增行
+            var unSlectDiagnosis = $('.tbody-data tr input[name=diseaseId][value=""]');
+            var undiseaseDiagnosisDesc = $('.tbody-data tr input[name=diseaseDiagnosisDesc][value=""]');
+            if (unSlectDiagnosis.size() >= 1 && !undiseaseDiagnosisDesc) {
+                return false;
+            }
+            var existDiagnosisArr = [];
+            //判断是否有数据
+            if (diagnosisArr && diagnosisArr.length > 0 ) {
+                $(diagnosisArr).each(function(i,diagnosis) {
+                    //判断是否已存在诊断
+                    if (diagnosisExist(diagnosis.diseaseDiagnosisName)) {
+                        existDiagnosisArr.push(diagnosis);
+                        return true;//包含则继续循环
+                    }
+
+                    var newTr = $('.rowTpl .trRow').clone();
+                    newTr.find('.btn_del_tr').click(removeParentTr(this));
+                    newTr.find('input[name=diseaseId]').val(diagnosis.diseaseId);//diseaseId
+                    newTr.find('input[name=diseaseIcdTcd]').val(diagnosis.diseaseIcdTcd);//ICD10编码
+                    newTr.find('input[name=diseaseDiagnosisName]').val(diagnosis.diseaseName);//诊断名称
+                    newTr.find('input[name=diseaseDiagnosisDesc]').val(diagnosis.commDiagnosisDesc);//描述性诊断
+                    newTr.find('input[name=diagnosisTime]').val(getSmpFormatNowDate(true));//诊断时间
+                    newTr.find('select[name=diseaseTypeFlag]').val(diagnosis.diseaseTypeFlag);//中西医标志
+                    form.render();
+                    newTr.find('.btn_add_tr').click(function (){
+                        addTr();
+                    });
+                    $('.tbody-data').append(newTr);
+                });
+
+            } else {
+                //添加新行-无数据
+                var newTr = $('.rowTpl .trRow').clone();
+                newTr.addClass('active');
+                newTr.find('input[name=diagnosisTime]').val(getSmpFormatNowDate(true));//诊断时间
+                newTr.find('.btn_add_tr').click(function (){
+                    addTr();
+                });
+                $('.tbody-data').append(newTr);
+            }
+            initShowPopover();
+            randerPlugins();
+
+            //已存在内容提示
+            if (existDiagnosisArr.length > 0) {
+                var msg  = '诊断 ICD 已存在：';
+                $(existDiagnosisArr).each(function(i,diagnosis) {
+                    msg += diagnosis.diseaseIcdTcd + '、'
+                });
+
+                msg = msg.substring(0,msg.length-1) + '!';
+                common.alert(msg, 0);
+            }
+
+        }
+
+
+        //给增行设置数据
+        addTrData = function (diagnosis){
+            //判断是否已存在诊断
+            if (diagnosisExist(diagnosis.diseaseName)) {
+                common.alert('诊断内容已存在！', 0);
+                return true;//包含则继续循环
+            }
+            var newTr = $('.tbody-data tr.active');
+            newTr.find('input[name=diseaseId]').val(diagnosis.diseaseId);//diseaseId
+            newTr.find('input[name=diseaseIcdTcd]').val(diagnosis.diseaseIcdTcd);//ICD10编码
+            newTr.find('input[name=diseaseDiagnosisName]').val(diagnosis.diseaseName);//诊断名称
+            newTr.find('input[name=diseaseDiagnosisDesc]').val(diagnosis.diseaseName);//描述性诊断
+            newTr.find('select[name=diseaseTypeFlag]').val(diagnosis.diseaseTypeFlag);//中西医标志
+            newTr.find('input[name=diagnosisTime]').val(getSmpFormatNowDate(true));//诊断时间
+            newTr.find('input[name=infectiousFlag]').val(diagnosis.infectiousFlag);//是否传染病
+            newTr.find('input[name=chronicFlag]').val(diagnosis.chronicFlag);//是否慢性病
+            newTr.find('span[name=infectiousFlag]').html(diagnosis.infectiousFlag === '1'? '是': '');//是否传染病
+            newTr.find('span[name=chronicFlag]').html(diagnosis.chronicFlag === '1'? '是': '');//是否慢性病
+            form.render();
+            //设置诊断内容
+            setDiagnosisData();
+        }
+
+        //判断是否已存在诊断
+        function diagnosisExist(diseaseDiagnosisName) {
+            var exist = false;
+            var diagnosisArray = buildTrInputJSON($('.tbody-data'));
+            var index = $('.tbody-data tr.active').index();//当前行索引
+            $(diagnosisArray).each(function(i, diagnosis) {
+                //跳过判断当前行
+                if (index != i && diseaseDiagnosisName === diagnosis.diseaseDiagnosisName) {
+                    exist = true;
+                    return false;//跳出循环
+                }
+            });
+            return exist;
+        }
+
+
+        //验证保存内容
+        function outItemValid(diagnosisArray) {
+            var pass = true;
+            if (diagnosisArray) {
+                $(diagnosisArray).each(function(index) {
+                    if (!this.diseaseTypeFlag) {
+                        tabChange('outLogItem', 'outItem');
+                        common.alert('第'+(index+1) +'行未选择西医/中医', 0);
+                        pass =  false;
+                        $('.tbody-data tr:eq('+index+')').click();
+                        return false
+                    }
+                    if (!this.diseaseId && !this.diseaseDiagnosisDesc) {
+                        tabChange('outLogItem', 'outItem');
+                        common.alert('第'+(index+1) +'行未选择诊断内容或未填写诊断性描述', 0);
+                        pass =  false;
+                        $('.tbody-data tr:eq('+index+')').click();
+                        return false
+                    }
+                });
+            }
+            return pass;
+        }
+
+        //将行单元格中的输入框value转为json格式
+        function buildTrInputJSON(element) {
+            var array = [];
+            $(element).find(".trRow").each(function() {
+                var obj = {};
+                $(this).find("input").each(function() {
+                    if(this.name) obj[this.name] = this.value;
+                });
+                $(this).find(":checkbox").each(function() {
+                    if($(this).is(':checked')) {
+                        obj[this.name] = '1';
+                    } else {
+                        obj[this.name] = '0';
+                    }
+                });
+                $(this).find("textarea").each(function() {
+                    obj[this.name] = this.value;
+                });
+                $(this).find("select").each(function() {
+                    obj[this.name] = $(this).find('option:selected').val();
+                    obj[this.name+'Text'] = $(this).find('option:selected').text().replace(/[\r\n]/g, "").trim();;
+                });
+                array.push(obj);
+            });
+            return array;
+        }
+
+        //重新渲染插件
+        function randerPlugins() {
+            element.init();
+            form.render();
+            checkDiaFlagValChange();
+            activeTrFun();
+        }
+
+        function activeTrFun() {
+            $('.tbody-data tr td input[name=diseaseDiagnosisName]').click(function() {
+                $(this).parents('tr').addClass('active').siblings().removeClass('active');
+            });
+        }
+
+
+        //出诊复选框 ，选中则修改值
+        function checkDiaFlagValChange() {
+            form.on('checkbox(diagnosisFlag)', function(data){
+                if(data.elem.checked){
+                    $(data.elem).val('1');
+                } else{
+                    $(data.elem).val('0');
+                }
+            });
+        }
+
+        //移除上级行
+        removeParentTr = function (elem) {
+            WebuiPopovers.hideAll();
+            $(elem).parent().parent().remove();
+            setDiagnosisData();
+        }
+        //移动行
+        moveParentTr = function (elem) {
+            WebuiPopovers.hideAll();
+            var vertical = $(elem).data('vertical');
+            var tr = $(elem).closest('tr');
+            var verticalMap ={
+                'up' :{move:'prev',insert:'before'},
+                'down' :{move:'next',insert:'after'}
+            }
+            tr[verticalMap[vertical].move]()[verticalMap[vertical].insert](tr);
+            tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            setDiagnosisData();
+        }
+
+        //移除行
+        function removeTr() {
+            var ckBoxList = $(".tbody-data tr input[name=isCheck]:checked");
+            if (ckBoxList.size() <= 0) {
+                common.alert('请选择删除项', 0);
+                return false;
+            }
+
+            var diagnosisItemIdArr = [];
+            ckBoxList.each(function(index) {
+                var elemTr = $(this).parent().parent();
+                var diagnosisItemIdInput = elemTr.find('input[name="diagnosisId"][value!= ""]');
+                if (diagnosisItemIdInput.length > 0) {
+                    diagnosisItemIdArr.push(diagnosisItemIdInput.val());
+                }
+            });
+
+
+            common.requestServer('../outpatient/deleteOutpatientDiagnosis.jo', {ids: diagnosisItemIdArr.join(',')}, function(result){
+                if(result.code == 0) {
+                    common.msg("删除成功!", 1);
+					outMainWin.showFirstDiagnosis(null, $('#firstDiagnosis').val());
+                    var emrIframe =  $('div[lay-id=outpatientEmr] iframe', outMainWin.document);
+                    var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+                    emrEditWin.getPatientFirstDiagnosis(outMainWin.grobalModel.registerId);//设置门诊病历诊断内容
+                } else {
+                    common.msg(result.msg, 1);
+                }
+            });
+            //移除行
+            ckBoxList.each(function() {
+                $(this).parent().parent().remove();
+            });
+
+            setDiagnosisData();
+        }
+
+        // 显示Popover
+        function initShowPopover() {
+            var inputDom = $(".reg-diagnose .tbody-data tr td input[name=diseaseDiagnosisName]");
+            initPopover(inputDom, basDiseaseIframeSettings, 'query');
+            inputDom.on('input propertychange', function () {
+                if ($(this).val() === '') {
+                    resetTr($(this).parent().parent());
+                }
+            }).click(function () {
+                var popoverId = $(this).attr('data-target');
+                var diseaseTypeFlag = $(this).closest('tr').find('select[name="diseaseTypeFlag"]').val();
+                $('#' + popoverId + ' iframe').load(function () {
+                    $(this).contents().find("#diseaseTypeFlag").val(diseaseTypeFlag);//获取iframe的内容
+                })
+            });
+        }
+        //西医/中医
+        form.on('select(diseaseTypeFlag)', function(data){
+            var defaultValue = $(data.elem).find('option').filter(function () {
+                return this.defaultSelected
+            }).val()
+            if ((defaultValue != data.value) || !data.value) {
+                resetTr($(this).closest('tr'));
+            }
+            $(data.elem).find('option').each(function () {
+                this.defaultSelected = this.selected
+            })
+        });
+        // 重置诊断数据
+        function resetTr(trDom) {
+            $(trDom).find('input').each(function (index, inputDom) {
+                if ($(inputDom).attr('name') === 'diagnosisTime' || $(inputDom).attr('name') === 'diagnosisId' || $(inputDom).attr('name') === 'diseaseTypeFlag') {
+                    return;
+                }
+                $(inputDom).val('');
+            });
+            $(trDom).find('td span').each(function (index, spanDom) {
+                $(spanDom).html('');
+            });
+            form.render();
+        }
+
+        //诊断列表名称 row选择回调
+        basDiseaseRowSelect = function (basDiseaseRow) {
+            WebuiPopovers.hideAll();
+            addTrData(basDiseaseRow);//$('.tbody-data tr.active ')
+        }
+
+        //高频诊断
+        $('#much-diagnose td').click(function() {
+            $('.tbody-data tr.active').removeClass('active');
+            if (diagnosisExist($(this).attr('diseaseDiagnosisName'))) {
+                common.alert('诊断内容已存在！', 0);
+                return true;//包含则继续循环
+            }
+            addTr();
+            var diagnosis = {
+                diseaseId: $(this).attr('diseaseId'),
+                diseaseIcdTcd: $(this).attr('diseaseIcdTcd'),
+                diseaseName: $(this).attr('diseaseName'),
+                diseaseDiagnosisDesc: $(this).attr('diseaseDiagnosisDesc'),
+                infectiousFlag: $(this).attr('infectiousFlag'),
+                chronicFlag: $(this).attr('chronicFlag'),
+				diseaseTypeFlag: $(this).attr('diseaseTypeFlag')
+            };
+            addTrData(diagnosis);
+            refreshSameDignosis();
+        });
+
+        function refreshSameDignosis() {
+            var diagnosisArray = buildTrInputJSON($('.tbody-data'));
+            var diseaseIds = [];
+            $.each(diagnosisArray, function (index, data) {
+                if (data.diseaseId) {
+                    diseaseIds.push(data.diseaseId);
+                }
+            });
+            var sameDiagnosis = $('#historyEmr', outMainWin.document).contents().find('#sameDiagnosis');
+            var src = sameDiagnosis.attr('src');
+			if (!src) {
+				return;
+			}
+            if (src.indexOf('diseaseIds') > -1) {
+                console.log(src.substr(0, src.indexOf('diseaseIds')));
+                src = src.substr(0, src.indexOf('diseaseIds'))+ 'diseaseIds=' + diseaseIds.join(',');
+                console.log(src);
+            } else {
+                src += '&diseaseIds=' + diseaseIds.join(',');
+                console.log(src);
+            }
+            sameDiagnosis.attr('src', src);
+        }
+
+        //*********************     诊断内容JS END       ***********************/
+
+        //刷新页面按钮
+        $("#btn_refresh").click(function () {
+            common.confirm("刷新会删掉未保存的数据，确定要刷新页面吗？", function () {
+                location.reload();
+            })
+        });
+
+    });//layui.use end
+</script>

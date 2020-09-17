@@ -1,0 +1,159 @@
+
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 列表表格 工具栏 结束-->
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+            class="layui-icon"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicVariationFactor = JSON.parse('$dicTools.changeMapToJson($dicData.dicVariationFactor)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                variationFactor: '',
+                variationReasonContent: '',
+                variationDetail: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#clinicVariationReason_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('clinicVariationReasonListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('clinicVariationReason_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/clinic/clinicVariationReasonEdit.do', '新增', {
+                area: ['60%', '60%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#clinicVariationReasonListGrid',
+            url: contextPath + '/clinic/clinicVariationReasonPageData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'variationFactor',
+                    title: '变异因素',
+                    templet: function (d) {
+                        return dicVariationFactor[d.variationFactor] || '';
+                    }
+                }, {
+                    field: 'variationReasonContent',
+                    title: '原因内容',
+                    minWidth: 250
+                }, {
+                    field: 'variationDetail',
+                    title: '详细描述',
+                    minWidth: 250
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 80,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#clinicVariationReason_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../clinic/updateClinicVariationReasonValidFlag.jo', {
+                clinicVariationReasonId: data.clinicVariationReasonId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(clinicVariationReasonListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open(contextPath + '/clinic/clinicVariationReasonEdit.do?clinicVariationReasonId=' + row.clinicVariationReasonId, '编辑', {
+                        area: ['60%', '60%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../clinic/delClinicVariationReason.jo', {
+                            ids: row.clinicVariationReasonId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+    })
+</script>

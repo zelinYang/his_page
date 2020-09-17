@@ -1,0 +1,55 @@
+ <script>
+  var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+  var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)'); 
+  var queryPharmacyStock;//查询药品库存
+  layui.use(['jquery','table', 'laypage','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var laypage = layui.laypage; 
+    var $ = layui.$;
+    
+    element.render();
+    
+    var tableIns = table.render({
+       elem: '#medicineTable'
+      //,toolbar: '#toolbarDemo'
+      ,defaultToolbar: []
+      //,height: '230'
+      ,height: '320'
+      ,url: '../inpatient/patientSelectListData.jo' 
+      //,page: true 
+      ,limit:200
+      ,request: { 
+         pageName: 'pageNumber' 
+        ,limitName: 'pageSize' 
+      }
+      ,cols: [[ 
+        {field : 'inhospitalId',title : '住院号'}
+       ,{field : 'patientName', title : '姓名'}
+       ,{field : 'patientSex',title : '性别',templet:function(row){return dicSex[row.patientSex]|| ""}}
+       ,{field : 'inhospitalDate', title : '入院时间',templet:function (row) {
+           return row.inhospitalDate ? layui.util.toDateString(row.inhospitalDate) :'';
+                }}
+      ]]
+      ,done: function(res, curr, count){
+      }
+    });
+	  
+	    
+    queryPharmacyStock = function() { 
+    	var keyWord = $('#q_keyWord', parent.document).val();
+	    tableIns.reload({ 
+	    	where: {keyWord:keyWord}
+	    });
+	}
+	    
+    //单击表格事件
+    table.on('row(medicineTable)', function(obj){
+      var pharmacyStockRow = obj.data;
+      parent.medicineRowSelect(pharmacyStockRow);
+      parent.popoverHide();
+    });
+	    
+  });//layui.use
+</script> 

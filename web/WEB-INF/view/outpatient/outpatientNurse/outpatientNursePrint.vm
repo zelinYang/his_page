@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}门诊护士站-输液管理-打印瓶签</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        /*价格字体颜色*/
+
+        .recipeTotalPrice {
+            display: inline;
+            left: 20px;
+            position: absolute;
+            top: 6px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .recipeTotalPriceValue {
+            color: red;
+        }
+
+        /*就诊卡号查询输入框*/
+        .visitCardNo {
+            width: 220px;
+        }
+
+        /*诊断输入框*/
+        .outpatientDiagnosis {
+            width: 568px;
+        }
+
+        .layui-form-label {
+            padding: 5px 10px 5px 0;
+            width: 60px;
+        }
+
+
+        .visit-patient {
+            border: 1px solid #D2D2D2;
+            padding: 3px 12px;
+            background-color: #fff;
+        }
+
+        .visit-patient table.reg_patient_info tr {
+            height: 20px;
+        }
+
+        .visit-patient table.reg_patient_info tr th {
+            padding: 0 5px;
+            font-weight: 700;
+            margin-left: 20px;
+            font-size: 14px;
+            width: 100px;
+            text-align: right;
+        }
+
+        .visit-patient table.reg_patient_info tr td {
+            padding: 0 5px;
+            width: 150px;
+            font-size: 14px;
+        }
+        .visit-patient table.reg_patient_info th, .visit-patient table.reg_patient_info td { line-height: 24px;}
+
+        .visit-patient .layui-badge {
+            position: absolute;
+        }
+
+        .tool-bottom {
+            padding-top: 10px;
+            text-align: center
+        }
+
+        .layui-nav.layui-bg-white,
+        .layui-nav.layui-bg-white .layui-nav-item a {
+            color: black
+        }
+
+        .layui-nav .layui-nav-item {
+            line-height: 40px
+        }
+
+        .layui-nav.layui-bg-white .layui-nav-more {
+            border-color: black transparent transparent
+        }
+
+        .layui-nav.layui-bg-white .layui-nav-mored {
+            border-color: transparent transparent black
+        }
+
+        @media screen and (max-width: 1400px) {
+            .outpatientDiagnosis {
+                width: 312px;
+            }
+        }
+
+        @media screen and (max-width: 1024px) {
+            .visitCardNo {
+                width: 210px;
+            }
+        }
+
+        @media screen and (max-width: 768px) {
+            .outpatientDiagnosis {
+                width: 268px;
+            }
+
+            /*就诊卡号查询输入框*/
+            .visitCardNo {
+                width: 120px;
+            }
+
+            .tool-bottom-fixed .layui-input-inline {
+                width: 100px;
+            }
+
+            .visitCardNo {
+                width: 120px
+            }
+        }
+        /*患者信息，不换行，显示省略号*/
+        .reg_patient_info {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+        }
+
+        .layui-tab-card > .layui-tab-content > .layui-tab-item {
+            height:100%;
+        }
+        .layui-tab-card > .layui-tab-content > .layui-tab-item > iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10 full-height">
+            <div class="layui-col-md4 layui-col-xs4 full-height">
+                <!--搜索条件 开始-->
+                <form id="patient_queryForm" class="layui-form p-t-sm p-b-xs">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">就诊卡号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("visitCardNo" "" "id='q_visitCardNo' maxlength='40' autocomplete='off' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("patientName" "" "id='q_patientName' maxlength='10' autocomplete='off' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">就诊日期</label>
+                            <div class="layui-input-inline wd-120">
+                                #formLayDateInput("registerTimeBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                            </div>
+                            <div class="layui-form-mid">至</div>
+                            <div class="layui-input-inline wd-120">
+                                #formLayDateInput("registerTimeEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group">
+                            <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                            <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!-- 列表表格 begin -->
+                <table id="patientGeneralListGrid" lay-filter="patientGeneralListGrid"></table>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md8 layui-col-xs8 full-height">
+               <div class="layui-tab layui-tab-card full-height outpatientFeeNav b-shadow-n m-b-n" lay-filter="outpatientNurseNav">
+                    <ul class="layui-tab-title">
+                        <li lay-id="outpatientEmr" href="../emr/commonEmrTemplate.do?emrTlpId=$!{dicData.dicSysPro.get('EMR_TLP_ID_BOTTLE_LABELLING_PAPER')}&view=patient/emr/commonEmrPreview&showBtn=0" class="layui-this">瓶签</li>
+                    </ul>
+                    <div class="layui-tab-content overflow-y-h layui-bg-white p-n" id="outpatientNurseTabc">
+                        <div lay-id="outpatientEmr" class="layui-tab-item layui-show">
+                            <iframe src="" ></iframe>
+                            <!-- 按钮 -->
+                            <div class="tool-bottom-fixed ">
+                                <button class="layui-btn layui-btn-sm" onclick="preview()">打印预览</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 性别模板 -->
+<script type="text/html" id="sexTpl">
+    <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+</script>
+#parse("./outpatient/outpatientNurse/outpatientNursePrint.js.vm") <!-- 页面js -->
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理</title>
+#parse("./common/pageCss.vm") 
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content">
+        <div class="ibox-content">
+            <div class="row">
+                <form id="queryForm" method="get" class="form-horizontal">
+                    #formHiddenInput("validFlag" "1" "")
+                    <div class="col-xs-12">
+                        #formTextInput("orderName" "" "id='orderName' class='form-control' placeholder='费用中文名称或拼音字母'")
+                    </div> 
+                </form>
+            </div>
+        </div>
+    
+        <div class="ibox float-e-margins full-height m-b-none">
+            <div class="table-responsive">
+                <!-- 列表表格 -->
+                <table id="dataListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+            </div>
+        </div>
+    </div>
+    #parse("./common/pageJs.vm")
+    <script>
+    $(document).ready(function () {
+            // 查询按钮
+            function queryList(){
+                var queryParams = common.serializeObject($('#queryForm'));
+                var options = {url: '../bas/chargeFreeListData.jo', silent: false, query: queryParams};
+                $('#dataListGrid').bootstrapTable('refresh', options); 
+            };
+
+            // 监听收费名称值变化
+            $('#orderName').bind('input propertychange keyup', function() {
+                var val = $(this).val(); 
+                var reg = new RegExp("^[a-zA-Z]+$"); 
+                if (reg.test(val)) {
+                    $(this).attr('name', 'pinyinCode');
+                } else {
+                    $(this).attr('name', 'orderName');
+                }
+                queryList();
+            });
+
+            //查询列表
+            $('#dataListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../bas/chargeFreeListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true},
+                    {
+                        field : 'orderName',
+                        title : '医嘱名称'
+                    }, {
+                        field : 'chargeGroupId',
+                        title : '医嘱排序类别',
+                        formatter :function (value, row, index){ return $('#chargeGroupId').find('option[value="' + value +'"]').text() }
+                    }], 
+                    onCheck:function(row){
+                        parent.selectSingleChargeFree(row);
+                        // 关闭窗口
+                        var index = parent.layer.getFrameIndex(parent.window.name);
+                        parent.layer.close(index); 
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#tab-33', window.parent.document).height() - 85);
+                        $('#dataListGrid').bootstrapTable('resetView', {height: height}); 
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+    </script>
+</body>
+</html>

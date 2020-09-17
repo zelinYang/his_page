@@ -1,0 +1,51 @@
+ <script>
+   layui.use(['jquery', 'element', 'form', 'laydate'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate; 
+      var form = layui.form; 
+      var element = layui.element;
+      element.render(); 
+      var actualCharge = $('#cutSettlementSum', parent.document).val();
+      var inhospitalId = '$!{inhospitalInfo}';
+      var actualCharge = $('#actualCharge', parent.document).val();
+      var changeCharge = $('#changeCharge', parent.document).val();
+      var payInWay = $('#payInWay', parent.document).val();
+      var paywaitmsg = function(){
+    	  
+      };
+    $('#btn_query').click(function(){
+    	var authCode = $('#authCode').val();
+    	if (authCode=='') {
+    		  $('#authCodeVerfy').append("<span style='color:red;'>付款码不能为空</span>");
+    		  
+              return false;
+    	}else{
+    		 $('#authCodeVerfy').remove();
+    	
+        var param = {inhospitalId: inhospitalId,orderAmount:actualCharge,authCode:authCode,actualCharge:actualCharge,changeCharge:changeCharge,payInWay:payInWay};
+         layer.msg('等待支付中...', {icon: 16,shade: [0.5, '#f5f5f5'],scrollbar: false,offset: 'auto', time:30000}); 
+         $.ajax({  
+            type: "POST",  
+            url: '$contextPath/inpatient/wxPay.jo',  
+            data: param,
+            dataType:"json",
+            async:true,//同步 请求
+            success: function(result){ 
+                if (result.code == '0') { 
+                	parent.window.closeWXpayview();
+                	
+                } else if(result.code == '1') {
+                	common.msg('支付失败！', iconType.fail);
+                	
+               }else {
+            	   layer.msg('支付异常！',iconType.fail); 
+               }
+            },  
+            error: function(res){jqueryPostError(res);} 
+        });//ajax end 
+    	}
+    });      
+   
+       
+  });
+</script> 

@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>添加摆药机</title>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-select dl {
+            max-height: 220px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form" lay-filter="" id="pharmacyMachine_form" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("pharmacyMachineId" "$!{pharmacyMachine.pharmacyMachineId}" "")
+    #formHiddenInput("createTime" "$!{pharmacyMachine.createTime}" "")
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()机器编码</label>
+        <div class="layui-input-block ">#formTextInput("machineNum" "$!{pharmacyMachine.machineNum}"
+            " maxlength='50' autocomplete='off' placeholder='' class='layui-input' lay-verify='required'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()药房名称</label>
+        <div class="layui-input-block">
+            <!--  -->
+            #formSingleSelectSearchFirstNone(
+            "pharmacyId" "$!pharmacyMachine.pharmacyId" ${dicData.dicPharmacy}
+            "lay-search lay-verify='required'" "选择药房名称")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        #if(${pharmacyMachine}) <label class="layui-form-label">#requiredTag()是否有效</label>
+        <div class="layui-input-block" id="validFlag">#formRadioGroup(
+            "validFlag" "$!{pharmacyMachine.validFlag}" ${dicData.dicYesNo}
+            "lay-verify='reqRedio' check-msg='请选择是否有效'")
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+    </div>
+</div>
+#parse("./pharmacy/pharmacyMachine/pharmacyMachineEdit.js.vm")
+</body>
+</html>

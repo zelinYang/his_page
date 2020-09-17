@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-row full-height p-xs">
+        <form class="layui-form full-height" id="editForm">
+            #formHiddenInput("clinicDiseaseId" "$!disease.clinicDiseaseId" "id='clinicDiseaseId'")
+            #formHiddenInput("clinicDiseaseClassifyId" "$!diseaseClassify.clinicDiseaseClassifyId" "")
+            <div class="layui-card full-height-scroll m-b-n border-bottom"  style="height: calc(100% - 45px);">
+                <div class="layui-card-body p-b-n">
+                    <div class="layui-row">
+                        <div class="layui-col-sm3">
+                            <label class="layui-form-label">病种名称</label>
+                            <div class="layui-input-block">
+                                #formTextInput("diseaseName" "#htmlEscape($!disease.diseaseName)" "id='diseaseName' required lay-verify='required' placeholder='请输入病种名称' autocomplete='off' maxlength='50' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-col-sm3">
+                            <label class="layui-form-label">所属分类</label>
+                            <div class="layui-input-block">
+                                #formTextInput("" "#htmlEscape($!diseaseClassify.diseaseClassifyName)" "placeholder='请输入所属分类' class='layui-input'")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="tool-bottom-fixed">
+                <button class="layui-btn layui-btn-sm" id="btn_save" lay-submit lay-filter="btn_save" type="button"> 保 存  </button>
+            </div>
+        </form>
+      </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.config({base: '../resource/layuiadmin/'}).extend({
+    autocomplete: 'modules/autocomplete'
+}).use(['form', 'autocomplete'], function(){
+    var form = layui.form, autocomplete = layui.autocomplete;
+
+    // 检索病种
+    autocomplete.render({
+        cache: false,
+        method: 'post',
+        searchField: 'keyWord',
+        elem: $('#diseaseName')[0],
+        url: contextPath + '/basDisease/basDiseaseListData.jo',
+        template_val: '{{d.diseaseName}}',
+        template_txt: '{{d.diseaseName}}',
+        onselect: function (obj) {
+            $('#diseaseName').val(obj.diseaseName);
+            $('#clinicDiseaseId').val(obj.diseaseId);
+        }
+    });
+ 
+    //监听提交  
+    form.on('submit(btn_save)', function(data){
+        common.requestServer(contextPath + '/pathway/saveDisease.jo', data.field, function (result){
+            if (result.code == "0") {
+                $('#btn_refreshTree', window.parent.document).click();
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+});
+</script>
+</html>

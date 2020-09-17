@@ -1,0 +1,122 @@
+<html>
+<head>
+    <title>电子病历模板编辑</title>
+    #parse("./common/layuiCss.vm")
+##    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .col-xs-8 label {
+            margin-top: 8px;
+        }
+        .layui-unselect.layui-form-checkbox span {
+            color: #555;
+        }
+        .layui-unselect.layui-form-checkbox.layui-form-checked span {
+            color: #fff;
+        }
+        #emrTlpForm{padding-top: 10px}
+    </style>
+</head>
+
+<body>
+<form class="layui-form" action="" id="editForm">
+    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "id='inhospitalId'")
+	#formHiddenInput("inhospitalFlag" "0" "id='inhospitalFlag' ")
+	<div class="layui-form-item">
+		<label class="layui-form-label">#requiredTag()病区:</label>
+		<div class="layui-input-inline">
+            #formSingleSelectSearchFirstNone("wardId" "${inpatientInhospital.wardId}" $inpatientWardMap
+                "lay-filter='wardId' adapter='required' required-msg='请选择病区' class='chosen-select layui-input' "
+                "")
+		</div>
+	</div>
+	<div class="layui-form-item">
+		<label class="layui-form-label">#requiredTag()科室:</label>
+		<div class="layui-input-inline">
+			<select name="afterOfficeId" id="afterOfficeId">
+				<option value=""></option></select>
+		</div>
+	</div>
+	<div class="layui-form-item">
+		<label class="layui-form-label">#requiredTag()床号:</label>
+		<div class="layui-input-inline">
+			<select name="currentBedNo" id="currentBedNo" style="border:#ccc 1px solid;">
+				<option value=""></option></select>
+		</div>
+	</div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+	var patientSex = "${inpatientInhospital.patientSex}";
+	var currentWardId = "${inpatientInhospital.currentWardId}";
+	var currentOfficeId = "${inpatientInhospital.currentOfficeId}";
+    layui.use(['form', 'element'], function() {
+        var form = layui.form;
+        var element = layui.element;
+        var $ = layui.$;
+        layui.form.render('select');
+
+		form.on('select(wardId)', function(data){
+			if (data.value) {
+				selectBedNum(data.value);
+			}
+		});
+
+		$(function () {
+			if (currentWardId) {
+				selectBedNum(currentWardId, currentOfficeId);
+			}
+		});
+
+		//选择病床
+		function selectBedNum(wardId, currentOfficeId) {
+
+			$.post("../inpatient/selectInpatientWardOfficeMap.jo", {wardId: wardId}, function (data) {
+				//加载科室列表
+				var targetEle = $('#afterOfficeId');
+				$(targetEle).empty();
+
+				if (data == null || targetEle == "" || targetEle == undefined) {
+					return false;
+				}
+				console.log(JSON.stringify(data) + "vieonchu");
+				$.each(data.data, function (key, value) {
+					var jqOption = '<option value="' + key + '"' + (currentOfficeId === key? 'selected': '') + '>' + value + '</option>';
+					$(targetEle).append(jqOption);
+				});
+				$(targetEle).trigger("chosen:updated");
+				form.render('select');
+			}, "json");
+
+			$.post("../inpatient/selectInpatientWardBedMap.jo", {
+				wardId: wardId,
+				patientSex: patientSex
+			}, function (data) {
+				//加载床位列表
+				var targetEle = $('#currentBedNo');
+				$(targetEle).empty();
+
+				if (data == null || targetEle == "" || targetEle == undefined) {
+					return false;
+				}
+				console.log(JSON.stringify(data) + "gaga");
+				$.each(data, function (key, value) {
+					var jqOption = "<option value='" + value + "'>" + value + "</option>";
+					$(targetEle).append(jqOption);
+				});
+				$(targetEle).trigger("chosen:updated");
+				form.render('select');
+
+			}, "json");
+		}
+    });
+
+</script>
+</body>
+</html>

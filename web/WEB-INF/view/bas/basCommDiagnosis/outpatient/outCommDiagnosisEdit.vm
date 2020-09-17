@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>门诊医生常用诊断编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+#parse("./bas/basCommDiagnosis/outpatient/outCommDiagnosisEdit.js.vm")
+<style type="text/css">
+.layui-form-select dl {
+    max-height: 200px;
+}
+</style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("commDiagnosisId" "$!{basCommDiagnosis.commDiagnosisId}" "")
+        #formHiddenInput("diagnosisClassify" "${CONST.AppConstants.BELONGS_DOCTOR}" "id='diagnosisClassify'")
+        #formHiddenInput("diseaseTypeFlag" "" "id='diseaseTypeFlag'")
+        #formHiddenInput("doctorId" "$!currentUser.userId" "")
+        #formHiddenInput("officeId" "$!currentUser.sysOrg.orgId" "")
+        <div class="layui-form-item">
+            <label class="layui-form-label" style="width: auto; padding-right: 0;">#requiredTag()诊断/疾病名称</label>
+            <div class="layui-input-block">
+                #formTextInput("diseaseName" "$!{basCommDiagnosis.diseaseName}" " maxlength='50' id='diseaseName' autocomplete='off' placeholder='请选择诊断/疾病名称' lay-verify='required' class='layui-input'")
+                #formHiddenInput("diseaseId" "$!{basCommDiagnosis.diseaseId}" " id='diseaseId' lay-verify='disease'")
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()ICD10编码</label>
+            <div class="layui-input-block">#formNotInChineseInput("diseaseIcdTcd" $!{basCommDiagnosis.diseaseIcdTcd} " id='diseaseIcdTcd' autocomplete='off' lay-verify='disease' readonly maxlength='20' class='layui-input'")</div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()排列顺序</label>
+            <div class="layui-input-block">#formFloInput("sort" $!{basCommDiagnosis.sort} " autocomplete='off' maxlength='18' lay-verify='required' class='layui-input'")</div>
+        </div>
+		<div class="layui-form-item">
+			<label class="layui-form-label">#requiredTag()西医/中医</label>
+			<div class="layui-input-block">
+				<input type="radio" name="diseaseTypeFlag" value="1" title="西医"
+                    #if("$!basCommDiagnosis.diseaseTypeFlag" == "" || "$!basCommDiagnosis.diseaseTypeFlag" == "1")
+					   checked="checked"
+                    #end
+                />
+				<input type="radio" name="diseaseTypeFlag" value="2" title="中医"
+                    #if("$!basCommDiagnosis.diseaseTypeFlag" == "2")
+					   checked="checked"
+                    #end
+				/>
+            </div>
+		</div>
+
+        #if(!$basCommDiagnosis)
+	        #formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+	    #else
+	        <div class="layui-form-item">
+	            <label class="layui-form-label">#requiredTag()是否有效</label>
+	            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{basCommDiagnosis.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+	        </div>
+		#end
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">#requiredTag()描述性诊断</label>
+            <div class="layui-input-block ">#formTextarea("commDiagnosisDesc" "#htmlEscape($!{basCommDiagnosis.commDiagnosisDesc})" " class='layui-textarea' lay-verify='required' maxlength='100' placeholder='请输入内容，字数最多100字'")</div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+        </div>
+    </div>
+</body>
+</html>

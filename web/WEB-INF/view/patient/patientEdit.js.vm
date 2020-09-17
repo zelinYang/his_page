@@ -1,0 +1,553 @@
+<script>
+	layui.config({
+		base: '../resource/layuiadmin/' //静态资源所在路径
+	}).extend({
+		index: 'lib/index', //主入口模块
+		cascader: 'cascader'
+	}).use(['index', 'form', 'laydate', 'cascader'], function () {
+		var $ = layui.$, form = layui.form, laydate = layui.laydate;
+		common.verify(form);
+
+		//生成就诊卡号
+        $('#btn_generatePatientVisitCardNo').click(function () {
+            var patientId = $("#patientId").val();
+            common.requestServer('../patient/generatePatientVisitCardNo.jo', {patientId: patientId}, function (result) {
+                if (result.code == "0") {
+                    $("#visitCardNo").val(result.data);
+                }
+            });
+        });
+
+		//验证证件号码格式是否正确，并设置出生日期患者类别
+		function validPatientIdCardFormat(patientIdType, patientIdCard) {
+			layer.closeAll('tips') //关闭所有的tips层
+			$('#patientIdCard').removeAttr('lay-tips').removeClass('layui-form-orange')
+			//身份证信息未填写完整不进行校验
+			if (patientIdType == '' || patientIdCard == '') {
+				return
+			}
+			common.requestServer('$contextPath/patient/validPatientIdCardFormat.jo', {
+				patientIdType: patientIdType,
+				patientIdCard: patientIdCard
+			}, function (result) {
+				if (result.code === '0') {
+					var data = result.data
+					if (data) {
+						//根据身份证取生日，性别,年龄
+						//获取性别
+						$('[name="patientSex"][value="' + data.patientSex + '"]').prop('checked', true)
+						//获取出生日期
+						$('#patientBirth').val(data.patientBirthDate)
+						//患者类别
+						$('[name="patientClassify"][value="' + data.patientClassify + '"]').prop('checked', true)
+						togglePatientClassifyVerify(data.patientClassify)
+						form.render()
+					}
+				} else {
+					$('#patientIdCard').attr('lay-tips', result.msg).addClass('layui-form-orange').focus()
+				}
+			})
+		}
+
+		//证件类型改变时的校验
+		form.on('select(patientIdType)', function (data) {
+			var patientIdType = $('#patientIdType').val()
+			var patientIdCard = $('#patientIdCard').val()
+			validPatientIdCardFormat(patientIdType, patientIdCard)
+		});
+
+		//监听证件号码输入、 回车（Enter）键自动设置性别姓名
+		$('#patientIdCard').on('keydown', function (event) {//给输入框绑定按键事件
+			if (event.key == 'Enter') {
+				var patientIdType = $('#patientIdType').val();
+				var patientIdCard = $('#patientIdCard').val();
+				validPatientIdCardFormat(patientIdType, patientIdCard);
+				return false;
+			}
+		}).on('input propertychange', function () {
+			var patientIdType = $('#patientIdType').val();
+			var patientIdCard = $('#patientIdCard').val();
+			validPatientIdCardFormat(patientIdType, patientIdCard);
+		});
+
+		//渲染出生年月
+		laydate.render({
+			elem: '#patientBirth'
+			, format: 'yyyy-MM-dd'
+			, trigger: 'click' //采用click弹出
+			, max: 0 // 最大日期不允许超过当天
+		});
+
+		//切换患者类别：成人、儿童的必填校验和提示
+		function togglePatientClassifyVerify(patientClassify) {
+			if (!patientClassify) {
+				return;
+			}
+			var requiredTag = '#requiredTag()';
+			$('.adultReqTitle,.childReqTitle').children('span').remove();//标题移除必填
+			$('.childReq,.adultReq').removeAttr('lay-verify');//移除必填
+			switch (patientClassify) {
+				case '${CONST.AppConstants.PATIENT_CLASSIFY_CHILD}':
+					//成人adult
+					$('.adultReqTitle').html(function (index, text) {
+						return requiredTag + text;
+					});//标题显示必填
+					$('.adultReq').attr('lay-verify', 'required');//添加必填
+					break;
+				case '${CONST.AppConstants.PATIENT_CLASSIFY_ADULT}':
+					//儿童children
+					$('.childReqTitle').html(function (index, text) {
+						return requiredTag + text;
+					});//标题显示必填
+					$('.childReq').attr('lay-verify', 'required');//添加必填
+					break;
+			}
+		}
+
+		togglePatientClassifyVerify($('input[name="patientClassify"]:checked').val());
+
+		//监听患者类别
+		form.on('radio(patientClassify)', function (data) {
+			togglePatientClassifyVerify(data.value);
+		});
+		var len = 2;// 每个区域ID长度的倍数
+		// 行政区域数据加载及监听选择
+		$(function () {
+			common.requestServer('../basRegion/selectRegion.jo', {regionIdLen: 8}, function (data) {
+				if (!data) {
+					return;
+				}
+				// 出生地
+				layui.cascader({
+					data: data,
+					elem: '#birthRegionName',
+					value: ["45"],
+					success: function (data) {
+						$('#birthRegionId').val(data[data.length - 1])
+					}
+				})
+				// 现住地址
+				layui.cascader({
+					data: data,
+					elem: '#regionName',
+					value: $('#regionId').val() ? common.strToRegionIdArray($('#regionId').val(), len) : [],
+					success: function (data) {
+						$('#regionId').val(data[data.length - 1]);
+					}
+				})
+				// 户口地址
+				layui.cascader({
+					data: data,
+					elem: '#nativeRegionName',
+					value: $('#nativeRegionId').val() ? common.strToRegionIdArray($('#nativeRegionId').val(), len) : [],
+					success: function (data) {
+						$('#nativeRegionId').val(data[data.length - 1]);
+					}
+				})
+				// 工作单位
+				layui.cascader({
+					data: data,
+					elem: '#companyRegionName',
+					value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#companyRegionId').val(), len) : [],
+					success: function (data) {
+						$('#companyRegionId').val(data[data.length - 1]);
+					}
+				});
+
+				// 联系人地址
+				layui.cascader({
+					data: data,
+					elem: '#contactRegionName',
+					value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#contactRegionId').val(), len) : [],
+					success: function (data) {
+						$('#contactRegionId').val(data[data.length - 1]);
+					}
+				});
+			})
+		});
+		// 籍贯
+		layui.cascader({
+			type: 'post',
+			elem: '#nativePlace',
+			url: '../basRegion/selectRegion.jo',
+			where: {regionIdLen: 6},
+			value: $('#nativePlaceId').val() ? common.strToRegionIdArray($('#nativePlaceId').val(), len) : [],
+			success: function (data) {
+				$('#nativePlaceId').val(data[data.length - 1]);
+			}
+		});
+
+		//提交表单
+		function savePatient() {
+			var patientParams = common.serializeObject($('#patientForm'));
+
+			var todayStr = new Date().format('yyyy-MM-dd');
+			if (patientParams.patientBirth > todayStr) {
+				common.alert('出生日期不能大于今天！');
+			}
+
+			common.requestServer(contextPath + '/patient/savePatient.jo', patientParams, function (result) {
+				if (result.code === '0') {
+					common.msg(result.msg, 1, function () {
+						$("#patientId").val(result.data.patientId);
+						$("#visitCardNo").val(result.data.patientIndex.visitCardNo).attr('readonly', 'readonly');
+						submitForm();
+					})
+				} else {
+					common.alert(result.msg, 0);
+				}
+			});
+		}
+
+		// 保存按钮
+		form.on('submit(btn_save)', function (data) {
+            savePatient();
+			return false;
+		});
+
+		//重置表单
+		$('#btn_reset').click(function () {
+			window.location.href = window.location.href;
+		});
+
+		//翻转民族字典键值对
+		var newDicNationMap = {};
+		var dicNationMap = JSON.parse('$dicTools.changeMapToJson($dicData.dicNation)');
+		for (key in dicNationMap) {
+			newDicNationMap[dicNationMap[key]] = key;
+		}
+
+		//读取身份证信息
+		function loadIdCardInfo () {
+
+			clearIdCardInfo();
+
+			var pName = CVR_IDCard.Name;
+			var pNation = CVR_IDCard.Nation;
+			var pAddress = CVR_IDCard.Address;
+			var pCardNo = CVR_IDCard.CardNo;
+			var pPhotoBuffer = CVR_IDCard.Picture;
+
+			## var pName  = "张三";
+			## var pNation  = "壮族";
+			## var pAddress = "xxxxxx小区";
+			## var pCardNo  = "";
+			## var pPhotoBuffer  = "";
+
+			$("#patientName").val(pName);
+			$("#nationCode").val(newDicNationMap[pNation]);
+			$("#nativeRegionAddr").val(pAddress);
+			$("#patientImage").val(pPhotoBuffer);
+			$("#patientImageShow").attr("src", "data:image/jpeg;base64," + pPhotoBuffer);
+			$("#patientIdCard").val(pCardNo);
+
+			var patientIdType = $('#patientIdType').val();
+			validPatientIdCardFormat(patientIdType, pCardNo);
+		}
+
+		function clearIdCardInfo() {
+			$("#patientName").val("");
+			$("#nationCode").val("");
+			$("#nativeRegionAddr").val("");
+			$("#patientImage").val("");
+			$("#patientImageShow").attr("src", "");
+			$("#patientIdCard").val("");
+			var patientIdType = $('#patientIdType').val();
+			validPatientIdCardFormat(patientIdType, "");
+		}
+
+		$('#btn_idCard').click(function () {
+			var ret = CVR_IDCard.ReadCard();
+			if (ret == "0"){
+				loadIdCardInfo();
+			}
+		});
+	});
+</script>
+<script>
+
+	var iframeSettings = {
+		width: 450,//诊断内容propover 弹框参数
+		height: 350,
+		closeable: false,
+		padding: false,
+		type: 'iframe',
+		url: '../inpatient/basDiseaseSelect.do'
+	};
+	var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+	var dicAllergyMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicAllergyMedicine)');
+	var allergyOptions = JSON.parse('$dicTools.changeMapToJson($!dicData.dicAllergyMedicine)');
+
+	layui.use(['element', 'form'], function () {
+		var element = layui.element;
+		var form = layui.form;
+
+		//判断是否是查看模式，查看模式不能修改
+		var optype = "$!optype";
+		if (optype == "show") {
+			$("input,select,textarea").attr("disabled", true);
+			form.render();
+		}
+
+		//新增过敏行
+		$("#addAllergyTr").unbind().click(function () {
+			addTr(this, "addAllergyTr");
+		});
+
+		//收展tbody按钮
+		$(".btn-shrink").unbind().click(function () {
+			var tBody = $(this).parents(".layui-card-body").find("tbody:last");
+			if (tBody.hasClass("layui-hide")) {
+				tBody.removeClass("layui-hide");
+				$(this).removeClass("layui-icon-down").addClass("layui-icon-up");
+			} else {
+				tBody.addClass("layui-hide");
+				$(this).removeClass("layui-icon-up").addClass("layui-icon-down");
+			}
+		});
+
+
+		//初始化行js事件
+		reApplyPlugins();
+
+		//渲染行事件
+		function reApplyPlugins() {
+			lay('.layer-date').each(function () {
+				laydate.render({
+					elem: this
+					, type: 'datetime'
+					, format: 'yyyy-MM-dd HH:mm:ss'
+					, trigger: 'click' //采用click弹出
+					, max: getSmpFormatNowDate(true)
+				});
+			});
+
+			$("select[name='createUserId']").unbind().change(function () {
+				$(this).parent().find("input[name='createUserName']").val(dicSysUser[$(this).val()]);
+			});
+			$(".delAllergyTr").unbind().click(function () {
+				delTr(this, "delAllergyTr");
+			});
+
+			activeTrFun();
+			selectInputReplugins();
+			enterFocusConvert();
+			form.render();
+		}
+
+		//新增行
+		function addTr(ele, type) {
+			var newTr;
+			if (type == "addAllergyTr") {
+				newTr = $('#alleThead .rowTpl .trRow').clone();
+				$('#allergyTbody').append(newTr);
+			}
+
+			//lay-key必须唯一，否则二次渲染无效
+			var laydates = $(".layer-date");
+			var dateNumber = laydates.length;
+			for (var i = 0; i < dateNumber; i++) {
+				$(laydates[i]).attr("lay-key", i);
+			}
+			newTr.find(".layer-date").each(function () {
+				dateNumber++;
+				$(this).attr("lay-key", dateNumber);
+			});
+			newTr.find(".newCreateTime").val(getFormatDate(new Date(), 'yyyy-MM-dd HH:mm:ss'));
+			reApplyPlugins();
+		}
+
+		//删除行
+		function delTr(ele, type) {
+			var ids = [];
+			var id;
+			var url = "";
+			var tr = $(ele).parent().parent();
+			if (type == "delAllergyTr") {
+				id = $(tr).find("#drugAllergyId").val();
+				url = '../patient/delPatientDrugAllergy.jo';
+			}
+			if (id != null && id != "") {
+				ids.push(id);
+			} else {
+				$(tr).remove();
+			}
+			if (ids.length > 0) {
+				common.confirm('确定要从库中删除吗？', function () {
+					common.requestServer(url, {ids: ids.join(',')}, function (result) {
+						if (result.code == '0') {
+							$(tr).remove();
+						} else {
+							common.alert(result.msg, 0);
+						}
+					});
+				});
+			}
+		}
+
+
+		//选择&输入 框  绑定事件
+		function selectInputReplugins() {
+			$(".selInp_select").unbind().change(function () {
+				var value = $(this).val();
+				var select = $(this).parent().find(".selInp_select");
+				var input = $(this).parent().find(".selInp_input");
+				var div_input = $(this).parent().find(".div_input");
+				if (value == 'other') {
+					$(input).val("");
+					$(select).val("");
+					$(select).hide();
+					$(div_input).show();
+					$(input)[0].focus();
+				} else {
+					$(input).val(allergyOptions[value]);
+				}
+				console.log(input.val());
+			});
+			//var inputClears = document.getElementsByClassName("input_clear")
+			$(".input_clear").unbind().click(function () {
+				console.log("click");
+				var select = $(this).parent().parent().find(".selInp_select");
+				var input = $(this).parent().parent().find(".selInp_input");
+				var div_input = $(this).parent().parent().find(".div_input");
+				$(input).val("");
+				$(div_input).hide();
+				$(select).show();
+				$(select).click();
+			});
+		}
+
+		//回车焦点转移
+		function enterFocusConvert() {
+			function activeNextTd(curTd) {
+				var nextFocusElem = curTd.nextAll().find('input,select,.layui-unselect').not('[readonly]').not('[type^=hidden]').first();
+				if (nextFocusElem.length == 0) return false;
+				$('.curFocus').removeClass('curFocus');
+				nextFocusElem.addClass('curFocus');
+				//如果是layui-unselect
+				if (nextFocusElem.hasClass('layui-unselect')) {
+					nextFocusElem.find('.layui-edge').click();
+				} else {
+					//一般的input
+					nextFocusElem.focus();
+				}
+				return true;
+			}
+
+			//回车焦点移至同列下一行单元格的输入框，如果到了底部，则焦点移至下一列第一行的单元格输入框
+			$(document).keydown(function (event) {
+				if (event.keyCode == 13) {
+					var inputFocus = $(event.target);
+					var curTd;
+					var nextFocusElem;
+					//td的input元素下一个input框
+					nextFocusElem = inputFocus.nextAll().not('[readonly]').not(':hidden').first();
+					if (nextFocusElem.length > 0) {
+						nextFocusElem.focus();
+						return true;
+					}
+					//下一个td的input元素的第一个input框或者select控件
+					curTd = inputFocus.parents('td');
+					if (activeNextTd(curTd)) return true;
+					curTd = inputFocus.parents('td').parent().next("tr").find("td").first();
+					if (activeNextTd(curTd)) return true;
+					//此处新增行有bug，会新增多次
+					//inputFocus.parents('table').prev('table').find(".btn-add").click();
+				}
+			});
+		}
+	});
+
+	function activeTrFun() {
+		$('#pastDiseaseTbody tr td input[name=diseaseName]').click(function () {
+			$(this).parents('tr').addClass('active').siblings().removeClass('active');
+		});
+	}
+
+	//验证过敏行编辑数据
+	function validAllergyForm(obj) {
+		if (obj.allergyDrugName == null || obj.allergyDrugName == "") {
+			layer.msg('请输入过敏原名称', {time: 3000, icon: 2});
+			return 'allergyDrugName';
+		}
+		if (obj.createUserId == null || obj.createUserId == "") {
+			layer.msg('请选择记录人', {time: 3000, icon: 2});
+			return '-1';
+		}
+		if (obj.createTime == null || obj.createTime == "") {
+			layer.msg('请选择记录时间', {time: 3000, icon: 2});
+			return '-1';
+		}
+		return '1';
+	}
+
+	//获取某个表的编辑数据
+	function getTbodyData(type) {
+		var trs;
+		if (type == "allergy") {
+			trs = $('#allergyTbody > tr');
+		} else if (type == "adverse") {
+			trs = $('#adverseTbody > tr');
+		} else if (type == "pastDisease") {
+			trs = $('#pastDiseaseTbody > tr');
+		}
+		var arrayObj = [];
+		$(trs).each(function () {
+			var obj = {};
+			//console.log($(this).find('td > input, select')[0]);
+			$(this).find('input, select').each(function () {
+				var name = $(this).attr('name');
+				var value = $(this).val();
+				if (name && value) {
+					obj[name] = value;
+				}
+				if ($(this).attr('type') == 'checkbox') {
+					var ck = $(this)[0].checked;
+					if (ck == true) {
+						obj[name] = '1';
+					} else if (ck == false) {
+						obj[name] = '0';
+					}
+				}
+			});
+			if (!$.isEmptyObject(obj)) {
+				var valid = '0';
+				if (type == "allergy") {
+					valid = validAllergyForm(obj);
+				}
+				if (valid == '1') {
+					arrayObj.push(obj);
+				} else {
+					arrayObj = null;
+					console.log(valid);
+					$(".input-error").removeClass("input-error");
+					$(this).find("input[name='" + valid + "'],select[name='" + valid + "']").parents('td').addClass("input-error");
+					$(".input-error").click(function () {
+						$(this).removeClass("input-error").unbind();
+					});
+					return false;
+				}
+			}
+		});
+		return arrayObj;
+	}
+
+	//提交表单
+	function submitForm() {
+		var allergyArrayObj = getTbodyData('allergy');
+		if (allergyArrayObj.length == 0) {
+			location.reload()
+			return;
+		}
+		var params = {};
+		params['patientId'] = $("#patientId").val();
+		var jsonAllergyData = params['jsonAllergyData'] = JSON.stringify(allergyArrayObj);
+		common.requestServer('../patient/saveDrugAllergy.jo', params, function (result) {
+			if (result.code == "0") {
+				location.reload()
+			} else {
+
+			}
+		});
+	}
+</script>

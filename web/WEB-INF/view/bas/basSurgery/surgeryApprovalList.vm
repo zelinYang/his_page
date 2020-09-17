@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title> #parse("./common/pageCss.vm")
+</head>
+<body class="gray-bg">
+    <!-- 医嘱查询条件 -->
+    <div class="layui-row p-b-xs p-t-xs white-bg">
+        <form class="layui-form" id="queryForm">
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'") #formHiddenInput("surgeryDateEnd" "" "id='surgeryDateEnd'") #formHiddenInput("surgeryDateBegin" "" "id='surgeryDateBegin'")
+            <div class="layui-form-item search-term">
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">科室</label>
+                      #set($fk={"1":"普内科"})
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" ${fk} "id='surgeryLevelId'" "")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">院区</label>
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" $!dicData.dicSurgeryIncisionLevel "id='surgeryLevelId' lay-filter='surgeryLevelId'" "")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">患者ID</label>
+                    <div class="layui-input-inline">#formTextInput("surgeryName" "" "id='surgeryName' class='layui-input'")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">提交日期</label>
+                    <div class="layui-input-inline input-inline-long">#formTextInput("" "" "id='surgeryDate' class='layui-input' readOnly")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">手术等级</label>
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" $!dicData.dicSurgeryIncisionLevel "id='surgeryLevelId' lay-filter='surgeryLevelId'" "")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">手术类型</label>
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" $!dicData.dicSurgeryIncisionLevel "id='surgeryLevelId' lay-filter='surgeryLevelId'" "")</div>
+                </div>
+                   #set($fd={"1":"待审核"})
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">手术审核情况</label>
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" ${fd} "id='surgeryLevelId'" "")</div>
+                </div>
+                #set($fl={"1":"全部"})
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">类型</label>
+                    <div class="layui-input-inline">#formSingleSelectFirstNone("surgeryLevelId" "" ${fl} " " "")</div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">审核日期</label>
+                    <div class="layui-input-inline input-inline-long">#formTextInput("" "" "id='surgeryDate' class='layui-input' readOnly")</div>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 医嘱列表 -->
+    <div class="layui-row p-t-n full-height white-bg" style="height: calc(100% - 50px);">
+        <table class="layui-hide full-height" id="surgeryArrangeList" lay-filter="surgeryArrangeList"></table>
+        <script type="text/html" id="barDemo">
+  <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看病历</a>
+  <a class="layui-btn layui-btn-xs" lay-event="edit">审核</a>
+<a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">查看</a>
+ 
+</script>
+ 
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.use([ 'form', 'laydate', 'element', 'table' ], function() {
+        var laydate = layui.laydate, form = layui.form, table = layui.table;
+        // 初始化医嘱表格列表数据
+        var tableListUrl = contextPath + '/surgeryArrange/surgeryArrangeJsonList.jo';
+        var tableIns = table.render($.extend(basePageTable, {
+            id : 'surgeryArrangeList',
+            elem : '#surgeryArrangeList',
+            height : 'full-50',
+            data:[
+                {
+                    "f1":"",
+                    "f2":"23505_3",
+                    "f3":"16",
+                    "f4":"高智平",
+                    "f5":"2018-01-17 14:27",
+                    "f6":"胃癌根治术",
+                    "f7":"2018-01-17 14:52",
+                    "f8":"",
+                    "f9":"许菲菲",
+                    "f10":"余小双",
+                    "f11":"待审核"
+                }
+            ],
+            //url : tableListUrl,
+            where : common.serializeObject($('#queryForm')),
+            cols : [ [ {type:'radio'},{
+                field : 'f1',
+                title : '病区',
+                width : 80,
+            }, {
+                field : 'f2',
+                title : '住院号',
+                width : 100,
+            }, {
+                field : 'f3',
+                title : '床号',
+                width : 80,
+            }, {
+                field : 'f4',
+                title : '患者姓名',
+                width : 80,
+            }, {
+                field : 'f5',
+                title : '手术时间',
+                width : 80,
+            }, {
+                field : 'f6',
+                title : '手术内容',
+            }, {
+                field : 'f7',
+                title : '提交时间',
+                width : 160,
+            }, {
+                field : 'f8',
+                title : '审核时间',
+                width : 160,
+            }, {
+                field : 'f9',
+                title : '主刀医生',
+                width : 100,
+            }, {
+                field : 'f10',
+                title : '提交人',
+                width : 80,
+            }, {
+                field : 'f11',
+                title : '审核状态',
+            }  ,{fixed: 'right', width: 165, align:'center', toolbar: '#barDemo'}] ]
+        }));
+
+        // 重载刷新医嘱列表
+        function reloadSurgeryArrangeList() {
+            var params = common.serializeObject($('#queryForm'));
+            tableIns.reload({
+                url : tableListUrl,
+                where : params
+            });
+        }
+
+        // 按手术级别查询
+        form.on('select(surgeryLevelId)', function() {
+            reloadSurgeryArrangeList();
+        });
+        // 按手术名称
+        $('#surgeryName').bind('input propertychange', function() {
+            reloadSurgeryArrangeList();
+        });
+        //按手术日期范围查询
+        laydate.render({
+            elem : '#surgeryDate',
+            trigger:'click',
+            range : true,
+            done : function(value, date, endDate) {
+                var items = value.split(' - ');
+                $('#surgeryDateEnd').val(items[1]);
+                $('#surgeryDateBegin').val(items[0]);
+                reloadSurgeryArrangeList()
+            }
+        });
+
+    });
+</script>
+</html>

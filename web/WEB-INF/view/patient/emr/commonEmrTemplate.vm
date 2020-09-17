@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/visualizationCss.vm")
+    <style type="text/css">
+        .layui-table td, .layui-table th {
+            padding: 9px 5px
+        }
+        /*电子病历标志，住院申请 已入院或已失效 */
+        .emr_invalid{
+            font-size: 30px;
+            color: red;
+            width: 150px;
+            border: 2px solid;
+            text-align: center;
+            position: relative;
+            left: 575px;
+            top: -790px;
+            z-index: 999999;
+        }
+    </style>
+</head>
+<body>
+<div class="pane ui-layout-center layui-content-wrapper">
+    <!-- 电子病历 -->
+    <div class="layui-row white-bg full-scroll m-n layui-shade" style="height: calc(100% - 50px);">
+        #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+        #formHiddenInput("registerId" "$!info.registerId" "id='registerId'")
+        #formHiddenInput("patientId" "$!info.patientId" "id='patientId'")
+        #formHiddenInput("inhospitalId" "$!info.inhospitalId" "id='inhospitalId'")
+        #formHiddenInput("patientHospitalEmrId" "$!info.patientHospitalEmrId" "id='patientHospitalEmrId'")
+        #formHiddenInput("mouseroOnClick" "" "id='mouseroOnClick'")
+        #formHiddenInput("orderId" "$!inpatientOrder.orderId" "id='orderId'")
+        #formHiddenInput("signFlag" "$!patientHospitalEmr.signFlag" "id='signFlag'")
+        #formHiddenInput("userId" "$!user.userId" "id='userId'")
+        #formHiddenInput("manageNurseFlag" "$!manageNurseFlag" "id='manageNurseFlag'")
+        #formHiddenInput("doctorSign" "$!doctorSign" "id='doctorSign'")
+        #formHiddenInput("currentDoctorSign" "$!patientHospitalEmr.doctorSign" "id='currentDoctorSign'")
+        <div class="full-height p-r-n p-l-n" id="designContent"
+             style="width:100%; margin:0 auto; display: none; height: 200px;">$!emrTlp.emrTlpContent</div>
+    </div>
+
+    <!-- 按钮 -->
+    <div class="layui-row gray-bg text-center p-t-sm p-b-sm">
+        #if("$!emrFuncList" != "" && $!emrFuncList.size() > 0)
+            #set($emrFunctionHtml = $!dicData.dicEmrFunctionHtml)
+            #foreach($item in $!emrFuncList)
+                $!{emrFunctionHtml.get($!item)}
+            #end
+        #end
+        <!--在emr设置 电子病历模板设置对应操作名-->
+        <!--<button class="layui-btn layui-btn-sm" id="btn_cba" operate="winClose" type="button"> 下载cda </button>-->
+        <button class="layui-btn layui-btn-sm" id="btn_preview" type="button"> 打 印 </button>
+        #if("$!{modelType}" != "print")
+			<button class="layui-btn layui-btn-sm" id="btn_formula" type="button"> 导入医学公式</button>
+			<label><input type="checkbox" id="trace" title="留痕">留 痕</label>
+        #end
+        <!--
+            <button class="layui-btn layui-btn-sm" id="btn_save" type="button"> 保 存  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_submit" type="button"> 提 交  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_inhospitalDiagnosis" defDiagnosis="2" type="button"> 入院诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_modifyDiagnosis" defDiagnosis="6" type="button"> 修正诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_addDiagnosis" defDiagnosis="8" type="button"> 补充诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_deathDiagnosis" defDiagnosis="11" type="button"> 死亡诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_importArchives" type="button"> 导入患者档案  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_medicalRecord" type="button"> 病历资料  </button>
+            ##<button class="layui-btn layui-btn-sm" id="btn_import" type="button"> 导入路径  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_template" type="button"> 模 板  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_saveTemplate" type="button"> 存为模板  </button>
+             -->
+    </div>
+</div>
+
+<!-- 选择操作区域 -->
+<div id="material" class="ui-layout-south" style="display: none">
+    <iframe src="" id="materialIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+</div>
+
+</body>
+    #parse("./common/pageJs.vm")
+    #parse("./common/visualizationJs.vm")
+<link rel="stylesheet" href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css">
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+<script>
+
+
+    layui.use(['layer'], function () {
+        var layer = layui.layer;
+
+        layer.load({
+            offset: ['50%', '50%']
+        });
+    });
+    var minieditorDesign = new window.minieditorDesign('designContent', {
+    initData: #if("$!emrData" != "") $!emrData #else '' #end,
+        modelType: '$!{modelType}',
+        printType: '$!{emrTlp.printType}',
+        fontSize: '$!{emrTlp.fontSize}',
+        emrTlpClassifyId: '$!{emrTlp.emrTlpClassifyId}',
+        outhtmlWidth: '$!{emrTlp.emrTlpWidth}' + 'px',
+        hospitalName:'$!{info.hospitalName}',
+        rootUrl: '$!contextPath',
+        doctorSign: '$!{patientHospitalEmr.doctorSign}',
+        manageNurseFlag: $('#manageNurseFlag').val(),
+        dicEmrClassNameKeyField: JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrClassNameKeyField)'),
+        baseFormParams: {
+            PatientHospitalEmr: {
+                patientHospitalEmrId: $('#patientHospitalEmrId').val(),
+                patientId: $('#patientId').val(),
+                registerId: $('#registerId').val(),
+                inhospitalId: $('#inhospitalId').val(),
+                emrTlpId: $('#emrTlpId').val()
+            }
+        }
+    });
+    $(function () {
+        /*电子病历初始化完成事件*/
+        minieditorDesign.miniEditor.editor.ready(function () {
+            if (parent.emrReadyCall && typeof (parent.emrReadyCall) == 'function') {
+                // 电子病历初始化完之后调用，参数为病历对象（必须）
+                parent.emrReadyCall(minieditorDesign);
+            }
+        })
+        $("#trace").change(function () {
+            console.log(this.checked);//判断当前状态
+            if (this.checked) {
+                minieditorDesign.miniEditor.setTrace();
+            } else {
+                minieditorDesign.miniEditor.restoreCacheContent();
+            }
+        });
+
+        $('#btn_preview').click(function () {
+        	console.log(document.getElementsByTagName('iframe')[0].contentWindow);
+			document.getElementsByTagName('iframe')[0].contentWindow.print();
+			return;
+            minieditorDesign.miniEditor.saveCtrlsValue();
+            layer.open({
+                type: 2,
+                area: ['100%', '100%'],
+                maxmin: true,
+                title: '打印预览',
+                content: '$!contextPath/resource/editor/mini-editor/dialogs/preview/preview.html' //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+            });
+        });
+
+        $('#btn_formula').click(function() {
+            layer.open({
+                type: 2
+                , title: '导入医学公式'
+                , content: contextPath + '/emrTlp/selectFormula.do'
+                , area: ['400px', '450px']
+                , btn: ['确定', '取消']
+                , scrollbar: true
+                , yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                            , submitID = 'LAY-emr-submit'
+                            , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field; //获取提交的字段
+                        var opt = {"desc":"医学公式","formulaType": field.formulaId,"mode":"1","type":"medicalformula"};
+                        var domCtrl = document.createElement('span');
+                        $(domCtrl).attr('class', 'emr-ctrl');
+                        $(domCtrl).attr('contenteditable', 'false');
+                        $(domCtrl).attr('id', 'EmrPatientOtherData_formulaId');
+                        $(domCtrl).attr('emr-type', 'medicalformula');
+                        $(domCtrl).attr('title', '医学公式');
+                        $(domCtrl).attr('emr-model', encodeURIComponent(JSON.stringify(opt)));
+                        var domValue = document.createElement('span');
+                        $(domValue).attr('class', 'emr-value');
+                        $(domValue).attr('contenteditable', 'false');
+                        var domImage = document.createElement('img');
+                        domValue.appendChild(domImage);
+                        domCtrl.appendChild(domValue);
+                        console.log()
+                        $.post(contextPath + '/emr/getFormulaImage.action', {formulaId: field.formulaId}, function (res){
+                            if(res.code === "0") {
+                                domImage.setAttribute('src', res.data.image);
+                                domCtrl.setAttribute('formula-value', encodeURIComponent(res.data.value));
+                                minieditorDesign.miniEditor.inserthtml(domCtrl.outerHTML);
+                                var refreshListener = document.getElementById("ueditor_0").contentWindow.refreshListener;
+                                if ( refreshListener ) {
+                                    document.getElementById( "ueditor_0" ).contentWindow.refreshListener('', {type: 'medicalformula'})
+                                }
+                                layer.close(index); //关闭弹层
+                            }
+                        }, 'json');
+                    });
+
+                    submit.trigger('click');
+                }
+                , success: function (layero, index) {
+
+                }
+            });
+        });
+
+    });
+
+    // 根据控件ID设置值（提供父窗口调用的方法）
+    function setTemplateContent(contrId, value) {
+        var count = 0;
+        var intervalId = setInterval(function () {
+            count++;
+            // 当编辑器已经在完成或2两分钟还未加载完时，就不再执行该方法
+            if ((minieditorDesign && minieditorDesign.miniEditor && minieditorDesign.miniEditor.getControlById(contrId) && minieditorDesign.miniEditor.getControlById(contrId)[0].getDom()) || count > 600) {
+                clearInterval(intervalId);
+                if (minieditorDesign.miniEditor.getControlById(contrId)[0].getDom()) {
+                    minieditorDesign.miniEditor.getControlById(contrId)[0].setValue(value);
+                }
+            }
+        }, 200);
+    }
+
+    /*********////////////单选用户////////////*********/
+    //电子病历选择医生出发的方法
+    var controlDom;
+    var fieldParamsArrays;
+
+    function selectSingleUser(ctrlDom, fieldParams) {
+        controlDom = ctrlDom;
+        fieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {area: ['80%', '80%']});
+    }
+
+    //电子病历选择医生触发方法的回调函数
+    function selectSingleUserCall(data) {
+        if (controlDom && fieldParamsArrays) {
+            var obj = {};
+            obj[fieldParamsArrays[0]] = data.name;
+            if (fieldParamsArrays[1]) {
+                obj[fieldParamsArrays[1]] = data.userId;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+        }
+    }
+
+    function selectManageNurse(ctrlDom, fieldParams) {
+        var ctrl = minieditorDesign.miniEditor.getControlByDom(ctrlDom);
+        var value = ctrl.getValue();
+        var fieldNames = ctrl.getOpt().fieldName.split(',');
+        if (value[fieldNames[1]]) {
+            common.confirm('确定要去掉签名吗？', function (){
+                var newVlaue = {};
+                for (var i = 0, len = fieldNames.length; i < len; i++) {
+                    newVlaue[fieldNames[i]] = '';
+                }
+                ctrl.setValue(newVlaue);
+            });
+        } else {
+            var manageNurseFlag = $('#manageNurseFlag').val();
+            if (manageNurseFlag === '1') {
+                controlDom = ctrlDom;
+                fieldParamsArrays = fieldParams.split(',');
+                common.open(contextPath + "/inpatient/selectManageNurse.do", "选择护士长（单击选择）", {area: ['95%', '95%']});
+            } else {
+                common.alert('你不是护士长，不能签名', 0);
+            }
+        }
+    }
+
+    //电子病历选择医生触发方法的回调函数
+    function selectManageNurseCall(data) {
+        if (controlDom && fieldParamsArrays) {
+            var obj = {};
+            obj[fieldParamsArrays[0]] = data.name;
+            if (fieldParamsArrays[1]) {
+                obj[fieldParamsArrays[1]] = data.userId;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+        }
+    }
+
+
+    /*********///////////多选用户////////////*********/
+    function selectMultipleUser(ctrlDom, fieldParams) {
+        controlDom = ctrlDom;
+        fieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/sys/selectMultiDeptUser.do", "选择医生（单击选择）", {area: ['80%', '80%']});
+    }
+
+    //电子病历选择医生触发方法的回调函数
+    function selectMultiUserCall(data) {
+        if (controlDom && fieldParamsArrays) {
+            var obj = {};
+            obj[fieldParamsArrays[0]] = data.name;
+            obj[fieldParamsArrays[1]] = data.userId;
+            minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+        }
+    }
+
+
+    /*********///////////单选病种////////////*********/
+    //电子病历选择病种触发的方法
+    var controlsDiseaseDom;
+    var diseaseFieldParamsArrays;
+
+    function selectSingleDisease(ctrlDom, fieldParams) {
+        controlsDiseaseDom = ctrlDom;
+        diseaseFieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/basDisease/selectSingleDisease.do", "选择病种（单击选择）", {area: ['80%', '80%']});
+    }
+
+	function selectSingleDisease(ctrlDom, fieldParams) {
+		controlsDiseaseDom = ctrlDom;
+		diseaseFieldParamsArrays = fieldParams.split(',');
+		common.open(contextPath + "/basDisease/selectSingleDisease.do", "选择病种（单击选择）", {area: ['80%', '80%']});
+	}
+
+    //电子病历选择病种触发的方法的回调函数
+    function selectSingleDiseaseCall(data) {
+        if (controlsDiseaseDom && diseaseFieldParamsArrays) {
+            var obj = {};
+            obj[diseaseFieldParamsArrays[0]] = data.diseaseName;
+            if (diseaseFieldParamsArrays[1]) {
+                obj[diseaseFieldParamsArrays[1]] = data.diseaseId;
+            }
+            if (diseaseFieldParamsArrays[2]) {
+                obj[diseaseFieldParamsArrays[2]] = data.diseaseIcdTcd;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlsDiseaseDom).setValue(obj);
+        }
+    }
+
+    /*********///////////多选病种文本////////////*********/
+    //电子病历选择病种文本触发的方法
+    var controlsDiseaseTexDom;
+
+    function selectSingleDiseaseText(ctrlDom, fieldParams) {
+        controlsDiseaseTexDom = ctrlDom;
+        diseaseFieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/basDisease/selectMultiDisease.do", "选择病种（单击选择）", {area: ['95%', '95%']});
+    }
+
+    //电子病历选择病种文本触发的方法的回调函数
+    function selectSingleDiseaseTextCall(data) {
+        if (controlsDiseaseTexDom && data && data.length > 0) {
+            var text = [];
+            $.each(data, function (i, v) {
+                text.push(data.diseaseName);
+            });
+            minieditorDesign.miniEditor.getControlById(text.join('，'));
+        }
+    }
+
+    //电子病历选择科室触发的方法
+    var controlsDepDom;
+    var depFieldParamsArrays;
+
+    function selectSingleDepartment(ctrlDom, fieldParams) {
+        controlsDepDom = ctrlDom;
+        depFieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/sys/selectSingleDepartment.do", "选择科室（单击选择）", {area: ['700px', '80%']});
+    }
+
+    //电子病历选择科室触发方法的回调函数
+    function selectSingleDepartmentCall(data) {
+        if (controlsDepDom && depFieldParamsArrays) {
+            var obj = {};
+            obj[depFieldParamsArrays[0]] = data.name;
+            if (depFieldParamsArrays[1]) {
+                obj[depFieldParamsArrays[1]] = data.orgId;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlsDepDom).setValue(obj);
+        }
+    }
+
+    var controlsSurgeryCodeDom;
+    var surgeryCodeFieldParamsArrays;
+
+    //选择手术名称
+    function selectSignleBasSurgeryCode(ctrlDom, fieldParams) {
+        controlsSurgeryCodeDom = ctrlDom;
+        surgeryCodeFieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/bas/selectSignleBasSurgeryCode.do", "选择手术名称", {area: ['80%', '80%']});
+    }
+
+    //选择手术名称回调函数
+    function selectSignleBasSurgeryCodeCall(data) {
+        if (controlsSurgeryCodeDom && surgeryCodeFieldParamsArrays) {
+            var obj = {};
+            obj[surgeryCodeFieldParamsArrays[0]] = data.surgeryName;
+            if (surgeryCodeFieldParamsArrays[1]) {
+                obj[surgeryCodeFieldParamsArrays[1]] = data.surgeryCodeId;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlsSurgeryCodeDom).setValue(obj);
+        }
+    }
+
+    //电子病历选择药品触发方法
+    var controlsMedicineDom;
+    var medicineFieldParamsArrays;
+
+    function selectMultiMedicine(ctrlDom, fieldParams) {
+        controlsMedicineDom = ctrlDom;
+        medicineFieldParamsArrays = fieldParams.split(',');
+        if ($('#inhospitalId').val()) {
+            var orderGroupNo = $('#orderGroupNo', window.parent.document).val();
+            common.open(contextPath + "/inpatient/selectMultiMedicine.do?orderGroupNo=" + orderGroupNo, "添加药品", {area: ['80%', '80%']});
+        }
+        var registerId = $('#registerId').val();
+        if (registerId) {
+            common.open(contextPath + "/outpatient/selectPatientRecipeList.do?registerId=" + registerId, "添加药品", {area: ['80%', '80%']});
+        }
+
+    }
+
+    //电子病历选择药品触发方法的回调函数
+    function selectMultiMedicineCall(data) {
+        if (controlsMedicineDom && data && data.length > 0) {
+            var text = [];
+            $.each(data, function (i, v) {
+                text.push(v.orderName);
+            });
+            minieditorDesign.miniEditor.getControlByDom(controlsMedicineDom).setValue(text.join('，'));
+        }
+    }
+
+    //电子病历选择中医证候方法
+    var controlsSyndromeDom;
+    var syndromeFieldParamsArrays;
+
+    function selectSingleTcmSyndrome(ctrlDom, fieldParams) {
+        controlsSyndromeDom = ctrlDom;
+        syndromeFieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + "/basDic/selectSingleTcmSyndrome.do", "选择中医证候（单击选择）", {area: ['95%', '95%']});
+    }
+
+    function selectSingleTcmSyndromeCall(data) {
+        if (controlsSyndromeDom && syndromeFieldParamsArrays) {
+            var obj = {};
+            obj[syndromeFieldParamsArrays[0]] = data.dicName;
+            if (syndromeFieldParamsArrays[1]) {
+                obj[syndromeFieldParamsArrays[1]] = data.dicCode;
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlsSyndromeDom).setValue(obj);
+        }
+    }
+
+
+    // 导入模板
+    function leadingIn(text) {
+        minieditorDesign.miniEditor.editor.focus();
+        minieditorDesign.miniEditor.editor.execCommand('inserthtml', text);
+    }
+
+    // 插入内容
+    function inserthtml(text) {
+        minieditorDesign.miniEditor.inserthtml(text);
+    }
+
+    //导入诊断
+    function importDiagnosis(data) {
+        if (data && data.length > 0) {
+            console.log(data);
+            // var html = '';
+            // var cDom = [], wDom = [];
+            // cDom.push('<span>中医诊断：</span><br />');
+            // wDom.push('<span>西医诊断：</span><br />');
+            // for (var i = 0, len = data.length; i < len; i++) {
+            //     var diagnosis = data[i];
+            //     if (diagnosis.diseaseTypeFlag === '1') {
+            //         cDom.push('<span>&nbsp;&nbsp;&nbsp;&nbsp;' + cDom.length + '、' + diagnosis.diseaseName + '</span><br />');
+            //     }
+            //     if (diagnosis.diseaseTypeFlag === '2') {
+            //         wDom.push('<span>&nbsp;&nbsp;&nbsp;&nbsp;' + wDom.length + '、' + diagnosis.diseaseName + '</span><br />');
+            //     }
+            // }
+            // html = '<br />' + cDom.join('') + wDom.join('');
+            if (minieditorDesign.miniEditor.getControlById('InpatientDiagnosis')[0]) {
+                minieditorDesign.miniEditor.getControlById('InpatientDiagnosis')[0].setValue(data);
+            }
+        }
+        //以下判断现不用到
+        if (data.addDiagnosis && data.addDiagnosis.length > 0) {
+            if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_addDiagnosis')[0]) {
+                minieditorDesign.miniEditor.getControlById('InpatientInhospital_addDiagnosis')[0].setValue(data.addDiagnosis);
+            }
+        }
+        if (data.modifyDiagnosis && data.modifyDiagnosis.length > 0) {
+            if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_modifyDiagnosis')[0]) {
+                minieditorDesign.miniEditor.getControlById('InpatientInhospital_modifyDiagnosis')[0].setValue(data.modifyDiagnosis);
+            }
+        }
+        if (data.inhospitalDiagnosis && data.inhospitalDiagnosis.length > 0) {
+            if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_inhospitalDiagnosis')[0]) {
+                minieditorDesign.miniEditor.getControlById('InpatientInhospital_inhospitalDiagnosis')[0].setValue(data.inhospitalDiagnosis);
+            }
+        }
+        if (data.outhospitalDiagnosis && data.outhospitalDiagnosis.length > 0) {
+            if (minieditorDesign.miniEditor.getControlById('OuthospitalReport_outhospitalDiagnosis')[0]) {
+                minieditorDesign.miniEditor.getControlById('OuthospitalReport_outhospitalDiagnosis')[0].setValue(data.outhospitalDiagnosis);
+            }
+        }
+        return true;
+    }
+
+    //选择一条诊断的回调方法，诊断列表弹框中单击一行诊断
+    function selectSingleDiagnosisCall(data) {
+        var obj = {};
+        obj[fieldParamsArrays[0]] = data.diseaseDiagnosisName;
+        if (fieldParamsArrays[1]) {
+            obj[fieldParamsArrays[1]] = data.diseaseId;
+        }
+        if (fieldParamsArrays[2]) {
+            obj[fieldParamsArrays[2]] = data.diseaseIcdTcd;
+        }
+        minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+        return true;
+    }
+
+    //诊断区域方法
+    function diagnosisArea(ctrlDom, fieldParams) {
+        //$("#btn_diagnosis").click();
+        controlDom = ctrlDom;
+        fieldParamsArrays = fieldParams.split(',');
+        console.log(fieldParams);
+        var inhospitalId = $('#inhospitalId').val();
+        var registerId = $('#registerId').val();
+        if (inhospitalId) {//住院
+            common.open(contextPath + '/inpatient/selectInpatientDiagnosisList.do?inhospitalId=' + inhospitalId, "诊断列表", {area: ['95%', '95%']})
+        }
+        if (registerId) {//门诊
+            common.open(contextPath + '/outpatient/selectDiseaseList.do?registerId=' + registerId, "诊断列表(单击选择)", {area: ['95%', '95%']})
+        }
+    }
+
+    //选择患者的手术
+    function surgeryArea(ctrlDom, fieldParams) {
+        controlDom = ctrlDom;
+        fieldParamsArrays = fieldParams.split(',');
+        common.open(contextPath + '/surgery/selectSurgeryList.do?inhospitalId=' + $('#inhospitalId').val(), "手术列表(单击选择)", {area: ['95%', '95%']})
+    }
+
+    //选择诊断方法回调
+    function selectSurgeryCall(data) {
+        var obj = {};
+        obj[fieldParamsArrays[0]] = data.surgeryName;
+        if (fieldParamsArrays[1]) {
+            obj[fieldParamsArrays[1]] = data.surgeryCodeIcd;
+        }
+        minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+    }
+
+    //入院诊断区域方法
+    function inhospitalDiagnosisArea() {
+        $("#btn_inhospitalDiagnosis").click();
+    }
+
+    function signEmr(ctrlDom, fieldParams) {
+        if (!minieditorDesign.miniEditor.validateForm()) {
+            return;
+        }
+        var ctrl = minieditorDesign.miniEditor.getControlByDom(ctrlDom);
+        var opt = ctrl.getOpt();
+        var ctrlId = ctrl.getCtrlId();
+        var className = ctrlId.split('_')[0];
+        var doctorSign = $('#doctorSign').val();
+        var currentDoctorSign = $('#currentDoctorSign').val();
+        if (opt.signLevel === doctorSign) {
+            controlDom = ctrlDom;
+            fieldParamsArrays = fieldParams.split(',');
+            var value = ctrl.getValue();
+            if (currentDoctorSign && currentDoctorSign > opt.signLevel) {
+                common.msg('请先删掉上级签名', 0);
+                return;
+            }
+            if (value[fieldParamsArrays[1]] && opt.signLevel === currentDoctorSign) {
+                if (value[fieldParamsArrays[1]] == $('#userId').val()) {
+                    common.confirm('确定要去掉签名吗？', function (){
+                        var newVlaue = {};
+                        for (var i = 0, len = fieldParamsArrays.length; i < len; i++) {
+                            newVlaue[fieldParamsArrays[i]] = '';
+                        }
+                        ctrl.setValue(newVlaue);
+                        var parse = {
+                            patientId: $('#patientId').val(),
+                            registerId: $('#registerId').val(),
+                            inhospitalId: $('#inhospitalId').val(),
+                            patientHospitalEmrId: $('#patientHospitalEmrId').val(),
+                            emrTlpId: $('#emrTlpId').val(),
+                            doctorSign: $('#doctorSign').val()
+                        };
+                        var emrJsonData = {};
+                        emrJsonData[className] = newVlaue
+                        parse['emrJsonData'] = JSON.stringify(emrJsonData);
+                        $.post(contextPath + '/emr/deleteSignInfo.jo', parse, function (res){
+                            if(res.code === "0") {
+                                common.msg(res.msg, 1);
+                                window.location.reload();
+                            }
+                        }, 'json');
+                    });
+                } else {
+                    common.msg('你的账号和签名信息不符', 0);
+                }
+            } else {
+                common.open(contextPath + '/emr/signEmr.do?patientHospitalEmrId=' + $('#patientHospitalEmrId').val() + '&doctorSign=' + opt.signLevel, "签名", {area: ['60%', '60%']});
+            }
+        } else {
+            common.msg('你的签名等级不符', 0);
+        }
+    }
+
+    //电子病历选择医生触发方法的回调函数
+    function signEmrCall(data) {
+        if (controlDom && fieldParamsArrays) {
+            var obj = {};
+            obj[fieldParamsArrays[0]] = data.name;
+            obj[fieldParamsArrays[1]] = data.userId;
+            if (data.signImage) {
+                obj['signFlag'] = '1';
+                $('#signFlag').val('1');
+                minieditorDesign.baseFormParams.PatientHospitalEmr.doctorSign = $('#doctorSign').val();
+                minieditorDesign.baseFormParams.PatientHospitalEmr.signFlag = '1';
+                setTimeout(function() {
+                    $('#btn_save').click();
+                }, 500);
+            }
+            minieditorDesign.miniEditor.getControlByDom(controlDom).setValue(obj);
+        }
+    }
+</script>
+<script type="text/javascript">
+    var emrAuditing;
+    var idMap;
+    layui.use(['element', 'layer'], function () {
+        var layer = layui.layer;
+        // 保存按钮
+        $('#btn_save').click(function () {
+            if (parent.initBaseParams && typeof (parent.initBaseParams) == 'function') {
+                // 第一个参数为病历对象（必须），第二个参数为操作类型（保存、提交）可选
+                parent.initBaseParams(minieditorDesign, $(this).attr('operate-type'));
+            }
+            if (parent.saveBeforeCall && typeof (parent.saveBeforeCall) == 'function') {
+                // 第一个参数为病历对象（必须），第二个参数为操作类型（保存、提交）可选， 注意病历数据保存也在该方法保存
+                parent.saveBeforeCall(minieditorDesign, $(this).attr('operate-type'));
+            } else {
+                if (minieditorDesign.miniEditor.validateForm()) {
+                    var flag = $(this).attr('id') == 'btn_save' ? '1' : '0';
+                    var params = minieditorDesign.getBaseParams();
+                    params.PatientHospitalEmr.submitFlag = flag;
+
+                    // 如果执行过一次保存, 则id存在
+                    if (idMap) {
+                        //遍历idmap
+                        for (var k in idMap) {
+                            var emrParam = {};
+                            // 数组保存类名和Id
+                            var ids = [];
+                            ids.length = 2;
+                            ids = k.split('_');
+
+                            var className = ids[1];
+                            var classNameId = {};
+                            classNameId[className] = idMap[k];
+                            if (className == 'patientHospitalEmrId') {
+                                // 获取初始化参数
+                                var PatientHospitalEmr = minieditorDesign.getBaseParams().PatientHospitalEmr;
+                                // 给病历关联Id赋值
+                                PatientHospitalEmr.patientHospitalEmrId = idMap[k];
+                                classNameId = PatientHospitalEmr;
+                            }
+                            //添加Id到保存参数
+                            emrParam[ids[0]] = classNameId;
+                            minieditorDesign.addParams(emrParam);
+                        }
+                    }
+                    minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo?serviceId=$!serviceId', function (result) {
+                        idMap = result.data;
+                        for (var k in idMap) {
+                            var conrtrol = minieditorDesign.miniEditor.getControlById(k)[0];
+                            if (conrtrol) {
+                                conrtrol.attr('patientOtherDataId', idMap[k]);
+                            }
+                        }
+                        if ($('#signFlag').val() === '1') {
+                            // minieditorDesign.miniEditor.model('readonly');
+                            $('#btn_save').hide();
+                        }
+                        if (parent.saveAfterCall && typeof (parent.saveAfterCall) == 'function') {
+                            // 第一个参数为病历对象（必须），第二个参数为操作类型（保存、提交）可选
+                            parent.saveAfterCall(result.data);
+                        }
+                    });
+                }
+            }
+        });
+
+        //诊断导入弹框
+        $("#btn_diagnosis").click(function () {
+            if ($('#inhospitalId').val()) {
+				common.open(contextPath + '/inpatient/diagnosisEnter.do?inhospitalId=' + $('#inhospitalId').val(), $(this).text(), {area: ['80%', '80%']});
+                return;
+            }
+			if ($('#patientId').val() && $('#registerId').val()) {
+				common.open(contextPath + '/outpatient/outpatientDiagnose.do?urgencyFlag=0&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), $(this).text(), {area: ['80%', '80%']});
+				console.log($('#patientId').val())
+				return;
+				console.log($('#registerId').val())
+			}
+			return;
+			common.alert('参数无效，请检查参数是否正确', 0);
+        })
+
+        //分类诊断导入弹框
+        $("button[defDiagnosis]").click(function () {
+            // if (!$('#inhospitalId').val()) {
+            //     common.alert('参数无效，请检查住院编号是否存在', 0);
+            //     return;
+            // }
+            // var defDiagnosis = $(this).attr("defDiagnosis");
+            // common.open(contextPath + '/inpatient/diagnosisEnter.do?saveBtn=1&defDiagnosis=' + defDiagnosis + '&inhospitalId=' + $('#inhospitalId').val(), $(this).text(), {area: ['95%', '95%']})
+            //openSouthLayout('/inpatient/diagnosisEnter.do?saveBtn=1&defDiagnosis=' + defDiagnosis + '&inhospitalId=' + $('#inhospitalId').val());
+        });
+
+        // 病历资料
+        $('#btn_medicalRecord').click(function () {
+            openSouthLayout('/patient/patientMedicalInformation.do?patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val());
+        });
+        // 模板按钮
+        $('#btn_template').click(function () {
+            openSouthLayout('/emr/emrTreeTemplate.do');
+        });
+
+        // 下载CDA
+        $('#btn_cba').click(function () {
+            var patientHospitalEmrId = $('#patientHospitalEmrId').val();
+            if (!patientHospitalEmrId) {
+                layer.msg('请先保存电子病历', {icon: 2});
+                return;
+            }
+            window.location.href = "../emr/getXmlFile.jo?inhospitalId=$!{info.inhospitalId}&emrTlpId=$!{emrTlp.emrTlpId}&patientHospitalEmrId=" + patientHospitalEmrId + "&patientId=$!{info.patientId}&registerId=&serviceId=";
+        });
+
+        // 打开底部模板区域
+        function openSouthLayout(url) {
+            var winLayout = $('body').layout({resizerDragOpacity: 0.5, maskIframesOnResize: "#material",togglerLength_open:100,togglerLength_closed:200, togglerTip_closed:"首次请先点击“病历资料”按钮以打开",togglerTip_open:"关闭",initClosed: true});
+            //pane是否关闭中
+            var isClosed = $("#material").css("display") == "none";
+            if (isClosed) {
+                winLayout.sizePane("south", 200);
+                winLayout.toggle("south");
+            }
+            var materialIframe = $('#materialIframe');
+            if ($(materialIframe).attr('src') == contextPath + url) {//url未改变
+                if (!isClosed) {//url未改变且pane打开中
+                    winLayout.toggle("south");
+                }
+                return;
+            }
+            $(materialIframe).attr('src', contextPath + url);
+        }
+
+        //审核状态
+        emrAuditing = function () {
+            var emrAuditing = $('.emrAuditing', parent.document);
+            if (emrAuditing.length > 0) {
+                emrAuditing.removeClass('layui-hide');
+                $('body #designContent').append(emrAuditing);
+            }
+        }
+
+        //ctrl + S 保存
+        document.onkeydown = function (e) {
+            var keyCode = e.keyCode || e.which || e.charCode;
+            var altKey = e.altKey
+            if (altKey && e.keyCode == 83) {
+                e.preventDefault()
+                $('#btn_save').click();
+            }
+        };
+        //监听键盘输入
+//         var iframe = document.getElementById("ueditor_0");
+//         $(document.getElementById("ueditor_0").contentWindow.document).on("click",function(e){
+
+//                 var kj = minieditorDesign.miniEditor.getControlByCursor();
+//                 var labelName = kj.getOpt().labelName;
+//                 var desc = kj.getOpt().desc;
+//                 var textContent = kj.getDom().textContent;
+//                 textContent = textContent.replace(labelName, "");
+//                 textContent = textContent.trim();
+//                 var materialIframe = document.getElementById("materialIframe").contentWindow;
+//                 if (materialIframe.selectEmrTree) {
+//                     materialIframe.selectEmrTree({textContent: textContent, desc: desc});
+//                 }
+//         });
+
+        //页面初始化
+        $(document).ready(function () {
+            emrAuditing();
+
+        });
+    });
+
+    window.insertTemplate = function () {
+        var haveName = minieditorDesign.miniEditor.getControlByCursor().getOpt().labelName;
+        console.log('Name:' + haveName);
+        var name = haveName.replace(/:/g, '');
+        name = name.replace(/：/g, '');
+        name = name.replace(/@/g, '');
+        console.log('Name:' + name);
+        $('#mouseroOnClick').val(name);
+        document.getElementById('materialIframe').contentWindow.reder();
+    }
+
+
+</script>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-医生开处方权限（特殊药品）设置管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-btn + .layui-btn {
+            margin-left: 0px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <!--搜索条件 开始-->
+    <form id="basDoctorOrderRole_queryForm" class="layui-form">
+        <div class="layui-row-query">
+            <div class="layui-form-item search-term">
+                <div class="layui-inline">
+                    <label class="layui-form-label">医生</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("doctorName" "" "id='q_doctorName' class='layui-input' autocomplete='off' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">特殊药品</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectSearchFirstNone("medicineRecipeClassify" "$!basDoctorOrderRole.medicineRecipeClassify"
+                        $dicData.dicSpecialMedicine " autocomplete='off' lay-search"
+                        "直接选择或搜索选择")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询">
+                            <i class="layui-icon layui-icon-search"></i>
+                        </button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i>
+                        </button>
+                    </div>
+                    <button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal"
+                            lay-tips="新增">
+                        <i class="layui-icon layui-icon-add-1"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+    <!--搜索条件 结束-->
+    <!-- 列表表格 工具栏-->
+    <!-- 性别限制 -->
+    <!-- 开处方和医嘱的权限 -->
+    <script type="text/html" id="recipeFlagTpl">
+        <input type="checkbox" lay-filter="recipeFlag" name="recipeFlag" value="{{d.doctorId}}"
+               lay-skin="switch"
+               lay-text="是|否" {{Boolean(+d.recipeFlag) && 'checked' }} >
+    </script>
+    <!-- 操作栏操作按钮 -->
+    <script type="text/html" id="operateTpl">
+        <a class="layui-btn layui-btn-xs layui-btn-primary " lay-tips="详情" lay-event="btn_show">
+            <i class="layui-icon layui-icon-about"></i></a>
+        <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit">
+            <i class="layui-icon layui-icon-edit"></i></a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+            <i class="layui-icon layui-icon-delete"></i></a>
+    </script>
+    <!-- 列表表格 工具栏 结束-->
+    <!-- 列表表格 begin -->
+    <table id="basDoctorOrderRoleListGrid" lay-filter="basDoctorOrderRoleListGrid"></table>
+    <!--  列表表格 end -->
+</div>
+<!-- 本页面js -->
+#parse("./bas/basDoctorOrderRole/basDoctorOrderRoleList.js.vm")
+</body>
+</html>

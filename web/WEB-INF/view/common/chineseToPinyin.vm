@@ -1,0 +1,51 @@
+<!-- 全局js -->
+<!-- <script src="../resource/hplus/js/jquery.min.js"></script> 需要jquery-->
+<script src="../resource/hplus/js/plugins/pinyin/pinyinDictWithtone.js"></script>
+<script src="../resource/hplus/js/plugins/pinyin/pinyinDictPolyphone.js"></script>
+<script src="../resource/hplus/js/plugins/pinyin/pinyinUtil.js"></script>
+<script type="text/javascript">
+    /* 拼音首字母
+     例子
+     要转换的输入框文本:<input type="text" id="name">
+     要转换到的输入框     :<input type="text" class="chosen-PinyinCode" list-id="name">
+     list-id="name" name 是 要转换文本的id
+     */
+    $(function() {
+        initTurn();
+    })
+    //创建和初始化
+    function initTurn() {
+        $('.chosen-PinyinCode').each(function() {
+
+            var dataId = $(this).attr("list-id");
+            var list = "pinyinCode-" + dataId
+            $(this).attr("list", list).after($("<datalist>").attr("id", list));
+            $('#' + dataId).change(function() {
+                //输入框加载完后执行
+                var str = $("#" + dataId).val();
+                turnToPinyin(str, list);
+            });
+            $('#' + dataId).change();
+        });
+    }
+
+    //中文转拼音
+    function turnToPinyin(str, list) {
+        $("#" + list).empty();
+        if (!str) {
+            return;
+        }
+        /**
+         * 获取汉字的拼音首字母
+         * @param str 汉字字符串，如果遇到非汉字则原样返回
+         * @param polyphone 是否支持多音字，默认false，如果为true，会返回所有可能的组合数组
+         */
+        var namepinyin = pinyinUtil.getFirstLetter(str, true);
+        var optionTemplate = $("<option>");
+        $.each(namepinyin, function(key, val) {
+            var option = optionTemplate.clone();
+            option.val(val);
+            $("#" + list).append(option);
+        });
+    }
+</script>

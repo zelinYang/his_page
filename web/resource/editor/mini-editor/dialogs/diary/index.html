@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>日程格式</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th><span>字段名</span></th>
+            <th><span>控件模式</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="fieldName" placeholder="请输入字段名"></td>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1" selected="selected">编辑模式</option>
+                    <option value="0">只读模式</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            return rgbStr;
+        }
+
+        var thePlugins = 'minidiary',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id')).attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#fieldName').val(opt.fieldName);
+                $('#editModeFlag').val(opt.mode);
+                $G('requiredFlag').checked = opt.required === 1;
+                $G('saveFlag').checked = opt.saveFlag === 1;
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+			if ($G('fieldName').value == '') {
+				$G('fieldName').focus();
+				layer.msg('请输入字段名', {icon: 2});
+				return false;
+			}
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.fieldName = $('#fieldName').val();
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.type = 'diary';
+            if (!!domCtrl) {
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $('#ctrlId').val());
+                domCtrl.className = 'emr-ctrl emr-diary' + (newOpt.required? ' ctrl-required': '');
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                //修改
+                ctrl.setOpt(newOpt);
+                $(domCtrl).empty();
+                generateCtrl(domCtrl, newOpt);
+                window.parent.document.getElementById("ueditor_0").contentWindow.refreshListener();
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                console.log(newOpt);
+                domCtrl = UE.dom.domUtils.createElement(document, 'div', {
+                    class: 'emr-ctrl emr-diary' + (newOpt.required? ' ctrl-required': ''),
+                    contenteditable: false,
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'diary',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                generateCtrl(domCtrl, newOpt);
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt)
+            }
+            UE.plugins[thePlugins].domListener();
+        };
+
+        function generateCtrl(domCtrl, newOpt) {
+            var domValue = UE.dom.domUtils.createElement(document, 'div', {
+                class: 'emr-value',
+                // style: 'display: table-row-group;',
+                contenteditable: newOpt.mode === '1'
+            });
+            var fieldNames = newOpt.fieldName.split(',');
+            var html = [];
+			html.push('<table style="width: 100%; border: 1px solid #000"><tbody style="display: table-row-group;">');
+            for (var i = 0, len = fieldNames.length; i < len; i++) {
+            	var fieldName = fieldNames[i];
+				if (fieldName) {
+					switch(i) {
+						case 0:
+							html.push('<tr><td style="text-align: center; font-weight: bold;" title="标题" class="' + fieldName + '"><br/></td></tr>');
+							break;
+						case 1:
+							html.push('<tr><td contenteditable="false" style="text-align: left;" title="时间" class="' + fieldName + '"><br/></td></tr>');
+							break;
+						case 2:
+							html.push('<tr><td title="病程记录" class="' + fieldName + '"><br/></td></tr>');
+							break;
+						case 3:
+							html.push('<tr><td style="text-align: right;" title="签名" class="' + fieldName + '"><br/></td></tr>');
+							break;
+					}
+				}
+            }
+			html.push('</tbody></table>');
+			domValue.innerHTML = html.join('');
+
+            domCtrl.appendChild(domValue);
+            domValue.style.color = newOpt.fontColor;
+            domValue.style.backgroundColor = newOpt.backgroundColor;
+        }
+    })(UE);
+</script>
+</body>
+
+</html>

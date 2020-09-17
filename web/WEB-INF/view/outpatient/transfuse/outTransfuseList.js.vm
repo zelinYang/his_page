@@ -1,0 +1,160 @@
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+ 
+  layui.use(['jquery','table','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var $ = layui.$;
+    
+    //日期范围
+    laydate.render({elem: '#makeOrderTime',trigger: 'click', range: true});
+    
+    element.render();
+    //第一个实例
+    var tableIns = table.render({
+       elem: '#commonDiagnosisTable'
+      ,defaultToolbar: []
+      ,height: 'full-90'//高度
+      ,url: '../basCommDiagnosis/basCommDiagnosisListData.jo' //数据接口
+      ,where:common.serializeObject($('#commonDiagnosis_queryForm'))
+      ,limit:20
+      ,request: { 
+         pageName: 'pageNumber' //页码的参数名称，默认：page
+        ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+      }
+      ,cols: [[ //表头
+        {type:'checkbox'}
+        ,{field : 'consultationApplyId',title : '就诊卡号'}
+        ,{field : 'applyOfficeId',title : '患者姓名',
+            templet :function (row) { return dicSysOrgName [row.applyOfficeId];}
+        }
+     
+        ,{field : 'applyTime',title : '性别'}
+        ,{field : 'diseaseName',title : '年龄'}
+        ,{field : 'consultationDiagnose',title : '疾病诊断'} 
+        ,{field : 'consultationDiagnose',title : '就诊日期'} 
+       ,{field : 'applyOfficeId',title : '就诊科室',
+           templet :function (row) { return dicSysOrgName [row.applyOfficeId];}
+       }
+       ,{field : 'applyDoctorId',title : '就诊医生',
+           templet :function (row) {return dicSysUser[row.applyDoctorId];}
+       }
+       ,{field : 'applyTime',title : '负责护士'} 
+ 
+      ]]
+      //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+      ,done: function(res, curr, count){
+         curRows = res.data;
+         randerPage(res, curr, count);
+      }
+    });
+    
+    var viewMode = ['table','block'];
+    var curViewMode = viewMode[0];
+    var tableBoxHight = 0;
+    
+    //渲染页面
+    function randerPage(res, curr, count) {
+      var pageContent = $('.pageContent').clone().removeClass('pageContent').removeClass('layui-hide'); 
+      var patientList = pageContent.find('.patient-list');
+      var regPatientTpl = pageContent.find('.infoTpl').remove();
+      $(res.data).each(function(index, row) {
+        //获取模板
+        var newRegPatient = regPatientTpl.clone();  
+        //赋值
+         
+        newRegPatient.find('.patientName').html(row.patientName);
+        newRegPatient.find('.patientAge').html(row.patientAge);
+        newRegPatient.find('.patientSex').html(dicSex[row.patientSex]);
+        var visitCardNo = row.visitCardNo;
+        var len = 18 - row.visitCardNo.length;
+        for (var i = 0; i < len; i++) {
+          visitCardNo += '&nbsp;&nbsp;';
+        }
+        newRegPatient.find('.visitCardNo').html(visitCardNo);
+        newRegPatient.find('.serialNum').html(row.serialNum);
+        newRegPatient.find('.registerTime').html(row.registerTime);
+        newRegPatient.find('.registerId').val(row.registerId);
+        newRegPatient.data('row',row);
+        //单击事件
+        newRegPatient.dblclick(function(){
+          var row = $(this).data('row');
+          //rowSelect(row);
+        });
+
+        patientList.append(newRegPatient);
+      });
+      
+      //插入layui-table-box start
+      var layuiTableBox = $('.layui-table-box').first(); 
+      if(!tableBoxHight) tableBoxHight = layuiTableBox.outerHeight();
+      $('.layui-table-box').eq(1).remove();//移除
+       
+      var pageTableBox = $('<div class="layui-table-box"></div>').append(pageContent); 
+      pageTableBox.css('height',tableBoxHight);
+      pageTableBox.css('overflow-y','auto');
+      
+      //显示模式
+      if (curViewMode == viewMode[0]) { 
+        pageTableBox.addClass('layui-hide')
+      } else {
+        layuiTableBox.addClass('layui-hide')
+        
+      }
+      pageTableBox.insertAfter(layuiTableBox);
+      //插入layui-table-box end
+      
+      //显示高度适应
+      $(window).resize(function() { 
+          var layuiForm = $('.layui-form').first(); 
+          tableBoxHight = layuiForm.outerHeight() - 55;
+          var pageTableBox = $('.layui-table-box').eq(1);
+          pageTableBox.css('height',tableBoxHight);
+      });
+    }////渲染页面end
+      
+    // 查询按钮
+    $('#btn_query').click(function (){
+        query();
+    });
+        
+    //查询列表
+    function query() { 
+        var queryParams = common.serializeObject($('#commonDiagnosis_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+        
+    //单选按钮触发查询
+    form.on('radio(diagnosisClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+      query();
+    });  
+    
+    
+    
+  //隐藏东侧界面
+    function hideEastLayout() {
+        $(".ui-layout-resizer-east .content-open").trigger('click');
+    }
+    
+    initLayout = function() {
+        $('#container').layout({
+            east__size: 600//pane的大小 
+           ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content   
+           ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。  
+           ,spacing_open:8//边框的间隙 
+           ,maskIframesOnResize:".resizeiframe"
+        });
+      
+        //hideEastLayout();
+    }
+    
+    //页面初始化
+    $(document).ready(function() {
+        initLayout();
+    });
+    
+        
+  });//layui.use
+</script> 

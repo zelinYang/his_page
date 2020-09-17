@@ -1,0 +1,1338 @@
+
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+
+    var DOSE_WAY_CODE_INJECTION = "$!{CONST.AppConstants.DOSE_WAY_CODE_INJECTION}";
+
+    var ORDER_TYPE_INJECTION_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_INJECTION_MEDICINE}";
+    var SKIN_TEST_RESULT_FLAG_NEGATIVE = "$!{CONST.AppConstants.SKIN_TEST_RESULT_FLAG_NEGATIVE}";
+    var SKIN_TEST_RESULT_FLAG_POSITIVE = "$!{CONST.AppConstants.SKIN_TEST_RESULT_FLAG_POSITIVE}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicMedicineTypeInOrder = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineTypeInOrder)');
+
+    //挂号类型
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicInfusionsFinishFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicInfusionsFinishFlag)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var dicPharmacyFreqId = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqId)');
+    var dicSkinTestResultFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicSkinTestResultFlag)');
+    var dicTransfuseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicTransfuseWay)');
+    var dicOutpatientRecipeType = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutpatientRecipeType)');
+    var dicSkinTestFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicSkinTestFlag)');
+    var dicOutTechExamState = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutTechExamState)');
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    var dicAccountBookTcmType = JSON.parse('$dicTools.changeMapToJson($dicData.dicAccountBookTcmType)');
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+    /**父页面的菜单点击要注意清空和修改操作、子页面休息修改保存，也会更新此信息**/
+    var curPatient =  {}; //患者对象
+    //全局对象=grobalModel： {patientId:'患者id',registerId:'挂号记录ID',outpatientId:'门诊就诊ID',urgencyFlag:'急诊标识'}
+    var grobalModel = {patientId:'',registerId:'',outpatientId:'',urgencyFlag:0,recipeId:''}
+    var selectRegId = 0;
+    /******全局对象 end***********************************************************/
+    var curOutpatient;//当前门诊日志
+    var getDrugAllergy;
+    var showAllergy;
+    var showFirstDiagnosis;
+    var showDiagnosis
+
+    var curRow = [];//当前页数组列表
+    var curRows = [];//当前页数组列表
+
+    //显示当前就诊患者信息
+    function getPatient(patientId) {
+        var patientInfo;
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/patient/findPatient.jo',
+            data: {patientId:patientId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                patientInfo = result.data;
+                if (patientInfo) {
+                    grobalModel.patientId = patientInfo.patientId;
+                    if (patientInfo.patientSex) {
+                        patientInfo.patientSexText = dicSex[patientInfo.patientSex];
+                    }
+                    if (patientInfo.patientKind) {
+                        patientInfo.patientKindText = dicPatientKind[patientInfo.patientKind];
+                    }
+                }
+            },
+            error: function(res){
+                jqueryPostError(res);
+            }
+        });//ajax end
+        return patientInfo;
+    }
+    //显示患者地址
+    showPatientAddr = function(){
+        var patientAddr = $('.patientAddr');
+        patientAddr.attr('title',patientAddr.html());
+        patientAddrHtml = common.strLimit(patientAddr.html(),15,'...');
+        patientAddr.html(patientAddrHtml);
+    }
+    showAllergy = function(allergyDrug){
+        var reg = /、$/gi;
+        allergyDrug = allergyDrug.replace(reg,"");
+        $('.drugAllergy').attr('title',allergyDrug);
+        allergyDrug = common.strLimit(allergyDrug,10,'...');
+        $('.drugAllergy').html(allergyDrug);
+    }
+    //显示当前就诊患者过敏信息
+    function showDrugAllergy(result,allergyDrugName) {
+        var drugAllergy = '';
+        if ((result.data == null || result == '') && allergyDrugName == '') {
+            $('.drugAllergy').html(drugAllergy);
+            return false;
+        }
+        if(result.data){
+            $(result.data).each(function(index, data) {
+                drugAllergy += data.allergyDrugName + '、';
+            });
+            showAllergy(drugAllergy);
+        }
+
+        if(allergyDrugName){
+            showAllergy(allergyDrugName);
+        }
+    }
+
+    //获取当前就诊患者过敏信息
+    getDrugAllergy =  function(patientId) {
+        var patientInfo;
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/patient/patientDrugAllergyJsonList.jo',
+            data: {patientId:patientId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                showDrugAllergy(result);
+            },
+            error: function(res){
+                jqueryPostError(res);
+            }
+        });//ajax end
+        return patientInfo;
+    }
+
+    showDiagnosis = function(firstDiagnosisResult){
+        if(!firstDiagnosisResult) return;
+        var reg = /、$/gi;
+        firstDiagnosisResult = firstDiagnosisResult.replace(reg,"");
+        $('.firstDiagnosis').attr('title',firstDiagnosisResult);
+        firstDiagnosisResult = common.strLimit(firstDiagnosisResult,10,'...');
+        $('.firstDiagnosis').html(firstDiagnosisResult);
+    }
+    //设置诊断内容
+    showFirstDiagnosis = function(outpatientResult, firstDiagnosis) {
+        var firstDiagnosisResult = '';
+        if((outpatientResult==null || outpatientResult.data==null || outpatientResult == '') && firstDiagnosis == ''){
+            firstDiagnosisResult = '未诊断';
+            $('.firstDiagnosis').html(firstDiagnosisResult);
+        }
+
+        if(outpatientResult && outpatientResult.data){
+            if(outpatientResult.data.length > 1){
+                $(outpatientResult.data).each(function(index, data){
+                    firstDiagnosisResult += (index+1) + '、' + data.diseaseDiagnosisName + '，   ';
+                });
+                firstDiagnosisResult = common.clearLastChar(firstDiagnosisResult,'，   ');
+            } else if(outpatientResult.data.length == 0){
+                firstDiagnosisResult = '未诊断';
+            } else {
+                firstDiagnosisResult = outpatientResult.data[0].diseaseDiagnosisName;
+            }
+            showDiagnosis(firstDiagnosisResult);
+        }
+        if(firstDiagnosis){
+            showDiagnosis(firstDiagnosis);
+        }
+    }
+
+    //显示当前患者诊断信息
+    getFirstDiagnosis = function(registerId){
+        var registerInfo;
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/diagnosisListData.jo',
+            data: {registerId: registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                showFirstDiagnosis(result);
+            },
+            error: function(res){
+                jqueryPostError(res);
+            }
+        });//ajax end
+        return registerInfo;
+    }
+
+    //刷新诊疗费用
+    function countOutpatientFee(registerId) {
+        if (!registerId) {
+            return;
+        }
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatientFee/countOutpatientFee.jo',
+            data: {registerId : registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                if (result.code == '0') {
+                    $('.fee').html(result.data);
+                }
+            } ,error: function(res){  jqueryPostError(res); }
+        });//ajax end
+    }
+
+    //显示当前就诊患者信息
+    function showCurPatient(registerId, patientId) {
+        curPatient = getPatient(patientId);
+        if (curPatient){
+            for (var key in curPatient) {
+                $('.'+key).html(curPatient[key]);
+            }
+            if (curPatient.lowIncomeFlag === '1') {
+                $('#lowIncomeFlag').show();
+            } else {
+                $('#lowIncomeFlag').hide();
+            }
+            $('.patient').removeClass('hide');//显示或者隐藏患者信息
+            $('.patient-no').addClass('hide');//显示或者隐藏患者信息
+        } else {
+            $('.patient').addClass('hide');//显示或者隐藏患者信息
+            $('.patient-no').removeClass('hide');//显示或者隐藏患者信息
+        }
+        showPatientAddr();
+        getDrugAllergy(patientId);
+        getFirstDiagnosis(registerId);
+        countOutpatientFee(registerId);
+        $('.drugAllergy-area').removeClass('layui-hide');
+    }
+    //显示当前就诊患者信息
+    function getOutpatient() {
+        var outpatient;
+        grobalModel.outpatientId = '';
+        $.ajax({
+            type: "POST",
+            url: contextPath + '/outpatient/findOutpatient.jo',
+            data: {registerId: grobalModel.registerId},
+            dataType: "json",
+            async: false,//同步 请求
+            success: function (result) {
+                outpatient = result.data;
+                if (outpatient) {
+                    grobalModel.outpatientId = outpatient.outpatientId;
+                    curOutpatient = outpatient;
+                } else {
+                    curOutpatient = null;
+                }
+            },
+            error: function (res) {
+                jqueryPostError(res);
+            }
+        });//ajax end
+        return outpatient;
+    }
+
+    //设置全局 急诊标识 urgencyFlag
+    function setUrgencyFlag(registerType) {
+        grobalModel.urgencyFlag = registerType == 5 ? 1 :0;//4=门诊
+    }
+
+    //行选择处理
+    function rowSelect(row) {
+        curRow = row;//设置全局的当前行
+        grobalModel.registerId = row.registerId;//设置全局的
+        grobalModel.recipeId = row.recipeId;//设置全局的
+        showCurPatient(row.registerId, row.patientId);//显示患者信息
+        $('.wardBedNo').text(row.wardBedNo);
+        $('.btn_outpatientNurseBed[data-value="add"]')[row.wardBedNo ? 'addClass': 'removeClass']('layui-hide');
+        $('.btn_outpatientNurseBed[data-value="chagne"],.btn_outpatientNurseBed[data-value="cancel"]')[row.wardBedNo ? 'removeClass': 'addClass']('layui-hide');
+        setUrgencyFlag(row.registerType);
+        getOutpatient();
+    }
+</script>
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laydate', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laydate = layui.laydate, util = layui.util;
+        var element = layui.element;
+
+        // 获取表格高度
+        function getPatientTableHgt() {
+            return ($('body').height() - $('#patient_queryForm').height() - $('.layui-tab-title.btn').height() - 50);
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('patientGeneralListGrid', {
+                where: queryParams
+            });
+        })
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('patient_queryForm');
+            $("#region_breadcrumb").html('');
+        })
+
+        //瓶签打印全部
+        $("#btn_bottleLabellingPaperAll").click(function () {
+            common.open('$contextPath' + '/outpatient/outpatientNursePrint.do', '打印瓶签',{ area: ['90%', '90%'] });
+        })
+
+        //分配修改床位
+        $(".btn_outpatientNurseBed").click(function () {
+            if (!grobalModel.registerId) {
+                common.msg('请选择患者！', 0);
+                return;
+            }
+            var outpatientNurseBedFlag = $(this).data("value");
+            var title = $(this).text();
+            if("add" == outpatientNurseBedFlag || "chagne" == outpatientNurseBedFlag ) {
+                //分配修改床位
+                common.open('../outpatient/outpatientNurseLeaveBed.do?registerId=' + grobalModel.registerId, title,{ area: ['30%', '50%'] });
+            } else {
+                //取消床位
+                common.confirm("确定要取消当前床位吗?", function () {
+                    common.requestServer(contextPath + '/outpatient/delLeaveBen.jo', {
+                        registerId: grobalModel.registerId
+                    }, function (result) {
+                        common.responseAtcion(result);
+                        $('#btn_query').click();
+                    })
+                });
+            }
+        })
+
+        element.on('tab(outPatientType)', function(){
+            $('#btn_query').click();
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var params = {
+                keyWord: '',
+                exeOfficeId: '',
+                payFeeFlag: '1',
+                visitCardNo: '',
+                patientName: '',
+                makeOrderTimeBegin: '',
+                makeOrderTimeEnd: '',
+                doctorOrderType: ORDER_TYPE_INJECTION_MEDICINE,
+                outpatientLeaveFlag: false
+            };
+            var outPatientType = $('.layui-tab[lay-filter="outPatientType"] > .layui-tab-title > .layui-this').attr("lay-id");
+            switch (outPatientType) {
+                case "outpatientgGeneral":
+                    params.urgencyFlag = NO_FLAG;
+                    break;
+                case "outpatientUrgent":
+                    params.urgencyFlag = YES_FLAG;
+                    break;
+                case "outpatientLeave":
+                    params.outpatientLeaveFlag = true;
+                    break;
+            }
+            return $.extend(params, common.serializeObject($('#patient_queryForm')));
+        }
+
+        //表格设置 普通患者
+        table.render($.extend({}, basePageTable, {
+            elem: '#patientGeneralListGrid',
+            height: getPatientTableHgt(),
+            url: contextPath + '/outpatient/recipeItemInfusionsPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                title: '开方医生',
+                minWidth: 70,templet:function (row) {
+                    return row.makeOrderDoctorName// + "("+ row.exeOfficeName +")"
+                }
+            }, {
+                field: 'makeOrderTimeStr',
+                title: '开方日期',
+                minWidth: 85
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 70
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                width: 60,
+                templet: '#sexTpl'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号'
+            }
+            ]],
+            parseData : function(res){ //res 即为原始返回的数据
+                var data = res.data;
+                var newDataArray = new Array();
+                for (var i = 0; i < data.length; i++) {
+                    var array = res.data[i];
+                    var dataItem = {
+                        patientId: array[0],
+                        registerId: array[1],
+                        patientName: array[2],
+                        patientSex: array[3],
+                        visitCardNo: array[4],
+                        makeOrderDoctorName: array[5],
+                        makeOrderTimeStr: array[6]
+                    }
+                    newDataArray.push(dataItem);
+                }
+                return {
+                    "code": res.code, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "count": res.count, //解析数据长度
+                    "data": newDataArray //解析数据列表
+                }
+            }
+        }));
+
+        //普通患者监听行单击事件
+        table.on('row(patientGeneralListGrid)', function (obj) {
+            var row = obj.data;
+            rowSelect(row);
+            $('.layui-tab[lay-filter="outpatientNurseNav"] > .layui-tab-title li.layui-this').click();
+        });
+        //监听导航菜单点击事件
+        element.on('tab(outpatientNurseNav)', function(elem){
+            var layId = $(this).attr('lay-id');
+            var href = $(this).attr('href');
+            if (!grobalModel.registerId) {
+                common.msg('请选择患者！', 0);
+                return;
+            }
+            switch(layId) {
+                case 'injection':
+                    //针剂处方明细
+                    table.reload('outpatientInjectionListGrid', {
+                        url: contextPath + '/outpatient/recipeItemPageData.jo',
+                        where: {
+                            registerId: grobalModel.registerId,
+                            doseWayCodeLeftLike : DOSE_WAY_CODE_INJECTION
+                        }
+                    })
+                    table.reload('infusionsItemListGrid', {
+                        url: ''
+                    })
+                    break;
+                case 'outpatientDiagnose':
+                    //诊断记录
+                    table.reload('outpatientDiagnoseListGrid', {
+                        url: contextPath + '/outpatient/diagnosisListData.jo',
+                        where: {
+                            registerId: grobalModel.registerId
+                        }
+                    })
+                    break;
+                case 'medicineRecipe':
+                    //处方
+                    table.reload('outpatientRecipeItemListGrid', {
+                        url: contextPath + '/outpatient/recipeItemPageData.jo',
+                        where: {
+                            patientId: grobalModel.patientId
+                        }
+                    })
+                    break;
+                case 'patientDrugAllergy':
+                    //过敏
+                    table.reload('patientDrugAllergyListGrid', {
+                        url: contextPath + '/patient/patientDrugAllergyJsonList.jo',
+                        where: {
+                            registerId: grobalModel.registerId
+                        }
+                    })
+                    break;
+                case 'outpatientTech':
+                    //医技申请
+                    table.reload('outpatientTechListGrid', {
+                        url: contextPath + '/outpatient/outpatientTechList.jo',
+                        where: {
+                            registerId: grobalModel.registerId
+                        }
+                    })
+                    break;
+                case 'recipeTcm':
+                    //草药
+                    table.reload('recipeTcmListGrid', {
+                        url: contextPath + '/outpatient/recipeTcmListData.jo',
+                        where: {
+                            registerId: grobalModel.registerId
+                        }
+                    })
+                    break;
+                default:
+                    reqIframe(layId, href);
+            }
+        });
+
+        //iframe请求页
+        function reqIframe(layId,url) {
+            var destIframe = $('div[lay-id="'+layId+'"] iframe');
+            common.openLoad();
+            destIframe.attr('src',url + (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel)).load(function () {
+                common.closeLoad();
+            });
+        }
+        // 获取表格高度
+        function getOutpatientRecipeItemTableHgt() {
+            return ($('body').height() - $('.visit-patient').height() - $('#centerBar').height()  - 80)/2;
+        }
+
+        //表格设置 针剂
+        table.render($.extend({}, basePageTable, {
+            elem: '#outpatientInjectionListGrid',
+            height: getOutpatientRecipeItemTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'checkbox'
+            }, {
+                field: 'payFeeFlag',
+                title: '缴费状态',
+                width: 60,
+                templet:function (row) {
+                    return dicPayFeeState[row.payFeeFlag] || "";
+                }
+            }, {
+                field: 'medicineType',
+                title: '类型',
+                width: 60,
+                templet:function (row) {
+                    return dicMedicineTypeInOrder[row.medicineType] || '';
+                }
+            }, {
+                title: '药品名称',
+                field: 'orderName',
+                minWidth: 180
+            }, {
+                title: '皮试结果',
+                width: 150,
+                templet: '#skinTestResultFlagTpl'
+            },  {
+                field: 'medicineSpec',
+                title: '规格',
+                width: 140
+            }, {
+                field: 'dropRate',
+                title: '滴速',
+                width: 70,
+                templet: function (row) {
+                    if (null != row.dropRate && "" != row.dropRate) {
+                        return row.dropRate + "滴/分";
+                    }
+                    return "";
+                }
+            }, {
+                title: '频次',
+                width: 60,
+                templet: function (row) {
+                    return dicPharmacyFreqId[row.pharmacyFreqId] || "";
+                }
+            }, {
+                title: '每次数量',
+                width: 60,
+                templet: function (row) {
+                    return (row.perOrderCount || "") + " " + (dicDrugNumUnitDosageUnit[row.minMedicineUnit] || "");
+                }
+            }, {
+                title: '每次剂量/用量',
+                width: 60,
+                templet: function (row) {
+                    return (row.dosage || "") + " " + (dicDrugNumUnitDosageUnit[row.dosageUnit] || "");
+                }
+            }, {
+                title: '用法',
+                width: 80,
+                templet: function (row) {
+                    return dicDoseWay[row.doseWayCode] || "";
+                }
+            }, {
+                title: '每日剂量',
+                width: 60,
+                templet: function (row) {
+                    return (row.usageQuantity || "") + " " + (dicDrugNumUnitDosageUnit[row.dosageUnit] || "");
+                }
+            }, {
+                field: 'orderDay',
+                title: '天数',
+                width: 40,
+            }, {
+                title: '总量',
+                width: 60,
+                templet: function (row) {
+                    return (row.giveTotalQuantity || "") + " " + (dicDrugNumUnit[row.giveTotalQuantityUnit] || "");
+                }
+            },{
+                field: 'infusionsFinishFlag',
+                title: '输液完成',
+                width: 60,
+                templet: function (row) {
+                    return dicInfusionsFinishFlag[row.infusionsFinishFlag] || "";
+                }
+            }, {
+                field: 'specialTreatment',
+                title: '医生说明',
+                minWidth: 60
+            },{
+                field: 'validUntil',
+                title: '药品有效期',
+                minWidth: 100,
+                templet: function (row) {
+                    return util.toDateString(row.validUntil, 'yyyy-MM-dd');
+                }
+            },/* {
+                field: 'incompatibilityContent',
+                title: '配伍禁忌',
+                minWidth: 100
+            },*/ {
+                field: 'unitPrice',
+                title: '单价',
+                width: 60
+            }, {
+                field: 'actualPrice',
+                title: '金额',
+                width: 60
+            }, {
+                field: 'pharmacyName',
+                title: '药房',
+                width: 60
+            }
+            ]],
+            done: function(res, curr, count){
+                //打印瓶签
+                $("#btn_bottleLabellingPaper").click(function () {
+                    if (!grobalModel.registerId) {
+                        common.msg('请选择患者！', 0);
+                        return;
+                    }
+                    if (count == 0) {
+                        common.msg('无针剂处方！', 0);
+                        return;
+                    }
+                    var url = '$contextPath' + '/emr/commonEmrTemplate.do?emrTlpId=$!{dicData.dicSysPro.get('EMR_TLP_ID_BOTTLE_LABELLING_PAPER')}&view=patient/emr/commonEmrPreview';
+                    common.open(url + (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel), '打印瓶签', {
+                        area: ['80%', '80%'],
+                        scroll: true,
+                        success: function(layero){
+                            //common.closeLoad();
+                        }
+                    })
+                })
+            }
+        }));
+        form.on('radio(skinTestResultFlag)', function(obj){
+            obj.elem.checked = false;
+            form.render();
+            common.confirm("确定要设置皮试结果为【" + dicSkinTestResultFlag[obj.value] +"】吗？确认后不能更改！", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                var recipeItemId = $(obj.elem).attr('name').split("_")[1];
+                var medicineId = $(obj.elem).attr("medicineid");
+                var recipeItemIds = new Array();
+                //把选中皮试药物medicineId一致的处方明细一起设置皮试结果
+                $.each(table.cache["outpatientInjectionListGrid"], function(i, data) {
+                    if (data.recipeItemId == recipeItemId) {
+                        recipeItemIds.push(data.recipeItemId);
+                    } else if (data.medicineId == medicineId && data.needSkinTestFlag == YES_FLAG) {
+                        recipeItemIds.push(data.recipeItemId);
+                    }
+                });
+                common.requestServer(contextPath + '/skintest/saveSkinTest.jo', {
+                    recipeItemIds: recipeItemIds.join(','),
+                    skinTestResultFlag: obj.value
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+            /* var recipeItemId = $(data.elem).attr('name').split("_")[1];
+             var params = {
+                 recipeItemIds: recipeItemId,
+                 skinTestResultFlag: data.value
+             }
+             common.requestServer(contextPath + '/skintest/saveSkinTest.jo', params, function (result) {
+                 if (result.code == '0') {
+                     common.msg('保存成功。', 1, function () {
+                         table.reload('outpatientInjectionListGrid');
+                     })
+                 } else {
+                     common.alert(result.msg, 0);
+                 }
+             })*/
+        });
+        //监听门诊使用事件
+        form.on('switch(outpatientUsageFlag)', function (obj) {
+            obj.elem.checked = !obj.elem.checked
+            form.render();
+            common.confirm("确定要操作吗？", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                common.requestServer('../bas/basChargeItemUpdateOutpatientUsageFlag.jo', {
+                    chargeItemId: obj.value,
+                    outpatientUsageFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+        })
+
+        //针剂处方 监听行单击事件
+        table.on('row(outpatientInjectionListGrid)', function (obj) {
+            var checkStatus = table.checkStatus('outpatientInjectionListGrid')
+                ,data = checkStatus.data; //获取选中的数据
+            var recipeItemIds = $.map(data, function (item) {
+                return item.recipeItemId
+            })
+            recipeItemIds.push(obj.data.recipeItemId);
+            //输液记录
+            table.reload('infusionsItemListGrid', {
+                url: contextPath + '/infusions/infusionsItemListData.jo',
+                where: {
+                    recipeItemIds: recipeItemIds.join(',')
+                }
+            })
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //设置皮试结果
+        $('.btn_skinTestResultFlag').click(function () {
+            var checkStatus = table.checkStatus('outpatientInjectionListGrid')
+                ,data = checkStatus.data; //获取选中的数据
+            if(data.length === 0){
+                common.msg('请选择皮试结果项', iconType.warn);
+                return;
+            }
+            var recipeItemIds = $.map(data, function (item) {
+                return item.recipeItemId
+            })
+
+            var skinTestResultFlag = $(this).data("value");
+            var params = {
+                recipeItemIds: recipeItemIds.join(),
+                skinTestResultFlag: skinTestResultFlag
+            }
+            common.requestServer(contextPath + '/skintest/saveSkinTest.jo', params, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('outpatientInjectionListGrid');
+                    })
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        })
+
+        //执行输液
+        $(".btn_infusionsItemFlag").click(function() {
+            var checkStatus = table.checkStatus('outpatientInjectionListGrid')
+                ,data = checkStatus.data; //获取选中的数据
+            if(data.length === 0){
+                common.msg('请选择输液项', iconType.warn);
+                return;
+            }
+
+            var result = true;
+            $.each(data, function (index, item) {
+                if (YES_FLAG == item.infusionsFinishFlag) {
+                    common.msg('当前【'+ item.orderName +'】项输液已完成！', iconType.warn);
+                    result = false;
+                    return false;
+                } else if (YES_FLAG != item.payFeeFlag) {
+                    common.msg('当前【'+ item.orderName +'】项未缴费，不能输液！', iconType.warn);
+                    result = false;
+                    return false;
+                } else if (YES_FLAG == item.skinTestFlag) {
+                    common.msg('当前【'+ item.orderName +'】项为皮试用药，不能输液！', iconType.warn);
+                    result = false;
+                    return false;
+                }
+            })
+            if (!result) return false;
+
+            var recipeItemIds = $.map(data, function (item) {
+                return item.recipeItemId
+            })
+            var infusionsItemFlag = $(this).data("value");
+            var title = $(this).text()
+            //例子1
+            layer.prompt({ title: title +'时间', success:function (layero) {
+                        layero.find('input').attr('placeholder', 'yyyy-MM-dd HH:mm:ss')
+                        laydate.render({
+                            elem: layero.find('input').get(0)
+                            ,trigger: 'click' //采用click弹出
+                            //,position: 'static'
+                            ,type: 'datetime'
+                            ,value:new Date()
+                        });
+                    }},
+                function(time, index, elem){
+                    var params = {
+                        recipeItemId:recipeItemIds.join(),
+                        skinTestId:grobalModel.skinTestId,
+                        infusionsItemFlag: infusionsItemFlag,
+                    }
+                    if (infusionsItemFlag) {
+                        params.startTime = time;
+                    } else {
+                        params.endTime = time;
+                    }
+                    common.requestServer(contextPath + '/infusions/saveInfusionsItem.jo', params, function (result) {
+                        if (result.code == '0') {
+                            common.msg('保存成功。', 1, function () {
+                                table.reload('outpatientInjectionListGrid');
+                                table.reload('infusionsItemListGrid');
+                            });
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    })
+                    layer.close(index);
+                });
+
+        })
+
+        //表格设置 输液记录
+        table.render($.extend({}, basePageTable, {
+            elem: '#infusionsItemListGrid',
+            height: getOutpatientRecipeItemTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: '药品名称',
+                field: 'medicineName',
+                minWidth: 180
+            }, {
+                field: 'medicineSpec',
+                title: '规格',
+                width: 80
+            }, {
+                title: '每次剂量/用量',
+                width: 60,
+                templet: function (row) {
+                    return (row.dosage || "") + " " + (dicDrugNumUnitDosageUnit[row.medicineUnit] || "");
+                }
+            }, {
+                title: '每日剂量',
+                width: 60,
+                templet: function (row) {
+                    return (row.usageQuantity || "") + " " + (dicDrugNumUnitDosageUnit[row.medicineUnit] || "");
+                }
+            }, {
+                title: '用法',
+                width: 80,
+                templet: function (row) {
+                    return dicDoseWay[row.doseWayCode] || "";
+                }
+            }, {
+                title: '输液途径',
+                field: 'transfuseWay',
+                width: 60,
+                templet: function (row) {
+                    return dicTransfuseWay[row.transfuseWay] || "";
+                }
+            }, {
+                title: '滴系数',
+                field: 'dropRatio',
+                width: 50
+            },  {
+                title: '滴速',
+                field: 'dropRate',
+                width: 70,
+                templet: function (row) {
+                    if (null != row.dropRate && "" != row.dropRate) {
+                        return row.dropRate + "滴/分";
+                    }
+                    return "";
+                }
+            }, {
+                title: '输液开始时间',
+                field: 'startTime',
+                width: 125,
+                templet: function (row) {
+                    return row.startTime ? util.toDateString(row.startTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            },  {
+                title: '输液结束时间',
+                field: 'endTime',
+                width: 125,
+                templet: function (row) {
+                    return row.endTime ? util.toDateString(row.endTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            },  {
+                title: '输液天数',
+                field: 'transfuseDay',
+                width: 60
+            },  {
+                title: '输液结束',
+                field: 'endFlag',
+                width: 60,
+                templet: function (row) {
+                    return dicYesNo[row.endFlag] || "";
+                }
+            }
+            ]]
+        }));
+
+        // 获取表格高度
+        function getOutpatientNurseTableHgt() {
+            return ($('body').height() - $('.visit-patient').height() - 80);
+        }
+
+        //表格设置 门诊诊断记录
+        table.render($.extend({}, basePageTable, {
+            elem: '#outpatientDiagnoseListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: 'ICD',
+                field: 'diseaseIcdTcd',
+            }, {
+                title: '描述性诊断',
+                field: 'diseaseDiagnosisDesc',
+            }, {
+                title: '诊断名称',
+                field: 'diseaseDiagnosisName',
+            },  {
+                title: '诊断医生',
+                field: 'makeOrderDoctorName',
+            }, {
+                title: '诊断时间',
+                width: 125,
+                templet: function (row) {
+                    return row.diagnosisTime ? util.toDateString(row.diagnosisTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }
+            ]]
+        }));
+
+        //表格设置 处方
+        table.render($.extend({}, basePageTable, {
+            elem: '#outpatientRecipeItemListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },{
+                field: 'payFeeFlag',
+                title: '缴费状态',
+                width: 60,
+                templet:function (row) {
+                    return dicPayFeeState[row.payFeeFlag] || "";
+                }
+            }, {
+                field: 'medicineType',
+                title: '类型',
+                width: 60,
+                templet:function (row) {
+                    return dicMedicineTypeInOrder[row.medicineType] || '';
+                }
+            }, {
+                title: '药品名称',
+                minWidth: 180,
+                templet:function (row) {
+                    return row.orderName + (row.skinTestResultFlag ? '【' + (dicSkinTestResultFlag[row.skinTestResultFlag] || "") +'】' : "");
+                }
+            }, {
+                title: '处方类型',
+                minWidth: 60,
+                templet:function (row) {
+                    return dicOutpatientRecipeType[row.recipeType] || ""
+                }
+            }, {
+                title: '是否自带药',
+                minWidth: 80,
+                templet:function (row) {
+                    return dicYesNo[row.orderSelfFlag] || ""
+                }
+            },  {
+                field: 'medicineSpec',
+                title: '规格',
+                width: 140
+            }, {
+                title: '每次数量',
+                width: 60,
+                templet: function (row) {
+                    return (row.perOrderCount || "") + " " + (dicDrugNumUnitDosageUnit[row.minMedicineUnit] || "");
+                }
+            }, {
+                title: '每次剂量/用量',
+                width: 60,
+                templet: function (row) {
+                    return (row.dosage || "") + " " + (dicDrugNumUnitDosageUnit[row.dosageUnit] || "");
+                }
+            }, {
+                title: '用法',
+                width: 80,
+                templet: function (row) {
+                    return dicDoseWay[row.doseWayCode] || "";
+                }
+            }, {
+                title: '频次',
+                width: 60,
+                templet: function (row) {
+                    return dicPharmacyFreqId[row.pharmacyFreqId] || "";
+                }
+            }, {
+                title: '每日剂量',
+                width: 60,
+                templet: function (row) {
+                    return (row.usageQuantity || "") + " " + (dicDrugNumUnitDosageUnit[row.dosageUnit] || "");
+                }
+            }, {
+                field: 'orderDay',
+                title: '天数',
+                width: 40,
+            }, {
+                title: '总量',
+                width: 60,
+                templet: function (row) {
+                    return (row.giveTotalQuantity || "") + " " + (dicDrugNumUnit[row.giveTotalQuantityUnit] || "");
+                }
+            }, {
+                title: '皮试',
+                width: 80,
+                templet: function (row) {
+                    return dicSkinTestFlag[row.needSkinTestFlag] || ""
+                }
+            }, {
+                field: 'specialTreatment',
+                title: '医生说明',
+                minWidth: 60
+            }, {
+                field: 'unitPrice',
+                title: '单价',
+                width: 60
+            }, {
+                field: 'actualPrice',
+                title: '金额',
+                width: 60
+            }, {
+                field: 'pharmacyName',
+                title: '药房',
+                width: 60
+            }
+            ]]
+        }));
+
+        //表格设置 过敏史
+        table.render($.extend({}, basePageTable, {
+            elem: '#patientDrugAllergyListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: '过敏原',
+                field: 'allergyDrugName',
+            }, {
+                title: '症状',
+                field: 'allergySymptom',
+            }, {
+                title: '程度',
+                field: 'severity',
+            },  {
+                title: '首发时间',
+                width: 125,
+                templet: function (row) {
+                    return row.firstOccurTime ? util.toDateString(row.firstOccurTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }, {
+                title: '记录人',
+                field: 'createUserName',
+                width: 125
+            }, {
+                title: '记录时间',
+                width: 125,
+                templet: function (row) {
+                    return row.createTime ? util.toDateString(row.createTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }
+            ]]
+        }));
+
+        //表格设置 医技申请
+        table.render($.extend({}, basePageTable, {
+            elem: '#outpatientTechListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: '开单时间1',
+                width: 126,
+                field: 'makeOrderTime',
+                templet: function (row) {
+                    return row.makeOrderTime ? util.toDateString(row.makeOrderTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }, {
+                title: '缴费状态',
+                field: 'payFeeFlag',
+                templet:function (row) {
+                    return dicPayFeeState[row.payFeeFlag] || "";
+                }
+            }, {
+                title: '项目分类',
+                field: 'outpatientTechName',
+            },  {
+                title: '项目名称',
+                field: 'chargeGroupName',
+            }, {
+                title: '项目明细',
+                field: 'orderName',
+            }, {
+                title: '单价',
+                field: 'unitPrice',
+            }, {
+                title: '总价',
+                field: 'billMoney',
+            }, {
+                title: '执行科室',
+                field: 'exeOfficeName',
+            }, {
+                title: '样本',
+                field: 'lisSampleName',
+            }, {
+                title: '单据状态',
+                field: 'techState',
+                templet: function (row) {
+                    return dicOutTechExamState[row.techState] || "";
+                }
+            }, {
+                title: '备注',
+                field: 'remark',
+            }, {
+                title: '加急',
+                field: 'urgentFlag',
+                templet: function (row) {
+                    return dicYesNo[row.urgentFlag] || "";
+                }
+            }
+            ]]
+        }));
+
+        //表格设置 报告查阅
+        table.render($.extend({}, basePageTable, {
+            elem: '#techReportInspectDetailListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: '报告项目名称',
+                field: 'chineseName',
+            }, {
+                title: '定量结果',
+                field: 'quantitativeResult',
+            }, {
+                title: '定性结果',
+                field: 'qualitativeResult',
+            },  {
+                title: '标记',
+                field: 'qualitativeResult',
+                templet : function(d) {
+                    return '~';
+                }
+            }, {
+                title: '单位',
+                field: 'testItemUnit',
+            }, {
+                title: '参考值',
+                field: 'testItemReference',
+            }
+            ]]
+        }));
+
+        //表格设置 草药
+        table.render($.extend({}, basePageTable, {
+            elem: '#recipeTcmListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            },   {
+                title: '缴费状态',
+                field: 'payFeeFlag', templet: function (row) {
+                    return dicPayFeeState[row.payFeeFlag] || "";
+                }
+            }, {
+                title: '项目名称',
+                field: 'recipeItem.orderName',
+                templet :function (row) {
+                    console.log(row.validFlag);
+                    if(row.recipeItem) {
+                        var recipeItem = row.recipeItem.orderName ? row.recipeItem.orderName : '';
+                        return recipeItem ;
+                    }
+                    return '' ;
+                }},
+                ,{
+                    field: 'recipeId',
+                    title: '处方ID',
+                    hide: true
+                },{field : 'herbUsageWay', title : '用法',width: 126,
+                    templet :function (row) {
+                        if(row.herbUsageWay) {
+                            return dicHerbUsage[row.herbUsageWay];
+                        }
+                        return '' ;
+                    }
+                },{field : 'recipeType', title : '处方类型',
+                    templet :function (row) {
+                        if(row.recipeType) {
+                            return dicOutpatientRecipeType[row.recipeType];
+                        }
+                        return '' ;
+                    }
+                },{field : 'herbUsageClassify', title : '类别',
+                    templet :function (row) {
+                        if(row.herbUsageClassify) {
+                            return dicAccountBookTcmType[row.herbUsageClassify];
+                        }
+                        return '' ;
+                    }
+                }
+                ,{field : 'orderDay', title : '剂数'}
+                ,{field : 'recipeItem.medicineSpec',title:'规格',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.medicineSpec ? row.recipeItem.medicineSpec : '';
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                ,{field : 'recipeItem.dosage', title : '剂量',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            if(row.recipeItem.dosageUnit){
+                                return row.recipeItem.dosage ? row.recipeItem.dosage + dicDrugNumUnitDosageUnit[row.recipeItem.dosageUnit] : '';
+                            }
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                ,{field : 'takeBoilFlag', title : '代煎',
+                    templet :function (row) {
+                        if(!row.recipeItem) {
+                            return '';
+                        } else {
+                            return dicYesNo[row.takeBoilFlag] ? dicYesNo[row.takeBoilFlag] : '否';
+                        }
+                    }
+                }
+                ,{field : 'diseaseName', title : '中医诊断'}
+                ,{field : 'tcmSymptom', title : '中医证候'}
+                ,{field : 'herbCookingName', title : '特殊用法',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.herbCookingName ? row.recipeItem.herbCookingName: '';
+                        } else {
+                            return '';
+                        }
+                    }
+                },{field : 'unitPrice', title : '单价',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.unitPrice? row.recipeItem.unitPrice: '';
+                        }
+                        return '';
+                    }
+                },{field : 'actualPrice', title : '金额',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.actualPrice || '';
+                        }
+                        return '';
+                    }
+                }
+            ]]
+        }));
+
+        //表格设置 医疗文书
+
+        var outMainWin = parent; //门诊医生主窗口页面对象
+        table.render($.extend({}, basePageTable, {
+            elem: '#medicalDocListGrid',
+            height: getOutpatientNurseTableHgt(),
+            data:[],
+            cols: [[{
+                type: 'numbers'
+            }, {
+                title: '填写时间',
+                field: 'createTime',
+                templet: function (row) {
+                    return util.toDateString(row.createTime);
+                }
+            }, {
+                title: '医疗文书名称',
+                field: 'emrTlpName',
+            },  {
+                title: '填写人',
+                field: 'diagnosisDoctorName'
+            }
+            ]]
+        }));
+
+        // 重置表格高度
+        $(window).resize(function () {
+            table.reload('patientGeneralListGrid', {
+                height: getPatientTableHgt()
+            })
+            table.reload('outpatientInjectionListGrid', {
+                height: getOutpatientRecipeItemTableHgt()
+            })
+            table.reload('infusionsItemListGrid', {
+                height: getOutpatientRecipeItemTableHgt()
+            })
+            table.reload('outpatientDiagnoseListGrid', {
+                height: getOutpatientNurseTableHgt()
+            })
+            table.reload('outpatientRecipeItemListGrid', {
+                height: getOutpatientNurseTableHgt()
+            })
+        })
+        //动态添加OutNav的tab选项卡
+        tabAddOutNav = function(layId,tabTitle,url,force){
+            tabAdd(layId, tabTitle, url, force, mainTab.layFilter);
+        }
+    })
+</script>

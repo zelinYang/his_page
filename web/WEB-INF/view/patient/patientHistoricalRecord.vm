@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>历史病例查询</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")#parse("./common/pageJs.vm")
+    <style>
+        .layui-inline .layui-form-label{width: unset;}
+        .layui-inline .layui-input-block {margin-left: 80px;}
+        .layui-inline .layui-form-checkbox {margin-top: 0;}
+        .layui-fluid{overflow: auto;}
+    </style>
+
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!--搜索条件-->
+            <form class="layui-form " id="queryForm">
+              <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">就诊卡号</label>
+                        <div class="layui-input-inline">#formTextInput("visitCardNo" "" "id='q_visitCardNo' autocomplete='off' class='layui-input'")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">身份证号</label>
+                        <div class="layui-input-inline">#formTextInput("patientIdCard" "" "id='q_patientIdCard' autocomplete='off' class='layui-input'")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">患者姓名</label>
+                        <div class="layui-input-inline">#formTextInput("patientName" "" "id='q_patientName' class='layui-input' autocomplete='off' placeholder='患者姓名'")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">电话号码</label>
+                        <div class="layui-input-inline">#formTextInput("patientPhone" "" "id='q_patientPhone' autocomplete='off' class='layui-input'")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <input type="checkbox" value="0" name="validFlag" title="已注销账户">
+                    </div>
+                    <div class="layui-inline layui-btn-group" >
+                        <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query"><i class="layui-icon layui-icon-search "></i>
+                        </button>
+                        <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_reset"><i class="layui-icon layui-icon-refresh"></i></button>
+                    </div>
+                </div>
+              </div>
+            </form>
+            <!--列表 begin-->
+            <table id="patientListGrid" lay-filter="patientListGrid"></table>
+            <script type="text/html" id="colstoolbar">
+                <a class="" lay-tips="查看" lay-event="search" style="font-size: 18px;"><i class="iconfont icon-shou"></i></a>
+            </script>
+        </div>
+    </div>
+</div>
+
+    <!-- 本页面js -->
+    #parse("./patient/patientHistoricalRecord.js.vm")
+</body>
+</html>

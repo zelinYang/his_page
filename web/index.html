@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>用户登录</title>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="black" name="apple-mobile-web-app-status-bar-style">
+    <meta content="telephone=no" name="format-detection">
+    <style>
+        html,body {overflow: hidden; width: 100%; padding: 0; margin: 0; border: 0; height: 100%; background: url("resource/theme/login/images/login.jpg") repeat-x center top #0589D4; font-size: 14px;}
+        .formtable {width: 1002px; margin: 0 auto; height: 384px; padding-top: 140px;}
+        .formtable dl { float: right; padding-top: 95px; padding-right: 163px; width: 256px;}
+        .formtable dl dt { height: 38px; font-size: 14pt; color: #454545; margin-bottom: 6px; text-align: left; text-shadow: 0 1px 1px #ccc; border-bottom: #ededed 1px solid; }
+        .formtable dl dt span { font-size: 6px; color: #999; padding-left: 12px;  text-shadow: none; }
+        .formtable dl dd{ padding: 12px 0 16px; margin: 0 auto; text-align: center}
+        .formtable dl dd:last-child { padding: 18px 0 12px;}
+        .formtable dl dd input {border-radius: 5px; border: #e5e5e5 1px solid; height: 40px; line-height: 45px; overflow-y: hidden; padding: 0 9px 0 40px; width: 81%; font-size: 14px;}
+        .formtable dl dd input.user, .formtable dl dd input.pass {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABlUlEQVRIS8WVzVHDMBCFn5QCCBWQEqJZ3YEKSDqACoAKgAqADkgFpAPC3Rq5A5IO0kC0zGasmfzYlkQO7NXS+7w/equQEd77UQjhCcAEwFCuMPMcwNxaO+uTUCl97/04hPAVhQ/PM/NiMBhMjTHrNq1egPd+GEL46RLfEXwnoodigHNOLr2mspTvWuvztix6M3DOLQBc5gCYeWqtlb7sRS+gqqq1UuosBwDghYieiwDOOc4Ul2NlgGY0pcFZwcy1tdZkZ1DS4ChKREcl7+yBZLDZbOqCHnwT0VV2BnKwqqqJUuozo0YrIhoVvwO54JxbArhIQFobLHdyrEJ8SN5DK4SZZ9ba264fSAKaLGS+xeyOoq2xu4dOBnRZRIQkASk3BfBBRHfFJWom6AZAZ313RGUQ5lrrmTGm7ixRY8/3AMRFt4vlD7Fk5sdofHslcs69ARDAyaG1vjbGLA4BOTOfC9++jUNAiXumQP8DyN5gqd+PG+7oHXjvr0IIY5kiZh4rpeI0ta3OFQDpm4SM51prLT9Zx/38C3bmsxl5+XVhAAAAAElFTkSuQmCC"); background-position: 6px center; background-repeat: no-repeat; background-size: 22px; }
+        .formtable dl dd input.user:hover, .formtable dl dd input.user:focus {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABkklEQVRIS72WzVECMRiGny/qWaxASsAK1AqEg8tVKxArUCtQO5CT43qADsQOtgOwA+46eZ0IOyLukuw4Y6775X3y/eTNGinrUW23xZWga9AKWyTGgjF9G26SsKh+ro7BSym8Hi+YaIcePZtXaW0GjNSyd6Z14iuC9z6zQXPAswZO3EazBPwOe1VZbMzAck0MDpMAokffxuuxMcDcYDcFgLjxfbtuBHC5lCT+NVZNAYvRnKYCBIUyO0jPoEGDS1Gf2a+S1/fgUW3bokjtgeBVmR2lZxAin9R1xihWJsGbMms3vweA5ZoZ7G+E1DQ47IlbxaJU4T5UQ8TQ9+2s7gBxAOCedI1xVSVS1djVuL8DaiyihMQBETcFHnxm581LtJigE6C2vqWoRBiEsTeGZFbUl2iklvvgQmKQYNGVhw4wwWVpfD9K5HLdARexuU/57o1jTi1M3/dKmvkU9RXzW88g3T1joOXl+19AkxcsloBfvnC/78GzgiN2nKclo8PyN6Xq6QwmB8yWnlMg5t4xYZuifJ8/AVjunhkXIrvzAAAAAElFTkSuQmCC");}
+        .formtable dl dd input.pass {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAABhUlEQVRIS82VUU7CQBCG5ye8izegCbPPeAM9AXgC8ARyA/UE4gnkBuIJ1BOIr7tNyg2U94bfLClJbUtbiiHMS5Nt9v9mdmf+hRwpcCSO1AY55y5JjgB0k+QW7Xb7KQiCZZ1ka4GstTMAoyJBkjfGmFkVrBLknLsXkbtE6IHkHEBHRCYiMkjWr1T1vQxWB/QjImcArnu93jwtFobhlOStiLyq6rAxyN+LiLyR/DLG9LNCURR14jj+9uuqWpp06c8tSEQ+VNVDc+Gc4+mDrLV9AAOSXQBjkksAuzrLN4uPzTdpeX+vfyJ3dFEUdeM4/hQR31l7h0/KGBNUgqy1YwDPexNSG0heGGMWaY1cRZm5acrLzdXJglYpZ9i6QlHVh1WUPnvnnLegxx1n2xyUdYe0KxTAmoOSGTkPgmAzI2EYDkm+/HtFXpDkotVqTdfrdQeAH9Bds3ZYRXv0+mmByrqpblHVFSWG6r2uaaxUNXd3he9R4nfjJiSSk6zPeZ3Kp7wJrGjP0UC/9JXRG2vcqR0AAAAASUVORK5CYII="); background-size: 26px;}
+        .formtable dl dd input.pass:hover, .formtable dl dd input.pass:focus {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAABe0lEQVRIS9WVzU3DQBCFv1ngTOgAOggdQAUJBxxxwlRAOiBUAFQANxRzIFQAVEDoIB0AZ6R9yDagEC+2MVEEe7Hkn/fN2515Nha0bEEc6oOutOXEvmA9Lc7E2HvO2LNJnWJrgdxQFxj7IUEPB0R2UQWrBLmhBhhHmZA49sYIo2Wib9BJb3tjm127K4NVgizRs8GqFzv0bDQt5hKdAoeCG0XWbQ7Kz+VW4lE9axeErtVyrzxlriIrLbrc0QcI7hXZVqhil0j/AJSo7YwOylo5lpiYI9xZYpA5tfzqlzljx55n3Re37lLrtsSDQauqZUPP06LUs41qUKLYwXkTyMc3HjaJbDytUXD0ZW4a0kJz9TdBghcTI6XJ8J4KwVgKJMWPHH3Z+yv1nTiZO6iQDlOpMAv79Rn5FdY+Z2SorjOu5+4oD2/GEqdZesPgu1n7taO63f63QJR001wdkQYqPNQVnX0vnTVFVsjJ8P8oUWwQN4EJ+rM5l4f7gtbCQG9LXbsbOTf0JAAAAABJRU5ErkJggg==");}
+        .formtable dl dd.yzm { width: 40%; float: left; display: inline-block; margin-bottom: 15px;}
+        .formtable dl dd.yzm input { padding: 0 15px; text-align: center; }
+        .formtable dl dd.yzm + dd{ width: 60%; display: inline-block}
+        .formtable dl dd button { width: 100%; margin: 0 auto; height: 42px; background: #4097ca; border-radius: 3px; border: 0; color: #fff; font-weight: 600; font-size: 18px;}
+        footer { text-align: center; color: #efefef; padding-top: 50px;}
+
+        @media screen and (max-width: 768px){
+            html,body{background: url("resource/theme/login/images/login.jpg") repeat-x center 40px #0589D4;}
+            .formtable{width: 882px;padding-top:180px;}
+
+        }
+        @media screen and (min-width: 769px) and (max-width: 1024px){
+            html,body{background: url("resource/theme/login/images/login.jpg") repeat-x center -40px #0589D4;}
+            .formtable{padding-top: 100px;}
+
+        }
+    </style>
+</head>
+<body>
+
+<article>
+    <div class="formtable">
+        <form name="loginForm">
+            <dl>
+                <dt>用户登录  <span>USER LOGIN</span></dt>
+                <dd>
+                    <input type="text" name="account" maxlength="20" class="user" placeholder="请输入用户名" value="">
+                </dd>
+                <dd>
+                    <input type="password" name="password" maxlength="20" class=" pass" placeholder="请输入密码" value=""></dd>
+                <dd>
+                    <button type="button" onclick="javascript:doSubmit()"> 登 录 </button>
+                </dd>
+            </dl>
+        </form>
+    </div>
+</article>
+<!--<footer>技术支持：博繁软件 </footer>-->
+<script src="resource/layuiadmin/layui/layui.js"></script>
+</body>
+<script type="text/javascript">
+    if (window.parent != window) {
+        window.parent.location.reload();
+    }
+    layui.use(['layer'], function () {
+        var $ = layui.$, layer = layui.layer;
+        $('input[name="account"]').focus();
+
+        window.doSubmit = function () {
+            var form = document.loginForm;
+            if (form['imgbtn']) {
+                form['imgbtn'].disabled = true;
+            }
+            if (form && form['account'] && form['password']) {
+                if (form['account'].value == "") {
+                    layer.msg("请输入用户名！", { offset: '15px', icon: 0});
+                    form['account'].focus();
+                } else if (form['password'].value == "") {
+                    layer.msg("请输入密码！", { offset: '15px', icon: 0});
+                    form['password'].focus();
+                } else {
+                    $.post(
+                        'login.action',
+                        {account:$.trim(form['account'].value), password: $.trim(form['password'].value)},
+                        function (result) {
+                            var json = $.parseJSON(result);
+                            if (json.isLogin) {
+                                window.location.href = json.url; //后台主页
+                            } else {
+                                layer.msg(json.msg, { offset: '15px', icon: 0});
+                            }
+                        },
+                        "text"
+                    ).error(function (e){jqueryPostError(e)});
+                }
+            }
+            return false;
+        }
+
+        //监听回车
+        document.onkeydown = function (event) {
+            var e = event || window.event || arguments.callee.caller.arguments[0];
+            if (e && e.keyCode == 13) {
+                doSubmit();
+            }
+        };
+        //JQuery post 提交异常处理
+        //jqXHR:jquerypost返回的对象
+        function jqueryPostError(jqXHR) {
+            layer.open({
+                id: 'win',
+                type: 2,
+                move: '.layui-layer-title',
+                title: '错误信息',
+                shadeClose: false,
+                shade: 0.5,
+                maxmin: true,
+                area: ['100%', '100%'],
+                content: 'javascript:;',
+                success: function (layero, index) {
+                    var iframeDocument = layero.find('iframe').prop('contentWindow').document;
+                    iframeDocument.open();iframeDocument.write(jqXHR.responseText);iframeDocument.close();
+                    layero.find('iframe').contents().find('input[type="button"][value="返回"]').hide();
+                }
+            });
+        }
+    });
+</script>
+</html>

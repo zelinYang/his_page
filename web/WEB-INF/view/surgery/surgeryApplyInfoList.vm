@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+<style type="text/css">
+dd {font-size: 13px; margin: 5px 0; cursor: pointer;}
+.tool-btn-right {position: absolute; right: 20px; top: 6px; z-index: 999;}
+.title-text {padding-right: 30px; width: 150px}
+.title-text-w {padding-left: 30px; width: calc(100% - 600px); display: inline-block;}
+</style>
+</head>
+<body class="gray-bg">
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+
+            <!-- 医嘱查询条件 -->
+            <div class="layui-row p-t-xs p-l-sm p-r-sm white-bg">
+                <div class="layui-col-xs6 text-left">
+                    #if("$!info.showBtn" != "0")
+                        <button class="layui-btn layui-btn-sm" id="btn_add" type="button"> 新 增 手 术 </button>
+                        <button class="layui-btn layui-btn-sm" id="btn_add_treat" type="button"> 新 增 治 疗 </button>
+                    #end
+                    <button class="layui-btn layui-btn-sm" id="btn_refresh" lay-tips="刷 新" > <i class="layui-icon layui-icon-refresh"></i>  </button>
+                </div>
+                <div class="layui-col-xs6 text-right">
+                    <form class="layui-form" id="queryForm" action="../inpatient/inpatientOperateRecordList.do">
+                        #formHiddenInput("showBtn" "$!info.showBtn" "id='showBtn'")
+                        #formHiddenInput("patientId" "$!info.patientId" "id='patientId'")
+                        #formHiddenInput("inhospitalId" "$!info.inhospitalId" "id='inhospitalId'")
+                        #formHiddenInput("registerId" "$!info.registerId" "id='registerId'")
+                        #formHiddenInput("createTimeEnd" "$!date.format('yyyy-MM-dd', $!info.createTimeEnd)" "id='createTimeEnd'")
+                        #formHiddenInput("createTimeBegin" "$!date.format('yyyy-MM-dd', $!info.createTimeBegin)" "id='createTimeBegin'")
+                        <div class="layui-form-item search-term">
+                            <div class="layui-inline m-b-xs">
+                                <label class="layui-form-label">开始日期</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("" "" "id='createTime' class='layui-input' readOnly")
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- 医嘱列表 -->
+            <div class="layui-row p-t-n full-height-scroll white-bg" style="height: calc(100% - 40px);">
+                <div class="layui-collapse" lay-filter="operateRecord">
+                    #foreach($item in $!surgeryApplyInfoList.getData())
+                        <div class="layui-colla-item" style="position: relative;">
+                            <h2 class="layui-colla-title">
+                                #formHiddenInput("orderGroupNo" "$!item.orderGroupNo" "id='orderGroupNo'")
+                                <label class="title-text">$!date.format('yyyy-MM-dd', $!item.surgeryDate)</label>
+                                <label class="title-text">手术</label>
+                                <label class="title-text-w">
+                                    #if($!item.assistSurgeryOne) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgeryOne) #end
+                                    #if($!item.assistSurgeryTwo) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgeryTwo) #end
+                                    #if($!item.assistSurgeryThree) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgeryThree) #end
+                                    #if($!item.assistSurgeryFour) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgeryFour) #end
+                                    #if($!item.assistSurgeryFive) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgeryFive) #end
+                                    #if($!item.assistSurgerySix) #set($!item.surgeryName=$!item.surgeryName+"+"+$!item.assistSurgerySix) #end
+                                    #htmlEscape($!item.surgeryName)
+                                </label>
+                                <label class="title-text">#htmlEscape($!item.applyDoctorName)</label>
+                                <label class="title-text">
+                                    #if("$!item.arrangeFlag" == "0")
+                                        &nbsp;未安排
+                                   #elseif("$!item.arrangeFlag" == "1")
+                                        &nbsp;已安排
+                                   #end
+                                </label>
+                                <label class="title-text">
+                                   #if("$!item.submitFlag" == "0")
+                                        &nbsp;未提交
+                                   #elseif("$!item.submitFlag" == "1")
+                                        &nbsp;已提交
+                                   #elseif("$!item.submitFlag" == "1" && "$!item.arrangeFlag" == "0")
+                                        &nbsp;未安排
+                                   #elseif("$!item.submitFlag" == "1" && "$!item.arrangeFlag" == "1")
+                                        &nbsp;已安排
+                                   #end
+                                </label>
+                            </h2>
+                            #if("$!info.showBtn" != "0")
+                                <div class="tool-btn-right">
+                                    <button class="layui-btn layui-btn-sm" name="edit" title="编辑" id="$!item.surgeryApplyId"><i class="layui-icon"></i></button>
+                                    <button class="layui-btn layui-btn-sm" name="tip" title="新增"><i class="layui-icon"></i></button>
+                                    <button class="layui-btn layui-btn-sm" name="del" title="删除" id="delete"><i class="layui-icon"></i></button>
+                                </div>
+                            #end
+                            <div class="layui-colla-content" query-date="$!item.surgeryDate" query-operating="1">
+                                <table class="layui-table" lay-skin="line">
+                                    <colgroup>
+                                        <col>
+                                        <col width="200">
+                                        <col width="200">
+                                    </colgroup>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    #end
+                    #foreach($treatItem in $!treatApplyInfoList.getData())
+                        <div class="layui-colla-item" style="position: relative;">
+                            <h2 class="layui-colla-title">
+                                #formHiddenInput("orderGroupNo" "$!treatItem.orderGroupNo" "id='orderGroupNo'")
+                                #formHiddenInput("patientId" "$!treatItem.patientId" "id='patientId'")
+                                #formHiddenInput("inhospitalId" "$!treatItem.inhospitalId" "id='inhospitalId'")
+                                #formHiddenInput("patientHospitalEmrId" "$!treatItem.patientHospitalEmrId" " ")
+                                <label class="title-text">$!date.format('yyyy-MM-dd', $!treatItem.surgeryDate)</label>
+                                <label class="title-text">治疗</label>
+                                <label class="title-text-w">
+                                    #htmlEscape($!treatItem.surgeryName)
+                                </label>
+                                <label class="title-text">#htmlEscape($!treatItem.applyDoctorName)</label>
+                            </h2>
+                            #if("$!info.showBtn" != "0")
+                                <div class="tool-btn-right">
+##                                    <button class="layui-btn layui-btn-sm" name="edit_treat" title="编辑" treatApplyId="$!{treatItem.treatApplyId}"><i class="layui-icon"></i></button>
+##                                    <button class="layui-btn layui-btn-sm" name="tip_treat" title="新增"><i class="layui-icon"></i></button>
+                                    <button class="layui-btn layui-btn-sm" name="del_treat" title="删除" treatApplyId="$!{treatItem.treatApplyId}"><i class="layui-icon"></i></button>
+                                </div>
+                            #end
+                            <div class="layui-colla-content" query-date="$!date.format("yyyy-MM-dd",$!treatItem.surgeryDate)" query-operating="2">
+                                <table class="layui-table" lay-skin="line" style="margin: 0px;">
+                                    <colgroup>
+                                        <col>
+                                        <col width="200">
+                                        <col width="200">
+                                    </colgroup>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    #end
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var dicSurgeryIncisionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryIncisionLevel)');
+var dicSurgeryNarcosisMode = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryNarcosisMode)');
+layui.use(['form', 'laydate', 'element', 'layer'], function(){
+    var laydate = layui.laydate, form = layui.form, element = layui.element, layer = layui.layer;
+
+    var inhospitalId = $('#inhospitalId').val();
+    var registerId = $('#registerId').val();
+    ckOutRegExist();
+    // 监听折叠面板点击事件
+    element.on('collapse(operateRecord)', function(data){
+        console.log(data);
+        if (!data.show || !data.content.attr('query-date')) {
+            return ;
+        }
+        var container = data.content.find('table > tbody');
+        container.html('');
+        var queryDate = data.content.attr('query-date').split(" ");
+        if(data.content.attr('query-operating') == 1){
+        	var surgeryParams = {inhospitalId: $('#inhospitalId').val(), patientId: $('#patientId').val(), orderGroupNo: $('#orderGroupNo', this).val(), registerId: $('#registerId').val()}
+
+            common.requestServer(contextPath + '/surgery/surgeryApplyJsonList.jo', surgeryParams, function (result){
+            	if(!result) return;
+                var surgeryItem = result.data[0];
+            	var placeholder = '</td><td></td><td></td>';
+                container.prepend('<tr><td>手术时间：' + getSmpFormatDateByLong(surgeryItem.applyTime, 'yyyy-MM-dd hh:mm') + placeholder +'</tr><tr><td>手术等级：' + (dicSurgeryIncisionLevel[surgeryItem.surgeryLevelId] || "") + placeholder +'</tr><tr><td>麻醉方式：' + (dicSurgeryNarcosisMode[surgeryItem.anesthesiaMode]  || "") + placeholder +'</tr><tr><td>手术医师：' + (dicSysUser[surgeryItem.surgeryDoctorId]  || "") + placeholder +'</tr>');
+            });
+            var params = {inhospitalId: $('#inhospitalId').val(), patientId: $('#patientId').val(), queryDate: queryDate[0]};
+            common.requestServer(contextPath + '/surgery/getSurgeryItemEmr.jo', params, function (result){
+                if (!result) { return ; }
+                var operate = "";
+                if ($('#showBtn').val() != "0") {
+                    operate = '<a class="layui-btn layui-btn-xs" title="编辑" id="edit"><i class="layui-icon layui-icon-edit"></i></a>&nbsp;&nbsp;'
+                        + '<a class="layui-btn layui-btn-danger layui-btn-xs" title="添加手术资料" id="del"><i class="layui-icon layui-icon-delete"></i></a>';
+                }
+                $.each(result, function (i, v){
+                    container.append('<tr><td>' + v.emrTlpName + '</td><td>' + v.diagnosisDoctorName + '</td><td emrTlpId="' + v.emrTlpId + '" id="' + v.patientHospitalEmrId + '">' + operate + '</td></tr>');
+                });
+
+                // 监听编辑、删除事件
+                data.content.find('table > tbody > tr #edit,#del').click(function (){
+                    if(!$(this).parent().attr('id') || !$(this).parent().attr('emrTlpId')) { return ; }
+                    if ($(this).attr('id') == "edit") {
+                        var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + $(this).parent().attr('emrTlpId') + "&patientHospitalEmrId=" + $(this).parent().attr('id') + "&patientId=" + $('#patientId').val() + '&registerId=' + $('#registerId').val() + '&serviceId=surgeryApplyService';
+                        parent.openTab(contextPath + '/emr/commonEmrTemplate.do?' + params, '编辑手术资料', '');
+
+                    }
+                    if ($(this).attr('id') == "del") {
+                        var self = this;
+                        common.confirm('确定要删除吗？', function (){
+                            common.requestServer(contextPath + '/emr/deletePatientHospitalEmr.jo', {ids: $(self).parent().attr('id')}, function (result){
+                                if (result.code == "0") {
+                                    $(self).parent().parent().remove();
+                                } else {
+                                    common.alert(result.msg, 0);
+                                }
+                            });
+                        });
+                    }
+                });
+                // 监听单击行查看详情
+                data.content.find('table > tbody > tr').dblclick(function (){
+                    var title = $(this).find('td:eq(0)').html();//获取病历名称
+                    var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + $(this).find('td:eq(2)').attr('emrTlpId') + "&patientHospitalEmrId=" + $(this).find('td:eq(2)').attr('id') + "&patientId=" + $('#patientId').val() + '&serviceId=surgeryApplyService';
+                    parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, title + "详情", '');
+                });
+            });
+        } else {
+            var params ;
+            if (registerId){
+                params = {registerId: data.content.prevObject.find('input[name=registerId]').val(), emrTlpClassifyId: '70', patientHospitalEmrId: data.content.prevObject.find('input[name=patientHospitalEmrId]').val()};
+            }
+            if (inhospitalId) {
+                params = {inhospitalId: data.content.prevObject.find('input[name=inhospitalId]').val(), emrTlpClassifyId: '70', patientHospitalEmrId: data.content.prevObject.find('input[name=patientHospitalEmrId]').val()};
+            }
+            common.requestServer(contextPath + '/emr/getPatientEmrByClassify.jo', params, function (result){
+                if (!result) { return ; }
+                var operate = "";
+                if ($('#showBtn').val() != "0") {
+                    operate = '<a class="layui-btn layui-btn-xs" title="编辑" id="edit"><i class="layui-icon layui-icon-edit"></i></a>&nbsp;&nbsp;'
+                        + '<a class="layui-btn layui-btn-danger layui-btn-xs" title="添加治疗资料" id="del"><i class="layui-icon layui-icon-delete"></i></a>';
+                }
+                $.each(result, function (i, v){
+                    container.append('<tr><td>' + v.emrTlpName + '</td><td>' + v.diagnosisDoctorName + '</td><td emrTlpId="' + v.emrTlpId + '" id="' + v.patientHospitalEmrId + '">' + operate + '</td></tr>');
+                });
+
+                // 监听编辑、删除事件
+                data.content.find('table > tbody > tr #edit,#del').click(function (){
+                    if(!$(this).parent().attr('id') || !$(this).parent().attr('emrTlpId')) { return ; }
+                    if ($(this).attr('id') == "edit") {
+
+                        var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + $(this).parent().attr('emrTlpId') + "&patientHospitalEmrId=" + $(this).parent().attr('id') + "&patientId=" + $('#patientId').val() + '&registerId=' + $('#registerId').val() + "&serviceId=treatApplyService";
+                        if (inhospitalId){
+                            parent.openTab(contextPath + '/emr/commonEmrTemplate.do?' + params, '编辑治疗资料', '');
+                        }
+                        if (registerId) {
+                            // parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                            // parent.common.open(contextPath + '/emr/commonEmrTemplate.do?' + params, '编辑治疗资料', {area:['95%','95%']});
+                            common.open(contextPath + '/emr/commonEmrTemplate.do?' + params, '编辑治疗资料', {area:['95%','95%']});
+                        }
+                    }
+                    if ($(this).attr('id') == "del") {
+                        var self = this;
+                        common.confirm('确定要删除吗？', function (){
+                            common.requestServer(contextPath + '/emr/deletePatientHospitalEmr.jo', {ids: $(self).parent().attr('id')}, function (result){
+                                if (result.code == "0") {
+                                    $(self).parent().parent().remove();
+                                } else {
+                                    common.alert(result.msg, 0);
+                                }
+                            });
+                        });
+                    }
+                })
+                // 监听单击行查看详情
+                data.content.find('table > tbody > tr').dblclick(function (){
+                    var title = $(this).find('td:eq(0)').html();
+                    var params = "emrTlpId=" + $(this).find('td:eq(2)').attr('emrTlpId') + "&patientHospitalEmrId=" + $(this).find('td:eq(2)').attr('id') + "&patientId=" + $('#patientId').val();
+                    if (inhospitalId) {
+                        params += "&inhospitalId=" + $('#inhospitalId').val();
+                        parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, title + "详情", '');
+                    }
+                    if (registerId){
+                        params += "&registerId=" + $('#registerId').val();
+                        // parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                        // parent.common.open(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, title + '详情', {area:['95%','95%']});
+                        common.open(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, title + '详情', {area:['95%','95%']});
+                    }
+
+                });
+            });
+        }
+
+    });
+
+    // 监听点击选择病历模板按钮
+    $('button[name="tip"]').click(function (){
+        var self = this;
+        var createTime = $(self).parent().parent().find('.layui-colla-content').attr('query-date');
+        common.requestServer(contextPath + '/emrTlp/emrTlpJsonList.jo', {emrTlpClassifyId: 23}, function (result){
+            if (!result) { return; }
+            var html = [];
+            $.each(result, function (i, v) {
+                html.push('<dd><a name="emrTlp" id="' + v.emrTlpId + '">' + v.emrTlpName + '</a></dd>');
+            });
+            var index = layer.tips(html.join(''), self, {id: 'win_tips', time: 0, tips: [4, '#fff']});
+            // 监听失去光标关闭对话框
+            $('#win_tips').mouseleave(function(){ layer.close(index); });
+            // 监听选择病历模板
+            $('a[name="emrTlp"]').click(function (){
+            	if($(this).attr('id') == 528){
+            		parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                    parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val(), '治疗申请单', {area:['95%','95%']});
+            	} else {
+                    var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + $(this).attr('id') + "&patientId=" + $('#patientId').val() + '&registerId=' + $('#registerId').val() + '&otherBusinessParams=' + $('#orderGroupNo').val() + "&serviceId=surgeryApplyService";
+            	    if ($('#inhospitalId').val()) {
+                        parent.openTab(contextPath + '/emr/commonEmrTemplate.do?' + params, '添加手术资料', 'addSurgeryInfo');
+                    }
+                    if ($('#registerId').val()) {
+                        common.open(contextPath + '/emr/commonEmrTemplate.do?' + params, '添加手术资料', {area:['95%','95%']});
+                    }
+
+            	}
+            });
+        });
+    });
+    // 监听治疗点击选择病历模板按钮
+    $('button[name="tip_treat"]').click(function (){
+        var self = this;
+        common.requestServer(contextPath + '/emrTlp/emrTlpJsonList.jo', {emrTlpClassifyId: 1502}, function (result){
+            if (!result) { return; }
+            var html = [];
+            $.each(result, function (i, v) {
+                html.push('<dd><a name="emrTlp" id="' + v.emrTlpId + '">' + v.emrTlpName + '</a></dd>');
+            });
+            var index = layer.tips(html.join(''), self, {id: 'win_tips', time: 0, tips: [4, '#fff']});
+            // 监听失去光标关闭对话框
+            $('#win_tips').mouseleave(function(){ layer.close(index); });
+            // 监听选择病历模板
+            $('a[name="emrTlp"]').click(function (){
+                var params = "emrTlpId=" + $(this).attr('id') + "&patientId=" + $('#patientId').val() + '&registerId=' + $('#registerId').val() + "&inhospitalId=" + $('#inhospitalId').val() + "&serviceId=treatApplyService";
+                if (inhospitalId) {
+                    params += "&inhospitalId=" + $('#inhospitalId').val();
+                    parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                    parent.common.open(contextPath + '/emr/commonEmrTemplate.do?' + params, '添加治疗资料', {area:['95%','95%']});
+                }
+                if (registerId) {
+                    common.open(contextPath + '/emr/commonEmrTemplate.do?' + params, '添加治疗资料', {area:['95%','95%']});
+                }
+
+            });
+        });
+    });
+    // 编辑
+    $('button[name="edit"]').click(function (){
+        if ($('#inhospitalId').val()) {
+            parent.openTab(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&surgeryApplyId=' + $(this).attr('id') + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val() + '&registerId=' + $('#registerId').val(), '手术申请单', 'surgeryApplyEdit');
+        }
+        if ($('#registerId').val()) {
+            common.open(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&surgeryApplyId=' + $(this).attr('id') + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val() + '&registerId=' + $('#registerId').val(), '手术申请单', {area:['95%','95%']});
+        }
+    });
+    // 编辑治疗
+    $('button[name="edit_treat"]').click(function (){
+        if (registerId){
+            // parent.currentTabId = window.frameElement && window.frameElement.id || '';
+            // parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&treatApplyId=' + $(this).attr('id') +'&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), '治疗申请', {area:['95%','95%']});
+            common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&treatApplyId=' + $(this).attr('treatApplyId') +'&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), '治疗申请', {area:['95%','95%']});
+        }
+        if (inhospitalId) {
+            parent.openTab(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&treatApplyId=' + $(this).attr('treatApplyId') + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val() + '&registerId=' + $('#registerId').val(), '治疗申请单', 'treatApplyEdit');
+        }
+    });
+    //删除
+    $('button[name="del"]').click(function (){
+    	var self = this;
+        common.confirm('确定要删除吗？', function (){
+    		var orderGroupNo = $(self).parent().parent().find('#orderGroupNo').val();
+    		var patientId = $(self).parent().parent().find('#patientId').val();
+    		var inhospitalId = $(self).parent().parent().find('#inhospitalId').val();
+    		common.requestServer(contextPath + '/surgery/changeSurgeryApplyInvalid.jo', {orderGroupNo: orderGroupNo}, function (result){
+                if (result.code == "0") {
+                    $(self).parent().parent().remove();
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+    	});
+    });
+  //删除
+    $('button[name="del_treat"]').click(function (){
+        if (null == $(this).attr("treatApplyId") || "" == $(this).attr("treatApplyId")) {
+            common.alert("缺少治疗申请ID", 0);
+        }
+        var treatApplyId = $(this).attr("treatApplyId");
+        common.confirm('确定要删除吗？', function (){
+            common.requestServer(contextPath + '/surgery/delTreatApply.jo', {ids: treatApplyId}, function (result){
+                if (result.code == "0") {
+                    $(this).parent().parent().remove();
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+    	});
+    });
+    // 新增
+    $('#btn_add').click(function (){
+        if ($('#registerId').val()) {
+            parent.common.open(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), '手术申请', {area:['95%','95%']});
+        }
+        if ($('#inhospitalId').val()) {
+            parent.openTab(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val() + '&registerId=' + $('#registerId').val(), '手术申请单', 'surgeryApplyEdit');
+        }
+    });
+    // 新增 治疗
+    $('#btn_add_treat').click(function (){
+        if ($('#registerId').val()){
+            // parent.currentTabId = window.frameElement && window.frameElement.id || '';
+            // parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), '治疗申请', {area:['95%','95%']});
+            parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&patientId=' + $('#patientId').val() + '&registerId=' + $('#registerId').val(), '治疗申请', {area:['95%','95%']});
+        } else {
+            parent.openTab(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val(), '治疗申请单', 'treatApplyEdit');
+        }
+    });
+    // 刷新
+    $('#btn_refresh').click(function (){
+        window.location.href = window.location.href;
+    });
+    //日期范围选择
+    laydate.render({ elem: '#createTime',trigger:'click', range: true, done: function(value, date, endDate){
+        var item = value.split(' - ');
+        $('#createTimeBegin').val(item[0]);
+        $('#createTimeEnd').val(item[1]);
+        $('#queryForm').submit();
+    }});
+
+    // 回显查询日期
+    if ($('#createTimeBegin').val() && $('#createTimeEnd').val()) {
+        $('#createTime').val($('#createTimeBegin').val() + " - " + $('#createTimeEnd').val());
+    }
+});
+</script>
+</html>

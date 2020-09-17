@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+<style type="text/css">
+#temperatureReport table{margin-left: auto;margin-right: auto;}
+<style type="text/css">
+#temperatureReport table{margin-left: auto;margin-right: auto;}
+.mo{
+ /*margin-top: -625px;*/
+ margin-left: 810px;
+}
+.layui-content-wrapper.layui-fluid{display: inline-block;}
+.layui-card{margin-bottom: 0;}
+.layui-form-item{display: flex;}
+.layui-form-item .layui-input-inline{width: 150px;}
+.layui-form-item.search-term .layui-form-label{width: 80px;}
+.m-n.fl{width: 800px;}
+
+@media screen and (max-width: 1024px){
+    .layui-content-wrapper.layui-fluid .mo{display: flex;}
+}
+</style>
+</head>
+
+<body class="gray-bg" style="height:auto;">
+    <div class="layui-content-wrapper layui-fluid  full-scroll">
+        <div class="m-n fl">
+            <div class="layui-card">
+                <div class="layui-card-header"><h5>分娩记录基本信息</h5></div>
+                <div class="layui-card-body">
+                    <div class="layui-form-item search-term">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">孕次</label>
+                            <div class="layui-input-inline">
+                                #formIntZeroInput("gravidityNum" "$!babyDeliveryRecord.gravidityNum" " id='gravidityNum'
+                                  maxlength='30' class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">产次</label>
+                            <div class="layui-input-inline">
+                                #formIntZeroInput("parityNum" "$!babyDeliveryRecord.parityNum"
+                                    "id='parityNum'  maxlength='10' class='layui-input' readonly ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto">末次月经日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("lastMenstrualTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.lastMenstrualTime))"
+                                    " readonly id='lastMenstrualTime' class='layui-input layer-date' readonly ")
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="layui-form-item search-term">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">待产日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("predeliveryDate" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.predeliveryDate))"
+                                    "id='predeliveryDate' class='layui-input'  maxlength='10' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto">胎儿娩出方式</label>
+                            <div class="layui-input-inline">
+                                #formIntInput("babyDeliveryWay" "#htmlEscape($babyDeliveryRecord.babyDeliveryWay)"
+                                    "lay-verify='numberEmpty' maxlength='20' id='babyDeliveryWay' class='layui-input' readonly")
+                            </div>
+                        </div>
+
+                        <div class="layui-inline">
+                            <label class="layui-form-label">临产日期</label>
+                            <div class="layui-input-inline ">
+                                #formTextInput("parturitionTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.parturitionTime))"
+                                    "id='parturitionTime' class='layui-input'  maxlength='10' readonly")
+                            </div>
+                        </div>
+
+                    </div>
+                    <div class="layui-form-item search-term">
+
+                        <div class="layui-inline">
+                            <label class="layui-form-label">子宫情况</label>
+                            <div class="layui-input-inline ">
+                                #formTextInput("uterusCondition" "#htmlEscape($babyDeliveryRecord.uterusCondition)"
+                                    "lay-verify='identity' maxlength='18' id='uterusCondition'  class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto">胎儿娩出日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("deliveryBabyTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.deliveryBabyTime))"
+                                    "id='deliveryBabyTime' class='layui-input'  maxlength='10' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">预产期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("preParturitionDate" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.preParturitionDate))"
+                                    "id='preParturitionDate' class='layui-input'  maxlength='100' readonly ")
+                            </div>
+                        </div>
+
+                    </div>
+                    <a id="babyRecord" href="../inpatient/babyDeliveryRecordList.do?optype=$!optype&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+                        <i class="iconfont icon-ziliao"></i>详细信息
+                    </a>
+                </div>
+            </div>
+            <div class="layui-card-body white-bg">
+                <div class="full-height-scroll" id="temp"></div>
+            </div>
+        </div>
+        <div class="mo">
+            <div class="layui-card-body white-bg">
+        ##        <table class="layui-table" id="deluveryRecordTable"></table>
+                <form class="layui-form" id="queryForm">
+        ##            <button type="button" class="layui-btn layui-btn-sm m-t-sm" id="btn_add">新增产程过程</button>
+        ##            <button class="layui-btn layui-btn-sm" type="reset" lay-tips="刷新" id="btn_freshen" >
+        ##                <i class="layui-icon layui-icon-refresh"></i>
+        ##            </button>
+                    <div class="layui-inline">
+                        <button id="btn_add" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="新增">
+                            <i class="layui-icon "></i>
+                        </button>
+                    </div>
+                    <div class="layui-inline">
+                        <button id="btn_freshen" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="刷新">
+                            <i class="layui-icon layui-icon-refresh"></i>
+                        </button>
+                    </div>
+                <table class="layui-table" id="deluveryProcessTable"></table>
+                    #formHiddenInput("patientId" "$!{inpatientInhospital.patientId}" " id='patientId' ")
+                    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" " id='inhospitalId' ")
+                    #formHiddenInput("babyDeliveryRecordId" "$!{babyDeliveryRecord.babyDeliveryRecordId}" "id='babyDeliveryRecordId'")
+                    #formHiddenInput("currentOfficeName" "$!{babyDeliveryRecord.currentOfficeName}" "id='currentOfficeName'")
+                    #formHiddenInput("createUserId" "$currentUser.userId" "id='createUserId'  ")
+                    #formHiddenInput("createUserName" "$currentUser.name" "id='createUserName'  ")
+                    #formHiddenInput("latestUserId" "$currentUser.userId" "id='latestUserId'  ")
+                </form>
+            </div>
+        </div>
+    </div>
+#parse("./common/pageJs.vm")
+<script src="$!contextPath/resource/svg/d3.v3.min.js" ></script>
+<script src="$!contextPath/resource/svg/babyDeliveryProcess.js?v=123" ></script>
+    #parse("./inpatient/babyDeliveryProcess/deliveryProcessShow.js.vm")
+</body>
+</html>

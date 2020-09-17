@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .layui-table td {padding: 2px 3px; }
+        ..layui-tab .layui-tab-title.btn { padding: 5px;}
+        .layui-tab.layui-tab-card {height: calc(100% - 72px);}
+    </style>
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <form class="layui-form layui-bg-white" action="" id="queryForm">
+              <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    #formHiddenInput("medicineFlag" "1" "")
+                    #formHiddenInput("exePharmacyFlag" "1" "id='exePharmacyFlag'")
+        ##            <div class="layui-inline" style="float: right;">
+        ##                <label class="layui-form-label">药房</label>
+        ##                <div class="layui-input-inline">
+        ##                    #formSingleSelect("pharmacyId" "1" $!dicData.dicPharmacy "class='layui-input'" "")
+        ##                </div>
+        ##            </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">时间范围</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("exeOperTimeBegin" "" "id='exeOperTimeBegin' class='layui-input' readonly")
+                        </div>
+                        <label class="layui-form-mid">至</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("exeOperTimeEnd" "" "id='exeOperTimeEnd' class='layui-input' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">患者信息</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("keyWord" "" "id='keyWord' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">开单科室</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("orderOfficeId" "" $!dicData.dicSysOrgName "class='layui-input' autocomplete='off' " "") ##申请药库/耗材库
+                        </div>
+                    </div>
+                  <div class="layui-inline">
+                    <label class="layui-form-label">医嘱类型</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("orderClassify" "" $!dicData.dicOrderClassify "class='layui-input' autocomplete='off' " "")
+                    </div>
+                  </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">给药途径</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("doesWay" "" $!dicData.dicDoseWay "class='layui-input' autocomplete='off' " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">药品剂型</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("dosageForm" "" $!dicData.dicDosageForm "class='layui-input' autocomplete='off' " "")
+                        </div>
+                    </div>
+        ##            <div class="layui-inline">
+        ##                <label class="layui-form-label">取药类型</label>
+        ##                <div class="layui-input-inline">
+        ##                    #formSingleSelectFirstNone("orderOfficeId" "" $!dicData.dicSysOrgName "class='layui-input' autocomplete='off' " "")
+        ##                </div>
+        ##            </div>
+        ##            <div class="layui-inline">
+        ##                <label class="layui-form-label">发药类型</label>
+        ##                <div class="layui-input-inline">
+        ##                    #formSingleSelectFirstNone("orderOfficeId" "" $!dicData.dicSysOrgName "class='layui-input' autocomplete='off' " "")
+        ##                </div>
+        ##            </div>
+                    <div class="layui-inline" style="width: 100px;">
+                        <button type="button" id="btn_search" class="layui-btn layui-btn-sm" title="查 询"> <i class="layui-icon layui-icon-search "></i></button>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn_py" class="layui-btn layui-btn-sm submit layout-hide"><span>配药</span></button>
+                        <button type="button" id="btn_jpy" class="layui-btn layui-btn-sm submit layout-hide"><span>拒配药</span></button>
+                        <button type="button" id="btn_fy" class="layui-btn layui-btn-sm submit layout-hide"><span>发药</span></button>
+                        <button type="button" id="btn_sqty" class="layui-btn layui-btn-sm submit layout-hide"><span>申请退药</span></button>
+                        <button type="button" id="btn_zxty" class="layui-btn layui-btn-sm submit layout-hide"><span>执行退药</span></button>
+                    </div>
+                </div>
+              </div>
+            </form>
+            <div class="layui-tab layui-tab-card full-height outpatientFeeNav b-radius-n" lay-filter="">
+                <ul class="layui-tab-title btn" id="tab-ul">
+                    <li id="btn_dpyqd" class="layui-this">待配药清单</li>
+                    <li id="btn_dfyqd">待发药清单</li>
+                    <li id="btn_hzfy">汇总发药</li>
+                    <li id="btn_qyqd">缺药清单</li>
+                    <li id="btn_jpyqd">拒配药清单</li>
+                    <li id="btn_yfyqd">已发药清单</li>
+                    <li id="btn_dtyqd">待退药清单</li>
+                    <li id="btn_ytyqd">已退药清单</li>
+                    <li id="btn_fyhtlsqd">发药回退历史清单</li>
+                </ul>
+                <div class="layui-tab-content full-height overflow-y-h">
+                    <div class="layui-tab-item layui-show">
+                        <div id="drugstoreInItemDiv">
+                            <form class="layui-form" action="" id="dpyqdForm">
+                                <div class="layui-bg-white" onkeyup="onEnter()">
+                                    <table id="dpyqdTable" lay-filter="dpyqdTable"></table>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="dfyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="dfyqdTable" lay-filter="dfyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="hzfyForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="hzfyTable" lay-filter="hzfyTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="qyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="qyqdTable" lay-filter="qyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="jpyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="jpyqdTable" lay-filter="jpyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="yfyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="yfyqdTable" lay-filter="yfyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="dtyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="dtyqdTable" lay-filter="dtyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="ytyqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="ytyqdTable" lay-filter="ytyqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="layui-tab-item">
+                        <form class="layui-form" action="" id="fyhtlsqdForm">
+                            <div class="layui-bg-white" onkeyup="onEnter()">
+                                <table id="fyhtlsqdTable" lay-filter="fyhtlsqdTable"></table>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicDrugstoreId = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreId)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicInsuredType = JSON.parse('$dicTools.changeMapToJson($dicData.dicInsuredType)');
+    var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)');
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+    var curDate = new Date();
+    var dpyqdTable, dfyqdTable, hzfyTable, qyqdTable, jpyqdTable, yfyqdTable, dtyqdTable, ytyqdTable, fyhtlsqdTable;
+    var curTable;
+    var tabFlag = '1';
+    var curTableId = 'dpyqdTable';
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+        var dpyqdTableOpt = {
+            url: contextPath + '/inpatient/inpatientOrderExeList.jo',
+            id: 'dpyqdTable',
+            elem: '#dpyqdTable',
+            height: getMainTableHeight(),
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                common.removeHeadCheckbox('orderExeId');
+            },
+            cols: [[
+                {type: 'checkbox'},
+                {
+                    field: 'orderOfficeName'
+                    , title: '科室'
+                    , width: 150
+                }, {
+                    field: 'orderId'
+                    , title: '单据号'
+                    , width: 80
+                }, {
+                    field: 'patientName'
+                    , title: '姓名'
+                    , width: 80
+                }, {
+                    field: 'orderClassify'
+                    , title: '类型'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.orderClassify) {
+                            return dicOrderClassify[row.orderClassify];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'orderName'
+                    , title: '药品名称'
+                    , width: 150
+                }, {
+                    field: 'medicineSpec'
+                    , title: '规格'
+                    , width: 80
+                }, {
+                    field: 'giveTotalQuantity'
+                    , title: '数量'
+                    , width: 80
+                }, {
+                    field: 'pharmacyFreqId'
+                    , title: '频次'
+                    , width: 80
+                }, {
+                    field: 'unitPrice'
+                    , title: '单价'
+                    , width: 80
+                }, {
+                    field: 'actualPrice'
+                    , title: '金额'
+                    , width: 80
+                }, {
+                    field: 'f'
+                    , title: '付'
+                    , width: 80
+                }, {
+                    field: 'producingAreaId'
+                    , title: '产地'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.producingAreaId) {
+                            return dicProducingArea[row.producingAreaId];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'doseWayCode'
+                    , title: '用法'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.doseWayCode) {
+                            return dicDoseWay[row.doseWayCode];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'makeOrderDoctorName'
+                    , title: '医生'
+                    , width: 80
+                }, {
+                    field: 'insuredType'
+                    , title: '费别'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.insuredType) {
+                            return dicInsuredType[row.insuredType];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'inhospitalNo'
+                    , title: '住院号'
+                    , width: 80
+                }, {
+                    field: 'makeOrderDate'
+                    , title: '记账时间'
+                    , width: 120
+                    , templet: function (res) {
+                        if (res.makeOrderDate) {
+                            return new Date(res.makeOrderDate).format('yyyy-MM-dd');
+                        }
+                        return "";
+                    }
+                }
+            ]]
+        };
+        var hzfyTableOpt = {
+            url: contextPath + '/inpatient/inpatientOrderExeSummaryList.jo',
+            id: 'hzfyTable',
+            elem: '#hzfyTable',
+            height: getMainTableHeight(),
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                common.removeHeadCheckbox('orderExeId');
+            },
+            cols: [[
+                {type: 'checkbox'},
+                {
+                    field: 'orderOfficeName'
+                    , title: '科室'
+                    , width: 150
+                }, {
+                    field: 'orderName'
+                    , title: '药品名称'
+                    , width: 150
+                }, {
+                    field: 'dosageForm'
+                    , title: '药品剂型'
+                    , width: 150
+                    , templet: function (row) {
+                        if (row.dosageForm) {
+                            return dicDosageForm[row.dosageForm];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'medicineSpec'
+                    , title: '规格'
+                    , width: 80
+                }, {
+                    field: 'producingAreaId'
+                    , title: '产地'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.producingAreaId) {
+                            return dicProducingArea[row.producingAreaId];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'giveTotalQuantity'
+                    , title: '数量'
+                    , width: 80
+                }, {
+                    field: 'giveTotalQuantityUnit'
+                    , title: '单位'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.giveTotalQuantityUnit) {
+                            return dicDrugNumUnit[row.giveTotalQuantityUnit];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'unitPrice'
+                    , title: '单价'
+                    , width: 80
+                }, {
+                    field: 'actualPrice'
+                    , title: '金额'
+                    , width: 80
+                }, {
+                    field: 'stockCount'
+                    , title: '库存数'
+                    , width: 80
+                }
+            ]]
+        };
+        $(function() {
+            var parmas = common.serializeObject($('#queryForm'));
+            parmas['exeOperTimeBegin'] = curDate.format('yyyy-MM-dd') + ' 00:00:00';
+            parmas['exeOperTimeEnd'] = curDate.format('yyyy-MM-dd') + ' 23:59:59';
+            dpyqdTableOpt.where = parmas;
+            dpyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+            curTable = dpyqdTable;
+
+            $('.submit').hide();
+            $('#exePharmacyFlag').val('1');
+            $('#btn_py').show();
+            $('#btn_jpy').show();
+            tabFlag = '1';
+        });
+
+        // 初始化时间范围
+        laydate.render({
+            elem: '#exeOperTimeBegin',trigger: 'click'
+            , value: new Date(curDate.format('yyyy-MM-dd') + ' 00:00:00')
+            ,type: 'datetime'
+        });
+        laydate.render({
+            elem: '#exeOperTimeEnd',trigger: 'click'
+            , value: new Date(curDate.format('yyyy-MM-dd') + ' 23:59:59')
+            ,type: 'datetime'
+        });
+
+        //监听搜索
+        $('#btn_search').click(function() {
+            var data = common.serializeObject($("#queryForm"));
+            if (!data.keyWord) {
+                data.keyWord = '';
+            }
+            var parmas = common.serializeObject($('#queryForm'));
+            dpyqdTableOpt.where = parmas;
+            switch (tabFlag) {
+                case '1':
+                    dpyqdTableOpt.id = 'dpyqdTable';
+                    dpyqdTableOpt.elem = '#dpyqdTable';
+                    dpyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = dpyqdTable;
+                    curTableId = 'dpyqdTable';
+                    break;
+                case '2':
+                    dpyqdTableOpt.id = 'dfyqdTable';
+                    dpyqdTableOpt.elem = '#dfyqdTable';
+                    dfyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = dfyqdTable;
+                    curTableId = 'dfyqdTable';
+                    break;
+                case '5':
+                    dpyqdTableOpt.id = 'jpyqdTable';
+                    dpyqdTableOpt.elem = '#jpyqdTable';
+                    jpyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = jpyqdTable;
+                    curTableId = 'jpyqdTable';
+                    break;
+                case '6':
+                    dpyqdTableOpt.id = 'yfyqdTable';
+                    dpyqdTableOpt.elem = '#yfyqdTable';
+                    yfyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = yfyqdTable;
+                    curTableId = 'yfyqdTable';
+                    break;
+                case '7':
+                    dpyqdTableOpt.id = 'dtyqdTable';
+                    dpyqdTableOpt.elem = '#dtyqdTable';
+                    dtyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = dtyqdTable;
+                    curTableId = 'dtyqdTable';
+                    break;
+                case '8':
+                    dpyqdTableOpt.id = 'ytyqdTable';
+                    dpyqdTableOpt.elem = '#ytyqdTable';
+                    ytyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = ytyqdTable;
+                    curTableId = 'ytyqdTable';
+                    break;
+                case '3':
+                    hzfyTableOpt.where = parmas;
+                    hzfyTable = table.render($.extend(basePageTable, hzfyTableOpt));
+                    curTable = hzfyTable;
+                    curTableId = 'hzfyTable';
+                    break;
+                case '4':
+                    dpyqdTableOpt.id = 'qyqdTable';
+                    dpyqdTableOpt.elem = '#qyqdTable';
+                    qyqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = qyqdTable;
+                    curTableId = 'qyqdTable';
+                    break;
+                case '9':
+                    dpyqdTableOpt.id = 'fyhtlsqdTable';
+                    dpyqdTableOpt.elem = '#fyhtlsqdTable';
+                    fyhtlsqdTable = table.render($.extend(basePageTable, dpyqdTableOpt));
+                    curTable = fyhtlsqdTable;
+                    curTableId = 'fyhtlsqdTable';
+                    break;
+                default:
+            }
+        });
+
+        $('#tab-ul').click(function(e) {
+            $('.submit').hide();
+            switch (e.target.id) {
+                case 'btn_dpyqd':
+                    $('#exePharmacyFlag').val('1');
+                    $('#btn_py').show();
+                    $('#btn_jpy').show();
+                    tabFlag = '1';
+                    break;
+                case 'btn_dfyqd':
+                    $('#exePharmacyFlag').val('2');
+                    $('#btn_fy').show();
+                    tabFlag = '2';
+                    break;
+                case 'btn_hzfy':
+                    $('#exePharmacyFlag').val('4');
+                    console.log($('#exePharmacyFlag').val());
+                    tabFlag = '3';
+                    break;
+                case 'btn_qyqd':
+                    $('#exePharmacyFlag').val('7');
+                    $('#btn_py').show();
+                    tabFlag = '4';
+                    break;
+                case 'btn_jpyqd':
+                    $('#exePharmacyFlag').val('3');
+                    $('#btn_fy').show();
+                    tabFlag = '5';
+                    break;
+                case 'btn_yfyqd':
+                    $('#exePharmacyFlag').val('4');
+                    $('#btn_sqty').show();
+                    tabFlag = '6';
+                    break;
+                case 'btn_dtyqd':
+                    $('#exePharmacyFlag').val('5');
+                    $('#btn_zxty').show();
+                    tabFlag = '7';
+                    break;
+                case 'btn_ytyqd':
+                    $('#exePharmacyFlag').val('6');
+                    tabFlag = '8';
+                    break;
+                case 'btn_fyhtlsqd':
+                    $('#exePharmacyFlag').val('6');
+                    tabFlag = '9';
+                    break;
+                default:
+            }
+            $('#btn_search').click();
+        });
+
+        $('#btn_py').click(function() {
+            var param = {
+                exePharmacyFlag: '2'
+            };
+            updateRecipe(param);
+        });
+        $('#btn_jpy').click(function() {
+            var param = {
+                exePharmacyFlag: '3'
+            };
+            updateRecipe(param);
+        });
+        $('#btn_fy').click(function() {
+            var param = {
+                exePharmacyFlag: '4'
+            };
+            updateRecipe(param);
+        });
+        $('#btn_sqty').click(function() {
+            var param = {
+                exePharmacyFlag: '5'
+            };
+            updateRecipe(param);
+        });
+        $('#btn_zxty').click(function() {
+            var param = {
+                exePharmacyFlag: '6'
+            };
+            updateRecipe(param);
+        });
+
+        function updateRecipe(param) {
+            var checkStatus = table.checkStatus(curTableId);
+            if (checkStatus.data.length === 0) {
+                common.msg('请选择要执行的数据', 0);
+                return;
+            }
+            var ids = [];
+            for (var i = 0, len = checkStatus.data.length; i < len; i++) {
+                ids.push(checkStatus.data[i].orderExeId);
+            }
+            param['orderExeIds'] = ids.join(',');
+            common.requestServer(contextPath + '/inpatient/updateInpatientOrderExe.jo', param, function (result) {
+                if (result.code === "0") {
+                    common.msg(result.msg, 1);
+                    // $('.submit').hide();
+                } else {
+                    common.msg(result.msg, 0);
+                }
+                $('#btn_search').click();
+            });
+        }
+        $(window).resize(function () {
+            table.reload('dpyqdTable',{
+                height:getMainTableHeight()
+            })
+            table.reload('hzfyTable',{
+                height:getMainTableHeight()
+            })
+        })
+    });
+
+    // 获取表格高度
+    function getMainTableHeight() {
+        return ($('body').height() - $('#queryForm').height() - 75);
+    }
+    function getMainTableItemHeight() {
+        return ($('body').height() - $('#queryForm').height() - $('#recipeForm').height() - $('#operateForm').height() - 95)
+    }
+
+    $(document).ready(function () {
+        $('#drugstoreTableHgt').height($('body').height() - 74);
+    })
+</script>
+</html>

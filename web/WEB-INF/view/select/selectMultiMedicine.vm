@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${SessionSysPortal.appTitle}</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+   <style type="text/css">
+	 body{background-color: #ececec}
+	 .u-select{ border-bottom: 1px solid #e1e1e1; width: 100%; margin: 2px; }
+	 .main{height: 100%}
+	</style>
+</head>
+<body>
+    <div class="main">
+       <div class="layui-row p-t-xs white-bg" style="height: calc( 100% - 50px); overflow-y: auto; overflow-x: auto; z-index: 999999">
+        ##<form class="layui-form" action="">
+	        <table class="layui-table custom-table layui-table-input m-t-n" lay-skin="sm">
+	            <thead>
+	                <tr>
+	                    <th width="60px">
+	                        <i name="btn_add_tr" target-id="editOrderList" class="layui-icon layui-icon-add-1 btn-img-green" title="添加医嘱"></i>
+	                    </th>
+	                    <th width="70px">分类</th>
+	                    <th width="55px">类型</th>
+	                    <th width="155px">开始时间</th>
+	                    <th width="170px">医嘱项目</th>
+	                    <th width="80px">剂量</th>
+	                    <th width="40px">单位</th>
+	                    <th width="40px">领量</th>
+	                    <th width="40px">单位</th>
+	                    <th width="90px">频次</th>
+	                    <th width="40px">首</th>
+	                    <th width="110px">用法</th>
+	                    <th width="150px">单条说明</th>
+	                    <th width="115px">执行科室</th>
+	                </tr>
+	            </thead>
+	            <tbody id="editOrderList">
+	                #if($inpatientOrderList)
+	                #foreach($inpatientOrder in $inpatientOrderList)
+	                <tr onclick="currentTr = this;">
+	                    <td>
+	                        <i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+	                        <i onclick="addChildTr(this)" id="addChild" class="layui-icon layui-icon-add-1 btn-img-green" title="添加子医嘱"></i>
+	                        #formHiddenInput("urgentFlag" "$!inpatientOrder.urgentFlag" "")   ##<!-- 是否加急-->
+	                        #formHiddenInput("medicineFlag" "$!inpatientOrder.medicineFlag" "")   ##<!-- 是否药品 -->
+	                        #formHiddenInput("makeOrderFlag" "$!inpatientOrder.makeOrderFlag" "")   ##<!-- 开嘱人类型 -->
+	                        #formHiddenInput("exeOrderFlag" "$!inpatientOrder.exeOrderFlag" "")   ##<!-- 执行类型 -->
+	                        #formHiddenInput("medicalTechFlag" "$!inpatientOrder.medicalTechFlag" "") ##<!-- 是否医技主项 -->
+	                        #formHiddenInput("dispensingStopFlag" "$!inpatientOrder.dispensingStopFlag" "") ##<!-- 是否停药 -->
+	                        #formHiddenInput("dispensingFlag" "$!inpatientOrder.dispensingFlag" "") ##<!-- 发药标识。 -->
+	                        #formHiddenInput("doctorOrderType" "$!inpatientOrder.doctorOrderType" "") ##<!-- 医嘱类型，01：药品。 -->
+	                        #formHiddenInput("pharmacyId" "$!inpatientOrder.pharmacyId" "") ##<!-- 药房/科室二级库ID -->
+	                        #formHiddenInput("highRiskFlag" "$!inpatientOrder.highRiskFlag" "") ##<!-- 高危药品标识 -->
+	                        #formHiddenInput("productBatch" "$!inpatientOrder.productBatch" "") ##<!-- 药品生产批次号。 -->
+	                        #formHiddenInput("producingAreaId" "$!inpatientOrder.producingAreaId" "") ##<!-- 药品生产地。 -->
+	                        #formHiddenInput("validUntil" "$!inpatientOrder.validUntil" "") ##<!-- 药品有效期。 -->
+	                        #formHiddenInput("medicineSpec" "$!inpatientOrder.medicineSpec" "") ##<!-- 药品规格。 -->
+	                        #formHiddenInput("medicineId" "$!inpatientOrder.medicineId" "") ##<!-- 药品ID。 -->
+	                        #formHiddenInput("drugTherapyType" "$!inpatientOrder.drugTherapyType" "") ##<!-- 药品类型。 -->
+	                        #formHiddenInput("orderGroupNo" "$!inpatientOrder.orderGroupNo" "") ##<!-- 组号。 -->
+	                        #formHiddenInput("chargeGroupId" "$!inpatientOrder.chargeGroupId" "")
+	                        #formHiddenInput("orderName" "$!inpatientOrder.orderName" "")
+	                        #formHiddenInput("orderId" "$!inpatientOrder.orderId" "")
+	                        #formHiddenInput("lisFlag" "$!inpatientOrder.lisFlag" "")   ##<!-- 是否检验-->
+                            #formHiddenInput("examFlag" "$!inpatientOrder.examFlag" "")   ##<!-- 是否检查 -->
+                            #formHiddenInput("surgeryFlag" "$!inpatientOrder.surgeryFlag" "")   ##<!-- 是否手术 -->
+                            #formHiddenInput("overdueBillFlag" "$!inpatientOrder.overdueBillFlag" "")   ##<!-- 是否欠费 -->
+	                   </td>
+	                   <td>
+	                        <!-- 长/临 -->
+	                        #formSingleSelectFirstNone("orderClassify" "$!inpatientOrder.orderClassify" $!dicData.dicOrderClassify "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 类别 -->
+	                        <select name="medicineType" class='layui-input' >
+	                            <option value=""></option>
+	                            <option value="1" selected>西药</option>
+	                            <option value="2">中成药</option>
+	                            <option value="3">草药</option>
+	                        </select>
+	                    </td>
+	                    <td>
+	                        #formTextInput("exeOrderStartTime" "$!inpatientOrder.exeOrderStartTime" "class='layui-input'  readOnly")
+	                    </td>
+	                    <td>
+	                        <!-- 项目 -->
+	                        #formTextInput("orderName" "$!inpatientOrder.orderName" "search='orderName' call-back='selectDrugOrder' server-url='../pharmacy/pharmacyStockListData.jo' class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 剂量 -->
+	                        #formTextInput("dosage" "$!inpatientOrder.dosage" "class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 每次剂量/用量单位 -->
+	                        #formSingleSelectFirstNone("dosageUnit" "$!inpatientOrder.dosageUnit" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                        <!-- 领量 -->
+	                        #formIntInput("usageQuantity" "$!inpatientOrder.usageQuantity" "class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 数量单位 -->
+	                        #formSingleSelectFirstNone("dosageUnit" "$!inpatientOrder.dosageUnit" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 频次 -->
+	                         #formSingleSelectFirstNone("pharmacyFreqId" "$!inpatientOrder.pharmacyFreqId" $!dicData.dicPharmacyFreq "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 首 -->
+	                         #formIntInput("firstDayDosage" "$!inpatientOrder.firstDayDosage" "class='layui-input' maxlength='2' ")
+	                    </td>
+	                    <td>
+	                         <!-- 给药途径 -->
+	                         #formSingleSelectFirstNone("doseWayCode" "$!inpatientOrder.doseWayCode" $dicData.dicDoseWay "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 单条说明 -->
+	                         #formTextInput("remark" "$!inpatientOrder.remark" "class='layui-input' maxlength='250'")
+	                    </td>
+	                    <td>
+	                         <!-- 执行科室 -->
+	                         #formSingleSelectFirstNone("exeOfficeId" "$!inpatientOrder.exeOfficeId" $dicData.dicSysOrgDeptName "class='layui-input'" "")
+	                    </td>
+	                </tr>
+	                #end
+	                #end
+	                    <tr onclick="currentTr = this;">
+	                    <td>
+	                        <i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+	                        <i onclick="addChildTr(this)" id="addChild" class="layui-icon layui-icon-add-1 btn-img-green" title="添加子医嘱"></i>
+	                        #formHiddenInput("urgentFlag" "0" "")   ##<!-- 是否加急-->
+	                        #formHiddenInput("medicineFlag" "1" "")   ##<!-- 是否药品 -->
+	                        #formHiddenInput("makeOrderFlag" "1" "")   ##<!-- 开嘱人类型 -->
+	                        #formHiddenInput("exeOrderFlag" "1" "")   ##<!-- 执行类型 -->
+	                        #formHiddenInput("medicalTechFlag" "0" "") ##<!-- 是否医技主项 -->
+	                        #formHiddenInput("dispensingStopFlag" "0" "") ##<!-- 是否停药 -->
+	                        #formHiddenInput("dispensingFlag" "0" "") ##<!-- 发药标识。 -->
+	                        #formHiddenInput("doctorOrderType" "01" "") ##<!-- 医嘱类型，01：药品。 -->
+	                        #formHiddenInput("pharmacyId" "" "") ##<!-- 药房/科室二级库ID -->
+	                        #formHiddenInput("highRiskFlag" "" "") ##<!-- 高危药品标识 -->
+	                        #formHiddenInput("productBatch" "" "") ##<!-- 药品生产批次号。 -->
+	                        #formHiddenInput("producingAreaId" "" "") ##<!-- 药品生产地。 -->
+	                        #formHiddenInput("validUntil" "" "") ##<!-- 药品有效期。 -->
+	                        #formHiddenInput("medicineSpec" "" "") ##<!-- 药品规格。 -->
+	                        #formHiddenInput("medicineId" "" "") ##<!-- 药品ID。 -->
+	                        #formHiddenInput("drugTherapyType" "" "") ##<!-- 药品类型。 -->
+	                        #formHiddenInput("orderGroupNo" "$!sysGuid" "") ##<!-- 组号。 -->
+	                        #formHiddenInput("chargeGroupId" "1" "")
+	                        #formHiddenInput("orderName" "" "")
+	                        #formHiddenInput("orderId" "" "")
+	                        #formHiddenInput("lisFlag" "0" "")   ##<!-- 是否检验-->
+                            #formHiddenInput("examFlag" "0" "")   ##<!-- 是否检查 -->
+                            #formHiddenInput("surgeryFlag" "0" "")   ##<!-- 是否手术 -->
+                            #formHiddenInput("overdueBillFlag" "0" "")   ##<!-- 是否欠费 -->
+	                   </td>
+	                   <td>
+	                        <!-- 长/临 -->
+	                        #formSingleSelectFirstNone("orderClassify" "08" $!dicData.dicOrderClassify "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 类别 -->
+	                        <select name="medicineType" class='layui-input' >
+	                            <option value=""></option>
+	                            <option value="1" selected>西药</option>
+	                            <option value="2">中成药</option>
+	                            <option value="3">草药</option>
+	                        </select>
+	                    </td>
+	                    <td>
+	                        #formTextInput("exeOrderStartTime" "" "class='layui-input'  readOnly")
+	                    </td>
+	                    <td>
+	                        <!-- 项目 -->
+	                        #formTextInput("orderName" "" "search='orderName' call-back='selectDrugOrder' server-url='../pharmacy/pharmacyStockListData.jo' class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 剂量 -->
+	                        #formTextInput("dosage" "" "class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 每次剂量/用量单位 -->
+	                        #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                        <!-- 领量 -->
+	                        #formIntInput("usageQuantity" "" "class='layui-input' ")
+	                    </td>
+	                    <td>
+	                        <!-- 数量单位 -->
+	                        #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 频次 -->
+	                         #formSingleSelectFirstNone("pharmacyFreqId" "" $!dicData.dicPharmacyFreq "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 首 -->
+	                         #formIntInput("firstDayDosage" "" "class='layui-input' maxlength='2' ")
+	                    </td>
+	                    <td>
+	                         <!-- 给药途径 -->
+	                         #formSingleSelectFirstNone("doseWayCode" "" $dicData.dicDoseWay "class='layui-input' " "")
+	                    </td>
+	                    <td>
+	                         <!-- 单条说明 -->
+	                         #formTextInput("remark" "" "class='layui-input' maxlength='250'")
+	                    </td>
+	                    <td>
+	                         <!-- 执行科室 -->
+	                         #formSingleSelectFirstNone("exeOfficeId" "" $dicData.dicSysOrgDeptName "class='layui-input'" "")
+	                    </td>
+	                </tr>
+	            </tbody>
+	        </table>
+        ##</form>
+    </div>
+    <!-- 按钮 -->
+    <div class="tool-bottom-fixed">
+        <button  class="layui-btn layui-btn-sm" id="btn_save" type="button" operate-type="0">保存</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+       <button  class="layui-btn layui-btn-sm" id="closeWin" type="button">关闭</button>
+    </div>
+
+    <!-- 检索药品弹出模板内容 -->
+    <div id="searchTemplate" style="display: none;">
+        <table class="layui-table m-t-n" lay-skin="line">
+            <thead>
+                <tr>
+                    <th width="150px">项目名称</th>
+                    <th width="80px">规格</th>
+                    <th width="50px">高危</th>
+                    <th width="150px">产地</th>
+                </tr>
+            </thead>
+            <tbody>
+            </tbody>
+        </table>
+    </div>
+    </div>
+</body>
+<script type="text/javascript">
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var childOrderEditFeild = {orderName:true, dosage:true, dosageUnit:true, usageQuantity:true, remark:true}
+function deleteTr(obj){
+    if ($('#editOrderList > tr').length <= 1) {
+        $('#btn_reset').click();
+        return ;
+    }
+    $(obj).parent().parent().remove();
+}
+//添加一行子医嘱医嘱编辑
+function addChildTr(obj){
+    var curTr = $(obj).parent().parent();
+    if (!$(curTr).find('select[name="exeOfficeId"]').val()){
+        common.alert('请选择执行科室', 0);
+        return ;
+    }
+
+    var sysGuid = $(curTr).find('input[name="orderGroupNo"]').val();
+    if (sysGuid) {
+        buildChildTr(sysGuid);
+    } else {
+        // 先从后台服务获取医嘱组号再添加子医嘱
+        common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result){
+            if (!result.sysGuid) { return ;}
+            $(curTr).find('input[name="orderGroupNo"]').val(result.sysGuid);
+            buildChildTr(result.sysGuid);
+        });
+    }
+
+    function buildChildTr(sysGuid) {
+        $(curTr).find('input[name="orderGroupNo"]').val(sysGuid);
+        $(curTr).after($(curTr).prop("outerHTML"));
+        var lastTr = $(curTr).next();
+        $(lastTr).find('i#addChild').remove();
+        $(curTr).find('input, select').each(function (i, val){
+            var name = $(val).attr('name' );
+            if (childOrderEditFeild[name]) {
+                return true;
+            }
+
+            var curElement = $(lastTr).find('input[name="' + name + '"]');
+            if (!curElement || !$(curElement).attr('name')) {
+                curElement = $(lastTr).find('select[name="' + name + '"]');
+            }
+            $(curElement).val($(val).val());
+            $(curElement).hide();
+        });
+        $(lastTr).find('input[name="orderId"]').val('');
+        bindEvent();
+
+    }
+};
+//选择选择检验回调函数，根据参数index引索从orderData数组取数据
+function selectLisOrder(index){
+    if (!currentTr || !orderData[index]) { return ;}
+    var data = orderData[index];
+    $('#searchDrug').next().find('a.layui-layer-close').click();
+}
+// 选择医嘱药品回调函数，根据参数index引索从orderData数组取数据
+function selectDrugOrder(index){
+    if (!currentTr || !orderData[index]) { return ;}
+    var data = orderData[index];
+    $(currentTr).find('input[name="dosage"]').val(data.medicine.minMedicinePack);
+    $(currentTr).find('input[name="pharmacyId"]').val(data.pharmacyId);
+    $(currentTr).find('input[name="productBatch"]').val(data.batchNum);
+    $(currentTr).find('input[name="validUntil"]').val(data.expireDate);
+    $(currentTr).find('input[name="medicineSpec"]').val(data.medicineSpec);
+    $(currentTr).find('input[name="medicineId"]').val(data.medicineId);
+    $(currentTr).find('select[name="dosageUnit"]').val(data.dosageUnit);
+    $(currentTr).find('input[name="orderName"]').val(data.medicineName);
+    $(currentTr).find('input[name="highRiskFlag"]').val(data.riskMedicineFlag);
+    $(currentTr).find('input[name="drugTherapyType"]').val(data.drugTherapyType);
+    $(currentTr).find('input[name="producingAreaId"]').val(data.producingAreaId);
+    $(currentTr).find('input[name="orderName"]').val(data.medicineName);
+    $('#searchDrug').next().find('a.layui-layer-close').click();
+}
+
+//监听医嘱项目、数量输入框值变化，根据输入框值模糊搜索对应的数据
+function bindEvent() {
+    // 监听医嘱项目
+    $('input[search="orderName"]').on('input propertychange', function (){
+        if (!$(this).val() || !$(this).attr('server-url') || !$(this).attr('call-back')) {return ;}
+        var self = this;
+        common.requestServer($(this).attr('server-url'), {keyWord: $(this).val()}, function (result){
+            if (!result || !result.data || result.data.length < 0) {
+                return ;
+            }
+            var html = [];
+            orderData = result.data;
+            var callBack = $(self).attr('call-back');
+            $.each(result.data, function (i, val){
+                html.push('<tr onclick="' + callBack + '(' + i + ')">');
+                html.push('<td>' + (val.medicineName ? val.medicineName : '') + '</td>');
+                html.push('<td>' + (val.medicineSpec ? val.medicineSpec : '') + '</td>');
+                html.push('<td>' + (val.riskMedicineFlag ? dicYesNo[val.riskMedicineFlag] : '') + '</td>');
+                html.push('<td>' + (val.producingArea ? val.producingArea : '') + '</td></tr>');
+            });
+
+            if ($('#searchDrug') && $('#searchDrug').attr('class')) {
+                $('#searchDrug > table > tbody').html(html.join(''))
+            } else {
+                $('#searchTemplate > table > tbody').html(html.join(''));
+                var top = $(self).offset().top - 450;
+                var left = $('body').width() /2 - 215;
+                var opt = {id: "searchDrug", area:['400px', '250px'], offset: [(top < 10 ? 10 : top), left]};
+                common.openHtml($('#searchTemplate').html(), false, opt);
+                $('#searchDrug').css("background-color","#fff");
+            }
+        });
+    });
+}
+layui.config({
+    base: '../resource/layuiadmin/'
+}).use(['form', 'laydate', 'element', 'table'], function(){
+	var templateTr = {editOrderList: $('#editOrderList > tr:last').prop("outerHTML")};
+    var element = layui.element, table = layui.table, laydate = layui.laydate, form = layui.form;
+    bindEvent();
+    // 绑定医嘱开始时间
+    laydate.render({elem: $('#editOrderList > tr:last > td > input[name="exeOrderStartTime"]')[0],trigger: 'click', type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+
+    // 添加一行医嘱编辑
+    $('i[name="btn_add_tr"]').click(function(){
+        var self = this;
+        common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result){
+            if (!result.sysGuid) { return ;}
+            var targetId = $(self).attr('target-id');
+            $('#' + targetId).append(templateTr[targetId]);
+            var lastTr = $('#' + targetId + ' > tr:last');
+            $(lastTr).find('input[name="orderGroupNo"]').val(result.sysGuid);
+            // 绑定诊断时间
+            var diagnosisTime = $(lastTr).find('input[name="exeOrderStartTime"]')[0];
+            laydate.render({elem: diagnosisTime,trigger: 'click', type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+            bindEvent();
+            form.render('select');
+        });
+    });
+
+
+    $('#closeWin').click(function (){
+    	var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+
+    $('#btn_save').click(function (){
+        var self = this;
+        var arrayObj = [];
+        var checkFlag = true;
+        $('#editOrderList > tr').each(function (){
+            var obj = {};
+            $(this).find('td > input, select').each(function (){
+                var name = $(this).attr('name');
+                var value = $(this).val();
+                if(name && value) {
+                    obj[name] = value;
+                    if (name == 'pharmacyFreqId') {
+                        obj['pharmacyFreqName'] = $(this).find("option:selected").text();
+                    }
+                    if (name == 'exeOfficeId') {
+                        obj['exeOfficeName'] = $(this).find("option:selected").text();
+                    }
+                }
+            });
+            obj.orderState = $(self).attr('operate-type');
+            obj.orderGroupNo = $('#orderGroupNo',window.parent.parent.document).val();
+            if(!$.isEmptyObject(obj) && obj.orderState && obj.exeOrderStartTime
+                    && obj.orderName && obj.exeOfficeId && obj.orderState) {
+                arrayObj.push(obj);
+            }
+            if (!obj.exeOfficeId) {
+                checkFlag = false;
+                return false;
+            }
+        });
+
+        if (!checkFlag) { common.alert('请选择执行科室', 0); return false; }
+        var inhospitalId = $('#inhospitalId',window.parent.parent.document).val();
+        if (arrayObj.length > 0 && inhospitalId) {
+            var params = {inhospitalId: inhospitalId, inpatientOrderJson: JSON.stringify(arrayObj)};
+            common.requestServer('../inpatient/saveInpatientOrderForSurgery.jo', params, function (result){
+                if (result.code == "0") {
+                	common.confirm('保存成功，是否要关闭窗口？', function (){
+                		if (parent.selectMultiMedicineCall && typeof(parent.selectMultiMedicineCall) == 'function') {
+                            parent.selectMultiMedicineCall(arrayObj);
+                        }
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    }, function (){}, ['是', '否']);
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }
+    });
+
+});
+</script>
+</html>

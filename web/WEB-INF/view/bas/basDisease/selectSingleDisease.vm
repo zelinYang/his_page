@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${SessionSysPortal.appTitle}</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-row white-bg p-t-xs">
+            <form class="layui-form" id="queryForm">
+                <div class="layui-form-item search-term">
+                    <div class="layui-block">
+                        <div class="layui-input-block m-l-xs">
+                            #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入疾病名称或识别码'")
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <!--搜索条件 结束-->
+
+        <!--列表 begin-->
+        <div class="layui-row white-bg" lay-filter="groupDiv" style="height: calc(100% - 38px);">
+            <table id="diseaseList" lay-filter="diseaseList"></table>
+            <script type="text/html" id="operateFormatter">
+                <a class="" ><i class="layui-icon layui-icon-ok-circle"></i></a>
+            </script>
+        </div>
+    </div>
+</body>
+<script type="text/javascript">
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+layui.use(['table', 'form'], function(){
+    var table = layui.table, form = layui.form;
+    var tableUrl = contextPath + '/basDisease/basDiseaseListData.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'diseaseList',
+        elem: '#diseaseList',
+        height: 'full-50',
+        where: {patientId: $('#patientId').val()},
+        cols: [[
+                {fixed: true, align:'center',width : 60, templet: '#operateFormatter',event:'select'},
+                {field:'diseaseName', title: '疾病名称', winWidth:90},
+                {field:'diseaseIcdTcd', title: '疾病编码', width:90},
+                {field:'diseaseTypeFlag', title: '中西/医', width:90, templet: function (row) { if (row.diseaseTypeFlag) return dicDiseaseTypeFlag[row.diseaseTypeFlag]; return "";}},
+                {field:'infectiousFlag', title: '是否传染病', width:90, templet: function (row) { if (row.infectiousFlag) return dicYesNo[row.infectiousFlag]; return "";}},
+                {field:'chronicFlag', title: '是否慢性病', width:90, templet: function (row) { if (row.chronicFlag) return dicYesNo[row.chronicFlag]; return "";}},
+                {field:'singleDiseaseFlag', title: '是否单病种', width:95, templet: function (row) { if (row.singleDiseaseFlag) return dicYesNo[row.singleDiseaseFlag]; return "";}}
+            ]]
+      })
+    );
+
+    //监听行工具事件(编辑和删除)
+    table.on('row(diseaseList)', function(obj){
+        if (parent.selectSingleDiseaseCall && typeof(parent.selectSingleDiseaseCall) == 'function') {
+            parent.selectSingleDiseaseCall(obj.data);
+        }
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+    table.on('tool(diseaseList)', function(obj){
+        var layEvent = obj.event; //获得 lay-event 对应的值
+        if (layEvent === "select") {
+            if (parent.selectSingleUserCall && typeof(parent.selectSingleUserCall) == 'function') {
+                parent.selectSingleUserCall(obj.data);
+            }
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+    });
+
+    // 检索
+    $('#keyWord').bind('input propertychange', function (){
+        tableList.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+});
+</script>
+</html>

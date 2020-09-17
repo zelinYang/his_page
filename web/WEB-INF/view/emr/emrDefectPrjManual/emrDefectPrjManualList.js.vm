@@ -1,0 +1,163 @@
+
+<script>
+    //是否有效
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+    	index : 'lib/index'
+    }).use(
+            [ 'index', 'table', 'form', 'layer' ],
+            function() {
+                var $ = layui.$, form = layui.form, table = layui.table, autocomplete = layui.autocomplete;
+
+                //字典表列表
+                table.render({
+                    elem : '#emrDefectPrjManualTable',
+                    url : '../emr/emrDefectPrjManualListData.jo',
+                    limit : 20,
+                    id : 'emrDefectPrjManualTable',
+                    where : { 'emrTlpClassifyId' : '$!emrTlpClassifyId' },
+                    cols : [[
+                            {type : 'numbers'},
+                            {field : 'emrTlpClassifyName',title : '病历分类'},
+                            {field : 'defectName',title : '缺陷项目'},
+                            {field : 'defectScore',title : '项目分值'},
+                            {field : 'oneNegativeScore',title : '甲类缺陷扣分'},
+                            {field : 'twoNegativeScore',title : '乙类缺陷扣分'},
+                            {field : 'threeNegativeScore',title : '丙类缺陷扣分'},
+                            {field : 'validFlag', title : '是否有效', unresize : true, width : 100,
+                                templet : function(d) {
+                                    return '<input type="checkbox" name="validFlag" value="' + d.emrDefectPrjManualId + '" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" '
+                                            + (d.validFlag == 1 && 'checked') + '>';
+                                }
+                            }, 
+                            {title : '操作', width : 100, align : 'center', fixed : 'right', toolbar : '#colsToolbarDic'} 
+                            ]],
+                    page : true,
+                    height : 'full-80',
+                    request : { pageName : 'pageNumber',limitName : 'pageSize'  }//页码的参数名称，默认：page，每页数据量的参数名，默认：limit
+                });
+                //新增字典
+                $("#btn_add").click(function() {
+                    eidtEmrDefectPrj()
+                });
+
+                //重置查询表单并刷新表格
+                $("#btn_reset").click(function() {
+                	table.reload('emrDefectPrjManualTable', { })
+                })
+
+                //监听字典数据搜索
+                form.on('submit(btn_query)', function(data) {
+                    var field = data.field;
+                    //执行重载
+                    table.reload('emrDefectPrjManualTable', {where : field});
+                    return false;
+                });
+
+                //监听行单击事件
+                table.on('row(emrDefectPrjManualTable)', function(obj) {
+                    showEmrDefect(obj);
+                });
+
+                //监听有无效操作
+                form.on('switch(validFlag)', function(obj) {
+                    updateValidFlag(obj);
+                });
+
+                //监听工具条
+                table.on('tool(emrDefectPrjManualTable)', function(obj) {
+                    var data = obj.data;
+                    switch (obj.event) {
+                    case 'edit':
+                        eidtEmrDefectPrj(data);
+                        break;
+                    case 'del':
+                        delEmrDefect(data);
+                        break;
+                    }
+                });
+
+                //编辑字典
+                function eidtEmrDefectPrj(data) {
+                    var params = {
+                             emrTlpClassifyId : $('#emrTlpClassifyId').val()   
+                            ,emrTlpClassifyName : $('#emrTlpClassifyName').val()     
+                    }
+                    var title = '新增缺陷设置';
+                    var url = '$contextPath/emr/emrDefectPrjManualEdit.do'+common.objToParamStr(params);
+                    if (data && data.emrDefectPrjManualId) {
+                        url += '&emrDefectPrjManualId=' + data.emrDefectPrjManualId;
+                        title = '修改缺陷设置';
+                    }
+                 
+                    common.open(url, title, {
+                        area : [ '800px', '600px' ],
+                        btn : [ '保存' ],
+                        yes : function(index, layero) {
+                            saveEmrDefect(index, layero);
+                        }
+                    });
+
+                }
+                //保存编辑字典
+                function saveEmrDefect(index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save_dic', submit = layero.find('iframe').contents().find('#' + submitID);
+                    common.verify(iframeWindow.layui.form);
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                    	var url = contextPath + '/emr/saveEmrDefectPrjManual.jo', params = data.field, msg = "保存成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $("#btn_query").click();
+                            layer.close(index); //关闭弹层
+                        })
+                    });
+                    submit.trigger('click');
+                }
+
+                //删除字典
+                function delEmrDefect(data) {
+                    common.confirm("确定要删除吗？", function() {
+                        var url =  '$contextPath/emr/delEmrDefectPrjManual.jo', 
+                        params = { ids : data.emrDefectPrjManualId }, 
+                        msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $('#btn_query').click();
+                        })
+                    });
+                }
+
+                // 更新有效标志状态
+                function updateValidFlag(obj) {
+                    var validFlag = Number(obj.elem.checked);
+                    var emrDefectPrjManualId = obj.value;
+                    common.requestServer('../emr/updateValidFlag.jo', {
+                        emrDefectPrjManualId : emrDefectPrjManualId,
+                        validFlag : validFlag
+                    }, function(result) {
+                        if (result.code == "0") {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                                icon : 1
+                            });
+                        } else {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                                icon : 2
+                            });
+                            obj.elem.checked = !obj.elem.checked;
+                            form.render('checkbox');
+                        }
+                    });
+                }
+
+                //显示字典
+                function showEmrDefect(obj) {
+                    var url ='$contextPath/emr/emrDefectShow.do?emrDefectPrjManualId=' + obj.data.emrDefectPrjManualId;
+                    var title = obj.data.defectName + '详情';
+                    common.open(url, title, {
+                        area : [ '700px', '450px' ],
+                        btn : [ '关闭' ]
+                    });
+                }
+            });
+</script>

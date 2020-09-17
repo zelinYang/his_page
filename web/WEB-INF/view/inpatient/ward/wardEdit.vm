@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>病区管理</title>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<style type="text/css">
+
+.deps {
+    overflow: auto;
+}
+</style>
+</head>
+<body>
+    <form class="layui-form m-sm" id="wardForm">
+        <div class="layui-card">
+            <div class="layui-card-header">基本信息</div>
+            <div class="layui-card-body">
+                #formHiddenInput("wardId" "$!{inpatientWard.wardId}" " id='wardId' ")
+                <div class="layui-form-item">
+                    <label class="layui-form-label">#requiredTag()病区名称</label>
+                    <div class="layui-input-block">#formTextInput("wardName" "#htmlEscape($!{inpatientWard.wardName})" "id='wardName' maxlength='50' autocomplete='off' lay-verify='required' class='layui-input unique'")</div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="width: auto;">#requiredTag()门诊/住院使用</label>
+                        <!--门诊不需要关联科室-->
+                        #if(${inpatientWard})
+                        #set($wardFlag =$!{inpatientWard.wardFlag})
+                        #else
+                        #set($wardFlag = $!{CONST.AppConstants.WARDFLAG_INHOSPITAL})
+                        #end
+                        <div class="layui-input-inline">#formRadioGroup("wardFlag" "$wardFlag" ${dicData.dicWardFlag} "lay-filter='wardFlag' lay-verify='reqRedio' check-msg='请选择门诊/住院使用'")</div>
+                    </div>
+                    #if(${inpatientWard})
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()是否有效</label>
+                        <div class="layui-input-inline">#formRadioGroup("validFlag" "$wardFlag" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+                    </div>
+                    #end
+                </div>
+            </div>
+        </div>
+        <div class="layui-card">
+            <div class="layui-card-header">关联科室</div>
+            <div class="layui-card-body deps" id="deps">
+                <div class="layui-row p-xs m-l-md">
+                    #foreach($option in $!orgMap.keySet())
+                    <div class="layui-col-xs3 p-b-xs">#formSimpleCheckbox("officeIds" "$!option" "$!inpatientWard.inpatientWardOfficeIds.contains($option)" " title='$!{orgMap.get($!option)}' lay-skin='primary' " "")</div>
+                    #end
+                </div>
+            </div>
+        </div>
+
+
+         <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+        </div>
+    </form>
+    #parse("./inpatient/ward/wardEdit.js.vm")
+</body>
+</html>

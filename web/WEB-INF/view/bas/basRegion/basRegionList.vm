@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-行政区域表管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <style type="text/css">
+        .ztree li span.button.switch.level0 {
+            visibility: hidden;
+            width: 1px;
+        }
+
+        .ztree li ul.level0 {
+            padding: 0;
+            background: none;
+        }
+
+        .tree {
+            height: calc(100vh - 63px);
+            overflow-y: scroll;
+            overflow-x: auto;
+        }
+        @media screen and (min-width: 992px){
+            .tree {
+                height: calc(100vh - 63px);
+            }
+        }
+        .layui-card-header .layui-btn-group {
+            height: 33px;
+            float: right;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md3 layui-col-xs3">
+                <div class="layui-card">
+                    <div class="layui-card-header">行政区域
+                        <div class="layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-primary layui-btn-sm" lay-tips="刷新"
+                                id="btn_refresh">
+                            <i class="layui-icon layui-icon-refresh"></i>
+                        </button>
+                    </div></div>
+                    <div class="layui-card-body tree">
+                        <ul id="regionTree" class="ztree"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md9  layui-col-xs9">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <span class="layui-breadcrumb" id="region_breadcrumb" lay-separator=">">
+                          <!--<a><cite>全国</cite></a>-->
+                        </span>
+                    </div>
+                    <div class="layui-card-body ">
+                        <!--搜索条件 开始-->
+                        <form id="basRegion_queryForm" class="layui-form">
+                            <div class="layui-row-query">
+                                <div class="layui-form-item search-term">
+                                    <div class="layui-inline">
+                                        <label class="layui-form-label">区域名称</label>
+                                        <div class="layui-input-inline wd-120">#formTextInput("regionName" ""
+                                            "id='q_regionName' maxlength='40' autocomplete='off' class='layui-input'")
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline">
+                                        <label class="layui-form-label">区域代码</label>
+                                        <div class="layui-input-inline wd-120">#formNotInChineseInput("regionCode" ""
+                                            "id='q_regionCode' maxlength='20' autocomplete='off' class='layui-input'")
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline">
+                                        <label class="layui-form-label">经度纬度</label>
+                                        <div class="layui-input-inline " style="width: 100px; ">
+                                            #formNotInChineseInput("latitude" "" "id='q_latitude' maxlength='18'
+                                            autocomplete='off' class='layui-input'")
+                                        </div>
+                                        <div class="layui-form-mid">-</div>
+                                        <div class="layui-input-inline" style="width: 100px;">
+                                            #formNotInChineseInput("longitude" "" "id='q_longitude' maxlength='18'
+                                            autocomplete='off' class='layui-input'")
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline">
+                                        <div class="layui-btn-group">
+                                            <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                                            <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                                        </div>
+                                        <button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                        <!--搜索条件 结束-->
+                        <!-- 列表表格 工具栏-->
+                        <!-- 是否有效开关 -->
+                        <script type="text/html" id="validFlagTpl">
+                            <input type="checkbox" lay-filter="validFlag" name="validFlag" value="{{d.regionId}}"
+                                   lay-skin="switch"
+                                   lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+                        </script>
+                        <!-- 操作栏操作按钮 -->
+                        <script type="text/html" id="operateTpl">
+                            <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit">
+                                <i class="layui-icon layui-icon-edit"></i></a>
+                        </script>
+                        <!-- 列表表格 工具栏 结束-->
+                        <!-- 列表表格 begin -->
+                        <table id="basRegionListGrid" lay-filter="basRegionListGrid"></table>
+                        <!--  列表表格 end -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+<script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+#parse("./bas/basRegion/basRegionList.js.vm")
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>申请病历召回</title>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-label {
+            width: 90px;
+        }
+
+        .layui-input-block {
+            margin-left: 110px;
+        }
+
+        .layui-textarea {
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "")
+    #formHiddenInput("inhospitalNo" "$!{inpatientInhospital.inhospitalNo}" "")
+    #formHiddenInput("patientMedicalNo" "$!{inpatientInhospital.patientMedicalNo}" "")
+    #formHiddenInput("patientId" "$!{inpatientInhospital.patientId}" "")
+    #formHiddenInput("patientName" "$!{inpatientInhospital.patientName}" "")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()召回限定天数</label>
+            <div class="layui-input-inline">#formTextInput("borrowDayNum" "#htmlEscape($!{docBorrow.borrowDayNum})" " maxlength='10' lay-verify='required' class='layui-input layer-date' ")</div>
+        </div>
+    </div>
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">#requiredTag()召回目的</label>
+        <div class="layui-input-block ">#formTextarea("borrowPurpose" "#htmlEscape($!{docBorrow.borrowPurpose})" " class='layui-textarea' lay-verify='required' maxlength='30' placeholder='请输入内容，字数最多30字'")</div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+    </div>
+</div>
+
+<script>
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        autocomplete : 'modules/autocomplete'
+    }).use([ 'form', 'autocomplete','layer' ], function() {
+        var $ = layui.$, form = layui.form, autocomplete = layui.autocomplete;
+        var layer =layui.layer;
+        common.verify(form);
+        form.verify({
+            disease : function(value) {
+                if (!value) {
+                    setTimeout(function() {
+                        $("#diseaseName").addClass('layui-form-danger').focus();
+                    }, 50);
+                    return '请选择正确的选项';
+                }
+            }
+        })
+        // 根据诊断/疾病名称查询icd
+        autocomplete.render({
+            cache : false,
+            searchField : 'keyWord',
+            elem : $('#diseaseName')[0],
+            url : '../basDisease/basDiseaseListData.jo?pageSize=7',
+            template_val : '{{d.diseaseName}}',
+            template_txt : '{{d.diseaseName}} （{{d.diseaseIcdTcd}}）',
+            onselect : function(obj) {
+                searchCall(obj);
+            }
+        });
+        //清除值
+        $("#diseaseName").on('input propertychange', function() {
+            $("#diseaseIcdTcd").val('');
+            $("#diseaseId").val('');
+        })
+        //选中时执行的callback事件，会返回当前选中项的数据
+        function searchCall(obj) {
+            $("#diseaseIcdTcd").val(obj.diseaseIcdTcd);
+            $("#diseaseId").val(obj.diseaseId);
+        }
+
+        form.on('submit(btn_save)', function(data) {
+            var docBorrowParams = data.field; //获取提交的字段
+
+            //提交 Ajax 成功后，静态更新表格中的数据
+            common.requestServer(contextPath + '/doc/saveDocBorrowReback.jo', docBorrowParams, function(result) {
+                if (result.code == "0") {
+                    common.msgSuccess("保存成功。");
+                    parent.$('#btn_query').click();
+                    location.reload()
+                    for(var i=1;i<10000;i++){
+                        parent.layer.close(i)
+                    }
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+
+    })
+</script>
+
+</body>
+</html>

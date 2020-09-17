@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<form class="layui-form  layui-form-pane" action="" id="editForm">
+    <table id="clinicPathTable" lay-filter="clinicPathTable"></table>
+    <div class="layui-form-item" pane>
+        <label class="layui-form-label">导入结果</label>
+        <div class="layui-input-block">
+			<input type="radio" name="clinicInPathFlag" lay-filter="resultFlag" value="1" title="符合" checked>
+			<input type="radio" name="clinicInPathFlag" lay-filter="resultFlag" value="0" title="不符合">
+        </div>
+    </div>
+    <div class="layui-form-item" pane id="reasonDiv" style="display: none;">
+        <label class="layui-form-label">理由</label>
+        <div class="layui-input-block">
+			<textarea name="clinicNotInPathReason" placeholder="请输入内容" class="layui-textarea"></textarea>
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    var pathStageType = '$!{clinicPathStage.pathStageType}';
+    var getParams;
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'autocomplete', 'table'], function() {
+        var form = layui.form;
+        var element = layui.element;
+        var table = layui.table;
+        var autocomplete = layui.autocomplete;
+        var $ = layui.$;
+        layui.form.render('select');
+
+		table.render($.extend(singlePageTable, {
+			url: contextPath + '/clinic/getClinicPathByDisease.jo',
+			id: 'clinicPathTable',
+			elem: '#clinicPathTable',
+			height: '300',
+			where: {diseaseIcdTcds: '$!{diseaseIcdTcds}'},
+			cols: [[
+				{type: 'radio', field: 'drugstoreInId'},
+				{
+					field: 'clinicPathName',
+					title: '路径名称'
+				}, {
+					field: 'pathDiseaseName',
+					title: '路径病种名称'
+				}
+			]]
+		}));
+
+		table.on('row(clinicPathTable)', function(obj){
+			clickTableByRow(obj, 'clinicPathTable')
+        });
+
+		form.on('radio(resultFlag)', function(data){
+			if (data.value === '0') {
+				$("#reasonDiv").show();
+			} else {
+				$("#reasonDiv").hide();
+			}
+		});
+
+		getParams = function () {
+			var checkStatus = table.checkStatus('clinicPathTable'); //idTest 即为基础参数 id 对应的值
+			if (checkStatus.data.length > 0) {
+				return checkStatus.data[0].clinicPathId;
+			}
+			return '';
+		}
+    });
+</script>
+</body>

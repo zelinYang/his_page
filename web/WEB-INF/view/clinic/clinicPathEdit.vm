@@ -1,0 +1,212 @@
+<html>
+<head>
+    <title>临床路径编辑</title>
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .layui-form-checkbox span {
+            height: 30px;
+        }
+        .layui-table-view .layui-form-radio > i {
+            margin-top: 15px;
+        }
+		.singleDisease {
+			display: none;
+		}
+		.layui-form-label {
+			width: 100px;
+		}
+		.layui-card-body .layui-input-block {
+			margin-left: 120px;
+		}
+    </style>
+</head>
+
+<body>
+<div class="layui-fluid p-b-n">
+	<div class=" layui-form layui-col-space10 full-height">
+		<div class="layui-tab layui-tab layui-tab-card  white-bg outpatientFeeNav full-height m-t-n" lay-filter="inSettNav">
+			<ul class="layui-tab-title">
+				<li id="btn_path_edit" class="layui-this">临床路径制定</li>
+				#if($!{clinicPathId} && !$!{copyClinicPathId})
+##					<li id="btn_path_draft">临床路径制定</li>
+					<li lay-id="clinicPathStageList" href="$contextPath/clinic/clinicPathStageList.do?clinicPathId=$!{clinicPathId}">临床路径阶段制定</li>
+				#end
+			</ul>
+			#set($attr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+			#set($layclass = 'class="layui-tab-item full-height"')
+			<div class="layui-tab-content" style="height: calc(100% - 68px)!important;padding: 0;">
+				<div class="layui-tab-item full-height-scroll layui-show" id="wqrrkTable">
+					<script type="text/html" id="delBar">
+						<a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del" title="删除"><i class="layui-icon layui-icon-delete "></i></a>
+					</script>
+					<form class="layui-form" action="" id="emrTlpForm">
+						#formHiddenInput("clinicPathId" "$!{clinicPathId}" "id='clinicPathId'")
+						#formHiddenInput("clinicPathGroup" "" "id='clinicPathGroup'")
+						#formHiddenInput("copyClinicPathId" "$!{copyClinicPathId}" "id='copyClinicPathId'")
+						<div class="layui-card">
+							<div class="layui-card-body">
+								<div class="layui-form-item">
+									<label class="layui-form-label">#requiredTag()名称</label>
+									<div class="layui-input-block">
+										<input type="text" name="clinicPathName" id="clinicPathName" autocomplete="off" lay-verify="required" placeholder="请输入名称"
+											   class="layui-input"/>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()病历分类</label>
+										<div class="layui-input-inline">
+											#formSingleSelectFirstNone("clinicPathParting" "" $!dicData.dicEmrParting " id='clinicPathParting' class='layui-input' lay-verify='required' autocomplete='off' "  "病历分类")
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()适用病情</label>
+										<div class="layui-input-inline">
+											#formSingleSelectFirstNone("inpatientCondition" "" $!dicData.dicInpatientCondition " id='inpatientCondition' class='layui-input' lay-verify='required' autocomplete='off' "  "适用病情")
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()适用性别</label>
+										<div class="layui-input-inline">
+											#formSingleSelectFirstNone("sexFlag" "" $!dicData.dicSexLimit " id='sexFlag' class='layui-input' lay-verify='required' autocomplete='off' "  "适用性别")
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()适用年龄</label>
+										<div class="layui-input-inline" style="width: 100px;">
+											<input type="text" name="ageStart" id="ageStart" autocomplete="off" class="layui-input" lay-verify="required">
+										</div>
+										<div class="layui-form-mid">-</div>
+										<div class="layui-input-inline" style="width: 100px;">
+											<input type="text" name="ageEnd" id="ageEnd" autocomplete="off" class="layui-input" lay-verify="required">
+										</div>
+										<div class="layui-input-inline" style="width: 100px;">
+											#formSingleSelectFirstNone("ageUnit" "$!{clinicPath.ageUnit}" $!dicData.dicAgeUnit " id='ageUnit' class='layui-input' lay-verify='required' autocomplete='off' "  "年龄单位")
+										</div>
+									</div>
+								</div>
+								<div class="layui-form-item layui-form-text">
+									<label class="layui-form-label">说明</label>
+									<div class="layui-input-block">
+										<textarea name="clinicPathDesc" id="clinicPathDesc" placeholder="请输入内容" class="layui-textarea"></textarea>
+									</div>
+								</div>
+								<div class="layui-form-item" pane="">
+									<label class="layui-form-label">应用范围</label>
+									<div class="layui-input-block">
+										<input type="radio" name="pathFlag" value="1" title="全院通用" lay-filter="pathFlag" checked="checked">
+										<input type="radio" name="pathFlag" value="0" title="指定科室" lay-filter="pathFlag">
+									</div>
+								</div>
+								<div class="layui-form-item" id="selectOrg" style="display: none;">
+									<label class="layui-form-label">#requiredTag()科室</label>
+									<div class="layui-input-block m-b-sm">
+										<input type="text" name="orgName" autocomplete="off" placeholder="请输入科室" class="layui-input"/>
+										<table id="orgNameTable" lay-filter="orgNameTable"></table>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()确诊准入天数</label>
+										<div class="layui-input-inline">
+											<input type="text" name="inputPathDay" id="inputPathDay" placeholder="请输入确诊准入天数" lay-verify="required" autocomplete="off"
+												   class="layui-input">
+										</div>
+										<div class="layui-form-mid layui-word-aux">入院时间超过确诊天数后不允许导入临床路径</div>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">手术推迟</label>
+										<div class="layui-input-inline">
+											<input type="text" name="surgerPutOff" id="surgerPutOff" placeholder="请输入手术推迟天数" autocomplete="off"
+												   class="layui-input" value="$!{clinicPath.surgerPutOff}">
+										</div>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label"></label>
+										<div class="layui-input-inline" style="width: 20px;">
+											<input type="checkbox" name="allowNormalFinishFlag" id="allowNormalFinishFlag" title="结束路径时，如果出院诊断不在适用病种范围内，允许选择正常完成。" lay-skin="primary" #if($!{clinicPath.allowNormalFinishFlag} == '1') checked="checked" #end/>
+										</div>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label"></label>
+										<div class="layui-input-inline">
+											<input type="checkbox" name="singleDiseaseFlag" id="singleDiseaseFlag" lay-filter="singleDiseaseFlag" title="是否单病种" lay-skin="primary" #if($!{clinicPath.singleDiseaseFlag} == '1') checked="checked" #end/>
+										</div>
+									</div>
+									##                <div class="layui-form-mid layui-word-aux">是否单病种</div>
+								</div>
+								<div class="layui-form-item singleDisease">
+									<label class="layui-form-label">单病种</label>
+									<div class="layui-input-block m-b-sm">
+										#formHiddenInput("pathDiseaseId" "" "id='pathDiseaseId'")
+										#formHiddenInput("pathDiseaseIcdTcd" "" "id='pathDiseaseIcdTcd'")
+										<input type="text" name="pathDiseaseName" id="pathDiseaseName" autocomplete="off" placeholder="请输入病种" class="layui-input"/>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()标准住院日</label>
+										<div class="layui-input-inline">
+											<input type="number" name="hospitalStayDay" id="hospitalStayDay" placeholder="请输入标准住院日" lay-verify="required" autocomplete="off"
+												   class="layui-input">
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()上下浮动</label>
+										<div class="layui-input-inline">
+											<input type="number" name="hospitalStayRange" id="hospitalStayRange" autocomplete="off" placeholder="请输入上下浮动日" lay-verify="required" class="layui-input">
+										</div>
+										<div class="layui-form-mid layui-word-aux">表示住院日范围在标准住院日±浮动天数之间</div>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">#requiredTag()预估费用</label>
+										<div class="layui-input-inline">
+											<input type="number" name="estimatedCost" id="estimatedCost" placeholder="请输入标准费用" lay-verify="required" autocomplete="off"
+												   class="layui-input">
+										</div>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<label class="layui-form-label">#requiredTag()进入路径病种</label>
+									<div class="layui-input-block m-b-sm">
+										<input type="text" name="diseaseName" autocomplete="off" placeholder="请输入病种" class="layui-input"/>
+										<table id="inputDiseaseTable" lay-filter="inputDiseaseTable"></table>
+									</div>
+								</div>
+								<div class="layui-form-item">
+									<label class="layui-form-label">跳转接收病种</label>
+									<div class="layui-input-block m-b-sm">
+										<input type="text" name="diseaseName" autocomplete="off" placeholder="请输入病种" class="layui-input"/>
+										<table id="jumpDiseaseTable" lay-filter="jumpDiseaseTable"></table>
+									</div>
+								</div>
+							</div>
+							<div class="tool-bottom-fixed white-bg save-button">
+								<button type="button" id="btn_save" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_save"><span>保存</span></button>
+								<button type="button" id="btn_submit" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_submit"><span>提交审核</span></button>
+							</div>
+						</div>
+					</form>
+				</div>
+				<div lay-id="clinicPathStageList" $layclass>
+					<iframe $attr></iframe>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+	#parse("./clinic/clinicPathEdit.js.vm")
+</body>
+</html>

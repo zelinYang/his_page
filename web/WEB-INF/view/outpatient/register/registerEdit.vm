@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        /* 问题 门诊tab 高度 */
+        .layui-card .layui-tab-brief .layui-tab-content {padding:5px;}
+        .layui-tab-brief > .layui-tab-title .layui-this {color:#009688 !important;}
+        /* 患者就诊卡搜索按钮 固定在输入框右侧 */
+        .patient-search {position:absolute;right:12px;top:3px;cursor:pointer;}
+        .patient-search:hover {color:#5FB878;}
+        /* 病历费 高度*/
+        .layui-form-label .layui-form-checkbox[lay-skin="primary"] {margin-top:0px;}
+        /* 病历费  字体颜色*/
+        .layui-form-label .layui-form-checkbox[lay-skin=primary] span {color:rgb(51,51,51);}
+        /* 就诊科室医生高度 */
+        .layui-table-body.layui-table-main {height:calc(50vh - 90px);}
+        .layui-input-block { margin-left: 100px;}
+        /* 表格警告框 */
+        .table-danger {border-color:#FF5722 !important;}
+        .fkm input {padding-right:135px;}
+        .fkm button {position:absolute;top:0px;right:0px;}
+        iframe {border:none;}
+        .wrapp-left, .wrapp-midd, .wrapp-right {float: left; height: calc(100% - 42px); overflow: hidden}
+        .wrapp-left, .wrapp-right { width: 30%; }
+        .wrapp-midd {width: calc(40% - 20px); margin: 0 10px;}
+
+        .tool-bottom-fixed { bottom: 4px;}
+        .layui-elem-field { border: 0; margin-bottom: 0}
+
+        .payCode .layui-input-block input{padding-right: 140px;}
+        .payCode .layui-input-block #btn_authCode{position: absolute; right: 0px; top: 0px; cursor: pointer;}
+        @media screen and (max-width: 1366px){
+            .layui-table-body.layui-table-main {height:calc(50vh - 88px);}
+        }
+        @media screen and (max-width: 1024px){
+            .payCode .layui-input-block{display: grid;}
+            .payCode .layui-input-block input{padding-right: 0px;}
+            .payCode .layui-input-block #btn_authCode{position: unset;}
+
+        }
+    </style>
+</head>
+<body>
+<object
+        id="Singlee"
+        classid="clsid:F9D5C4F7-7F3B-11D2-96FD-00400520989E"
+        style="height:18pt;width:120;display:none"
+        codebase="'singlee.ocx'#version=2,0,0,1"
+        onerror="onObjectError();">
+</object>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="wrapp-left">
+            <iframe src="../register/regAppointList.do" name="appointList" id="appointList" class="right_main_iframe" width="100%" height="100%" data-id="" seamless></iframe>
+        </div>
+        <div class="wrapp-midd">
+            <div class="layui-card full-height" style="position: relative;">
+                <div class="layui-card-header">挂号信息</div>
+                <div class="layui-card-body full-height-scroll " style="height: calc(100% - 35px)">
+                    <form class="layui-form " lay-filter="registerForm" id="registerForm">
+                        #formHiddenInput("appointRegisterType" "$!{CONST.AppConstants.APPOINT_REGISTER_TYPE_SCENE}" " id='appointRegisterType' ")
+                        <!-- 患者主键 -->
+                        #formHiddenInput("patientId" "" "id='patientId'")
+                        <!-- 科室代码 科室名称 -->
+                        #formHiddenInput("visitOfficeId" "" "id='visitOfficeId'")
+                        <!-- 诊室 -->
+                        #formHiddenInput("consultingRoomId" "" "id='consultingRoomId' class='doctorInfo'")
+                        <!-- 接诊医生 -->
+                        #formHiddenInput("visitDoctorId" "" "id='visitDoctorId' class='doctorInfo'")
+                        <!-- 诊疗卡类型 ，现场挂号是院内诊疗卡 -->
+                        #formHiddenInput("visitCardType" "$!{CONST.AppConstants.VISIT_CARD_TYPE_LOCAL}" "id='visitCardType'")
+                        #formHiddenInput("visitDate" "" "id='visitDate'")
+                        #formHiddenInput("visitTimeFlag" "" "id='visitTimeFlag'")
+                        #formHiddenInput("registerId" "" "id='registerId'")
+                        #formHiddenInput("visitDoctorPost" "" "id='visitDoctorPost'  class='doctorInfo'")
+                        <div class="layui-form-item layui-row">
+                            <div class="layui-col-md12">
+                                <label class="layui-form-label">#requiredTag()挂号类型</label>
+                                <div class="layui-input-block">
+                                    #formRadioGroup("registerType" "$!{CONST.AppConstants.REGISTERTYPE_OUTPATIENT}" ${dicData.dicRegisterType}
+                                        "lay-filter='registerType' lay-verify='reqRedio' check-msg='请选择挂号类型' ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md12">
+                                <label class="layui-form-label" style="width: 230px;">#requiredTag()就诊卡号/医保号/证件号/电子健康卡</label>
+                                <div class="layui-input-block"style="margin-left: 250px;">
+                                    #formTextInput("keyWordEqu" "" "class='layui-input' id='keyWordEqu'
+                                    lay-verify='required' autocomplete='off' style='padding-right: 32px;'") <i
+                                        class="layui-icon layui-icon-search patient-search" title="选择患者"></i>
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">#requiredTag()就诊卡号</label>
+                                <div class="layui-input-block">
+                                    #formTextInput("visitCardNo" "" "class='layui-input' id='visitCardNo'
+                                    lay-verify='required' autocomplete='off' readonly")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">#requiredTag()患者姓名 </label>
+                                <div class="layui-input-block">#formTextInput("patientName" "" "id='patientName' class='layui-input'
+                                    lay-verify='required' readonly disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">医保号 </label>
+                                <div class="layui-input-block">#formTextInput("socialSecurityCard" "" " readonly
+                                    class='layui-input' disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">电子健康卡 </label>
+                                <div class="layui-input-block">#formTextInput("healthCard" "" " readonly
+                                    class='layui-input' disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">身份证号 </label>
+                                <div class="layui-input-block">#formTextInput("patientIdCard" "" " readonly
+                                    class='layui-input' disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">#requiredTag()性别</label>
+                                <div class="layui-input-block">#formTextInput("patientSexName" ""
+                                    "class='layui-input' readonly disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">出生日期 </label>
+                                <div class="layui-input-block">#formTextInput("patientBirth" "" " readonly
+                                    class='layui-input' disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">患者类别</label>
+                                <div class="layui-input-block">#formTextInput("patientClassifyName" ""
+                                    "class='layui-input' readonly disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">性质</label>
+                                <div class="layui-input-block">#formTextInput("patientKindName" ""
+                                    "class='layui-input' readonly disabled")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label ">现居住地</label>
+                            <div class="layui-input-block ">#formTextInput("patientAddr" "" "class='layui-input'
+                                readonly disabled")
+                            </div>
+                        </div>
+                        <div class="layui-form-item m-b-md layui-row">
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">#requiredTag()就诊科室</label>
+                                <div class="layui-input-block">#formTextInput("visitOfficeName" ""
+                                    "class='layui-input officeDepInfo' id='visitOfficeName' readonly
+                                    lay-verify='required' ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <div class="layui-form-label">#formCheckboxeGroup("medicalRecordsFeeFlag" "$!{CONST.AppConstants.YES_FLAG}"
+                                    $!dicData.dicMedicalRecordsFeeName" lay-skin='primary' autocomplete='off'
+                                    lay-filter='medicalRecordsFeeFlag' ")
+                                </div>
+                                <div class="layui-input-block">
+                                    <!--  病历费-->
+                                    #formTextInput("medicalRecordsFeeUnitPrice" "" "class='layui-input'
+                                    id='medicalRecordsFeeUnitPrice' autocomplete='off' placeholder='￥' readonly ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6 regTyep">
+                                <label class="layui-form-label ">#requiredTag()就诊医生</label>
+                                <div class="layui-input-block">#formTextInput("visitDoctorName" "" "class='layui-input
+                                    doctorInfo' id='visitDoctorName' autocomplete='off' readonly ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6 regTyep">
+                                <label class="layui-form-label ">#requiredTag()职称</label>
+                                <div class="layui-input-block">
+                                    #formTextInput("visitDoctorPostName" "" "class='layui-input doctorInfo' id='visitDoctorPostName' autocomplete='off' readonly lay-verify='required'")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">诊查费</label>
+                                <div class="layui-input-block">#formTextInput("registerFee" "" "class='layui-input
+                                    doctorInfo' id='registerFee' autocomplete='off' placeholder='￥'  readonly")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6 emergencyTreatmentFee" style="display: none;">
+                                <label class="layui-form-label">急诊费</label>
+                                <div class="layui-input-block">#formTextInput("emergencyTreatmentFee" ""
+                                    "class='layui-input' id='emergencyTreatmentFee' autocomplete='off'
+                                    placeholder='￥' readonly ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6">
+                                <label class="layui-form-label">应收合计</label>
+                                <div class="layui-input-block">#formTextInput("diagnosisFee" "" "class='layui-input doctorInfo'
+                                    autocomplete='off' id='diagnosisFee' placeholder='￥' readonly disabled")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6" id="actualChargeDiv">
+                                <label class="layui-form-label">#requiredTag()实收金额</label>
+                                <div class="layui-input-block">#formFloInput("actualCharge" "" "class='layui-input doctorInfo'
+                                    autocomplete='off' id='actualCharge' placeholder='￥' lay-verify='required' ")
+                                </div>
+                            </div>
+                            <div class="layui-col-md6" id="changeChargeDiv">
+                                <label class="layui-form-label">找零金额</label>
+                                <div class="layui-input-block">#formTextInput("changeCharge" "" "class='layui-input doctorInfo'
+                                    autocomplete='off' id='changeCharge' placeholder='￥' readonly")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()缴费方式</label>
+                                <div class="layui-input-block">#formRadioGroup("selfPayInWay"
+                                    "$!{CONST.AppConstants.PAY_IN_WAY_CASH}" ${dicData.dicOutPayInWay}
+                                    "lay-filter='selfPayInWay' lay-verify='required' ")
+                                </div>
+                            </div>
+                            <div class="layui-form-item payCode" style="display: none;">
+                                <label class="layui-form-label">付款码</label>
+                                <div class="layui-input-block">
+                                    #formTextInput("authCode" "" "class='layui-input' id='authCode' autocomplete='off'")
+                                    <button class="layui-btn layui-btn-sm" type="button" id="btn_authCode">
+                                        <i class="layui-icon layui-icon-search layuiadmin-button-btn">查询支付状态</i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <div class="wrapp-right">
+            <div class="layui-card m-b-sm ">
+                <div class="layui-card-header">就诊科室</div>
+                <!-- 列表表格 工具栏-->
+                <div class="layui-card-body p-n">
+                    <!--列表 begin-->
+                    <table id="arrangeDutyOfficeList" lay-filter="arrangeDutyOfficeList"></table>
+                </div>
+            </div>
+            <div class="layui-card m-b-n">
+                <div class="layui-card-header">
+                    医生排班
+                    <div class="layui-btn-group layuiadmin-btn-group">
+                        <span id='q_arrangeDutyDate' data-value="yyyy-MM-dd" class="layui-btn layui-badge layui-bg-blue ">工作日期</span>
+                        <span id='q_visitTimeFlag' data-value="上午|下午|晚上" class="layui-btn layui-badge layui-bg-blue ">时段</span>
+                    </div>
+                </div>
+                <div class="layui-card-body p-n">
+                    <!-- 列表表格 工具栏 结束-->
+                    <!--列表 begin-->
+                    <table id="arrangeDutyDoctorList" lay-filter="arrangeDutyDoctorList"></table>
+                </div>
+            </div>
+        </div>
+        <div class="tool-bottom-fixed ">
+            <button type="button" class="layui-btn layui-btn-sm" lay-submit="" id="btn_quotedPrice">报 价</button>
+            <button type="button" class="layui-btn layui-btn-sm" lay-submit="" id="btn_smallChange">找 零</button>
+            <button class="layui-btn layui-btn-sm layui-btn-danger" lay-submit="" id="btn_save" lay-filter="btn_save">挂 号</button>
+            <button type="button" id="btn_refresh" class="layui-btn layui-btn-sm " style="margin-left: 30px" onclick="location.reload()" lay-tips="刷新">
+                <i class="layui-icon layui-icon-refresh"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+    #parse("./common/pageJs.vm") #parse("./outpatient/register/registerEdit.js.vm")
+</body>
+</html>

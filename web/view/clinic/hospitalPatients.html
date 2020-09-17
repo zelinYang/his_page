@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}导诊台设置</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    <link href="../../resource/layuiadmin/layui/css/layui.css"  rel="stylesheet" media="all">
+    <link href="../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+    <link href="../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+    <link href="../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+    <link href="../../resource/layuiadmin/style/style.css" rel="stylesheet" media="all">
+    <script nomodule src="../../../resource/polyfill/polyfill.js"></script>
+    <script src="../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+    <script src="../../resource/hplus/js/validate/form-validator.js"></script>
+    <script src="../../resource/hplus/js/contabs.js?v=12"></script>
+    <script src="../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../resource/hplus/js/common-ui.js?v=1"></script>
+    <script src="../../resource/layuiadmin/layui/layui.js" ></script>
+    <script src="../../resource/layuiadmin/lib/extend/echarts.js"></script>
+
+    <style>
+        .container_page {height: 100%; width: 100%; overflow-y: hidden; -webkit-overflow-scrolling: touch;}
+        .container_page::-webkit-scrollbar{ display: none}
+        .container_page::-webkit-scrollbar-button:vertical{display: none;}
+        .container_page iframe.container_iframe {border: 0; margin: 0; padding: 0; width: 100%; height: 100%;}
+        #app_body { height: calc(100%); margin-left: 40px;}
+		.layui-form-item .layui-input-inline{margin-bottom: 30px;}
+		.layui-card-header2{color: #05a59c;height: 23px;line-height: 23px;}
+		.layui-div-left{margin-left: 13px;}	
+		.layui-input-height{height: 28px;}
+		.layui-input-block-radio{margin-left: 40%;}	
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<form class="layui-form p-b-n">
+			<div class="layui-row-query search-term">
+			  <div class="layui-form-item layui-input-block-radio">
+			  		<div class="layui-inline" style="margin-right: 15px;">统计类型</div>
+		        	<input type="radio"  name="categoryMode" value="1"  title="按科室" lay-filter="beshared" checked="checked"/>
+		        	<input type="radio"  name="categoryMode" value="2"  title="按病种" lay-filter="beshared" />   
+			  </div>
+			</div>
+		</form>
+
+	    <div class="layui-row">
+	        <div class="layui-col-xs12 layui-col-md12">
+	            <div id="chart" style="height:300px;"></div>
+	        </div>
+	
+		    <!--搜索条件 开始-->
+		    <form id="queryForm" class="layui-form p-t-xs p-b-n layui-bg-white">
+		        <div class="layui-form-item">
+		            <div class="layui-inline"><label class="layui-form-label">患者姓名</label></div>
+		            <div class="layui-inline">
+		                <input class="layui-input" name="patientName" id="patientName" autocomplete="off"/>
+		            </div>
+		            <div class="layui-inline text-center">
+		                <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+		                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+		            </div>
+		        </div>
+		    </form>
+	        <div class="layui-col-xs12 layui-col-md12">
+	            <table id="hospitalPatientsGrid" lay-filter="hospitalPatientsGrid"></table>
+	        </div>
+	        
+	    </div>
+
+    </div>
+</div>
+
+</body>
+<script>
+$(document).ready(function() {
+	  loadDicData();
+	  var url = "../../clinic/groupByVisitOfficeIdData.jo"; //根据科室ID分组查询患者数量
+	  var chartData = loadChartData(url);
+	  displayChart(1,chartData);
+});
+
+var dicSysUserMap = {}; //所有用户
+var dicSysOrgNameMap = {}; //所有部门
+
+function loadDicData() {
+	
+    $.ajax({
+        type: "POST",
+        url: "../../sys/selectDicData.jo",
+        data: {dicMapNames: "dicSysUser,dicSysOrgName"},
+        dataType: "json",
+        async: false,//同步
+        success: function (result) {
+            if (result.code == "0") {
+                var data = result.data;
+                dicSysUserMap = data["dicSysUser"];
+                dicSysOrgNameMap = data["dicSysOrgName"]
+            }
+        },
+        error: function (res) {
+            jqueryPostError(res);
+        }
+    });
+}
+
+function loadChartData(url) {
+	
+	var chartData = {};
+    $.ajax({
+        type: "GET",
+        url: url,
+        data: {},
+        dataType: "json",
+        async: false,//同步
+        success: function (result) {
+            if (result.code == "0") {
+            	chartData = result.data;
+            }
+        },
+        error: function (res) {
+        }
+    });
+    return chartData;
+}
+
+function displayChart(categoryMode,chartData) {
+	
+	var xData =[];
+    var seriesData =[];
+    for(var i =0; i < chartData.length; i++ ){
+    	
+    	var data = chartData[i];
+    	if(categoryMode ==1){ //按科室
+    		xData[i]= dicSysOrgNameMap[data[1]] +"病区";
+    	}else if(categoryMode ==2){ //按病种
+    		xData[i]= data[1];
+    	}
+    	seriesData[i]= data[0];
+    } 
+
+    // 初始化图表标签
+    var myChart = echarts.init(document.getElementById('chart'));
+    var options={
+        //定义一个标题
+        title:{
+            //text:'当前在院临床路径患者数情况',
+            //textAlign : 'right'
+        },
+        legend:{
+            data:['当前在院临床路径患者数情况']
+        },
+        //X轴设置
+        xAxis:{
+        	type: 'category',
+            data: xData
+        },
+        yAxis:{
+        	type: 'value'
+        },
+        //name=legend.data的时候才能显示图例
+        series:[{
+            name:'当前在院临床路径患者数情况',
+            type:'bar',
+            data: seriesData
+        }]
+    };
+    myChart.setOption(options);
+}
+
+layui.config({
+    base: '../../resource/layuiadmin/'
+}).extend({
+    index: 'lib/index'
+}).use(['index', 'form', 'table', 'laytpl'], function () {
+	
+    var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl, element = layui.element;
+	var tabId = 'tab1'; //第一个tab页的id
+
+	form.on('radio(beshared)', function (data) {
+	    var categoryMode = data.value; // 1=按科室 2=按病种
+	    var url1 = "../../clinic/groupByVisitOfficeIdData.jo"; //根据科室ID分组查询患者数量
+	    var url2 = "../../clinic/groupByDiseaseIdData.jo"; //根据病种ID分组查询患者数量
+	    var url = categoryMode == 1 ? url1 : url2;
+	    var chartData = loadChartData(url);
+	    displayChart(categoryMode,chartData);
+ 	})
+	
+	//监听Tab切换
+	element.on('tab(guidingTab)', function(){
+	    tabId = this.getAttribute('lay-id');
+	});
+
+    table.render($.extend(basePageTable, {
+        elem: '#hospitalPatientsGrid',
+        height: getTableHight(),
+        url: '../../clinic/clinicPatientPathListData.jo',
+        page: true, //开启分页,
+        where: common.serializeObject($('#queryForm')),
+        cols: [[
+			{
+	            type: 'numbers',
+				title: '序号',
+	            unresize: true
+			},
+            {field: 'patientId', title: '患者ID', align: 'center'},
+			{field: 'num', title: '住院次数', align: 'center',
+	            templet :function (row) {
+            		return "1";
+            	}
+			},
+            {field: 'inhospitalId', title: '患者住院号', align: 'center'},
+            {field: 'v1', title: '床号', align: 'center',
+	            templet :function (row) {
+            		return "1号楼318";
+            	}
+            },
+            {field: 'patientName', title: '患者姓名', align: 'center'},
+            {field: 'patientSex', title: '性别', align: 'center',
+                templet :function (row) {
+                	var sex = row.patientSex;
+                	if(sex == 1){
+                		return "男";
+                	}else if(sex == 2){
+                		return "女";
+                	}else{
+                		return "未知的性别";
+                	}
+            	}	
+            },
+            {field: 'v2', title: '费别', align: 'center',
+                templet :function (row) {
+            		return "自费";
+            	}	
+            },
+            {field: 'inPathTime', title: '入科时间', align: 'center', width: 150,templet : function (row) {return layui.util.toDateString(row.registerTimeBegin, 'yyyy-MM-dd HH:mm');}},
+            {field: 'inDiseaseName', title: '临床路径病种', align: 'center'},
+            {field: 'currentOfficeName', title: '所在科室', align: 'center'},
+            {field: 'groupLeaderId', title: '经治医生', align: 'center',
+	            templet :function (row) {
+	            	var doctorName = dicSysUserMap[row.residentDoctorId];
+	            	if(dicSysUserMap[row.residentDoctorId] == undefined){
+	            		return '';
+	            	}else{
+	            		return doctorName;
+	            	}
+            	}
+            },
+            {field: 'majorDoctorId', title: '上级医生', align: 'center',
+	            templet :function (row) {
+	            	var doctorName = dicSysUserMap[row.residentDoctorId];
+	            	if(dicSysUserMap[row.residentDoctorId] == undefined){
+	            		return '';
+	            	}else{
+	            		return doctorName;
+	            	}
+            	}
+            },
+            {field: 'residentDoctorId', title: '主任医生', align: 'center',
+	            templet :function (row) {
+	            	var doctorName = dicSysUserMap[row.residentDoctorId];
+	            	if(dicSysUserMap[row.residentDoctorId] == undefined){
+	            		return '';
+	            	}else{
+	            		return doctorName;
+	            	}
+            	}
+            },
+            {
+	            title: '操作',
+	            unresize: true,
+	            width: 100,
+	            align: 'center',
+	            fixed: 'right',
+	            toolbar: '<div class="layui-table-cell laytable-cell-1-0-21"><a class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="详情"  lay-event="btn_detail"><i class="layui-icon layui-icon-about"></i></a></div>'
+
+        	}
+   
+        ]]
+    }));
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+        query();
+    });
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('queryForm');
+	    $('#patientName').val('');//cleanForm方法不起作用，重新赋空
+    });
+
+    //查询列表
+    function query() {
+        var queryParams = common.serializeObject($('#queryForm'));
+        if (!queryParams.patientName) {
+            queryParams.patientName = '';
+        }
+        table.reload('hospitalPatientsGrid', {where: queryParams,height: getTableHight() });
+    }
+
+    //操作事件
+    table.on('tool(hospitalPatientsGrid)', function (obj) {
+        var data = obj.data;
+        if (obj.event === 'btn_show') { //详情按钮
+			
+        }
+    });
+
+    
+    $(window).resize(function () {
+		   query();
+    });
+
+    function getTableHight() {
+        return ($('body').height() - 90);
+    }
+
+
+    
+});
+
+
+   
+</script>
+</html>

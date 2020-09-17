@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #set($path = $!contextPath)
+    <style type="text/css">
+        .layout-left {
+            display: inline-block;
+            width: 261px;
+            float: left;
+        }
+
+        .layout-main {
+            width: calc(100% - 266px);
+            float: right;
+        }
+
+        table#inpatientTable {
+            margin: 0px;
+        }
+
+        .inSettNav{ height: calc(100% - 3px);margin-top: 0;}
+    </style>
+</head>
+
+<body class="full-height">
+<div class="layui-fluid layui-content-wrapper">
+    <form class="layui-form layui-bg-white" id="queryForm">
+        <div class="layui-form-item search-term layui-row-query">
+            <div class="layui-inline">
+                <label class="layui-form-label">房间</label>
+                <div class="layui-input-inline">
+                    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" " id='inhospitalId' ")
+                    #formTextInput("inhospitalRoomNo" "" "class='layui-input ' id='q_inhospitalRoomNo' autocomplete='off'  ")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">床号</label>
+                <div class="layui-input-inline">
+                    #formTextInput("currentBedNo" "" "class='layui-input' id='q_currentBedNo' autocomplete='off' ")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">姓名</label>
+                <div class="layui-input-inline">
+                    #formTextInput("patientName" "" "class='layui-input' id='q_patientName' autocomplete='off' " )
+                </div>
+            </div>
+            <div class="layui-inline layui-btn-group m-l-sm">
+                <button type="button" class="layui-btn layui-btn-sm search" id="btn-query"><i class="layui-icon layui-icon-search" style="font-size:20px"></i></button>
+                <button type="button" class="layui-btn layui-btn-sm refresh"><i class="layui-icon layui-icon-refresh-3" style="font-size:20px"></i></button>
+            </div>
+        </div>
+    </form>
+    <div class="main-content " style="height:calc(100% - 45px);">
+        <div class="layout-left full-height layui-bg-white">
+            <table class="layui-table" id="inpatientTable" lay-filter="inpatientTable"></table>
+        </div>
+        <div class="layout-main full-height">
+            <div class="outTab layui-bg-white full-height" id="component-tabs">
+                <div class="layui-tab blod inSettNav" lay-filter="inSettNav" lay-allowclose="">
+                    <!-- 主页导航名称 -->
+                    <ul class="layui-tab-title highlight">
+                        <li lay-id="temperatureEdit"  class="layui-this">体征数据录入</li>
+                        <li lay-id="temperatureShow" >体征数据查看</li>
+                    </ul>
+                    <!-- 导航内容 根据index对应li -->
+                    #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+                    #set($layclass = 'class="layui-tab-item full-height"')
+                    <div class="layui-tab-content" style="height: calc(100% - 45px);">
+                        <div lay-id="temperatureEdit" class="layui-tab-item layui-show full-height">
+                            <iframe $attr ></iframe>
+                        </div>
+                        <div lay-id="temperatureShow" $layclass><iframe $attr></iframe></div>
+                    </div>
+                </div>
+            </div>
+##            <iframe src="../inpatient/temperatureShow.do?inhospitalId=$!{inpatientInhospital.inhospitalId}"
+##                    class="J_iframe" id="temperatureshowIframe" name="iframe0" height="100%" width="100%"
+##                    frameborder="0" data-id="" seamless></iframe>
+        </div>
+
+    </div>
+</div>
+<!-- 全局js -->
+    #parse("./inpatient/temperature/temperatureEntry.js.vm")
+</body>
+</html>

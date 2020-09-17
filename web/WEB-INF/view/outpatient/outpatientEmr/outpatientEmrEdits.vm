@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>门诊病历</title>
+	#parse("./common/pageCss.vm")
+	#parse("./common/visualizationCss.vm")
+	#parse("./common/pageJs.vm")
+	#parse("./common/visualizationJs.vm") 
+	<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+<body>
+	<div id="container"  >
+	 <form id="reportForm" class="layui-form full-height">
+		<div class="layui-form ui-layout-center" style="text-align: center; ">
+      		<div class="layui-tab-card blod layui-content-wrapper full-scroll m-n text-center" style="height: calc(100% - 32px)">
+        		#formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+       		 	#formHiddenInput("registerId" "$!{emrQueryInfo.registerId}" "id='registerId'")
+        		#formHiddenInput("patientId" "$!{emrQueryInfo.patientId}" "id='patientId'")
+        		#formHiddenInput("outpatientId" "$!{emrQueryInfo.outpatientId}" "id='outpatientId'")
+        		#formHiddenInput("patientHospitalEmrId" "$!{emrQueryInfo.patientHospitalEmrId}" "id='patientHospitalEmrId'")
+        		
+        		#formHiddenInput("firstDiagnosis" "$!{outpatient.firstDiagnosis}" "id='firstDiagnosis'")
+        		#formHiddenInput("allergyDisease" "$!{outpatient.allergyDisease}" "id='allergyDisease'")
+        		#formHiddenInput("returnVisitFlag" "$!{outpatient.returnVisitFlag}" "id='returnVisitFlag'")
+        		#formHiddenInput("visitOfficeName" "$!{emrData.Register.visitOfficeName}" "id='visitOfficeName'")
+        		#formHiddenInput("patientHospitalEmrId" "$!{patientHospitalEmr.patientHospitalEmrId}" "id='patientHospitalEmrId'")
+	        	<div class="p-r-n p-l-n" id="designContainer" style="display: inline-block;height: calc(100% - 40px);">
+	        		$!emrTlp.emrTlpContent
+	        	</div>
+      	   </div>
+      	  </div>
+        <div class="ui-layout-south layui-hide" >
+          	<div class="content full-height" style="height: calc(100% - 5px);">
+             <!-- 导航切换 -->
+             	<div class="layui-tab layui-tab-card blod full-height outReportTabs" lay-filter="outReportTabs" style="height: calc(100% - 48px);" >
+               	<!-- 导航 名称 -->
+               		<ul class="layui-tab-title"  >
+                 		<li lay-id="examine" class="layui-this">导入检查报告</li>
+                 		<li lay-id="inspect" >导入检验报告</li> 
+               		</ul>
+               
+               		<!-- 导航内容 -->
+               		<div class="layui-tab-content" style="height: calc(100% - 36px);padding: 0px;">
+                   		#set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+                   		<div class="layui-tab-item examine full-height layui-show" style="padding: 0px;">
+                       		<iframe targetSrc="../outpatient/outpatientImportExamine.do" class="resizeiframe" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+                   		</div>
+                   		<div class="layui-tab-item inspect full-height" style="padding: 0px;">
+                       		<iframe targetSrc="../outpatient/outpatientImportInspect.do" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+                   		</div>
+               		</div>
+             	</div>
+          	</div> 
+     	</div>
+   		</form>
+    </div>
+
+##   <div class="tool-bottom-fixed btn_gorup" style="margin-bottom: -3px">
+##        <button class="layui-btn layui-btn-sm" id="btn_refresh" type="button" onclick="refreshFrame();">关闭</button>
+##    </div>
+</body>
+#parse("./outpatient/outpatientEmr/outpatientEmrEdit.js.vm")
+</html>

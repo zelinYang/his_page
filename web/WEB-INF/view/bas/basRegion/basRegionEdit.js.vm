@@ -1,0 +1,108 @@
+<script>
+
+    //第1～2位，为省级代码
+    var REGION_LEVEL_PROVINCIAL = "$!{CONST.AppConstants.REGION_LEVEL_PROVINCIAL}";
+    //第10～12位，为村级代码
+    var REGION_LEVEL_VILLAGE = "$!{CONST.AppConstants.REGION_LEVEL_VILLAGE}";
+    //行政区域级别长度
+    var dicRegionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegionLevel)');
+
+    /**
+     *  根据id 获取父级id 行政区域
+     */
+    function getParentRegionId(regionId) {
+        var parentRegionId = '';
+        $.each(dicRegionLevel, function (key, value) {
+            if (value == regionId.length) {
+                var parentLevel = dicRegionLevel[key - 1];
+                parentRegionId = regionId.substr(0, parentLevel || '');
+                return;
+            }
+        })
+        return parentRegionId;
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form'], function () {
+        var $ = layui.$
+            , form = layui.form
+        common.verify(form);
+        //打开选择行政区域页面
+        $("#parentRegionName,.choose").click(function () {
+            common.open('$contextPath' + '/basRegion/basRegionSelectTree.do', '选择行政区域', {
+                area: ['70%', '90%']
+            })
+        })
+        //选择行政区域页面回调函数
+        window.selectParentRegionCallBack = function (node) {
+            $("#parendRegionId").val(node ? node.regionId || "" : "");
+            $("#parentRegionName").val(node ? node.regionName || "" : "")
+            $("#regionId").val(node ? node.regionId || "" : "").change();
+        }
+
+        $("#regionId").on('input propertychange change', function () {
+            var regionId = $(this).val();
+            //等级关联省级、地级、县级、乡级、村级
+            var regionLevelRle = {
+                1: 'provincial',
+                2: 'prefecture',
+                3: 'county',
+                4: 'township',
+                5: 'village',
+            };
+
+            $.each(dicRegionLevel, function (level, length) {
+                var code = regionId.substring(dicRegionLevel[level - 1] || 0, dicRegionLevel[level] || '');
+                $('#' + regionLevelRle[level] + '_code').text(code);
+                if (regionId.length >= length) {
+                    common.requestServer(contextPath + '/basRegion/findBasRegion.jo', {'regionIdEqu': regionId.substr(0, dicRegionLevel[level])}, function (result) {
+                        $('#' + regionLevelRle[level] + '_name').text(result.code == "0" ? result.data.regionName : "");
+                    });
+                } else {
+                    $('#' + regionLevelRle[level] + '_name').text('');
+                }
+            })
+        }).change().on('keyup', function () {
+            var that = this;
+            var parendRegionId = $("#parendRegionId").val();
+            var regionId = $(that).val();
+            //如果不是以parendRegionId开头的，就把文本框内的值设为parendRegionId
+            if (regionId.indexOf(parendRegionId) != 0) {
+                $(that).val(parendRegionId).change();
+                common.msg("请选择上级行政区域", 0);
+            }
+        });
+
+        //提交表单
+        function saveBasRegion() {
+            var basRegionParams = common.serializeObject($('#basRegionForm'));
+            console.log(basRegionParams)
+            if ($("#parendRegionId").val() == basRegionParams.regionId) {
+                common.msg("不能输入上级行政区域标识", 0);
+                return;
+            }
+            //行政区域标识
+            common.requestServer(contextPath + '/basRegion/saveBasRegion.jo', basRegionParams, function (result) {
+                if (result.code == "0") {
+                    common.msg("保存成功。", 1, function () {
+                        $('#btn_query', window.parent.document).click();
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                        parent.refreshRootNode(); //刷新
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasRegion();
+            return false;
+        });
+    })
+</script>

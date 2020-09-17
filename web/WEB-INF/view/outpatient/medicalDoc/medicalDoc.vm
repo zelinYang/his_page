@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>医疗文书列表</title> 
+    #parse("./common/pageCss.vm") 
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+    .medicalDoc .layui-layer.layui-layer-iframe{ border: none !important; }
+    .medicalDoc .content{height: calc(100% - 30px); width: 100%;}
+    </style>
+</head>
+
+<body class="white-bg medicalDoc">
+    <div class="main full-height">
+         <!-- 查询表单 -->
+         <form id="emr_queryForm"> 
+            #if(!$patientId) #set($patientId = '-1') #end
+            #formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+            #formHiddenInput("registerId" "$!registerId" " id='registerId' ")
+         </form>
+         <!--列表 begin--> 
+         <div class="content">
+            <table id="patientEmrTable" lay-filter="patientEmrTable"></table>
+         </div>
+    </div>
+    
+     <!-- 底部按钮栏  -->
+     <div class="tool-bottom-fixed btn_gorup">
+         <button id="btn_save" class="layui-btn layui-btn-sm" type="button">&nbsp;&nbsp;打&nbsp;印&nbsp;&nbsp;</button>
+         <button id="btn_edit"  class="layui-btn layui-btn-sm" type="button" >修改</button>
+         <button id="btn_history" class="layui-btn layui-btn-sm" type="button" >删除</button>
+     </div>
+<script>
+var outMainWin = parent; //门诊医生主窗口页面对象 
+var editMedicineDoc;
+layui.use([ 'table', 'form', 'layer', 'util' ],function() {
+    var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, util = layui.util;
+    //表列表
+    table.render({
+       elem : '#patientEmrTable',
+       url : '$contextPath/outpatient/patientHospitalEmrListData.jo',
+       height : 'full-40',
+       where: common.serializeObject($('#emr_queryForm')),
+       cols : [ [
+           {type:'radio',width: 60},
+           {field : 'createTime', title : '填写时间',
+               templet :function (row) {
+				   return row.createTime ? util.toDateString(row.createTime,'yyyy-MM-dd HH:mm:ss') : '';
+           }
+           },
+           {field : 'patientName', title : '患者姓名', templet :function (row) {return outMainWin.curPatient.patientName; } },
+           {field : 'emrTlpName',title : '医疗文书名称'},
+           {field : 'diagnosisDoctorName',title : '填写人'} 
+       ] ],
+       done : function() { $('table > thead > tr > th:eq(0) > div').html('请选择') }
+    });
+   
+    //监听行单击事件
+    table.on('row(patientEmrTable)', function(obj){
+        var pEmrRow = obj.data;
+        patientEmrShow(pEmrRow);
+    });
+    
+    function patientEmrShow(pEmrRow) {
+        var param ={
+             view: 'patient/emr/commonEmrShow'
+            ,showBtn: '0'
+            ,registerId: pEmrRow.registerId
+            ,emrTlpId: pEmrRow.emrTlpId
+            ,patientHospitalEmrId: pEmrRow.patientHospitalEmrId
+            ,patientId: pEmrRow.patientId
+        }
+        var url = '$contextPath/emr/commonEmrTemplate.do'+common.objToParamStr(param);
+        parent.tabAddOutNav('medicalDocEmrEdit'+ pEmrRow.emrTlpId,pEmrRow.emrTlpName+'(文书)',url);
+    }
+    // 编辑电子病历
+    function toEditMedicineDoc() {
+        var checkRows = table.checkStatus('patientEmrTable'); //test即为基础参数id对应的值
+        if (!checkRows.data.length) {
+            common.msg('请选择需要修改的记录', 0);
+            return false;
+        }
+        var emrTlpId = checkRows.data[0].businessKeyId;
+        var businessKeyId = checkRows.data[0].businessKeyId;
+    }
+   
+    //页面初始化
+    $(document).ready(function() {
+        $('#btn_edit').click(function() {
+            toEditMedicineDoc();
+        });
+    });
+});
+</script>
+</body>
+</html>

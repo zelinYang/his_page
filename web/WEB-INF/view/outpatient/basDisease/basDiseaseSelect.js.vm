@@ -1,0 +1,64 @@
+<script>
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var query;
+    layui.use(['jquery', 'table', 'laypage', 'element', 'form'], function () {
+        var table = layui.table;
+        var element = layui.element;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var $ = layui.$;
+
+        element.render();
+        //第一个实例
+        var tableIns = table.render($.extend(basePageTable, {
+            elem: '#basDiseaseTable'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            ,height: '368'//高度
+            ,where:common.serializeObject($('#basDisease_queryForm'))
+            , url: '../basDisease/basDiseaseListData.jo' //数据接口
+            , cols: [[ //表头
+                //{type:'checkbox'}
+                {width: 60, align: 'center', fixed: 'left', toolbar: '#colstoolbar', event: 'selete'}
+                ,
+                {
+                    field: 'diseaseTypeFlag',
+                    title: '西医/中医',
+                    templet: function (d) {
+                        return dicDiseaseTypeFlag[d.diseaseTypeFlag] || ''
+                    },
+                    width: 100
+                }
+                , {field: 'diseaseIcdTcd', title: 'ICD/TCD'}
+
+                , {field: 'diseaseName', title: '诊断名称'}
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+                $('.layui-table-cell').css('text-align', 'left');
+            }
+        }));
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+
+        //查询列表
+        query = function () {
+            var queryParams = common.serializeObject($('#basDisease_queryForm'));
+            tableIns.reload({where: queryParams});
+        }
+
+
+        //监听行单击事件
+        table.on('row(basDiseaseTable)', function (obj) {
+            var row = obj.data;
+            parent.basDiseaseRowSelect(row);
+        });
+
+    });//layui.use
+</script>

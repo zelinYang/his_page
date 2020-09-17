@@ -1,0 +1,96 @@
+
+<script>
+    var BILL_TYPE_OUTPATIENT = "$!{CONST.AppConstants.BILL_TYPE_OUTPATIENT}";
+    var USAGE_MODE_USAGEMODE = "$!{CONST.AppConstants.USAGE_MODE_USAGEMODE}";
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        index : 'lib/index'
+    }).use([ 'index', 'form' ], function() {
+        var $ = layui.$, form = layui.form;
+
+        common.verify(form);
+        //自定义验证规则
+        form.verify({
+            startNum : function(value) {
+                if ('' != $("#currentNum").val() && value.length != $("#currentNum").val().length) {
+                    return '票据号长度必须相等，请修改！';
+                } else if (parseInt(value) > parseInt($("#currentNum").val())) {
+                    return '起始票据号不能大于当前票据号，请修改！';
+                }
+            },
+            endNum : function(value) {
+                if (('' != $("#currentNum").val() && value.length != $("#currentNum").val().length) || (value.length != $("#startNum").val().length)) {
+                    return '票据号长度必须相等，请修改！';
+                } else if (parseInt(value) < parseInt($("#currentNum").val())) {
+                    return '结束票据号不能小于当前票据号，请修改！';
+                }
+            }
+        });
+        //选择门诊住院修改
+        var billTypeChage = function(data) {
+            $('[lay-templateid="usageModelTpl"]').remove();
+            if (data.value && (BILL_TYPE_OUTPATIENT != data.value)) {
+                //住院
+                $("#usageModelTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            }
+            form.render();
+        }
+        billTypeChage({value: $(':radio[name="billType"]:checked').val()});
+        //票据类型
+        form.on('radio(billType)', billTypeChage);
+
+        //监听票据数变化
+        $(".billNum").on("input propertychange", function() {
+            var currentNum = $("#currentNum").val();//当前票据号
+            var endNum = $("#endNum").val();//结束票据号
+            var billNum = parseInt(endNum) - parseInt($("#startNum").val());
+            var billUseNum = parseInt(currentNum) - parseInt($("#startNum").val());
+            if (endNum && !isNaN(billNum)) {
+                //票据张数=结束票据号-开始号码
+                $("#billNum").val(billNum);
+            }
+            if (currentNum) {
+                //使用票据数=当前票据号-开始号码
+                $("#billUseNum").val(billUseNum);
+            }
+        }).trigger('input');
+
+        // 获取坐标回调函数
+        function selectMapCoordinateBack(lng, lat) {
+            //$('#longitude').val(lng);
+            //$('#latitude').val(lat);
+        }
+
+        //提交表单
+        function saveBillCancel() {
+            var billRecipientParams = common.serializeObject($('#billRecipientForm'));
+            if(billRecipientParams.billType == BILL_TYPE_OUTPATIENT){
+                billRecipientParams.usageMode = USAGE_MODE_USAGEMODE;
+            }
+            common.openLoad();
+            common.requestServerHandler(contextPath + '/billRecipient/saveBillRecipient.jo', billRecipientParams,"保存成功。", function(result) {
+                $('#btn_query', window.parent.document).click();
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function(data) {
+            if ($("#billRecipientId").val()) {
+                //编辑
+                saveBillCancel();
+            } else {
+                var msg = '注意:保存后只能修改"当前票据号”,其余各项信息将不能再修改,请仔细核对后再保存!'
+                common.confirm(msg, function() {
+                    saveBillCancel();
+                });
+            }
+            return false;
+        });
+    })
+</script>

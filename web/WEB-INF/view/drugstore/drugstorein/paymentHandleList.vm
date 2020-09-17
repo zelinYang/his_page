@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row layui-col-space15">
+        <!-- 供货单位 -->
+        <div class="layui-col-md5 layui-col-xs5">
+            <form id="queryForm" class="layui-form">
+                <div class="layui-row-query layui-form-item search-term">
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="width: auto">供货单位</label>
+                        <div class="layui-input-inline wd-120">
+                            #formTextInput("medicineVendorName" "" "id='querymedicineVendorName' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button class="layui-btn layui-btn-sm" id="btn_query" type="button"><i
+                                class="layui-icon layui-icon-search "></i></button>
+                        <button class="layui-btn layui-btn-sm" type="button" id="btn_freshen"><i
+                                class="layui-icon layui-icon-refresh"></i></button>
+                    </div>
+                </div>
+            </form>
+            <div>
+                <table id="totalList" lay-filter="totalList"></table>
+            </div>
+        </div>
+        <!-- 相关供货单位的所有供货单 -->
+        <div class="layui-col-md7 layui-col-xs7">
+            <form id="queryFormItem" class="layui-form">
+                <div class="layui-row-query layui-form-item search-term">
+                    #formHiddenInput("medicineVendorId" "" "id='medicineVendorId'")
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="width: auto">购入方式</label>
+                        <div class="layui-input-inline wd-120">
+                            #formSingleSelectFirstNone("billFlag" "" $!dicData.dicBillFlag
+                                " id='billFlag' class='layui-input' autocomplete='off' "  "购入方式")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="width: auto">付款状态</label>
+                        <div class="layui-input-inline wd-120">
+                            <select id="dealWithFlag" name="dealWithFlag">
+                                <option value="">请选择付款状态</option>
+                                <option value="0">未付款</option>
+                                <option value="1">已付款</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layui-btn-sm" id="btn_query_item" type="button"><i class="layui-icon layui-icon-search "></i></button>
+##                        <button type="button" id="add" class="layui-btn layui-btn-sm"><span>付 款</span></button>
+##                        <button type="button" id="interfaceAdd" class="layui-btn layui-btn-sm"><span>已付款查询</span></button>
+##                        <button type="button" id="delete_" class="layui-btn layui-btn-sm"><span>未付款查询</span></button>
+##                        <button type="button" id="confirm" class="layui-btn layui-btn-sm"><span>货到票未到</span></button>
+##                        <button type="button" id="fresh" class="layui-btn layui-btn-sm"><span>打印汇总表</span></button>
+##                        <button type="button" id="print" class="layui-btn layui-btn-sm"><span>打印明细表</span></button>
+                    </div>
+                </div>
+            </form>
+            <div class="layui-hide" id="itemListDiv">
+                <table id="itemList" lay-filter="itemList"></table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script>
+    var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');
+    var dicBillFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillFlag)');
+    layui.use(['table', 'form', 'element'], function () {
+        var table = layui.table, form = layui.form, element = layui.element;
+        laydate.render({
+            elem: '#recordDate',trigger: 'click', range: true, done: function (value, date, endDate) {
+                var item = value.split(' - ');
+                $('#recordDateEnd').val(item[1]);
+                $('#recordDateBegin').val(item[0]);
+            }
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 10)
+        };
+
+        function getTableHgt1() {
+            return ($('body').height() - $('#queryFormItem').height() - 10)
+        };
+        // 重置表格高度
+        $(window).resize(function () {
+            var T_height = getTableHgt(), I_height = getTableHgt1();
+            table.reload('totalList', {
+                height: T_height
+            });
+            table.reload('itemList', {
+                height: I_height
+            });
+        });
+        // 汇总付款处理列表
+        var totalUrl = contextPath + '/drugstore/paymentHandleJsonList.jo';
+        var totalList = table.render($.extend(basePageTable, {
+            url: totalUrl,
+            id: 'totalList',
+            elem: '#totalList',
+            height: getTableHgt(),
+            totalRow: true,
+            where: {},
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                common.removeHeadCheckbox('recipeId');
+            },
+            cols: [[
+                {type: 'radio', fixed: 'left'},
+                {
+                    field: 'medicineVendorName'
+                    , title: '供货单位'
+                    , templet: function (row) {
+                        return row.medicineVendor.medicineVendorName;
+                    }
+                    , minWidth: 120
+                    , fixed: 'left'
+                }, {
+                    field: 'buyTotalSum',
+                    title: '进价总额'
+                    , totalRow: true
+                    , minWidth: 80
+                }, {
+                    field: 'tradeSum',
+                    title: '批发总额'
+                    , totalRow: true
+                    , minWidth: 80
+                }, {
+                    field: 'retailSum',
+                    title: '零售总额'
+                    , totalRow: true
+                    , minWidth: 80
+                }, {
+                    field: 'salesBalance',
+                    title: '进销差额'
+                    , minWidth: 80
+                    , totalRow: true
+                }, {
+                    field: 'dicountRatio',
+                    title: '扣率(%)'
+                    , minWidth: 80
+                    , templet: function (row) {
+                        return "100%";
+                    }
+                }
+            ]]
+            , done: function (res, curr, count) {
+            }//回调函数
+        }));
+
+        //点击条件搜索
+        $('#btn_query').click(function () {
+            var queryParams = common.serializeObject($('#queryForm'));
+            totalList.reload({where: queryParams});
+        });
+        //点击刷新
+        $('#btn_freshen').click(function () {
+            totalList.reload({where: null});
+        });
+
+        //点击条件搜索
+        $('#btn_query_item').click(function () {
+            var queryParams = common.serializeObject($('#queryFormItem'));
+            queryItem(queryParams);
+        });
+
+        //监听行单击事件
+        table.on('row(totalList)', function (obj) {
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+            obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+            var index = obj.tr.data('index')
+            var thisData = table.cache.totalList;//tableName 表名
+            //重置数据单选属性
+            layui.each(thisData, function (i, item) {
+                if (index === i) {
+                    item.LAY_CHECKED = true;
+                } else {
+                    delete item.LAY_CHECKED;
+                }
+            });
+            form.render('radio');
+            $('#itemListDiv').removeClass('layui-hide');
+            $('#medicineVendorId').val(obj.data.medicineVendor.medicineVendorId);
+
+            queryItem({medicineVendorId: obj.data.medicineVendor.medicineVendorId});
+        });
+
+        function queryItem(data) {
+            // 付款处理明细列表
+            var itemList = table.render($.extend(basePageTable, {
+                url: '../drugstore/getDrugstoreInByMedicineVendorIdMap.jo',
+                id: 'itemList',
+                elem: '#itemList',
+                height: getTableHgt1(),
+                where: data,
+                done: function (res, curr, count) {
+                    // 去掉表格头部的全选及取消全选功能
+                    common.removeHeadCheckbox('recipeId');
+                },
+                cols: [[
+                    {
+                        field: 'drugstoreInWay',
+                        title: '入库方式',
+                        templet: function (row) {
+                            if (null != row.drugstoreInWay) return dicDrugstoreInWay[row.drugstoreInWay];
+                            return "";
+                        }
+                        , minWidth: 80
+                    }, {
+                        field: 'medicineVendorName',
+                        title: '供货单位',
+                        templet: function (row) {
+                            if (null != row.medicineVendorName) return row.medicineVendorName;
+                            return "";
+                        },
+                        minWidth: 150
+                    }, {
+                        field: 'billFlag',
+                        title: '购入方式',
+                        templet: function (row) {
+                            if (null != row.billFlag) return dicBillFlag[row.billFlag];
+                            return "";
+                        },
+                        minWidth: 150
+                    }, {
+                        field: 'dealWithFlag',
+                        title: '付款状态',
+                        templet: function (row) {
+                            var dealMap = {
+                                '0': '未付款',
+                                '1': '已付款'
+                            }
+                            if (null != row.dealWithFlag) return dealMap[row.dealWithFlag];
+                            return "";
+                        },
+                        minWidth: 150
+                    }, {
+                        field: 'receiptBillNo',
+                        title: '验收单号',
+                        templet: function (row) {
+                            if (null != row.receiptBillNo) return row.receiptBillNo;
+                            return "";
+                        },
+                        minWidth: 100
+                    }, {
+                        field: 'buyTotalSum',
+                        title: '进价总额',
+                        totalRow: true
+                        , minWidth: 80
+                    }, {
+                        field: 'tradeSum',
+                        title: '批发总额',
+                        totalRow: true
+                        , minWidth: 80
+                    }, {
+                        field: 'retailSum',
+                        title: '零售总额',
+                        totalRow: true
+                        , minWidth: 80
+                    }, {
+                        field: 'salesBalance',
+                        title: '进销差额'
+                        , totalRow: true
+                        , minWidth: 80
+                    }, {
+                        field: 'dicountRatio',
+                        title: '扣率(%)'
+                        , minWidth: 80
+                        , templet: function (row) {
+                            return "100%";
+                        },
+                    }
+                ]]
+            }));
+
+            table.on('row(itemList)', function (obj) {
+                obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                var url = '$contextPath/drugstore/getDrugstoreInItemList.do?drugstoreInId=' + obj.data.drugstoreInId;
+                common.open(url, '入库单明细', {
+                    area: ['90%', '90%']
+                });
+            });
+        }
+
+        // 页面按钮操作配置 操作类型（type）1：直接请求链接； 2： 提示请求链接；  3：打开窗口; 4：回调函数
+        var buttonConfig = {
+            fresh: {type: '4', method: ""},
+            query: {type: '4', method: ""},
+            clean: {type: '4', params: 'queryForm', method: common.cleanForm},
+            delete_: {url: contextPath + '/drugstore/deleteDrugstoreIn.jo', type: '2', rmsg: '已删除', amsg: '确定要删除吗？'},
+            confirm: {url: contextPath + '/drugstore/confirmDrugstoreIn.jo', type: '2', rmsg: '已确认', amsg: '确定要确认提交吗？'},
+            add: {
+                url: contextPath + '/drugstore/drugstoreInEdit.do',
+                title: '新增入库单',
+                type: '3',
+                width: '95%',
+                height: '95%'
+            }
+        }
+    });
+</script>
+</html>

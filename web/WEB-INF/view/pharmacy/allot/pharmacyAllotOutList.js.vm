@@ -1,0 +1,168 @@
+<script>
+	var allotOutFlag = {
+		'0': '未出库',
+		'1': '已出库'
+	}
+
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'jquery','table', 'element', 'form', 'util'], function(){
+		var table = layui.table, element = layui.element, $ = layui.$, form = layui.form, util = layui.util;
+		element.render();
+
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 430//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onresize_end: refreshTable
+			});
+		}
+
+		//页面初始化
+		$(function() {
+			initLayout();
+			generateAimPharmacySelect();
+		});
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'));
+			return $.extend({
+				validFlag: '',
+				submitFlag: '',
+				applyPharmacyId: '',
+				allotOutHospitalId: '',
+				allotOutPharmacyId: ''
+			}, queryForm);
+		}
+		//组套tabel
+		var mainTable = table.render({
+			elem: '#mainTable'
+			,defaultToolbar: []
+			,url: '../pharmacy/pharmacyAllotAndMedicineListData.jo' //数据接口
+			,page: true //开启分页
+			,where: getQueryParams()
+			,height: getTableHeight()//高度
+			,request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			,cols: [[ //表头
+				{type : 'radio' }
+				,{
+					field: 'pharmacyAllotId',
+					title: '申请单号',
+					width: 100
+				}, {
+					field: 'allotOutFlag',
+					title: '状态',
+					width: 80,
+					templet: function (res) {
+						if (res.allotOutFlag) {
+							return allotOutFlag[res.allotOutFlag]
+						}
+
+					}
+				}, {
+					field: 'applyDate',
+					title: '申请日期',
+					width: 100,
+					templet: function (res) {
+						return layui.util.toDateString(res.applyDate, 'yyyy-MM-dd');
+					}
+				}, {
+					field: 'medicineCount',
+					title: '药品数',
+					width: 60
+				}, {
+					field: 'priceSum',
+					title: '药品金额',
+					width: 100
+				}
+			]], done:function () {
+
+			}
+		});
+
+		//监听行单击事件
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var row = obj.data;
+			var src = '$contextPath/pharmacy/pharmacyAllotOutEdit.do?pharmacyAllotId=' + obj.data.pharmacyAllotId;
+			$('#itemEdit').attr('src',src);
+		});
+
+		function getTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		form.on('select(applyPharmacyId)', function (data) {
+			var aimPharmacyId = $('#allotOutPharmacyId').val();
+			generateAimPharmacySelect();
+			$('#btn_query').click();
+		});
+
+		form.on('select(allotOutHospitalId)', function (data) {
+			generateAimPharmacySelect();
+			$('#btn_query').click();
+		});
+
+		form.on('select(allotOutPharmacyId)', function (data) {
+			$('#btn_query').click();
+		});
+
+		function generateAimPharmacySelect() {
+			var applyPharmacyId = $('#applyPharmacyId').val();
+			var hospitalId = $('#allotOutHospitalId').val();
+			var html = [];
+			common.requestServer(contextPath + '/pharmacy/pharmacyListData.jo', {hospitalId: hospitalId}, function (result) {
+				if (result.code == 0){
+					html.push('<option value="">请选择</option>');
+					$.each(result.data, function (index, pharmacy) {
+						if (applyPharmacyId == pharmacy.pharmacyId) {
+							return;
+						}
+						html.push('<option value="' + pharmacy.pharmacyId + '">' + pharmacy.pharmacyName + '</option>');
+					});
+					$('#allotOutPharmacyId').html(html.join(''));
+					form.render('select');
+				}
+			});
+		}
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		function refreshTable() {
+			table.reload('mainTable',{
+				where: getQueryParams()
+			})
+		}
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+	});
+</script>

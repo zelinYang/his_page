@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-门诊医生-治疗申请-治疗科室</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form class="layui-form" lay-filter="arrangeDutyOfficeForm" id="arrangeDutyOfficeForm">
+            <table id="arrangeDutyOfficeListGrid" class="layui-table-tabs"
+                   lay-filter="arrangeDutyOfficeListGrid" lay-verify='arrangeDutyOffice'></table>
+            <div class="tool-bottom-fixed ">
+                <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                        class="layui-btn layui-btn-sm">保 存
+                </button>
+                <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 本页面js -->
+##parse("./outpatient/arrangeDutyOffice/arrangeDutyOfficeAdd.js.vm")
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'tableSelect', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, tableSelect = layui.tableSelect, laytpl = layui.laytpl;
+        common.verify(form);
+
+        //科室设置表列表
+        table.render($.extend(basePageTable, {
+            elem: '#arrangeDutyOfficeListGrid',
+            url: contextPath + '/outpatient/treatOfficesPageData.jo',
+            data: [],
+            page: false,
+            height: 'full-50',
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_arrangeDutyOffice" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="选择"><i class="layui-icon layui-icon-more"></i></button>'
+                },
+                {
+                    field: 'arrangeDutyOfficeName',
+                    title: '治疗科室',
+                    minWidth: 200
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+                //添加科室
+                renderAdd();
+            }
+        }));
+
+        //添加科室按钮
+        function renderAdd() {
+            tableSelect.render({
+                elem: '#btn_add_arrangeDutyOffice',	//定义输入框input对象 必填
+                checkedKey: 'orgId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '科室名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: contextPath + '/org/sysOrgListData.jo',
+                    cols: [[{type: 'checkbox'},
+                        {
+                            field: 'name',
+                            title: '科室名称'
+                        }]]
+                }),
+                done: function (elem, result) {
+                    var arrangeDutyOfficeIdsStr = $.grep($.map(result.data, function (item) {
+                        return item.orgId
+                    }).concat($.map(table.cache['arrangeDutyOfficeListGrid'], function (item) {
+                        if (item.arrangeDutyOfficeId) return item.arrangeDutyOfficeId;
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).toString();
+                    table.reload('arrangeDutyOfficeListGrid', {
+                        url: arrangeDutyOfficeIdsStr ? contextPath + '/outpatient/treatOfficesPageData.jo?arrangeDutyOfficeIds=' + arrangeDutyOfficeIdsStr : '',
+                        parseData: function (res) { //res 即为原始返回的数据
+                            //新增的数据
+                            $.each(result.data, function (i, item) {
+                                var arrangeDutyOffice = res.data.find(function (x) {
+                                    return x.arrangeDutyOfficeId == item.orgId;
+                                });
+                                if (!arrangeDutyOffice) {
+                                    res.data.push({
+                                        arrangeDutyOfficeId: item.orgId,
+                                        arrangeDutyOfficeName: item.name,
+                                        emergencyRegisterFlag: YES_FLAG,
+                                        appointOnlineFlag: YES_FLAG,
+                                        validFlag: YES_FLAG
+                                    });
+                                }
+                            });
+                            //修改的数据
+                            $.each(res.data, function (i, item) {
+                                var arrangeDutyOffice = table.cache['arrangeDutyOfficeListGrid'].find(function (x) {
+                                    return x.arrangeDutyOfficeId == item.arrangeDutyOfficeId;
+                                });
+                                if (arrangeDutyOffice) {
+                                    res.data[i] = arrangeDutyOffice;
+                                }
+                            });
+                            return res;
+                        }
+                    });
+                }
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(arrangeDutyOfficeListGrid)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'emergencyRegisterFlag':
+                    obj.update({
+                        'emergencyRegisterFlag': $(obj.tr).find(':radio[lay-filter="emergencyRegisterFlag"]:checked').val()
+                    });
+                    break;
+                case 'appointOnlineFlag':
+                    obj.update({
+                        'appointOnlineFlag': $(obj.tr).find(':radio[lay-filter="appointOnlineFlag"]:checked').val()
+                    });
+                    break;
+                case 'btn_delete':
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../outpatient/delArrangeDutyOffice.jo', {
+                            ids: data.arrangeDutyOfficeId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+        //提交表单
+        function saveArrangeDutyOffice() {
+            var arrangeDutyOfficeParams = common.serializeObject($('#arrangeDutyOfficeForm'));
+            var arrangeDutyOfficeEditInfoList = $.map(table.cache['arrangeDutyOfficeListGrid'], function (item) {
+                return $.extend(item, arrangeDutyOfficeParams);
+            });
+            arrangeDutyOfficeParams.arrangeDutyOfficeEditInfoList = arrangeDutyOfficeEditInfoList;
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/outpatient/saveTreatOffices.jo', JSON.stringify(arrangeDutyOfficeParams), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('arrangeDutyOfficeListGrid', {
+                            url: contextPath + '/outpatient/treatOfficesPageData.jo'
+                        });
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveArrangeDutyOffice()
+            return false
+        })
+
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            $('#btn_query', window.parent.document).click();
+        })
+    })
+</script>
+</body>
+</html>

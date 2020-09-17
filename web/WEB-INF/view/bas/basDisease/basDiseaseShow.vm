@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-病种-病种管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .input2{
+            width: 465px!important;
+        }
+        .layui-form-label{
+            text-overflow: inherit!important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" id="basDiseaseForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("diseaseId" "$!{basDisease.diseaseId}" " id='diseaseId' ")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病分类名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("" "$!{parendDiseaseClassify.dicName}" " maxlength='40' autocomplete='off'
+                id='diseaseClassifyName'  class='layui-input' readonly style='background-color: #fff;' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病分类编码</label>
+            <div class="layui-input-inline">
+                #if(${basDisease})
+                #set($diseaseClassify = $!{basDisease.diseaseClassify})
+                #else
+                #set($diseaseClassify = $!{parendDiseaseClassify.dicCode})
+                #end
+                #formTextInput("diseaseClassify" "$!{diseaseClassify}" " maxlength='40' autocomplete='off' lay-verify='required'
+                id='diseaseClassify'  class='layui-input' readonly ")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("diseaseName" "#htmlEscape($!{basDisease.diseaseName})" " lay-verify='required' id='diseaseName' maxlength='200' lay-verify='required' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">疾病编码</label>
+            <div class="layui-input-inline">
+                #formTextInput("diseaseIcdTcd" "#htmlEscape($!{basDisease.diseaseIcdTcd})" " id='diseaseIcdTcd' maxlength='20' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()西/中医标志</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("diseaseTypeFlag" "$!{basDisease.diseaseTypeFlag}" ${dicData.dicDiseaseTypeFlag} "lay-filter='diseaseTypeFlag' lay-verify='reqRedio' check-msg='请选择西/中医标志' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()诊断类型</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formSingleSelectSearchFirstNone("diseaseType" "$!basDisease.diseaseType" ${dicData.dicDiseaseType} " lay-verify='required' maxlength='24' lay-search" " ")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">医保编码</label>
+            <div class="layui-input-inline">
+                #formTextInput("mbfDiseaseCode" "#htmlEscape($!{basDisease.mbfDiseaseCode})" " id='mbfDiseaseCode' maxlength='20' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item tcmSymptomInfo">
+        <div class="layui-inline">
+            <label class="layui-form-label" title="中医-主要症状代码（中医病症对应的证候）">中医主要症状</label>
+            <div class="layui-input-inline " style="width: 505px">
+                #formHiddenInput("tcmSymptom" "$!{basDisease.tcmSymptom}" " id='tcmSymptom' lay-verify='tcmSymptom' maxlength='2000'")
+                <table id="tcmSymptomListGrid" class="layui-table-tabs" lay-filter="tcmSymptomListGrid"></table>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否慢性病</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("chronicFlag" "$!{basDisease.chronicFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否慢性病'")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否传染病</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("infectiousFlag" "$!{basDisease.infectiousFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否传染病'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否单病种</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("singleDiseaseFlag" "$!{basDisease.singleDiseaseFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否单病种'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否临床路径</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("clinicDiseaseFlag" "$!{basDisease.clinicDiseaseFlag}" ${dicData.dicYesNo} " lay-filter='clinicDiseaseFlag' lay-verify='reqRedio' check-msg='请选择是否设置临床路径'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">病种专业分类</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formSingleSelectSearchFirstNone("clinicDiseaseClassifyId" "$!basDisease.clinicDiseaseClassifyId" ${dicData.dicClinicDiseaseClassify} "disabled id='clinicDiseaseClassifyId' maxlength='24' lay-search"
+                " ")
+            </div>
+        </div>
+        #if(${basDisease})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()有效类型</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("validFlag" "$!{basDisease.validFlag}" ${dicData.dicYesNo} " lay-verify='reqRedio' check-msg='请选择有效类型'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+<script>
+    var TCM_DIAGNOSIS_TYPE_ID = "$!{CONST.AppConstants.TCM_DIAGNOSIS_TYPE_ID}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect','table'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect,table =layui.table;
+
+        //清空 疾病分类
+        $('#diseaseClassifyName+.caller-icon').click(function () {
+            $("#diseaseClassifyName").val("");
+            $("#diseaseClassify").val("");
+        })
+
+
+        //中医证候
+        var tcmSymptomElem = $("#tcmSymptom");
+        var tcmSymptomUrl = contextPath + '/basDic/basDicListData.jo?dicTypeId=' + TCM_DIAGNOSIS_TYPE_ID + '&dicCodes=';
+        //列表
+        table.render({
+            elem: '#tcmSymptomListGrid',
+            url: tcmSymptomElem.val() ? tcmSymptomUrl + tcmSymptomElem.val() : '', //接口
+            data: [],
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            height: '150',
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'dicName',
+                    title: '中医-主要症状名称',
+                    minWidth: 100
+                },
+                {
+                    field: 'dicCode',
+                    title: '中医-主要症状代码',
+                    minWidth: 100
+                },
+                {
+                    title: '操作',
+                    width: 50,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+            }
+        });
+
+
+        /**
+         * 根据是否设置临床标记显示或隐藏病种专业
+         *clinicDiseaseFlag 是否设置临床路径，默认0：0: 否 1：是
+         **/
+        form.on('radio(clinicDiseaseFlag)', function (data) {
+            var flag = (YES_FLAG == data.value);
+            //病种专业分类ID ，设置了临床路径后，此字段不允许为空，对应clinic_disease_classify
+            $('#clinicDiseaseClassifyId').prop('disabled', !flag)
+                [flag ? 'attr' : 'removeAttr']('lay-verify', 'required')
+                .parent('.layui-input-inline').prev('.layui-form-label')
+                .filter(function () {
+                    if ($("span", this).length == 0 && flag) {
+                        return true
+                    } else if (!flag) {
+                        $("span", this).remove();
+                    }
+                })
+                .html(function () {
+                    return '#requiredTag()' + $(this).text();
+                });
+            form.render();
+        });
+        //触发是否临床标记
+        $(':radio[name="clinicDiseaseFlag"] + .layui-form-radioed').click();
+
+        common.setFormReadOnly($('#basDiseaseForm'))
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+
+</body>
+</html>

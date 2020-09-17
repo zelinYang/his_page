@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-收费系统-查询统计-住院结算-住院结算归并明细</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="inpatientSettlementGroup_queryForm" class="layui-form">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">结算日期</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("" "" "class='layui-input layer-date '
+                            tag='settlementTimeBegin,settlementTimeEnd' id='q_settlementTime' autocomplete='off' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">费用归并</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("inhospitalChargeGroupCode" ""
+                            $!{dicData.dicInhospitalChargeGroupCode} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">发票号码</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("feeBillNo" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">结算次数</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("settlementNum" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i
+                                class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 begin -->
+        <table id="inpatientSettlementGroupListGrid" lay-filter="inpatientSettlementGroupListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./fee/inpatientSettlementGroup/inpatientSettlementGroupList.js.vm")
+</body>
+</html>

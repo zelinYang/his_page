@@ -1,0 +1,432 @@
+<link href="../resource/hplus/js/plugins/select2/css/select2.css?v=121" rel="stylesheet">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style>
+    body { height: auto;}
+    h5 {
+        font-size: 16px;
+        margin: 0;
+        line-height: 36px;
+        padding: 0 15px 0 0;
+        text-overflow: ellipsis;
+        font-weight: bold;
+        color: #05a59c;
+        float: left;
+    }
+    .layui-card { margin-bottom: 10px; }
+    .layui-form-selectup dl { top:auto; bottom:42px; }
+    #baseInfoForm { margin-bottom: 49px; }
+</style>
+
+<form class="layui-form m-sm" id="baseInfoForm" >
+##    #formHiddenInput("patientId" "$!patient.patientId")
+##    #formHiddenInput("patientIndexId" "$!patientIndex.patientIndexId")
+##    #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId")
+
+<div class="layui-card">
+     <div class="layui-card-header"><h5>分娩记录信息</h5></div>
+     <div class="layui-card-body">
+         #formHiddenInput("babyDeliveryRecordId" "$!{babyDeliveryRecord.babyDeliveryRecordId}" )
+         #formHiddenInput("patientId" "$!{BabyDeliveryRecordQueryInfo.patientId}" )
+         #formHiddenInput("inhospitalId" "$!{BabyDeliveryRecordQueryInfo.inhospitalId}" )
+         #formHiddenInput("createUserId" "$currentUser.userId" "id='createUserId'  ")
+         #formHiddenInput("createUserName" "$currentUser.name" "id='createUserName'  ")
+         #formHiddenInput("latestUserId" "$currentUser.userId" "id='latestUserId'  ")
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">羊水量的描述</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("aminioticFluidVolume" "$!babyDeliveryRecord.aminioticFluidVolume" "  maxlength='5' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">ml</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">分娩类型</label>
+                     <div class="layui-input-inline">
+##                         #formFloInput("deliveryType" "$!babyDeliveryRecord.deliveryType" "class='layui-input' maxlength='1' autocomplete='off' ")
+                         <select name="deliveryType" class='layui-input' >
+                             <option #if("" == "$!babyDeliveryRecord.deliveryType")selected #end value="">请选择</option>
+                             <option #if("1" == "$!babyDeliveryRecord.deliveryType")selected #end value="1">阴道分娩</option>
+                             <option #if("2" == "$!babyDeliveryRecord.deliveryType")selected #end value="2">剖宫产</option>
+##                             <option value="" selected>请选择</option>
+##                             <option value="1" >阴道分娩</option>
+##                             <option value="2">剖宫产</option>
+                         </select>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">新生儿身高</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("newbornHeight" "$!babyDeliveryRecord.newbornHeight" "  maxlength='24' class='layui-input'")
+                         <button class="layui-btn" type="button">cm</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产次</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("parityNum" "$!babyDeliveryRecord.parityNum"  " maxlength='2'
+                            class='layui-input' ")
+                         <button class="layui-btn" type="button">次</button>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">末次月经日期</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("lastMenstrualTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.lastMenstrualTime))" "  autocomplete='off' id='lastMenstrualTime' readOnly
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">预产期</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("preParturitionDate" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.preParturitionDate))" "  autocomplete='off' id='preParturitionDate' readOnly
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">新生儿体重</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("newbornWeight" "$!babyDeliveryRecord.newbornWeight" "  maxlength='1' autocomplete='off'
+                           class='layui-input'")
+                         <button class="layui-btn" type="button">g</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">孕次</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("gravidityNum" "$!babyDeliveryRecord.gravidityNum"  "  maxlength='2' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">次</button>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎儿娩出日期</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("deliveryBabyTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.deliveryBabyTime))" "class='layui-input' id='deliveryBabyTime' readOnly
+                            maxlength='20' autocomplete='off' ")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">胎儿方位</label>
+                     <div class="layui-input-inline ">
+##                         #formTextInput("foetusPosition" "$!babyDeliveryRecord.foetusPosition" "  maxlength='24' autocomplete='off'
+##                            class='layui-input'")
+                           #formSingleSelectSearch("foetusPosition" "$!babyDeliveryRecord.foetusPosition" $!{dicData.dicFoetusPosition} "lay-search")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">新生儿性别</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("newbornSex" "$!babyDeliveryRecord.newbornSex" "  maxlength='24' autocomplete='off'
+##                            class='layui-input'")
+                            #formSingleSelectSearch("newbornSex" "$!babyDeliveryRecord.newbornSex" $!{dicData.dicClearSex} "lay-search")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">麻醉方法</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("anesthesiaMode" "$!babyDeliveryRecord.anesthesiaMode" "  maxlength='24' autocomplete='off'
+##                            class='layui-input'")
+                         #formSingleSelectSearch("anesthesiaMode" "$!babyDeliveryRecord.anesthesiaMode" $!{dicData.dicSurgeryNarcosisMode} "lay-search")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎盘娩出日期</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("placentaDeliveryDate" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.placentaDeliveryDate))" "  autocomplete='off' id='placentaDeliveryDate' readOnly
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产瘤部位</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("caputSuccedaneumPart" "$!babyDeliveryRecord.caputSuccedaneumPart" "  maxlength='1' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">新生儿异常</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("newbornAbnormal" "$!babyDeliveryRecord.newbornAbnormal" "  maxlength='24' class='layui-input'")
+                           #formSingleSelectSearch("newbornAbnormal" "$!babyDeliveryRecord.newbornAbnormal" $!{dicData.dicNewbornAbnormal} "lay-search")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">麻醉效果</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("anesthesiaEffect" "$!babyDeliveryRecord.anesthesiaEffect" "  maxlength='200' autocomplete='off'
+                           class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎膜破裂日期</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("caulBreakTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.caulBreakTime))" "   class='layui-input' id='caulBreakTime' readOnly ")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">羊水性状</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("aminioticFluidCharacter" "$!babyDeliveryRecord.aminioticFluidCharacter" "  maxlength='200' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">产后收缩压</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliveryDiastolicNbp" "$!babyDeliveryRecord.afterDeliveryDiastolicNbp" "  maxlength='3' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">mmHg</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">绕颈身</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("rollNeckWeek" "$!babyDeliveryRecord.rollNeckWeek" "  maxlength='3' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">周</button>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">脐带异常描述</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("umbilicalCordAbnormal" "$!babyDeliveryRecord.umbilicalCordAbnormal" "  maxlength='400' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" >待产日期</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("predeliveryDate" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.predeliveryDate))"  " autocomplete='off' id='predeliveryDate'
+                          readOnly  class='layui-input layer-date'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto"> 产后出血量</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliveryBloodVolume" "$!babyDeliveryRecord.afterDeliveryBloodVolume" "  maxlength='1' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">mL</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">麻醉体位</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("anesthesiaPosition" "$!babyDeliveryRecord.anesthesiaPosition" "  maxlength='200' class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">麻醉药物名称</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("anesthesiaDrug" "$!babyDeliveryRecord.anesthesiaDrug" "  maxlength='100' class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产后诊断</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("afterDeliveryDiagnose" "$!babyDeliveryRecord.afterDeliveryDiagnose" "  maxlength='200' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">评分间隔时间</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("newbornApgarInterval" "$!babyDeliveryRecord.newbornApgarInterval" "  maxlength='24' class='layui-input'")
+                          #formSingleSelectSearch("newbornApgarInterval" "$!babyDeliveryRecord.newbornApgarInterval" $!{dicData.dicNewbornApgarInterval} "lay-search")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">Apgar评分值</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("newbornApgar" "$!babyDeliveryRecord.newbornApgar" "  maxlength='2' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎盘娩出情况</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("placentaDeliveryCondition" "$!babyDeliveryRecord.placentaDeliveryCondition" "  maxlength='200' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产后宫缩</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("afterDeliveryUterine" "$!babyDeliveryRecord.afterDeliveryUterine" "  maxlength='24' class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">存脐带血标志</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("saveUmbilicalCordBloodFlag" "$!babyDeliveryRecord.saveUmbilicalCordBloodFlag" "  maxlength='1' autocomplete='off'
+                     ##                            class='layui-input'")
+                         <select name="deliveryType" class='layui-input' >
+                             <option #if("" == "$!babyDeliveryRecord.saveUmbilicalCordBloodFlag")selected #end value="">请选择</option>
+                             <option #if("1" == "$!babyDeliveryRecord.saveUmbilicalCordBloodFlag")selected #end value="1">是</option>
+                             <option #if("0" == "$!babyDeliveryRecord.saveUmbilicalCordBloodFlag")selected #end value="0">否</option>
+                         </select>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" >分娩结局</label>
+                     <div class="layui-input-inline">
+##                         #formTextInput("deliveryOutcome" "$!babyDeliveryRecord.deliveryOutcome" "  maxlength='24' autocomplete='off'
+##                            class='layui-input'")
+                         #formSingleSelectSearch("deliveryOutcome" "$!babyDeliveryRecord.deliveryOutcome" $!{dicData.dicDeliveryOutcome} "lay-search")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎儿娩出方式</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("babyDeliveryWay" "$!babyDeliveryRecord.babyDeliveryWay"  "  maxlength='200'
+                                    class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产后心率</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliveryHeartRate" "$!babyDeliveryRecord.afterDeliveryHeartRate" "  maxlength='3' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">次/min</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">产后检査吋间</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliveryExamTimeMin" "$!babyDeliveryRecord.afterDeliveryExamTimeMin" "  maxlength='24' class='layui-input'")
+                         <button class="layui-btn" type="button">min</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产瘤大小</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("caputSuccedaneumSize" "$!babyDeliveryRecord.caputSuccedaneumSize" "  maxlength='200' autocomplete='off'
+                            class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto"> 产后舒张压（</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliverySystolicNbp" "$!babyDeliveryRecord.afterDeliverySystolicNbp" "  maxlength='3' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">mmHg</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">产后脉搏</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("afterDeliveryPulseRate" "$!babyDeliveryRecord.afterDeliveryPulseRate" "  maxlength='3' class='layui-input'")
+                         <button class="layui-btn" type="button">次/min</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto"> 产后观察日期</label>
+                     <div class="layui-input-inline">
+                         #formTextInput("afterDeliveryObserveTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.afterDeliveryObserveTime))" "  autocomplete='off' id='afterDeliveryObserveTime' readOnly
+                            class='layui-input'")
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">子宫情况</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("uterusCondition" "$!babyDeliveryRecord.uterusCondition" "  autocomplete='off'  maxlength='200'
+                            class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">产后宫底高度</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("fundusUterusHeight" "$!babyDeliveryRecord.fundusUterusHeight" "  maxlength='200' autocomplete='off'
+                            class='layui-input'")
+                         <button class="layui-btn" type="button">cm</button>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label"> 膀胱充盈</label>
+                     <div class="layui-input-inline">
+##                         #formTextInput("fillingBladderFlag" "$!babyDeliveryRecord.fillingBladderFlag" "  maxlength='1' autocomplete='off'
+##                            class='layui-input'")
+                     <select name="deliveryType" class='layui-input' >
+                        <option #if("" == "$!babyDeliveryRecord.fillingBladderFlag")selected #end value="">请选择</option>
+                        <option #if("1" == "$!babyDeliveryRecord.fillingBladderFlag")selected #end value="1">是</option>
+                        <option #if("0" == "$!babyDeliveryRecord.fillingBladderFlag")selected #end value="0">否</option>
+                     </select>
+                        #* <select name="fillingBladderFlag" class='layui-input' >
+                             <option value="" selected>请选择</option>
+                             <option value="1" >是</option>
+                             <option value="0">否</option>
+                         </select>*#
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label" style="width: auto">胎膜完整标志</label>
+                     <div class="layui-input-inline">
+                     ##                         #formTextInput("caulFullFlag" "$!babyDeliveryRecord.caulFullFlag" "  maxlength='1' autocomplete='off'
+                     ##                            class='layui-input'")
+                         <select name="deliveryType" class='layui-input' >
+                             <option #if("" == "$!babyDeliveryRecord.caulFullFlag")selected #end value="">请选择</option>
+                             <option #if("1" == "$!babyDeliveryRecord.caulFullFlag")selected #end value="1">完整</option>
+                             <option #if("0" == "$!babyDeliveryRecord.caulFullFlag")selected #end value="0">不完整</option>
+                         </select>
+                     </div>
+                 </div>
+                 <div class="layui-inline">
+                     <label class="layui-form-label">脐带长度</label>
+                     <div class="layui-input-inline">
+                         #formIntZeroInput("umbilicalCordHength" "$!babyDeliveryRecord.umbilicalCordHength" "  maxlength='5' class='layui-input'")
+                         <button class="layui-btn" type="button">cm</button>
+                     </div>
+                 </div>
+             </div>
+
+             <div class="layui-form-item">
+                 <div class="layui-inline">
+                     <label class="layui-form-label" >临产日期</label>
+                     <div class="layui-input-inline ">
+                         #formTextInput("parturitionTime" "#htmlEscape($!date.format('yyyy-MM-dd',$babyDeliveryRecord.parturitionTime))" "  autocomplete='off' id='parturitionTime' readOnly
+                                class='layui-input'")
+                     </div>
+                 </div>
+             </div>
+
+     </div>
+ </div>
+    <div class="tool-bottom-fixed btn_gorup #if($!optype == "show") layui-hide #end" style="background-color:#ffffff;">
+        <button class="layui-btn layui-btn-sm" type="button" lay-submit id="btn_save" lay-filter="btn_save">保存</button>
+        <button class="layui-btn layui-btn-sm layui-btn-primary" type="button" id="btn_back">返回</button>
+    </div>
+</form>
+
+#parse("./inpatient/babyDeliveryProcess/babyDeliveryRecordAdd.js.vm")

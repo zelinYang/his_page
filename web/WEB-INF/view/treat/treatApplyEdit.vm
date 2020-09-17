@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+	<style type="text/css">
+		body {
+			overflow: hidden;
+		}
+
+		.layui-fluid .layout-left {
+			display: inline-block;
+			width: 400px;
+			float: left;
+		}
+
+		.layui-fluid .layout-main {
+			width: calc(100% - 410px);
+			float: right
+		}
+
+		.layui-table td, .layui-table th {
+			padding: 5px;
+		}
+
+		.layui-form-item .layui-form-checkbox[lay-skin=primary] {
+			margin-top: 0px;
+		}
+
+		#emrTmplate {
+			height: calc(100% - 126px);
+		}
+
+		#surgeryItemList > .layui-col-md2.layui-col-xs4 > .layui-unselect.layui-form-checkbox {
+			width: 100%;
+		}
+
+		#surgeryItemList > .layui-col-md2.layui-col-xs4 > .layui-unselect.layui-form-checkbox > span {
+			text-overflow: ellipsis;
+			width: 100%;
+			white-space: nowrap;
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div class="layout-left white-bg full-height border-r p-t-xs">
+			<form class="layui-form" id="queryForm">
+				<div class="layui-form-item  p-b-xs search-term">
+					<div class="layui-inline">
+						<label class="layui-form-label" style="width: unset">治疗项目</label>
+                        #formTextInput(
+                            "" "" " id='q_surgeryName' maxlength='100' style='width:170px;' class='layui-input'  ")
+					</div>
+				</div>
+			</form>
+			<div id="basChargeGroupListGrid" lay-filter="basChargeGroupListGrid"></div>
+		</div>
+
+		<div class="layout-main white-bg full-height p-t-xs">
+			<form class="layui-form full-height">
+                #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                #formHiddenInput("inhospitalId" "$!inhospital.inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("registerId" "$!register.registerId" "id='registerId'")
+                #formHiddenInput("treatApplyId" "$!treatApply.treatApplyId" "id='treatApplyId'")
+                #formHiddenInput("techApplyName" "$!treatApply.surgeryName" "id='techApplyName'")
+                #formHiddenInput("" "$!treatApply.surgeryCodeId" "id='surgeryCodeId'")
+                #formHiddenInput("patientHospitalEmrId" "$!treatApply.patientHospitalEmrId" "id='patientHospitalEmrId'")
+                #formHiddenInput("orderGroupNo" "$!orderGroupNo" "id='orderGroupNo'")
+                #formHiddenInput("makeOrderFlag" "$!makeOrderFlag" "id='makeOrderFlag'")
+				#formHiddenInput("doctorOrderType" "${CONST.AppConstants.ORDER_TYPE_TREAT}" "id='doctorOrderType'")
+				#formHiddenInput("doctorOrderSubtype" "" "id='doctorOrderSubtype'")
+				<div class="layui-form-item search-term">
+					<div class="layui-inline m-l-sm" style="width: 50px">
+						<div class="layui-input-inline" style="width: 50px">
+                            #set($urgent = "")
+                            #if("$!treatApply.urgentFlag" == "1")
+                                #set($urgent = "checked")
+                            #end
+                            #formSimpleCheckbox(
+                                "urgentFlag" "1" "" "$!urgent lay-skin='primary' id='urgentFlag' title='加急'" "")
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label">病历模板</label>
+						<div class="layui-input-inline">
+                            #if($patientHospitalEmr)
+                                #formSelectEmrForList("emrTlp" "$!patientHospitalEmr.emrTlpId" $!emrTlpList
+                                "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")
+                            #else
+                                #if($register)
+                                    #formSelectEmrForList("emrTlp" "537" $!emrTlpList
+                                        "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")##门诊
+                                #else
+                                    #formSelectEmrForList("emrTlp" "528" $!emrTlpList
+                                        "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")##住院
+                                #end
+
+                            #end
+
+						</div>
+					</div>
+					<div class="layui-inline layui-btn-group">
+						<button type="button" id="btn_add" class="layui-btn layui-btn-sm" lay-tips="新增治疗">新增治疗</button>
+						<button type="button" id="btn_office" class="layui-btn layui-btn-sm" lay-tips="治疗科室">治疗科室</button>
+					</div>
+				</div>
+
+				<div style="height: 101px; overflow-y: auto;overflow-x: hidden">
+					<div class="layui-card">
+						<div class="layui-card-header">已选项目</div>
+						<div class="layui-card-body" style="border: 1px solid #ccc;">
+							<p id="selectedItem" style="min-height: 44px;max-height: 60px;overflow: auto;">
+
+							</p>
+						</div>
+					</div>
+				</div>
+
+
+				<!-- 电子病历容器 -->
+				<div class="full-height" id="emrTmplate">
+					<iframe src="" id="emrIframe" scrolling="no" frameborder="0" class="full-height"
+							style="width: 100%;"></iframe>
+				</div>
+
+				<div class="tool-bottom-fixed layui-hide">
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+    #parse("./treat/treatApplyEdit.js.vm")
+</html>

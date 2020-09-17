@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>新增组套</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+</head>
+<body class="white-bg">
+  <div class="main full-height" >
+    <form id="basOrderGroupForm" class="layui-form full-height-scroll">
+
+
+	        <div class="layui-form-item ">
+	            #formHiddenInput("exeOfficeId" "$!basOrderGroup.exeOfficeId" "")
+                <div class="layui-inline">
+                    <label class="layui-form-label" >#requiredTag组套名称</label>
+                    <div class="layui-input-inline" >
+                       #formTextInput("orderGroupName" "$!basOrderGroup.orderGroupName" "class='layui-input' lay-verify='required' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" >#requiredTag组套类型</label>
+                    <div class="layui-input-inline" >
+                        #formSingleSelectFirstNone("orderGroupType" "$!basOrderGroup.orderGroupType" $!dicData.dicOrderGroupType "lay-search='' lay-verify='required' " "")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag处方类型</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("recipeType" "$!basOrderGroup.recipeType" $dicData.dicOutpatientRecipeType "class='layui-input' " "")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label label-md">常用药</label>
+                    <div class="layui-input-inline" style="width: auto">
+                        <input type="checkbox" name="commonMedicineFlag" lay-filter='commonMedicineFlag' lay-skin="primary"
+                               value="0" >
+                    </div>
+                </div>
+	        </div>
+
+	        <div class="layui-form-item ">
+                <div class="layui-inline">
+                  <label class="layui-form-label" >排序号</label>
+                  <div class="layui-input-inline" >
+                     #formIntInput("sort" "$!basOrderGroup.sort" " maxlength='10' class='layui-input'")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label label-md">#requiredTag所属类型</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("orderGroupClassify" "$!{basOrderGroup.orderGroupClassify}" ${dicData.dicBelongSysType} " lay-verify='required' ")
+                    </div>
+                </div>
+	        </div>
+            <div class="layui-form-item ">
+	              <div class="layui-inline" >
+	                 <label class="layui-form-label">备注信息</label>
+	                 <div class="layui-input-inline" style="width: 514px;">
+	                    #formTextarea("remark" "#htmlEscape($!{basOrderGroup.remark})" " maxlength='1000' class='layui-textarea' rows='3'")
+	                 </div>
+	              </div>
+            </div>
+
+        <!-- 底部按钮栏  -->
+        <div class="tool-bottom-fixed btn_gorup" style="background: #ffffff;border-top: 1px solid #e7eaec;">
+            <button id="btn_save" class="layui-btn layui-btn-sm" type="button" lay-submit lay-filter="btn_save">保存</button>
+        </div>
+
+    </form>
+  </div><!-- main -->
+
+
+<script type="text/javascript">
+  layui.use(['form', 'laydate', 'element', 'layer'], function(){
+    var element = layui.element,laydate = layui.laydate,form = layui.form,layer = layui.layer;
+    element.render();
+
+    form.on('submit(btn_save)', function(data){
+        saveBasOrderGroup();
+    });
+
+    //常用药复选框 ，选中则修改值
+    function checkCommonMedicineFlagChange() {
+        form.on('checkbox(commonMedicineFlag)', function(data){
+             if(data.elem.checked){
+                 $(data.elem).val('1');
+             } else{
+                 $(data.elem).val('0');
+             }
+        });
+    }
+
+    // 提交表单
+    function saveBasOrderGroup() {
+      //表单参数
+        var basOrderGroupParams = common.serializeObject($('#basOrderGroupForm'));
+        var orderGroupItemArray = parent.getOrderGroupItem();
+
+        if (!orderGroupItemArray || orderGroupItemArray.length == 0 ) {
+            common.msg('请选择组套的医嘱项', 0);
+            return false;
+        }
+
+        basOrderGroupParams.itemJsonData = JSON.stringify(orderGroupItemArray);
+        console.log(basOrderGroupParams);
+        //var index = layer.load(1);
+        common.requestServer('$!contextPath/bas/saveBasOrderGroup.jo', basOrderGroupParams, function(result){
+            //layer.close(index);
+            if (result.code == "0") {
+            	common.alertCall("保存成功。", 1, function (){
+	                var index = parent.layer.getFrameIndex(window.name);
+	                parent.refreshRecipeGroup();//刷新组套列表
+	                parent.layer.close(index);
+	            });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }//save function
+});//layui.use end
+</script>
+</body>
+</html>

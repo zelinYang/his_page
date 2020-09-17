@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>收费项目选取页面</title>
+#parse("./common/pageCss.vm") 
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content">
+        <div class="ibox-content">
+            <div class="row">
+                <form id="queryForm" method="get" class="form-horizontal">
+                    #formHiddenInput("validFlag" "1" "")
+                    <div class="col-xs-6">
+                        #formTextInput("chargeName" "" "id='chargeName' class='form-control' placeholder='费用中文名称或拼音字母'")
+                    </div> 
+                    <div class="col-xs-6">
+                        #formSingleSelectSearch("chargeGroupId" "" $!dicData.dicNotDrugChargeGroup "id='chargeGroupId' class='chosen-select form-control'" "use-pin='first'" "选择费用类别")
+                    </div> 
+                </form>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <!-- 列表表格 -->
+            <table id="dataListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+            <!-- 列表表格 -->
+        </div>
+    </div>
+    #parse("./common/pageJs.vm")
+    #parse("./common/pinyin.vm")
+    <script>
+    $(document).ready(function () {
+            // 查询
+            function queryList() {
+                var queryParams = common.serializeObject($('#queryForm'));
+                var options = {url: '../bas/basChargeItemListData.jo', silent: false, query: queryParams};
+                $('#dataListGrid').bootstrapTable('refresh', options); 
+            };
+
+            // 监听收费名称值变化
+            $('#chargeName').bind('input propertychange keyup', function() {
+                var val = $(this).val(); 
+                var reg = new RegExp("^[a-zA-Z]+$"); 
+                if (reg.test(val)) {
+                    $(this).attr('name', 'pinyinCode');
+                } else {
+                    $(this).attr('name', 'chargeName');
+                }
+                queryList();
+            });
+
+            // 选中费用类别
+            $('#chargeGroupId').change(function (){
+                queryList();
+            });
+
+            //查询列表
+            $('#dataListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../bas/basChargeItemListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true},
+                    {
+                        field : 'chargeName',
+                        title : '费用名称'
+                    }, {
+                        field : 'chargeGroupId',
+                        title : '收费类别',
+                        formatter :function (value, row, index){ return $('#chargeGroupId').find('option[value="' + value +'"]').text() }
+                    }, {
+                        field : 'unitPrice',
+                        title : '单价'
+                    }, {
+                        field : 'unit',
+                        title : '单位'
+                    }], 
+                    onCheck:function(row){
+                        if (parent.selectChargeItemCallBack && typeof(parent.selectChargeItemCallBack) == "function") {
+                            parent.selectChargeItemCallBack(row);
+                            // 关闭窗口
+                            var index = parent.layer.getFrameIndex(window.name);
+                            parent.layer.close(index); 
+                        }
+                        if (parent.parent.selectChargeItemCallBack && typeof(parent.parent.selectChargeItemCallBack) == "function") {
+                            parent.parent.selectChargeItemCallBack(row);
+                            // 关闭窗口
+                            var index = parent.parent.layer.getFrameIndex(window.parent.name);
+                            parent.parent.layer.close(index); 
+                        }
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#tab-22', window.parent.document).height() - 85);
+                        $('#dataListGrid').bootstrapTable('resetView', {height: height}); 
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+    </script>
+</body>
+</html>

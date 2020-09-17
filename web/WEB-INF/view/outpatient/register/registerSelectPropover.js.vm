@@ -1,0 +1,90 @@
+<script type="text/html" id="operateFormatter">
+	<a class="" title="选择"><i class="layui-icon layui-icon-ok-circle"></i></a>
+</script>
+<script>
+	var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+	var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+	layui.use(['jquery', 'table', 'laypage', 'element', 'form'], function () {
+		var table = layui.table;
+		var element = layui.element;
+		var form = layui.form;
+		var laypage = layui.laypage;
+		var $ = layui.$;
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			return $.extend({
+				keyWord: '',
+				visitOfficeId: '',
+				visitStateNot: '0',
+				visitDateBegin: getDay(-2, '-')
+			}, common.serializeObject($('#queryForm')));
+		}
+
+		var tableIns = table.render($.extend(basePageTable, {
+			elem: '#registerTable'
+			, height: '368'//高度
+			, url: '../register/registerListData.jo'
+			, where: getQueryParams()
+			, cols: [[
+				{ width : 40, templet: '#operateFormatter',event:'select'},
+				{
+					field: 'visitDate',
+					title: '挂号日期',
+					minWidth: 105,
+					templet: function (row) {
+						if (row.visitDate) {
+							return layui.util.toDateString(row.visitDate, 'yyyy-MM-dd');
+						}
+						return '';
+					}
+				},
+				{field: 'visitCardNo', title: '就诊卡', minWidth: 150},
+				{field: 'patientName', title: '姓名'}
+				, {
+					field: 'patientSex', title: '性别', templet: function (row) {
+						return dicSex[row.patientSex] || ""
+					}
+				},
+				{
+					field: 'patientBirth',
+					title: '出生日期',
+					minWidth: 105,
+					templet: function (row) {
+						return layui.util.toDateString(row.patientBirth, 'yyyy-MM-dd');
+					}
+				},
+				{field: 'patientPhone', title: '电话', minWidth: 100}
+				, {field: 'patientIdCard', title: '身份证', minWidth: 150}
+
+				, {field: 'socialSecurityCard', title: '社保卡', minWidth: 150}
+				, {field: 'inhospitalNo', title: '住院号', minWidth: 150}
+				, {field: 'healthCard', title: '健康卡', minWidth: 150}
+			]]
+			, done: function (res, curr, count) {
+			}
+		}));
+
+
+		window.query = function (queryParams) {
+			tableIns.reload({
+				where: $.extend(getQueryParams(), queryParams)
+			});
+		}
+
+		table.on('tool(registerTable)', function (obj) {
+			if(obj.event === 'select'){
+				var row = obj.data;
+				parent.selectRegisterSelectPropoverrCallBack(row);
+				parent.popoverHide();
+			}
+		});
+		//单击表格事件
+		table.on('row(registerTable)', function(obj){
+			var row = obj.data;
+			parent.selectRegisterSelectPropoverrCallBack(row);
+			parent.popoverHide();
+		});
+
+	});//layui.use
+</script>

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+.layui-table-view .layui-table td {padding: 3px 0;}
+</style>
+</head>
+<body >
+    <div class="layui-content-wrapper layui-bg-white">
+        <!-- 缴费记录 -->
+        <form id="queryForm" class="layui-form">
+            #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+        </form>
+        <div class="layui-row p-t-n full-height">
+            <table class="layui-hide full-height" id="orderList" lay-filter="orderList"></table>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicPaymentMethod=JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var mergeTd = {};// 存放计算医嘱表格数据需要合并的组号（子医嘱）
+    layui.use(['form', 'laydate', 'element', 'table','util'], function(){
+        var util = layui.util;
+        var laydate = layui.laydate, form = layui.form, table = layui.table;
+        // 初始化医嘱表格列表数据
+        var tableIns = table.render($.extend(basePageTable, {
+            id: 'orderList',
+            elem: '#orderList',
+            height: 'full-1',
+            where:common.serializeObject($('#queryForm')),
+            url: '../inpatient/paymentRecordsDataList.jo',
+            cols : [ [
+                {
+                    field : 'payInDate',
+                    width : 200,
+                    title : '缴款日期',
+                    templet : function(row) {
+                        if(row.payInDate != null ){
+                            return util.toDateString(row.payInDate);
+                        }else{
+                            return "";
+                        }
+                    }
+                }, {
+                    field : 'receiptNo',
+                    width : 100,
+                    title : '收据号码',
+                }, {
+                    field : 'prepayInAmount',
+                    width : 100,
+                    title : '缴款金额'
+
+                }, {
+                    field : 'payInWay',
+                    width : 130,
+                    title : '缴款方式',
+                    templet:function(row) {
+                        return dicPaymentMethod[row.payInWay]||'';
+                    }
+                }, {
+                    field : 'settlementUserId',
+                    title : '缴款工号',
+                    width : 100
+                }
+            ] ]
+        }));
+
+        // 重载刷新医嘱列表
+        function reloadOrderList() {
+            mergeTd = {};
+            var params = common.serializeObject($('#queryForm'), ['exeOrderStartTime']);
+            tableIns.reload({url: '../inpatient/inpatientOrderJsonPageList.jo', where: params});
+            initOrderButton("layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled");
+        }
+
+
+        // 按医嘱状态查询
+        form.on('select(orderState)', function (){
+            reloadOrderList();
+        });
+        // 按医嘱类别查询
+        form.on('select(orderClassify)', function (){
+            reloadOrderList();
+        });
+        // 按医嘱项目和医嘱开始日期查询
+        $('#orderName').bind('input propertychange', function (){
+            reloadOrderList();
+        });
+        //按日期范围查询
+        laydate.render({elem: '#exeOrderStartTime', range: true, done: function (value, date, endDate){ reloadOrderList() }});
+
+
+        // 刷新按钮
+        $('#btn_refresh').click(function (){
+            reloadOrderList();
+        });
+    });
+</script>
+</html>

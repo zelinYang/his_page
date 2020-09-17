@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <div class="layui-bg-white">
+                <!-- 查询条件 -->
+                <form class="layui-form" id="queryForm">
+                    #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                    #formHiddenInput("surgeryDateEnd" "" "id='surgeryDateEnd'")
+                    #formHiddenInput("surgeryDateBegin" "" "id='surgeryDateBegin'")
+                  <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">手术名称</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("surgeryName" "" "id='surgeryName' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">手术级别</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("surgeryLevelId" "" $!dicData.dicSurgeryIncisionLevel "id='surgeryLevelId' lay-filter='surgeryLevelId'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">手术日期</label>
+                            <div class="layui-input-inline input-inline-long">
+                                #formTextInput("" "" "id='surgeryDate' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+
+                </form>
+                <!-- 医嘱列表 -->
+                <table class="layui-hide full-height" id="surgeryArrangeList" lay-filter="surgeryArrangeList"></table>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicIncisionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicIncisionLevel)');
+layui.use(['form', 'laydate', 'element', 'table'], function(){
+    var laydate = layui.laydate, form = layui.form, table = layui.table;
+    // 初始化医嘱表格列表数据
+    var tableListUrl = contextPath + '/surgery/surgeryReportListData.jo';
+
+
+	// 重置表格高度
+	$(window).resize(function () {
+		var height = getTableHgt()
+		table.reload('surgeryArrangeList', {
+			height: height
+		})
+	});
+    function getTableHgt(){
+        return $('body').height() - $('#queryForm').height() - 5 // 获取表格高度
+    }
+    var tableIns = table.render($.extend(basePageTable, {
+        id: 'surgeryArrangeList',
+        elem: '#surgeryArrangeList',
+        height:getTableHgt(),// 获取表格高度
+        url: tableListUrl,
+        where: common.serializeObject($('#queryForm')),
+        cols : [ [
+            {
+                field : '',
+                title : '科室',
+                width : 80,
+            }, {
+                field : 'wardName',
+                title : '病区',
+                width : 80,
+            }, {
+                field : 'currentBedNo',
+                title : '床号',
+                width : 80,
+            }, {
+                field : 'patientName',
+                title : '姓名',
+                width : 80,
+            }, {
+                field : 'inDiagnosis',
+                title : '入院诊断',
+                width : 160,
+            }, {
+                field : 'outDiagnosis',
+                title : '出院诊断',
+                width : 160,
+            }, {
+                field : 'chargeName',
+                title : '抗生素药物名称',
+                width : 160,
+            }, {
+                field : 'chargeNameLevel',
+                title : '抗生素等级',
+                width : 100,
+            }, {
+                field : 'incisionLevel',// 173
+                title : '切口类型',
+                width : 130,
+                templet :function (row) {
+                    if (row.incisionLevel) {
+                        return dicIncisionLevel[row.incisionLevel];
+                    }
+                }
+            }, {
+                field : 'surgeryDate',
+                title : '手术时间',
+                width : 160,
+            }, {
+                field : 'surgeryName',
+                title : '手术名称',
+                width : 180,
+            }, {
+                field : 'surgeryLevelId',
+                title : '手术级别',
+                width : 100,
+                templet :function (row) {
+                    if (row.surgeryLevelId) {
+                        return $('#surgeryLevelId > option[value="' + row.surgeryLevelId + '"]').text();
+                    }
+                }
+            }, {
+                field : 'surgeryDoctorName',
+                title : '主刀者',
+                width : 160,
+            }, {
+                field : '',
+                title : '风险等级',
+                width : 100,
+            }, {
+                field : '',
+                title : '愈合等级',
+                width : 100,
+                templet :function (row) {
+                    if (row.surgeryLevelId) {
+                        //return $('#surgeryLevelId > option[value="' + row.surgeryLevelId + '"]').text();
+                    }
+                    return "";
+                }
+            }
+        ]],
+        parseData: function (res){
+            if(res.diagnosisMap || res.chargeItemMap) {
+                $.each(res.data, function (i, data){
+                    // 重新更新每行入院出院的诊断数据
+                    var inDiagnosis = [];
+                    var outDiagnosis = [];
+                    var diagnosisList = res.diagnosisMap[data.inhospitalId];
+                    if (diagnosisList && diagnosisList.length > 0) {
+                        $.each(diagnosisList, function (i, d){
+                            if (d.diagnosisClassify == 2) {
+                            	inDiagnosis.push(d.diseaseName);
+                            }
+                            if (d.diagnosisClassify == 3) {
+                            	outDiagnosis.push(d.diseaseName);
+                            }
+                        });
+                    }
+
+                    // 重新更新每行收费项目数据（抗生药物）
+                    var chargeName = [];
+                    var chargeNameLevel = [];
+                    var diagnosisList = res.diagnosisMap[data.inhospitalId];
+                    if (diagnosisList && diagnosisList.length > 0) {
+                        $.each(diagnosisList, function (i, d){
+                            chargeName.push(d.chargeName);
+                            chargeNameLevel.push(d.chargeName);
+                        });
+                    }
+                    data["inDiagnosis"] = inDiagnosis.join(',');
+                    data["outDiagnosis"] = outDiagnosis.join(',');
+                    data["chargeName"] = chargeName.join(',');
+                    data["chargeNameLevel"] = chargeNameLevel.join(',');
+                    res.data[i] = data;
+                });
+            }
+        },
+    }));
+
+    // 重载刷新医嘱列表
+    function reloadSurgeryArrangeList() {
+        var params = common.serializeObject($('#queryForm'));
+        tableIns.reload({url: tableListUrl, where: params});
+    }
+
+    // 按手术级别查询
+    form.on('select(surgeryLevelId)', function (){
+        reloadSurgeryArrangeList();
+    });
+    // 按手术名称
+    $('#surgeryName').bind('input propertychange', function (){
+        reloadSurgeryArrangeList();
+    });
+    //按手术日期范围查询
+    laydate.render({elem: '#surgeryDate',trigger: 'click', range: true, done: function (value, date, endDate){
+        var items = value.split(' - ');
+        $('#surgeryDateEnd').val(items[1]);
+        $('#surgeryDateBegin').val(items[0]);
+        reloadSurgeryArrangeList()
+    }});
+
+});
+</script>
+</html>

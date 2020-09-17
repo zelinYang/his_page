@@ -1,0 +1,317 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var PUBLIC_PROJECT = "$!{CONST.AppConstants.PUBLIC_PROJECT}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    var dicOutpatientFeeCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutpatientFeeCode)');
+    var dicInhospitalChargeGroupCodeChargeItem = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCodeChargeItem)');
+    var dicDocChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicDocChargeGroupCode)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicBodyPartClassifyLis = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifyLis)');
+    var dicProvinceInsuranceType = JSON.parse('$dicTools.changeMapToJson($dicData.dicProvinceInsuranceType)');
+    var dicCityInsuranceType = JSON.parse('$dicTools.changeMapToJson($dicData.dicCityInsuranceType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#basChargeItem_queryForm').height() - ($('body').height() - $('.layui-fluid').height()));
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                doctorOrderType: '',
+                outpatientFeeCode: '',
+                inhospitalChargeGroupCode: '',
+                docChargeGroupCode: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#basChargeItem_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basChargeItemListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basChargeItem_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/bas/basChargeItemEdit.do', '诊疗项目', {
+                area: ['88%', '88%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basChargeItemListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basChargeItemListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                width: 100,
+                fixed: 'left',
+                title: '院内收费编码',
+                templet: function (row) {
+                    return 'C' + row.chargeItemId;
+                }
+            }, {
+                field: 'chargeName',
+                minWidth: 250,
+                fixed: 'left',
+                title: '诊疗项目名称'
+            }, {
+                field: 'chargeItemCount',
+                width: 100,
+                title: '数量'
+            }, {
+                field: 'chargeItemUnit',
+                width: 100,
+                title: '单位'
+            }, {
+                field: 'unitPrice',
+                width: 100,
+                title: '单价'
+            }, {
+                field: 'remark',
+                title: '规格/备注',
+                minWidth: 150
+            }, {
+                field: 'doctorOrderType',
+                title: '医嘱项目类型',
+                width: 130,
+                templet: function (d) {
+                    return dicDoctorOrderType[d.doctorOrderType] || '';
+                }
+            }, {
+                field: 'outpatientFeeCode',
+                title: '门诊费用分类',
+                width: 130,
+                templet: function (d) {
+                    return dicOutpatientFeeCode[d.outpatientFeeCode] || '';
+                }
+            }, {
+                field: 'inhospitalChargeGroupCode',
+                title: '住院费用分类',
+                minWidth: 130,
+                templet: function (d) {
+                    return dicInhospitalChargeGroupCodeChargeItem[d.inhospitalChargeGroupCode] || '';
+                }
+            }, {
+                field: 'docChargeGroupCode',
+                title: '病案首页费用分类',
+                minWidth: 250,
+                templet: function (d) {
+                    return dicDocChargeGroupCode[d.docChargeGroupCode] || '';
+                }
+            }, {
+                field: 'provinceInsuranceCode',
+                title: '省医保项目编码',
+                width: 130
+            }, {
+                field: 'cityInsuranceCode',
+                title: '市医保项目编码',
+                width: 130
+            }, {
+                field: 'provinceInsuranceType',
+                title: '省医保项目费用等级',
+                width: 130,
+                templet: function (d) {
+                    return dicProvinceInsuranceType[d.provinceInsuranceType] || "";
+                }
+            }, {
+                field: 'cityInsuranceType',
+                title: '市医保项目费用等级',
+                width: 130,
+                templet: function (d) {
+                    return dicCityInsuranceType[d.cityInsuranceType] || "";
+                }
+            }, {
+                field: 'countyInsuranceCode',
+                title: '新农合项目编码',
+                width: 130
+            }, {
+                field: 'priceBureauCode',
+                title: '物价局编码',
+                width: 130
+            }, {
+                field: 'fdaCode',
+                title: '食药监编码',
+                width: 130
+            }, {
+                field: 'phyExamUsageFlag',
+                title: '体检使用',
+                align: 'center',
+                width: 80,
+                templet: function (d) {
+                    return '<span style="' + (YES_FLAG == d.phyExamUsageFlag ? 'color: #FF5722;' : "") + '">' + (dicYesNo[d.phyExamUsageFlag] || "") + '</span>';
+                }
+            }, {
+                field: 'examFlag',
+                title: '检查标志',
+                align: 'center',
+                width: 80,
+                templet: function (d) {
+                    return '<span style="' + (YES_FLAG == d.examFlag ? 'color: #FF5722;' : "") + '">' + (dicYesNo[d.examFlag] || "") + '</span>';
+                }
+            }, {
+                field: 'lisFlag',
+                title: '检验标志',
+                align: 'center',
+                width: 80,
+                templet: function (d) {
+                    return '<span style="' + (YES_FLAG == d.lisFlag ? 'color: #FF5722;' : "") + '">' + (dicYesNo[d.lisFlag] || "") + '</span>';
+                }
+            }, {
+                field: 'treatFlag',
+                title: '处置/治疗标志',
+                align: 'center',
+                width: 100,
+                templet: function (d) {
+                    return '<span style="' + (YES_FLAG == d.treatFlag ? 'color: #FF5722;' : "") + '">' + (dicYesNo[d.treatFlag] || "") + '</span>';
+                }
+            }, {
+                field: 'skinTestFlag',
+                title: '皮试标志',
+                align: 'center',
+                width: 80,
+                templet: function (d) {
+                    return '<span style="' + (YES_FLAG == d.skinTestFlag ? 'color: #FF5722;' : "") + '">' + (dicYesNo[d.skinTestFlag] || "") + '</span>';
+                }
+            }, {
+                field: 'outpatientUsageFlag',
+                title: '门诊使用',
+                align: 'center',
+                width: 80,
+                templet: '#outpatientUsageFlagTpl'
+            }, {
+                field: 'inhospitalUsageFlag',
+                title: '住院使用',
+                align: 'center',
+                width: 80,
+                templet: '#inhospitalUsageFlagTpl'
+            }, {
+                field: 'hospitalId',
+                title: '使用限制',
+                width: 80,
+                templet: function (d) {
+                    return d.hospitalId == PUBLIC_PROJECT ? '公用' : '本单位';
+                }
+            }, {
+                field: 'validFlag',
+                title: '是否有效',
+                templet: '#validFlagTpl',
+                width: 80,
+                unresize: true,
+                align: 'center',
+                fixed: 'right'
+            }, {
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done: function () {
+                autoSetHeigt()
+            }
+        }));
+
+        //处理行高问题
+        function autoSetHeigt() {
+            $(".layui-table-main tr").each(function (index, val) {
+                $($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+                $($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+            });
+        }
+
+        //监听门诊使用事件
+        form.on('switch(outpatientUsageFlag)', function (obj) {
+            obj.elem.checked = !obj.elem.checked
+            form.render();
+            common.confirm("确定要操作吗？", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                common.requestServer('../bas/basChargeItemUpdateOutpatientUsageFlag.jo', {
+                    chargeItemId: obj.value,
+                    outpatientUsageFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+        })
+
+        //监听住院使用事件
+        form.on('switch(inhospitalUsageFlag)', function (obj) {
+            obj.elem.checked = !obj.elem.checked
+            form.render();
+            common.confirm("确定要操作吗？", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                common.requestServer('../bas/basChargeItemUpdateInhospitalUsageFlag.jo', {
+                    chargeItemId: obj.value,
+                    inhospitalUsageFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+        })
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../bas/basChargeItemUpdateValidFlag.jo', {
+                chargeItemId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basChargeItemListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open('$contextPath' + '/bas/basChargeItemEdit.do?chargeItemId=' + row.chargeItemId, '诊疗项目：' + row.chargeName, {
+                        area: ['88%', '88%'],
+                        scroll: true
+                    })
+                    break;
+            }
+        });
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('basChargeItemListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>
+

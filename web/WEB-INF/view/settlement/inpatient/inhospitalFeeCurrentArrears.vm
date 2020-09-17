@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+</head>
+<body>
+
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!--搜索条件-->
+            <form class="layui-form" id="queryForm">
+              <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">科室</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("inhospitalOfficeId" "" $!dicData.dicOffice
+                                "id='inhospitalOfficeId' lay-filter='inhospitalOfficeId' " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病 区</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("wardId" "" $!dicData.dicInpatientWardAll
+                                "id='wardId' lay-filter='wardId'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病案号</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("patientMedicalNo" "" "id='patientMedicalNo' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">姓名</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("patientName" "" "id='patientName' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">入院日期</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" ""
+                                "id='inhospitalDate' tag='inhospitalDateBegin,inhospitalDateEnd' class='layui-input' readOnly")
+                        </div>
+                    </div>
+                    <div class="layui-inline p-l-lg">
+                        <button class="layui-btn layui-btn-sm" type="button" id="btn_refresh"><i class="layui-icon layui-icon-refresh"></i></button>
+                    </div>
+                </div>
+              </div>
+            </form>
+            <!--列表 begin-->
+            <table class="layui-hide" id="arrearsList" lay-filter="arrearsList"></table>
+        </div>
+    </div>
+</div>
+
+
+
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="show">查询</a>
+</script>
+<script type="text/javascript">
+    var table;
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    layui.use(['table', 'form', 'laydate'], function () {
+        var laydate = layui.laydate, form = layui.form;
+        table = layui.table;
+        var layuiIndex = layui.index;
+
+        var tableUrl = '../fee/inhospitalFeeCurrentArrearsList.jo';
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 12)
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('arrearsList', {
+                height: height
+            })
+        })
+
+
+
+        table.render($.extend(basePageTable, {
+            id: 'arrearsList',
+            elem: '#arrearsList',
+            where: common.serializeObject($('#queryForm', ['inhospitalDate'])),
+            height: getTableHgt(),
+            // url: tableUrl,
+            data: [],
+            cols: [[{
+                fixed: 'left',
+                field: 'inhospitalDate',
+                title: '入院时间',
+                width: 160,
+                templet: function (row) {
+                    if (row.inpatientInhospital) return getFormatDateByLong(row.inpatientInhospital.inhospitalDate, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            }, {
+                fixed: 'left',
+                field: 'wardName',
+                width: 130,
+                title: '病区',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.wardName;
+                    return "";
+                }
+            }, {
+                field: 'currentBedNo',
+                width: 100,
+                title: '床号',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.currentBedNo;
+                    return "";
+                }
+            }, {
+                field: 'patientMedicalNo',
+                width: 100,
+                title: '病案号',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.patientMedicalNo;
+                    return "";
+                }
+            }, {
+                field: 'patientName',
+                width: 80,
+                title: '姓名',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.patientName;
+                    return "";
+                }
+            }, {
+                field: 'patientIdCard',
+                width: 160,
+                title: ' 证件号码',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.patientIdCard;
+                    return "";
+                }
+            }, {
+                field: 'patientSex',
+                width: 60,
+                title: '性别',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return dicSex[row.inpatientInhospital.patientSex];
+                    return "";
+                }
+            }, {
+                field: 'currentOfficeName',
+                width: 60,
+                title: '科室',
+                templet: function (row) {
+                    if (row.inpatientInhospital) return row.inpatientInhospital.currentOfficeName;
+                    return "";
+                }
+            }, {
+                field: 'bedDoctorName',
+                title: '管床医生',
+                width: 100
+            }, {
+                field: 'diagnosisDoctorName',
+                width: 100,
+                title: '主治医生'
+            }, {
+                field: 'archiaterDoctorName',
+                title: '住任医师',
+                width: 100
+            }, {
+                field: '',
+                title: '住院医师',
+                width: 100
+            }, {
+                field: '',
+                title: '副主任医生',
+                width: 100
+            }, {
+                field: '',
+                title: '科主任',
+                width: 100
+            }, {
+                fixed: 'right',
+                field: 'arrearsAmount',
+                title: '欠费金额',
+                width: 80,
+                templet: function (row) {
+                    if (row.arrearsAmount) return row.arrearsAmount; else return "";
+                    return "";
+                }
+            }, {
+                fixed: 'right',
+                field: 'prepayInAmount',
+                title: '缴款总金额',
+                width: 100,
+                templet: function (row) {
+                    if (row.prepayInAmount) return row.prepayInAmount; else return "";
+                    return "";
+                }
+            }, {
+                fixed: 'right',
+                field: 'feeAmount',
+                title: '自付费用总额',
+                width: 120,
+                templet: function (row) {
+                    if (row.feeAmount) return row.feeAmount; else return "";
+                    return "";
+                }
+            }, {
+                fixed: 'right',
+                field: 'inhospitalState',
+                title: '在院状态',
+                width: 120,
+                templet: function (row) {
+                    if (row.inpatientInhospital) return dicInhospitalState[row.inpatientInhospital.inhospitalState];
+                    return "";
+                }
+
+            }]]
+        }));
+
+        // 重新加载列表
+        function queryList() {
+            if (table) {
+                table.reload('arrearsList', {
+                    url: tableUrl,
+                    page: {curr: 1},
+                    where: common.serializeObject($('#queryForm'), ['inhospitalDate'])
+                });
+            }
+        }
+
+        // 病案号
+        $('#patientMedicalNo').bind('input propertychange', function () {
+            queryList();
+        });
+        // 患者
+        $('#patientName').bind('input propertychange', function () {
+            queryList();
+        });
+        // 病区
+        form.on('select(wardId)', function (data) {
+            queryList();
+        });
+        //住院日期
+        laydate.render({
+            elem: '#inhospitalDate', range: true, done: function (value, date, endDate) {
+                queryList()
+            }
+        });
+        //科室
+        form.on('select(inhospitalOfficeId)', function (data) {
+            queryList();
+        });
+
+        $('#btn_refresh').click(function () {
+            window.location.href = window.location.href;
+        });
+
+    });
+</script>
+</html>

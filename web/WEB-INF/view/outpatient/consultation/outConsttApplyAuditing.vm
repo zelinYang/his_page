@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>会诊申请审核</title> 
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+    .auduting{ width: 70px;letter-spacing:3px;  }
+    .auduting:nth-child(1) {letter-spacing: 15px;padding: 0px 15px; }
+    </style>
+</head>  
+
+<body class="white-bg">
+    <div class="main full-height">
+        <div class="main-content" style="height: calc(100% - 42px);position: relative;" >
+             #set($emrShowParam = 'view=patient/emr/commonEmrShow&showBtn=0')
+             <iframe #iframeAttr id="emrIframe"
+               src="$!contextPath/emr/commonEmrTemplate.do?$emrShowParam&registerId=$!consttApply.registerId&emrTlpId=$!emrTlpId&patientHospitalEmrId=$!consttApply.patientHospitalEmrId&patientId=$!consttApply.patientId"  >
+            </iframe>
+        </div>
+        <div class="tool-bottom-fixed btn_gorup" style="background: #ffffff;border-top: 1px solid #e7eaec;">
+              <button class="auduting layui-btn layui-btn-sm" type="button" state="${CONST.AppConstants.CONSTT_STATE_AUDITING_PASS}">通过</button>
+              <button class="auduting layui-btn layui-btn-sm layui-btn-danger" state="${CONST.AppConstants.CONSTT_STATE_AUDITING_NOT_PASS}" type="button">不通过</button>
+        </div>
+        
+        <div class="hide-area">
+            #if($!consttApply.consultationStateFlag == ${CONST.AppConstants.CONSTT_STATE_SUBMIT})
+		        #set($stateClass = 'autitingWait') 
+		    #elseif ($!consttApply.consultationStateFlag == ${CONST.AppConstants.CONSTT_STATE_AUDITING_PASS})    
+		        #set($stateClass = 'pautitingPass')
+		    #elseif ($!consttApply.consultationStateFlag == ${CONST.AppConstants.CONSTT_STATE_AUDITING_NOT_PASS})    
+		        #set($stateClass = 'pautitingPassNot')
+		    #end
+		    #set($stateText =  $!dicData.dicConsttAutditingState.get($!consttApply.consultationStateFlag) ) 
+		    <div class="emrAuditing mask_state layui-hide  $stateClass" >$stateText</div>
+        </div>
+        
+    </div>
+<script>
+layui.use([ 'jquery', 'table', 'element', 'form' ], function() {
+	var table = layui.table;
+	var element = layui.element;
+	var form = layui.form;
+	element.render();
+	
+	$('.auduting').click(function() {
+	    var state = $(this).attr('state');
+	    audutingApply(state);
+    });
+ 
+	function audutingApply(state) {
+	    $.ajax({  
+	        type: "POST",  
+	        url: '$!contextPath/consultationApply/audutingApply.jo',  
+	        data: {consttApplyId: $!consttApply.consultationApplyId, consttState: state},
+	        dataType:"json",
+	        success: function(result){
+	             common.msg('审核成功！', iconType.success);
+	             var stateText =   state == ${CONST.AppConstants.CONSTT_STATE_AUDITING_PASS}? '审核通过' : '已退回';
+	             $('.emrAuditing').html(stateText);
+	             $('#emrIframe')[0].contentWindow.emrAuditing();
+	        },  
+	        error: function(res){jqueryPostError(res);} 
+	    });//ajax end 
+	}
+});//layui.use
+</script> 
+
+ 
+    
+    
+</body>
+</html>

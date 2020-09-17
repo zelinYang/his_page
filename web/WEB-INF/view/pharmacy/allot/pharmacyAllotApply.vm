@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药房调拨申请</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style>
+		.payInFeeTab tr td{ height: 40px;line-height: 40px;padding: 0px;}
+		.payInFeeTab tr td input{ height: 100%;border: none;}
+		.payInFeeTab tr td input:hover,.payInFeeTab tr td input:focus{ border:1px solid mediumaquamarine; background-color: #f5f6f7;}
+		.search-term .layui-inline label.layui-form-label {
+			width: 80px;
+		}
+
+		@media screen and (max-width: 1024px){
+			.layui-form-item .layui-input-inline{
+				width: 170px;
+			}
+		}
+		@media screen and (max-width: 768px){
+			.layui-form-item .layui-input-inline{
+				width: 120px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+<div class="layui-content-wrapper layui-bg-white overflow-x-h" id="drugstoreInItemDiv">
+	<form class="layui-form" action="" id="editForm">
+		<div class="layui-row-query border-b-n">
+			<div class="layui-form-item">
+                #formHiddenInput("pharmacyAllotId" "" "id='pharmacyAllotId'")
+                #formHiddenInput("allotOutFlag" "" "id='allotOutFlag'")
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()申请药房</label>
+					<div class="layui-input-inline">
+						<select id="applyPharmacyId" name="applyPharmacyId" lay-filter="applyPharmacyId" class=“layui-input”>
+                            #foreach($pharmacy in $pharmacyList)
+								<option value="$!{pharmacy.pharmacyId}">$!{pharmacy.pharmacyName}</option>
+                            #end
+						</select>
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()目标医院</label>
+					<div class="layui-input-inline">
+						<select id="allotOutHospitalId" name="allotOutHospitalId" lay-filter="allotOutHospitalId" class=“layui-input”>
+                            #foreach($org in $orgList)
+                                #if($!{org.orgId} == $!{currentHospitalId})
+									<option value="$!{org.orgId}" selected>本院</option>
+                                #else
+									<option value="$!{org.orgId}">$!{org.name}</option>
+                                #end
+                            #end
+						</select>
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()目标药房</label>
+					<div class="layui-input-inline">
+						<select id="allotOutPharmacyId" name="allotOutPharmacyId" lay-filter="allotOutPharmacyId"></select>
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()申请日期</label>
+					<div class="layui-input-inline">
+                        #formTextInput("applyDate" "" "id='applyDate' class='layui-input' readonly ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">备注</label>
+					<div class="layui-input-inline">
+                        #formTextInput("remark" "" "id='remark' class='layui-input' placeholder='备注' autocomplete='off' ")
+					</div>
+				</div>
+			</div>
+		</div>
+	</form>
+	<div class="layui-bg-white full-scroll" onkeyup="onEnter()" id="pharmacyAllotItemTable">
+		<table class="layui-table layui-table-input m-t-n" style="min-width: 2000px;">
+			<thead>
+			<tr>
+				<th class="editFlag" style="padding-left: 20px" width="30">
+					<i id="btn_addItem" class="layui-icon layui-icon-add-1 btn-img-green" title="新增"></i>
+				</th>
+				<th width="150">药品名称</th>
+				<th width="40">药品单位</th>
+				<th width="40">药房库存</th>
+				<th width="40">申请数量</th>
+				<th width="40">实发数量</th>
+				<th width="40">药品规格</th>
+				<th width="40">药品剂量</th>
+				<th width="40">剂量单位</th>
+				<th width="120">药品剂型</th>
+				<th width="150">产地名称</th>
+				<th width="40">零售价</th>
+				<th width="40">最小包装</th>
+				<th width="80">药品批号</th>
+				<th width="80">药品效期</th>
+			</tr>
+			</thead>
+			<tbody class="tbody-data" id="itemList">
+			<tr>
+				<td class="editFlag" style="padding-left: 20px">
+					<i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+				</td>
+				<td>
+                    #formHiddenInput("pharmacyAllotItemId" "" "")
+					#formHiddenInput("pharmacyAllotId" "" "")
+					#formHiddenInput("medicineId" "" "")
+					#formHiddenInput("confirmFlag" "0" "")
+					#formHiddenInput("pharmacyStockId" "" "")
+					#formHiddenInput("actualAllotSum" "" "")
+					#formTextInput("medicineName" "" "maxlength='10' class='layui-input' autocomplete='off' ") ## 药品名称
+				</td>
+				<td>
+					#formSingleSelectFirstNone("medicineUnit" "" $dicData.dicDrugNumUnit "class='layui-input' disabled readonly autocomplete='off' " "") ## 单位
+				</td>
+				<td>
+					#formFloLenInput("stockCount" "" 8 "maxlength='10' class='layui-input' readonly autocomplete='off' ") ## 药房库存
+				</td>
+				<td>
+					#formTextInput("applyMedicineCount" "" "class='layui-input' autocomplete='off' ") ## 申请数量
+				</td>
+				<td>
+					#formTextInput("allotActualCount" "" "class='layui-input' readonly autocomplete='off' ") ## 实发数量
+				</td>
+				<td>
+                    #formTextInput("medicineSpec" "" "class='layui-input' autocomplete='off' readonly ") ## 药品规格
+				</td>
+				<td>
+                    #formTextInput("medicineDosage" "" "id='medicineDosage' maxlength='5' class='layui-input' autocomplete='off' disabled readonly")  ##药品剂量
+				</td>
+				<td>
+                    #formSingleSelectFirstNone("dosageUnit" "" $dicData.dicDrugNumUnitDosageUnit "class='layui-input' autocomplete='off' disabled readonly" "") ## 剂量单位
+				</td>
+				<td>
+                    #formSingleSelectFirstNone("dosageForm" "" $dicData.dicDosageForm " class='layui-input' autocomplete='off' disabled readonly " "") ## 药品剂型
+				</td>
+				<td>
+                    #formHiddenInput("producingAreaId" "" "id='producingAreaId'")
+					#formTextInput("producingAreaName" "" "class='layui-input' autocomplete='off' readonly ") ## 产地名称
+				</td>
+				<td>
+                    #formFloLenInput("retailPrice" "" 8 "maxlength='10' targetSum='retailSum' class='layui-input' readonly autocomplete='off' ") ## 零售价
+				</td>
+				<td>
+                    #formIntZeroInput("minMedicinePack" "" "maxlength='10' class='layui-input' autocomplete='off' disabled readonly")  ##最小包装
+                    #formHiddenInput("tradeSumPrice" "" 8 "maxlength='10' class='layui-input' autocomplete='off' readonly") ## 批发金额
+					#formHiddenInput("minRetailPrice" "" 8 "maxlength='10' class='layui-input' autocomplete='off' readonly") ## 最小零售价
+					#formHiddenInput("retailSumPrice" "" 8 "maxlength='10' class='layui-input' autocomplete='off' readonly") ## 售金额
+					#formHiddenInput("minRetailSumPrice" "" 8 "maxlength='10' class='layui-input' autocomplete='off' readonly") ## 最小零售金额
+				</td>
+				<td>
+                    #formTextInput("batchNum" "" "class='layui-input' readonly autocomplete='off' ") ## 药品批号
+				</td>
+				<td>
+                    #formFloLenInput("expireDate" "" 8 "maxlength='10' class='layui-input' readonly autocomplete='off' readonly ") ## 药品效期
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+	<form class="layui-form" action="" id="btnForm">
+		<div class="layui-form-item text-center search-term">
+			<div class="layui-inline">
+				<button type="button" id="btn_save" class="layui-btn layui-btn-sm"><span>保存</span></button>
+				<button type="button" id="btn_submit" class="layui-btn layui-btn-sm"><span>提交</span></button>
+			</div>
+		</div>
+	</form>
+</div>
+    #parse("./common/commonSelect.js.vm")
+    #parse("./pharmacy/allot/pharmacyAllotApply.js.vm")
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>历史病例查询</title>
+    <meta name="renderer" content="webkit">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    #parse("./common/pageCss.vm")#parse("./common/pageJs.vm")
+    <style>
+        .emrList li { width: 48.5%; display: inline-block;text-align: center;}
+        .emrList li:hover { cursor: pointer; color: #387adf; font-weight: bold;}
+        .emrList li.list-this {color: #009688;position: relative;}
+        .emrList li.list-this:after {
+            position: absolute;
+            left: 15px;
+            content: '';
+            width: 70%;
+            height: 21px;
+            border: none;
+            border-bottom: 2px solid #5FB878;
+        }
+        .full-height-scroll { height: calc(100% - 44px); }
+      .timeline-left { width: 250px; float: left; height: 100%;}
+      .timeline-right { width: calc(100% - 253px); float: left; margin-left: 3px;height: 100%;}
+
+    </style>
+</head>
+<body>
+    #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+    <div class="layui-fluid">
+        <div class="layui-row full-height">
+            <div class="timeline-left">
+                <div class="layui-card full-height" >
+                    <div class="layui-card-header">医疗时间线</div>
+                    <div class="layui-card-body full-height-scroll">
+                        <ul id="timeline"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="timeline-right">
+                <iframe src=""  frameborder="0"  id="demoAdmin"  style="width: 100%; height: 100%;"></iframe>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        layui.config({
+            base: '../resource/layuiadmin/'
+        }).extend({
+            index: 'lib/index'
+        }).use(['element', 'layer','util'],function(){
+            common.requestServer("../register/visitHospital.jo", {patientId: $("#patientId").val()}, function(obj) {
+                var htmlcontent = $.map(obj.data, function(patientVisit){
+                    var visitDate = patientVisit.visitDate;//就诊日期
+                    var visitHospital = patientVisit.visitHospital;//就诊医院
+                    var visitData = patientVisit.visitData;//就诊信息
+                    var title = layui.util.toDateString(visitDate,'yyyy-MM-dd HH:mm:ss') + ' '+ (visitData.inhospitalId ? '<span class="layui-badge layui-bg-blue">住院</span>':'<span class="layui-badge layui-bg-orange">门诊</span>') +'<br>' + visitHospital.name;
+                    var lihtml = '';
+                    if (visitData.inhospitalId) {//住院
+                        lihtml = '<li ifream-url="../inpatient/baseInpatientInfo.do?" data-id="optype=show&patientId='+visitData.patientId+'&inhospitalId=' + (visitData.inhospitalId || '') + '"  >住院信息</li>'
+                            + '<li  ifream-url="../emr/commonEmrTreeView.do?"  data-id="patientId='+visitData.patientId+'&inhospitalId=' +(visitData.inhospitalId || '')+'&emrProperty=$!{CONST.AppConstants.EMR_PROPERTY_CURRENT}&view=patient/emr/commonEmrView">医疗文书</li>'
+                            + '<li ifream-url="../inpatient/inpatientOrderList.do?"  data-id="patientId='+visitData.patientId+'&inhospitalId=' +(visitData.inhospitalId || '')+'" >医嘱查看</li>'
+                            + '<li ifream-url="../inpatient/wardDiagnosisList.do?" data-id="patientId='+visitData.patientId+'&inhospitalId=' +(visitData.inhospitalId || '')+'" >诊断信息</li>';
+                    } else {
+                        //门诊,处方查看
+                        lihtml = ''
+                            + '<li  ifream-url="../emr/commonEmrTreeView.do?"  data-id="patientId='+visitData.patientId+'&registerId=' +(visitData.registerId || '')+'&emrProperty=$!{CONST.AppConstants.EMR_PROPERTY_CURRENT}&view=patient/emr/commonEmrView">医疗文书</li>'
+                        + '<li ifream-url="../outpatient/outpatientDiagnoseRecord.do?" data-id="patientId='+visitData.patientId+'&registerId=' +(visitData.registerId || '')+'" >诊断信息</li>';
+                    }
+                    return '<li class="layui-timeline-item">'
+                            +'<i class="layui-icon layui-timeline-axis layui-icon-circle">'
+                            +'</i>'
+                            +'<div class="layui-timeline-content layui-text">'
+                            + '<h4 class="layui-timeline-title">'+title+'</h4>'
+                            +'<ul class="emrList">'
+                            + lihtml
+                            +'</ul>'
+                            +'</div>'
+                            +'</li>';
+                }).join('');
+                $("#timeline").html(htmlcontent);
+                $(".emrList li").click(function(){
+                    $(".emrList li").removeClass("list-this");
+                    $(this).addClass("list-this");
+                    var params=$(this).attr("ifream-url");
+                    var result=$(this).attr("data-id");
+                    $("#demoAdmin").attr("src",params+result);
+                }).first().click();
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+
+<script>
+    var dicDicType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDicType)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+        //选择的当前字典分类
+        var currentDicType = {dicTypeId:'', dicTypeName:''};
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('body').height() - $('#basDic_queryForm').height() - ($('body').height() - $('.layui-fluid').height() + 25);
+        }
+
+        $('#q_keyWord').on('keydown',function(event){
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        })
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                dicTypeId: '',
+                keyWord: '',
+                dicTypeName: '',
+                dicName: '',
+                dicTypeCode: '',
+                dicType: '$!{dicType}'
+            }, common.serializeObject($('#basDic_queryForm')));
+        }
+        //表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#basDicTypeListGrid',
+            height: getTableHgt(),
+            url : '../basDicType/basDicTypeListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    field : 'dicTypeId',
+                    title : '编号',
+                    width : 5 * 10
+                },
+                {
+                    field : 'dicTypeName',
+                    title : '字典分类',
+                    minWidth: 200
+                },
+                {
+                    field: 'dicType',
+                    title: '类型',
+                    templet: function (row) {
+                        return dicDicType[row.dicType] || "";
+                    },
+                    width:40
+                },
+                {
+                    field : 'dicTypeCode',
+                    title : '字典分类编码',
+                    width : 250
+                }]],done:function(res){
+                    currentDicType = {};
+                    var dicQueryParams = getQueryParams();
+                    //遍历basDicType，把dicTypeId作为明细的查询条件(仅查询第一页BasDicType的明细。)
+                    if (("" != dicQueryParams.keyWord || "" != dicQueryParams.dicTypeCode) && null != res.data && res.data.length > 0) {
+                        var dicTypeIds = $.map(res.data, function (item) {
+                            return item.dicTypeId
+                        });
+                        dicQueryParams.keyWord = "";
+                        dicQueryParams.dicTypeIds = dicTypeIds.toString();
+                    }
+                    //把“字典名称”作为关键字查询
+                    if (null != dicQueryParams.dicName && "" != dicQueryParams.dicName) {
+                        dicQueryParams.keyWord = dicQueryParams.dicName;
+                        dicQueryParams.dicName = "";
+                    }
+                    //表格设置
+                    table.render($.extend({}, basePageTable, {
+                        elem: '#basDicListGrid',
+                        height: getTableHgt(),
+                        url: contextPath + '/basDic/basDicListData.jo',
+                        where: dicQueryParams,
+                        cols: [[{
+                            type: 'numbers'
+                        }, {
+                            field: 'dicTypeId',
+                            hide: true,
+                            fixed:'left'
+                        }, {
+                            field: 'dicTypeName',
+                            title: '字典分类',
+                            minWidth: 100,
+                            templet:'#dicTypeName'
+                        },{
+                            field: 'dicName',
+                            title: '字典名称',
+                            minWidth: 100
+                        }, {
+                            field: 'dicCode',
+                            title: '字典编码',
+                            sort: true,
+                            minWidth: 100
+                        }, {
+                            field: 'validFlag',
+                            title: '是否有效',
+                            unresize: true,
+                            width: 100,
+                            templet: '#validFlagTpl'
+                        }, {
+                            title: '操作',
+                            width: 100,
+                            align: 'center',
+                            fixed: 'right',
+                            toolbar: '#operateTpl'
+                        }]],done:function(res){
+                             var that = this;
+                             rowspan(that, res);
+
+                            autoSetHeigt()
+                        }
+                    }));
+                }
+        }));
+
+        //处理行高问题，此处较为特别，需如此写并加入一个fixed:'left'才生效，原因可能是table嵌套渲染异步执行所致
+        function autoSetHeigt(){
+               $(".layui-table-main table tr").each(function(index,ele){ var _h = $(this).height();
+               $(".layui-table-fixed div.layui-table-body table tr").eq(index).height(_h+"px"); });
+
+             ## $(".layui-table-main tr").each(function (index, val) {
+             ##     $($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+             ##     $($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+             ## });
+
+        }
+        //排序重新渲染以使autoSetHeigt()执行
+        table.on('sort(basDicListGrid)',function(){
+            autoSetHeigt()
+        })
+
+        //监听行单击事件
+        table.on('row(basDicTypeListGrid)', function(obj) {
+            var data = obj.data;
+            var queryParams = {dicTypeId: data.dicTypeId};
+            //执行重载
+            table.reload('basDicListGrid', {
+                where: queryParams
+            });
+            currentDicType = data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basDicTypeListGrid', {
+                where: queryParams
+            });
+            /*
+            queryParams.dicTypeName = queryParams.keyWord;
+            queryParams.keyWord =''
+            //执行重载
+            table.reload('basDicListGrid', {
+                where: queryParams
+            });
+            */
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basDic_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/basDic/basDicEdit.do?dicTypeId='+(currentDicType.dicTypeId || ""), (currentDicType.dicTypeId ? '<b>' + currentDicType.dicTypeName + '</b>：' :'') +'字典明细新增', {
+                area: ['600px', '80%'],
+                scroll: true
+            })
+        })
+
+        //合并单元格
+        //放在 table.done() 方法里 rowspan(that, res)
+        function rowspan(that, res){
+            //合并关键字段
+            var groupKeyWord = 'dicTypeId';
+            //存放需要合并的唯一字段
+            var dicTypeIds = $.unique($.map(res.data, function (item) {
+                return item[groupKeyWord];
+            }));
+            //合并显示单元格字段
+            var groupCells = ['dicTypeName'];
+            layui.each(dicTypeIds, function (index, contains) {
+                var trs = that.elem.next().find('.layui-table-main tr td[data-field="'+ groupKeyWord +'"]>.layui-table-cell:contains('+ contains +')').filter(function () {
+                    return $(this).text() == contains;
+                }).parents('tr');
+                layui.each(groupCells, function (i, field) {
+                    trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+                })
+                //移入背景颜色
+                trs.hover(function(){
+                    trs.not(this).toggleClass('layui-table-hover');
+                })
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(basDicListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'dicType':
+                    $("#q_keyWord").val(row.dicTypeName);
+                    $('#btn_query').click();
+                    break;
+                case 'btn_show':
+                    common.open('$contextPath' + '/basDic/basDicShow.do?dicId=' + row.dicId, '<b>' + row.dicTypeName + '</b>：' + row.dicName + '详情', {
+                        area: ['600px', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/basDic/basDicEdit.do?dicId=' + row.dicId, '<b>' + row.dicTypeName + '</b>：' + row.dicName, {
+                        area: ['600px', '80%'],
+                        scroll: true
+                    })
+            }
+        });
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../basDic/basDicUpdateValidFlag.jo', {
+                dicId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            /*
+            table.reload('basDicListGrid', {
+                height: height
+            });
+            */
+            table.reload('basDicTypeListGrid',{
+                height: getTableHgt()
+            });
+        })
+
+    })
+</script>

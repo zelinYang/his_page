@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>病案--收费项目归并</title>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<style type="text/css">
+.layui-form-select dl {
+    max-height: 200px;
+}
+
+.layui-form-label {
+    width: 90px;
+}
+
+.layui-input-block {
+    margin-left: 110px;
+}
+
+.layui-table-cell {
+    overflow: visible;
+}
+</style>
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">病案收费项目归并</div>
+            <div class="layui-card-body">
+                <table id="docChargeGroupListGrid" lay-filter="docChargeGroupListGrid"></table>
+                <script type="text/html" id="colstoolbar">
+                      <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+                    </script>
+                <script type="text/html" id="chargeGroupNameTpl">
+                         #formTextInput("chargeGroupName[{{d.LAY_TABLE_INDEX}}]" "{{d.chargeGroupName || ''}}" " maxlength='20' lay-verify='required' autocomplete='off' class='layui-input'")
+                    </script>
+                <script type="text/html" id="basChargeGroupIdTpl">
+                    #formSingleSelectSearchFirstNone("basChargeGroupId[{{d.LAY_TABLE_INDEX}}]" "" ${dicData.dicInhospitalChargeGroupCode} " lay-verify='required'  lay-filter='basChargeGroupId' lay-search" "直接选择或搜索选择")
+                </script>
+                <script type="text/html" id="chargeTypeTpl">
+                        #formRadioGroup("chargeType[{{d.LAY_TABLE_INDEX}}]" "" $dicData.dicChargeType "lay-filter='chargeType' ")
+                </script>
+                <script type="text/html" id="submitTpl">
+                         <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+        </div>
+                    </script>
+            </div>
+        </div>
+    </div>
+    <script>
+                    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+                    layui.config({
+                        base : '../resource/layuiadmin/' //静态资源所在路径
+                    }).extend({
+                        index : 'lib/index', //主入口模块
+                        autocomplete : 'autocomplete'
+                    }).use(
+                            [ 'index', 'table', 'form', 'layer', 'laytpl' ],
+                            function() {
+                                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, laytpl = layui.laytpl;
+                                //表列表
+                                table.render({
+                                    elem : '#docChargeGroupListGrid',
+                                    data : [],
+                                    cols : [ [
+                                            {
+                                                title : '<i id="btn_add" class="layui-icon " lay-event="add"></i>',
+                                                width : 60,
+                                                align : 'center',
+                                                toolbar : '#colstoolbar'
+                                            },
+                                            {
+                                                type : 'checkbox',
+                                                'LAY_CHECKED' : true,
+                                                'hide' : true
+                                            },
+                                            {
+                                                field : 'chargeGroupName',
+                                                title : '#requiredTag()收费类型名称',
+                                                templet : '#chargeGroupNameTpl'
+                                            },
+                                            {
+                                                field : 'basChargeGroupId',
+                                                title : '#requiredTag()收费项目归并',
+                                                templet : function(d) {
+                                                    return laytpl(
+                                                            $('#basChargeGroupIdTpl').html(
+                                                                    function(i, e) {
+                                                                        return $(e).find('option').removeAttr("selected").end().find('option[value="' + d.basChargeGroupId + '"]')
+                                                                                .attr("selected", "selected").end();
+                                                                    }).html()).render(d);
+                                                }
+                                            },
+                                            {
+                                                field : 'chargeType',
+                                                title : '项目类型',
+                                                templet : function(d) {
+                                                    return laytpl($('#chargeTypeTpl').html(function(i, e) {
+                                                        return $(e).removeAttr("checked").filter('[type="radio"][value="' + d.chargeType + '"]').attr("checked", "").end();
+                                                    }).html()).render(d);
+                                                }
+                                            },
+                                            {
+                                                field : 'validFlag',
+                                                title : '是否有效',
+                                                unresize : true,
+                                                width : 100,
+                                                templet : function(d) {
+                                                    return '<input type="checkbox" name="validFlag[' + d.LAY_TABLE_INDEX + ']" value="' + d.validFlag
+                                                            + '" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" ' + (d.validFlag == 1 && 'checked') + '>';
+                                                }
+                                            } ] ],
+                                    height : 'full-60',
+                                    done : function(res, curr, count) {
+                                        var id = this.id, data = this.data;
+                                        $("#btn_add").click(function() {
+                                            addRow(id, table.cache[id]);
+                                        })
+                                        $('#' + id).next().find('input[type="text"]').on('input propertychange', function(i, v) {
+                                            updateTableData(id, this, this.value)
+                                        });
+                                        $('#' + id).next().append($('#submitTpl').html());
+
+                                    }
+                                });
+
+                                //监听工具条
+                                table.on('tool(docChargeGroupListGrid)', function(obj) { //注：tool是工具条事件名，test是table原始容器的属性 lay-filter="对应的值"
+                                    var data = obj.data; //获得当前行数据
+                                    var layEvent = obj.event; //获得 lay-event 对应的值（也可以是表头的 event 参数对应的值）
+                                    var tr = obj.tr; //获得当前行 tr 的DOM对象
+                                    if (layEvent === 'del') { //删除
+                                        layer.confirm('真的删除行么', function(index) {
+                                            obj.del(); //删除对应行（tr）的DOM结构，并更新缓存
+                                            layer.close(index);
+                                        });
+                                    }
+                                });
+
+                                form.on('select(basChargeGroupId)', function(data) {
+                                    var id = 'docChargeGroupListGrid';
+                                    updateTableData(id, data.elem, data.value)
+                                });
+
+                                form.on('radio(chargeType)', function(data) {
+                                    var id = 'docChargeGroupListGrid';
+                                    updateTableData(id, data.elem, data.value)
+                                });
+
+                                //监听有无效操作
+                                form.on('switch(validFlag)', function(data) {
+                                    var id = 'docChargeGroupListGrid';
+                                    var validFlag = Number(data.elem.checked);
+                                    updateTableData(id, data.elem, validFlag)
+                                });
+
+                                function addRow(id, data) {
+                                    data.push({
+                                        "validFlag" : "1"
+                                    });
+                                    table.reload(id, {
+                                        data : data,
+                                        limit : data.length + 1
+                                    });
+                                }
+
+                                function updateTableData(id, elem, value) {
+                                    //进行相关操作
+                                    var index = $(elem).parents('tr').data('index');
+                                    var field = $(elem).parents('td').data('field');
+                                    table.cache[id][index][field] = value;
+                                }
+
+                            });
+                </script>
+</body>
+</html>

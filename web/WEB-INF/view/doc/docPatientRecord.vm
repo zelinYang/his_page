@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style type="text/css">
+</style>
+</head>
+<body>
+    <div class="m-n" style="height: calc(100% - 15px);">
+        <form class="layui-form white-bg p-t-xs p-b-xs m-b-xs">
+           #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            <div class="layui-inline">
+                <label class="layui-form-label">选择模板：</label>
+                <div class="layui-input-inline" >
+                    #formSingleSelect("emrTlpId" "$!{emrTlp.emrTlpId}" $!emrTlpMap "id='emrTlpId' lay-filter='emrTlpId'")
+                </div>
+            </div>
+        </form>
+        <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 37px);" class="larry-iframe" src=""></iframe>
+    </div>
+
+<script>
+layui.use(['element','table','form'],function(){
+    var form = layui.form;
+    
+    var emrTlpId = $("#emrTlpId").val();
+    loadEmrTlp(emrTlpId);
+    
+    form.on('select(emrTlpId)',function(data){
+        loadEmrTlp(data.value);
+    });
+    
+    //加载电子病历编辑iframe
+    function loadEmrTlp(emrTlpId){
+        var params = "emrTlpId=" + (emrTlpId ? emrTlpId : '') + "&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&registerId=$!{registerId}";
+        console.log(params);
+        $("#emrEdit").attr("src", contextPath + '/doc/docPatientRecordEmrTemplate.do?' + params);
+    }
+});
+//初始化保存，一般用在病历数据对象新增时（修改不用调用），需要调用该方法
+function initBaseParams(minieditorDesign) {
+    var data = minieditorDesign.getBaseParams();
+    if (!data['DocPatientRecord'] || !data['DocPatientRecord'].id) {
+        minieditorDesign.addParams({DocPatientRecord:{inhospitalId: $('#inhospitalId').val(), patientId: $('#patientId').val()}});
+    }
+}
+</script>
+</body>
+
+</html>

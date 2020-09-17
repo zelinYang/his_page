@@ -1,0 +1,222 @@
+<script>
+layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'laytpl', 'autocomplete','layer'], function () {
+    var $ = layui.$, form = layui.form, laytpl = layui.laytpl, autocomplete = layui.autocomplete, layer = layui.layer
+    common.verify(form)
+	//新增入量记录
+    function loadInVol(){
+    	$("#inPutRecord").append($("#inVolTpl").html());
+    	form.render()
+    }
+    //新增出量记录
+    function loadOutVol(){   	
+    	$("#outRecord").append($("#outVolTpl").html());
+    	form.render()
+    }
+    //新增置管记录
+    function loadDrainTube(){  	
+    	$("#drainTube").append($("#drainTubes").html());
+    	form.render()
+    }
+    //新增护理措施记录
+    function loadNursingMeasure(){  	
+    	$("#nursingMeasure").append($("#nursingMeasures").html());
+    	form.render()
+    }
+    loadNursingMeasure()
+    loadInVol()
+    loadOutVol()
+     loadDrainTube()
+    //提交表单
+    function saveInpatientSymptom () {
+    	var params = getNursingRecordData();
+    	console.log(params);
+    	$.ajax({
+      	  type:"POST",
+      	  url:contextPath + '/inpatient/saveInpatientNursingRecord.jo',
+      	  data:JSON.stringify( params),
+      	  dataType:'json',
+      	  contentType:'application/json;charset=utf-8',
+      	  success:function(result){     
+      		common.alert("保存成功。")
+      	  }
+      	  })
+    }
+    //获取表单数据
+    //未做插入成功提示。
+    function getNursingRecordData(){
+    	var inpatientSymptomParams = common.serializeObject($('#inpatientSymptomForm'));
+    	//inpatientSymptomParams.currentOfficeId = parseInt(inpatientSymptomParams.currentOfficeId);
+        //入量数据patientHospitalEmrId
+     
+        if(null != inpatientSymptomParams.inDicCode){
+        var inpatientInVolumes=[]; 
+        var inDicCodes = inpatientSymptomParams.inDicCode.split(',');
+        //判断给予量是否填写
+        if(null != inpatientSymptomParams.giveVolume){
+        var giveVolumes = inpatientSymptomParams.giveVolume.split(',');
+        }
+        //判断实际入量是否填写
+        if(null != inpatientSymptomParams.factVolume){
+        var factVolumes = inpatientSymptomParams.factVolume.split(',');
+        }
+        $.each(inDicCodes,function(index){
+        	
+      	  var inpatientInVolume= {
+      		  "inDicCode":inDicCodes[index],
+      			"inDicName":inDicCodes[index],
+      			  "giveVolume":parseInt(giveVolumes[index]),
+      	  			"factVolume":parseInt(factVolumes[index])    
+        }
+        	
+      	  inpatientInVolumes.push(inpatientInVolume);
+        })
+        inpatientSymptomParams.inpatientInVolumes=inpatientInVolumes;
+    }
+        //出量记录
+        if(null != inpatientSymptomParams.outDicCode){
+        	var inpatientOutVolumes=[];
+            var outDicCodes = inpatientSymptomParams.outDicCode.split(',');
+            //判断出量是否填写
+            if(null != inpatientSymptomParams.outVolume){
+            var outVolumes = inpatientSymptomParams.outVolume.split(',');
+            }
+            //判断出量颜色是否填写
+            if(null != inpatientSymptomParams.outColor){
+            var outColors = inpatientSymptomParams.outColor.split(',');
+            }
+            $.each(outDicCodes,function(index){
+          
+            	var inpatientOutVolume= {
+          		  "outDicCode":outDicCodes[index],
+          			  "outVolume":parseInt(outVolumes[index]),
+          	  			"outColor":parseInt(outColors[index])    
+            }
+          	  inpatientOutVolumes.push(inpatientOutVolume);
+            })
+            inpatientSymptomParams.inpatientOutVolumes=inpatientOutVolumes;
+        }
+  
+        //护理措施记录
+        if(null != inpatientSymptomParams.measureDicCode){
+        	var inpatientNursingMeasures = [];
+            var measureDicCodes = inpatientSymptomParams.measureDicCode.split(',');
+			//判断措施描述是否填写
+            if(null != inpatientSymptomParams.nursingMeasure){
+            var nursingMeasures = inpatientSymptomParams.nursingMeasure.split(',');
+            }
+            $.each(measureDicCodes,function(index){        
+            	var inpatientNursingMeasure= {
+          		  "measureDicCode":measureDicCodes[index],         			 
+          	  			"nursingMeasure":nursingMeasures[index]    
+            }
+            	inpatientNursingMeasures.push(inpatientNursingMeasure);
+            })
+            inpatientSymptomParams.inpatientNursingMeasures=inpatientNursingMeasures;
+        }
+      //置管记录
+       if(null != inpatientSymptomParams.drainTube){
+        	var inpatientDrainTubes = [];
+        	//置管类型
+            var drainTubes = inpatientSymptomParams.drainTube.split(',');
+            if(null != inpatientSymptomParams.drainTubeModel){
+            //置管型号
+            var drainTubeModels = inpatientSymptomParams.drainTubeModel.split(',');
+            }         
+            if(null != inpatientSymptomParams.insertionLength){
+           	//插入长度
+         	 var insertionLengths = inpatientSymptomParams.insertionLength.split(',');
+              }
+            if(null != inpatientSymptomParams.injectionWater){
+            //注水
+             var injectionWaters = inpatientSymptomParams.injectionWater.split(',');
+                  }
+            if(null != inpatientSymptomParams.exposureLength){
+            //外入长度
+             var exposureLengths = inpatientSymptomParams.exposureLength.split(',');
+                  }
+            if(null != inpatientSymptomParams.drainTubeNuring){
+            //管路护理
+             var drainTubeNurings = inpatientSymptomParams.drainTubeNuring.split(',');
+                  }
+            $.each(drainTubes,function(index){
+          
+            	var inpatientDrainTube = {
+          		"drainTube":drainTubes[index],         			 
+          	  	"drainTubeModel":drainTubeModels[index],  
+          	  	"insertionLength":insertionLengths[index],   
+          	  	"injectionWater":injectionWaters[index],   
+          	    "exposureLength":exposureLengths[index],   
+          	    "drainTubeNuring":drainTubeNurings[index],   
+            }
+            	inpatientDrainTubes.push(inpatientDrainTube);
+            })
+            inpatientSymptomParams.inpatientDrainTubes=inpatientDrainTubes;
+        }
+        return inpatientSymptomParams;
+    }
+   
+     
+    //测量日期
+    laydate.render({
+      elem: '#temperatureDate',trigger: 'click'
+      , format: 'yyyy-MM-dd'
+      , max: 0 // 最大日期不允许超过当天
+    })
+
+    // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveInpatientSymptom()
+      return false
+    })
+	//重置按钮
+    $("#btn_replace").on('click',function(){
+       common.cleanForm(inpatientSymptomForm);
+     
+        });
+    //新增入量记录
+    $("#btn_addInVolume").on('click',function(){
+    var div = $("#inPutRecord");
+    loadInVol();
+ 
+    });
+  //新增出量记录
+    $("#btn_addOutVolume").on('click',function(){
+    var div = $("#outRecord");
+    loadOutVol();
+ 
+    });
+    //删除入量记录
+    $("#inPutRecord").on('click','.btn_delInVolume',function(){
+        layer.closeAll('tips'); //关闭所有的tips层
+    $(this).parents(".layui-form-item").remove()
+    });
+    
+    //删除出量记录
+    $("#outRecord").on('click','.btn_delOutVolume',function(){
+        layer.closeAll('tips'); //关闭所有的tips层
+    $(this).parents(".layui-form-item").remove()
+    });
+  	//新增置管记录
+    $("#btn_addDrainTube").on('click',function(){
+    	loadDrainTube();
+    });    
+    //删除置管措施记录
+    $("#drainTube").on('click','.btn_delDrainTube',function(){
+        layer.closeAll('tips'); //关闭所有的tips层
+    $(this).parents(".layui-form-item").remove()
+    });
+  //新增护理措施记录
+    $("#btn_addNursingMeasure").on('click',function(){
+    	loadNursingMeasure();
+    });    
+    //删除护理措施记录
+    $("#nursingMeasure").on('click','.btn_delNursingMeasure',function(){
+        layer.closeAll('tips'); //关闭所有的tips层
+    $(this).parents(".layui-form-item").remove()
+    });
+  })
+</script>

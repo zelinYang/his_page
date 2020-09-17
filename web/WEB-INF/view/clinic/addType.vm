@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") 
+</head>
+<body>
+<div class="layui-row p-b-sm p-l-xs p-r-xs p-t-sm text-center" style="margin: 20px 0;">
+    <button class="layui-btn layui-btn-sm" id="btn_classify" type="button"> 新增分类  </button>
+    <button class="layui-btn layui-btn-sm" id="btn_disease" type="button"> 新增病种  </button>
+    <button class="layui-btn layui-btn-sm" id="btn_close" type="button"> 取 消  </button>
+</div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+$(document).ready(function () {
+    //新增分类
+    $('#btn_classify').click(function (){
+        window.location.href = contextPath + "/pathway/clinicDiseaseClassifyEdit.do";
+        resetSize('病种分类编辑');
+    });
+
+    //新增病种
+    $('#btn_disease').click(function (){
+        resetSize('病种编辑');
+        window.location.href = contextPath + "/pathway/clinicDiseaseEdit.do?diseaseClassifyId=$!diseaseClassifyId";
+    });
+
+    //关闭窗口
+    $('#btn_close').click(function (){
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index); 
+    });
+
+    // 重置窗口大小及标题
+    function resetSize(title) {
+        var width = 600, height = 500;
+        var parentWidth = $('body', window.parent.document).width();
+        var parentHeight = $('body', window.parent.document).height();
+        
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.title(title, index)
+        parent.layer.style(index, {width: width, height: height, top: ((parentHeight / 2) - (height / 2)), left: ((parentWidth / 2) - (width / 2))});
+    }
+    
+});
+</script>
+</html>

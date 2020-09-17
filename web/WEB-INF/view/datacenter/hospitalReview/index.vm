@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>医院等级评审 （日常统计学评价）辅助系统</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+      body {background-color: #DFF1F8;}
+      .layui-nav {background-color:#ffffff;text-align:center;}
+      .layui-nav .layui-nav-item { line-height: 48px; }
+      .layui-nav .layui-nav-item a {color:#8E8E8E;font-size:15px;}
+      .layui-nav .layui-nav-item a:hover,.layui-nav .layui-this a {color:#222222;font-size:18px;font-weight:bold}
+      .layui-nav .layui-nav-item:not(.layui-this) a:hover {font-size:15px;}
+      .layui-body {top:48px;left:0; overflow-y: auto; height: calc(100% - 48px)}
+
+
+    </style>
+</head>
+<body>
+<script type="text/html" id="navTpl">
+    <ul class="layui-nav">
+        {{# layui.each(d,function(index, item){ }}
+        <li class="layui-nav-item"><a target="body-iframe" id="{{item.id || ''}}" href="{{item.href}}">{{item.text}}</a>
+        </li>
+        {{# }) }}
+    </ul>
+</script>
+<div class="layui-body" id="LAY_app_body">
+    <iframe name="body-iframe" frameborder="0" class="layadmin-iframe"></iframe>
+</div>
+<script>
+    /************************ 导航 ********************************/
+    var navData = [{
+        'id': 'operationalMonitoring',
+        'text': '运行监测',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/3bd95110ac858eb45616f8c05df07355',
+        'src': '../resource/images/3.png'
+    }, {
+        'id': 'qualityAndSafety',
+        'text': '质量与安全',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/a6a2723df2897571858d32630ac7b34d',
+        'src': '../resource/images/19.png'
+    }, {
+        'id': 'singleDiseaseQualityControl',
+        'text': '单病种质控',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/5153c5d787ae03f2d92b1a3d56b7dc5f',
+        'src': '../resource/images/3.png'
+    }, {
+        'id': 'icuQualityControl',
+        'text': 'ICU质控',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/f6899dc32f1dd5e6db41fec9b09e4d67',
+        'src': '../resource/images/24.png'
+    }, {
+        'id': 'rationalDrugUse',
+        'text': '合理用药',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/34f9e2df9c43d65d2c13467c1cf59029',
+        'src': '../resource/images/152.png'
+    }, {
+        'id': 'courtsenseOfQualityControl',
+        'text': '院感质控',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/a84e7e74a23d3f3f1a5813fd710a633f',
+        'src': '../resource/images/63.png'
+    }, {
+        'id': 'projectReport',
+        'text': '专题报表',
+        'href': 'http://bofan.eicp.net:9008/data_bi/bddpshow/show/c3c0ef14bb61c0608fd881ae83db4850',
+        'src': '../resource/images/119.png'
+    }];
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['index', 'element'], function () {
+        var element = layui.element; //导航的hover效果、二级菜单等功能，需要依赖element模块
+        // 初始化菜单
+        if (navData) {
+            $('#navTpl').replaceWith(layui.laytpl($("#navTpl").html()).render(navData));
+            element.render();
+        }
+        $('.layui-nav > li > a:first')[0].click();// 打开第一导航
+    });
+</script>
+</body>
+</html>

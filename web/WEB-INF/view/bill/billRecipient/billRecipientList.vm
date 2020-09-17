@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-票据领用表管理</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0!important;
+        }
+    </style>
+</head>
+<body >
+<div class="layui-content-wrapper">
+    <div class="layui-fluid ">
+        <div class="layui-bg-white">
+            <!--搜索条件 开始-->
+            <form id="billRecipient_queryForm" class="layui-form">
+                #formHiddenInput("recipientNameId" "$!currentUser.userId")
+                <div class="layui-row-query">
+                    <div class="layui-form-item search-term">
+                        <div class="layui-inline">
+                            <div class="layui-input-inline" style="width: auto">
+                                #formCheckboxeGroup("billTypes" "" $dicData.dicBillType "
+                                lay-filter='billTypes' lay-skin='primary'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-input-inline " style="width: auto">
+                                <input type="radio" name="usageFinishFlag" value="" title="全部：" checked>
+                                #formRadioGroup("usageFinishFlag" "" ${dicData.dicUsageFinish} "")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">当前票据号</label>
+                            <div class="layui-input-inline wd-120">#formTextInput("startNumLessEqu" "" "id='q_startNumLessEqu'
+                                maxlength='20' autocomplete='off' class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-btn-group">
+                                <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                            </div>
+                            <button id="btn_add" class="layui-btn layui-btn-sm m-l-lg layui-btn-normal" type="button" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+
+            <!--列表 begin-->
+            <!-- 列表表格 begin -->
+            <table id="billRecipientListGrid" lay-filter="billRecipientListGrid"></table>
+            <!--  列表表格 end -->
+            <!--列表end-->
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bill/billRecipient/billRecipientList.js.vm")
+</body>
+</html>

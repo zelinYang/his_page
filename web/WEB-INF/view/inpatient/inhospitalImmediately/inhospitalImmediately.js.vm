@@ -1,0 +1,74 @@
+<script type="text/javascript">
+var dicPatientCondition=JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+var dicInhospitalState=JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+var dicSysOrgName=JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+var users=JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var dicSex=JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index : 'lib/index', //主入口模块
+}).use([ 'index', 'table','form'], function(){
+	var table = layui.table;
+	var form = layui.form;
+
+   //回车触发查询
+    $("#q_keyWord").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query').click();
+            return false;
+        }
+    });
+
+    //监听搜索
+    $('#btn_query').on('click', function () {
+        inpatientApplyTable.reload({url: '../patient/patientListData.jo', where: getQueryParams()});
+    });
+// 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('queryForm');
+    })
+    var inpatientApplyTable = table.render($.extend(basePageTable, {
+      elem: '#informTable'
+       //数据接口
+     ,data:[]
+      ,page: true //开启分页
+      ,height:getTableHgt()
+      ,cellMinWidth: 100
+      ,cols: [[ //表头
+        {field: 'patientName', title: '姓名'}
+        ,{field: 'visitCardNo', minWidth: 180, title: '就诊卡号'}
+        ,{field: 'patientIdCard', minWidth: 180,title: '身份证号'}
+        ,{field: 'patientPhone', minWidth: 120, title: '手机号'}
+        ,{field: 'patientSex', title: '性别'  ,
+      	  templet:function(row){
+    		  return dicSex[row.patientSex] || '' ;
+    	  }}
+      ]]
+    }));
+
+    function getTableHgt(){
+        return ($('body').height() - $('#queryForm').height() - 10);
+    }
+    $(window).resize(function(){
+        table.reload('informTable',{
+            height: getTableHgt()
+        })
+    })
+  //监听行单击事件
+    table.on('row(informTable)', function(obj){
+      var data = obj.data;
+      $(".J_iframe").attr("src","../inpatient/inhospitalImmediatelyEdit.do?visitCardNo=" + data.visitCardNo);
+      //标注选中样式
+      obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+    });
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            keyWord: ''
+        }, common.serializeObject($('#queryForm')));
+    }
+
+});
+</script>

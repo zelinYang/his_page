@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>出院患者科室百分比</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+    <script src="../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../resource/hplus/js/jquery-3.3.1.min.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echartsTheme.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echarts.js"></script>
+
+
+    <!--    <script src="../../resource/hplus/js/plugins/echarts/echarts-all.js"></script>-->
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+
+
+                <div class="text-center" style="margin: 0px 10px 10px -15px;">
+                    <form class="layui-form">
+                        <div class="layui-inline">
+                            <div class="layui-inline" style="margin-top: 15px; margin-bottom: 10px;">
+                                <label class="layui-form-label">统计类型</label>
+                                <input type="radio" name="flagSign" value="1" title="按科室" checked="">
+                                <input type="radio" name="flagSign" value="2" title="按病种">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+            <!-- 图表 -->
+
+            <div id="zzt" style="height:200px;"></div>
+
+            <div id="bzt" style="height:300px;"></div>
+
+            <!--列表 begin-->
+            <div style="margin-left: 20px;margin-right: 20px;">
+                <!--搜索条件 开始-->
+                <form id="queryForm" class="layui-form p-t-xs p-b-n layui-bg-gray">
+                    <div class="layui-form-item">
+                        <div class="layui-inline"><label class="layui-form-label">变异病种</label></div>
+                        <div class="layui-inline input_class">
+                            <input type="text" class="layui-input" name="hzzyh" id="hzzyh" autocomplete="off">
+                        </div>
+                        <div class="layui-inline"><label class="layui-form-label">患者姓名</label></div>
+                        <div class="layui-inline input_class">
+                            <input type="text" class="layui-input" name="hzxm" id="hzxm" autocomplete="off">
+                        </div>
+                        <div class="layui-inline text-center">
+                            <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清空"><i
+                                    class="iconfont icon-qingchu"></i></button>
+                        </div>
+                    </div>
+                </form>
+                <table id="show_table" lay-filter="test"></table>
+                <script type="text/html" id="barDemo">
+                    <a class="layui-btn layui-btn-sm layui-btn-xs" lay-event="call"><i
+                            class="layui-icon layui-icon-about"></i></a>
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+    <script>
+
+        var dicSysOrgName = {}, dicVariationFactor = {},dicClinicVariationClassfiy = {},dicVariationNode = {};
+
+        $(document).ready(function () {
+            loadDicData();
+            loadBarChartData();
+            loadCakeChartData();
+        });
+
+
+        //加载字典数据
+        function loadDicData() {
+            $.ajax({
+                type: "POST",
+                url: "../../sys/selectDicData.jo",
+                data: {dicMapNames: "dicSysOrgName,dicVariationFactor,dicClinicVariationClassfiy,dicVariationNode"},
+                dataType: "json",
+                async: false,//同步
+                success: function (result) {
+                    if (result.code == "0") {
+                        var data = result.data;
+                        dicSysOrgName = data["dicSysOrgName"];
+                        dicVariationFactor = data["dicVariationFactor"];
+                        dicClinicVariationClassfiy = data["dicClinicVariationClassfiy"];
+                        dicVariationNode = data["dicVariationNode"];
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });
+        }
+
+        function loadBarChartData() {
+            $.ajax({
+                type: "POST",
+                url: "../../variation/getBarChartCountData.jo",
+                data: {},
+                dataType: "json",
+                success: function (result) {
+                    if (result.code == "0") {
+                        var data = result.data;
+
+                        //构建并展示柱状图
+                        buildBarChart(data);
+                    } else {
+                        common.alertError("统计出错");
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });
+        }
+
+        function buildBarChart(data) {
+            var xArr = [];
+            var yArr = [];
+
+            if (data) {
+                for (var i = 0; i < data.length; i++) {
+                    var dataMap = data[i];
+                    for (var key in dataMap) {
+                        xArr.push(dicSysOrgName[key]);
+                        yArr.push(dataMap[key]);
+                    }
+                }
+            }
+            // 基于准备好的dom，初始化echarts实例
+            var zztChart = echarts.init(document.getElementById('zzt'));
+
+            // 指定图表的配置项和数据
+            var zztOption = {
+                title: {
+                    text: '在院临床路径患者变异数情况',
+                    left: 'left'
+                },
+                tooltip: {},
+                legend: {
+                    data: ['出在院路径患者变异数']
+                },
+                xAxis: {
+                    data: xArr
+                },
+                yAxis: {},
+                series: [{
+                    name: '出在院路径患者变异数',
+                    type: 'bar',
+                    itemStyle: {//上方显示数值
+                        normal: {
+                            label: {
+                                show: true, //开启显示
+                                position: 'top', //在上方显示
+                                textStyle: { //数值样式
+                                    color: 'black',
+                                    fontSize: 16
+                                }
+                            }
+                        }
+                    },
+                    data: yArr
+                }]
+            };
+            // 使用刚指定的配置项和数据显示图表。
+            zztChart.setOption(zztOption);
+        }
+
+        function loadCakeChartData() {
+            $.ajax({
+                type: "POST",
+                url: "../../variation/getCakeChartCountData.jo",
+                data: {},
+                dataType: "json",
+                success: function (result) {
+                    if (result.code == "0") {
+                        var data = result.data;
+                        //构建并展示柱状图
+                        buildCakeChart(data);
+                    } else {
+                        common.alertError("统计出错");
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });
+        }
+
+        function buildCakeChart(data) {
+            var seriesData = [];
+            var legendData = [];
+
+            if (data) {
+                for (var i = 0; i < data.length; i++) {
+                    var dataMap = data[i];
+                    for (var key in dataMap) {
+                        legendData.push(dicVariationFactor[key]);
+                        var showData = {
+                            value: dataMap[key],
+                            name: dicVariationFactor[key]
+                        };
+                        seriesData.push(showData);
+                    }
+                }
+            }
+
+            // 基于准备好的dom，初始化echarts实例
+            var bztChart = echarts.init(document.getElementById('bzt'));
+            // 指定图表的配置项和数据
+            var bztOption = {
+                title: {
+                    text: '在院变异分类比例情况',
+                    left: 'left'
+                },
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{b} : {c} ({d}%)'
+                },
+                legend: {
+                    left: 'left',
+                    top: 'bottom',
+                    data: legendData
+                },
+                series: [
+                    {
+                        // name: '',
+                        type: 'pie',
+                        radius: [30, 110],
+                        center: ['50%', '50%'],
+                        roseType: 'area',
+                        label: {
+                            normal: {
+                                show: true,
+                                formatter: '{b}({d}%)'      // 显示百分比
+                            }
+                        },
+                        data: seriesData
+                    }
+                ]
+            };
+            // 使用刚指定的配置项和数据显示图表。
+            bztChart.setOption(bztOption);
+        }
+
+
+        layui.use(['table', 'layedit', 'laydate'], function () {
+            var that = this,
+                table = layui.table,
+                form = layui.form,
+                layer = layui.layer,
+                layedit = layui.layedit,
+                laydate = layui.laydate;
+
+            //第一个实例
+            table.render({
+                elem: '#show_table',
+                height: 400,
+                url: '../../variation/clinicPatientVariationPageData.jo', //数据接口
+                page: true, //开启分页,
+                cols: [[
+                    {type: 'numbers', title: '序号', width: 60},
+                    {field: 'clinicPatientPathId', title: '病人路径', align: 'center', width: 60},
+                    {
+                        field: 'variationTime', title: '变异时间', align: 'center', width: 100,
+                        templet: function (row) {
+                            return row.variationTime ? layui.util.toDateString(row.variationTime, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {field: 'variationDiseaseId', title: '变异病种', align: 'center', width: 100,hide:true},
+                    {field: 'variationDiseaseIcdTcd', title: '变异诊断代码', align: 'center', width: 100},
+                    {field: 'variationDiseaseName', title: '变异诊断名称', align: 'center', width: 100},
+                    {field: 'variationClassfiy', title: '变异类别', align: 'center', width: 80,
+                        templet: function (row) {
+                            if (row.variationClassfiy == 0) {
+                                return '其他调整';
+                            }
+                            if (row.variationClassfiy == 1) {
+                                return '活动调整';
+                            }
+                            if (row.variationClassfiy == 2) {
+                                return '路径调整';
+                            }
+                        }
+                    },
+                    {field: 'clinicPathStageId', title: '路径阶段编号', align: 'center', width: 100,hide:true},
+                    {field: 'clinicPatientStage', title: '路径阶段', align: 'center', width: 100},
+                    {field: 'clinicActivityNode', title: '活动环节', align: 'center', width: 100,
+                        templet: function (row) {
+                            return row.clinicActivityNode ? dicVariationNode[row.clinicActivityNode] : '';
+                        }
+                    },
+                    {field: 'clinicActivityClassify', title: '活动分类', align: 'center', width: 100,
+                        templet: function (row) {
+                            return row.clinicActivityClassify ? dicClinicVariationClassfiy[row.clinicActivityClassify] : '';
+                        }
+                    },
+                    {
+                        field: 'variationFactor', title: '变异因素', align: 'center', width: 100,
+                        templet: function (row) {
+                            return row.variationFactor ? dicVariationFactor[row.variationFactor] : '';
+                        }
+
+                    },
+                    {field: 'clinicVariationReasonId', title: '变异常见原因', align: 'center', width: 100,hide:true},
+                    {field: 'variationContent', title: '变异原因内容', align: 'center', width: 100},
+                    {field: 'groupLeaderId', title: '诊疗小组组长', align: 'center', width: 100,hide: true},
+                    {field: 'groupLeaderName', title: '诊疗小组组长', align: 'center', width: 100},
+                    {field: 'majorDoctorName', title: '主治医生', align: 'center', width: 100},
+                    {field: 'residentDoctorName', title: '住院医生', align: 'center', width: 100},
+                    {field: 'variationOfficeName', title: '变异科室', align: 'center', width: 100},
+                    {fixed: 'right', title: '操作', align: 'center', toolbar: '#barDemo', width: 80}
+                ]]
+                , page: true
+                , height: getTableHgt(),
+            });
+
+            // 获取表格高度
+            function getTableHgt() {
+                return ($('body').height() - $('#zzt').height() - $('#bzt').height() - 120)
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+

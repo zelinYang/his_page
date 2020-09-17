@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>编辑 病历缺陷设置</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #set($_emrDefectPrjClassifyId = "$!{emrDefectPrjItem.emrDefectPrjClassifyId}")
+        #if("$!{_emrDefectPrjClassifyId}" == "")
+            #set($_emrDefectPrjClassifyId = "$!{info.emrDefectPrjClassifyId}")
+        #end
+        #set($_emrDefectPrjId = "$!{emrDefectPrjItem.emrDefectPrjId}")
+        #if("$!{_emrDefectPrjId}" == "")
+            #set($_emrDefectPrjId = "$!{info.emrDefectPrjId}")
+        #end
+        #set($_emrDefectPrjName = "$!{emrDefectPrjItem.emrDefectPrjName}")
+        #if("$!{_emrDefectPrjName}" == "")
+            #set($_emrDefectPrjName = "$!{info.emrDefectPrjName}")
+        #end
+        #formHiddenInput("emrDefectPrjClassifyId" "$!{_emrDefectPrjClassifyId}" " id='emrDefectPrjClassifyId'")
+        #formHiddenInput("emrDefectPrjId" "$!{_emrDefectPrjId}" " id='emrDefectPrjId'")
+        #formHiddenInput("emrDefectPrjName" "$!{_emrDefectPrjName}" " id='emrDefectPrjName'")
+        #formHiddenInput("emrDefectPrjItemId" "$!{emrDefectPrjItem.emrDefectPrjItemId}" " id='emrDefectPrjItemId'")
+        #formHiddenInput("emrTlpClassifyId" "$!{emrDefectPrjItem.emrTlpClassifyId}" " id='emrTlpClassifyId'")
+        #formHiddenInput("hospitalId" "$!{emrDefectPrjItem.hospitalId}" " id='hospitalId'")
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()所属文档</label>
+                <div class="layui-input-inline">#formTextInput("emrTlpClassifyName" "$!{emrDefectPrjItem.emrTlpClassifyName}" " id='emrTlpClassifyName' maxlength='50' lay-verify='required' placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()是否单项否决</label>
+                <div class="layui-input-inline">#formRadioGroup("negateFlag" "$!{emrDefectPrjItem.negateFlag}" ${dicData.dicYesNo} "lay-filter='negateFlag' lay-verify='reqRedio' check-msg='请选择是否单项否决'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item" id="negativeNumDiv" name="negativeNumDiv" #if("$!{emrDefectPrjItem.negateFlag}" == "0" || "$!{emrDefectPrjItem.negateFlag}" == "") style="display:none;" #end>
+            <div class="layui-inline">
+                #set($_twoNegativeNum = 0)
+                #if("$!{emrDefectPrjItem.twoNegativeNum}" != "")
+                    #set($_twoNegativeNum = $!{emrDefectPrjItem.twoNegativeNum})
+                #end
+                <label class="layui-form-label wd-100">#requiredTag()达标乙级数量</label>
+                <div class="layui-input-inline">#formIntZeroInput("twoNegativeNum" "$!{_twoNegativeNum}" " id='twoNegativeNum' maxlength='2' lay-verify='required'  placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+            <div class="layui-inline">
+                #set($_threeNegativeNum = 0)
+                #if("$!{emrDefectPrjItem.threeNegativeNum}" != "")
+                    #set($_threeNegativeNum = $!{emrDefectPrjItem.threeNegativeNum})
+                #end
+                <label class="layui-form-label wd-100">#requiredTag()达标丙级数量</label>
+                <div class="layui-input-inline">#formIntZeroInput("threeNegativeNum" "$!{_threeNegativeNum}" " id='threeNegativeNum' maxlength='2' lay-verify='required'  placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()评分类型</label>
+                <div class="layui-input-inline">#formRadioGroup("defectType" "$!{emrDefectPrjItem.defectType}" ${dicData.dicEmrDefectType} "lay-verify='reqRedio' check-msg='请选择评分类型'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()分值</label>
+                <div class="layui-input-inline">#formFloInput("defectScore" "$!{emrDefectPrjItem.defectScore}" " lay-verify='required' maxlength='10' class='layui-input' autocomplete='off'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()缺陷内容</label>
+                <div class="layui-input-inline " style="width: 475px;">#formTextarea("defectName" "#htmlEscape($!{emrDefectPrjItem.defectName})" "id='defectName' class='layui-textarea' maxlength='200' lay-verify='required' placeholder='请输入内容，字数最多200字'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">备注</label>
+                <div class="layui-input-inline " style="width: 475px;">#formTextarea("defecRemark" "#htmlEscape($!{emrDefectPrjItem.defecRemark})" "id='defecRemark' class='layui-textarea' maxlength='200' placeholder='请输入内容，字数最多200字'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()评分模式</label>
+                <div class="layui-input-inline">#formRadioGroup("defectMode" "$!{emrDefectPrjItem.defectMode}" ${dicData.dicEmrDefectMode} "lay-verify='reqRedio' check-msg='请选择评分模式'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+        #if($!{emrDefectPrj.emrDefectPrjId})
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()是否有效</label>
+                <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{emrDefectPrjItem.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+           </div>
+        #else
+            #formHiddenInput("validFlag" "$!{CONST.AppConstants.YES_FLAG}" "")
+        #end
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save_emrDefectPrjItem" id="btn_save_emrDefectPrjItem" value="确认">
+        </div>
+    </div>
+    #parse("./emr/emrDefectPrj/emrDefectPrjItemEdit.js.vm")
+</body>
+</html>

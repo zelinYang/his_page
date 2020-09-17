@@ -1,0 +1,282 @@
+<script>
+var dicDrugNumUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+var dicDrugNumUnitDosageUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicPharmacyFreq  = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+var dicDoseWay  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+var dicDoctorOrderType  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var outMainWin = parent.parent;
+var queryInspectGroup;//查询方法
+layui.use(['jquery','table', 'element','form', 'layer'], function(){
+	var table = layui.table, element = layui.element, $ = layui.$, form = layui.form, layer = layui.layer;
+	element.render();
+
+	/* 组套 JS */
+	var initQFrom = common.serializeObject($('#inspectGroup_queryForm'));
+	//组套tabel
+	var inspectGroupTable = table.render({
+	   elem: '#inspectGroupTable'
+	  ,defaultToolbar: []
+	  ,height: 'full-45'//高度
+	  ,url: '../outpatient/orderGroupListData.jo' //数据接口
+	  ,page: true //开启分页
+	  ,where: initQFrom
+	  ,request: { 
+	     pageName: 'pageNumber' //页码的参数名称，默认：page
+	    ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+	  }
+	  ,cols: [[ //表头
+	    {field : 'orderGroupId',title : '项目ID' }
+	    ,{field : 'orderGroupName',title : '项目名称'}
+	  ]]
+	});
+	
+	// 查询按钮
+	$('#btn_query_inspectGroup').click(function (){
+	    queryInspectGroup();
+	});
+
+    //监听单选按钮
+    form.on('radio(orderGroupClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+        queryInspectGroup();
+        $('.main-right').addClass('layui-hide');
+    });
+	
+	//查询列表
+	queryInspectGroup = function() {
+	    var queryParams = common.serializeObject($('#inspectGroup_queryForm'));
+	    inspectGroupTable.reload({ where: queryParams });
+	}
+	   
+	## //监听行单击事件
+	## table.on('row(inspectGroupTable)', function(obj){
+	##   var row = obj.data;
+	##   rowInspectGroupSelect(row);
+	## });
+	//监听行单击事件
+	table.on('row(inspectGroupTable)', function(obj){
+	    console.log(JSON.stringify(obj)+"onks")
+		var row = obj.data;
+		rowInspectGroupSelect(row);
+	});
+	//处方组套行查询处方明细
+	function rowInspectGroupSelect(inspectGroupRow) {
+	    $('.main-right').removeClass('layui-hide');
+	    $('#orderGroupId').val(inspectGroupRow.orderGroupId);
+	    queryInspectGroupItem();
+	}
+        
+    //*************************  处方组套明细项 JS ********************************/
+	var inspectGroupItemTable = table.render({
+	   elem: '#inspectGroupItemTable'
+	  ,defaultToolbar: []
+	  ,height: 'full-45'//高度
+	  ,url: '../bas/orderItemInfoListData.jo' //数据接口
+	  ,limit:200
+	  ,request: { 
+	     pageName: 'pageNumber' //页码的参数名称，默认：page
+	    ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+	  }
+	  ,cols: [[ //表头
+	    {type:'checkbox'}
+	    ,{field : 'doctorOrderType', title : '项目类型', templet: function (row) {return dicDoctorOrderType[row.doctorOrderType] ? dicDoctorOrderType[row.doctorOrderType] : '';}}
+	    ,{field : 'medicineFlag', title : '是否药品', templet: function (row) {return dicYesNo[row.medicineFlag]}}
+	    ,{field : 'orderName',title : '项目名称', width:180}
+	    ,{field : 'dosage',title : '剂量'}
+	    ,{field : 'dosageUnit',title : '单位', templet :function (row) {return dicDrugNumUnitDosageUnit[row.dosageUnit] || '';}}
+	    ,{field : 'usageQuantity',title : '数量'}
+	    ,{field : 'dosageUnit',title : '单位', templet :function (row) {return  dicDrugNumUnitDosageUnit[row.dosageUnit] || '';}}
+	    ,{field : 'pharmacyFreqId',title : '频次', templet :function (row) {return dicPharmacyFreq[row.pharmacyFreqId] ? dicPharmacyFreq[row.pharmacyFreqId] : '';}}
+	    ,{field : 'doseWayCode', title : '途径' , templet :function (row) {return dicDoseWay[row.doseWayCode] ? dicDoseWay[row.doseWayCode] : '';}} //用法，给药途径
+	    ,{field : 'itemPrice',title : '单价'}
+	    ,{field : 'remark',title : '备注'}
+	  ]]
+	});
+  
+	// 导入历史诊断按钮
+	$('#btn_import_inspectGroupItem').click(function (){
+        importInspectGroupItem();
+	});
+  
+	//查询列表
+	function queryInspectGroupItem() {
+		var queryParams = common.serializeObject($('#inspectGroupItem_queryForm'));
+		inspectGroupItemTable.reload({ where: queryParams });
+	}
+  
+	// 导入组套明细
+	function importInspectGroupItem() {
+		var checkRows = table.checkStatus('inspectGroupItemTable'); //test即为基础参数id对应的值
+        console.log(JSON.stringify(checkRows.data)+"checkRows.data")
+		if (!checkRows.data.length) {
+		  common.alert('请选择需要导入的数据', 0);
+		  return false;
+		} 
+		var inspectGroupItemArr = checkRows.data;
+		addInspectGroupItem(inspectGroupItemArr);
+	}
+
+    function addInspectGroupItem(inspectGroupItemArr) {
+
+		var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.parent.document);
+		var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+		var groupItemArr = getDoctorOrderSubtype(inspectGroupItemArr);
+		var itemArr = getExamApplyName(groupItemArr);
+		var params = getParams(itemArr);
+		if (!params) return false;
+		console.log(params);
+		common.requestServer('$contextPath/outpatient/saveOutpatientTech.jo', params , function (result){
+			if(result.code == '0') {
+				common.msg('保存成功!', 1);
+				parent.query();
+				emrEditWin.getEmrOutTechInspect(outMainWin.grobalModel.registerId);
+			}
+		});
+    }
+
+    function getDoctorOrderSubtype(inspectGroupItemArr) {
+		$(inspectGroupItemArr).each(function(i, data) {
+			var params = {};
+			params.chargeName = data.orderName;
+			$.ajax({
+				type: "POST",
+				url: '../outpatient/inspectChargeItemListData.jo',
+				data: params,
+				dataType:"json",
+				async:false,//同步 请求
+				success: function(result){
+					if(result.data){
+						data.doctorOrderSubtype = result.data[0].doctorOrderSubtype;
+						data.chargeItemId = result.data[0].chargeItemId;
+						data.chargeGroupId = result.data[0].chargeGroupId;
+					}
+				},
+				error: function(res){jqueryPostError(res);}
+			});
+		});
+
+		return inspectGroupItemArr;
+	}
+
+	function getExamApplyName(inspectGroupItemArr) {
+		$(inspectGroupItemArr).each(function(i, data) {
+			$.ajax({
+				type: "POST",
+				url: '$contextPath/basDic/basDicList.jo',
+				data: {dicTypeId: 36, diCode: data.doctorOrderSubtype},
+				dataType:"json",
+				async:false,//同步 请求
+				success: function(result){
+					if(result.data){
+						data.examApplyName = result.data[0].dicName;
+					}
+				},
+				error: function(res){jqueryPostError(res);}
+			});
+		});
+		return inspectGroupItemArr;
+	}
+
+    function getParams(inspectGroupItemArr) {
+		var isPass = true;
+		var orderGroupNo = $('#orderGroupNo').val();
+		if (!outMainWin.grobalModel.registerId) {
+			common.msg('请选选择挂号患者', 0);
+			return false;
+		}
+		var outpatientTechItemArr = [];
+		var outpatientTech = {
+			outpatientTechId : ''
+			,exeOfficeId: '$currentUser.sysOrg.orgId'
+			,makeExamDoctorId:'$currentUser.userId'
+            ,makeExamDoctorName:'$currentUser.name'
+			,hospitalId:'$currentUser.unitOrgId'
+			,medicalTechFlag : '${CONST.AppConstants.MEDICAL_TECH_INSPECT}'
+			,orderGroupId : ''
+			,outpatientOfficeId : '$currentUser.sysOrg.orgId'
+			,patientId : outMainWin.grobalModel.patientId
+			,patientName : outMainWin.curPatient.patientName
+			,registerId : outMainWin.grobalModel.registerId
+			,testEmFlag : "0"
+			,testOfficeId : '$currentUser.sysOrg.orgId'
+		}
+		var techApply = {
+			applyDoctorId:'$currentUser.userId'
+			,applyDoctorName:'$currentUser.name'
+			,applyTime:new Date().format('yyyy-MM-dd hh:mm:ss')
+			,techExamApplyId : ''
+			,examApplyName : inspectGroupItemArr[0].examApplyName
+			,finishFlag:'${CONST.AppConstants.NO_FLAG}'//
+			,hospitalId:'$currentUser.unitOrgId'
+			,registerId: outMainWin.grobalModel.registerId
+			,patientId : outMainWin.grobalModel.patientId
+			,patientName : outMainWin.curPatient.patientName
+			,visitCardNo : outMainWin.curPatient.visitCardNo
+			,patientType : '${CONST.AppConstants.PATIENT_TYPE_OUTPATIENT}'//
+			,printFlag : '${CONST.AppConstants.NO_FLAG}'//
+			,urgentFlag : "0"
+			,visitOfficeId: '$currentUser.sysOrg.orgId'
+			,doctorOrderType: inspectGroupItemArr[0].doctorOrderType
+			,orderGroupNo: ''
+			,remark : inspectGroupItemArr[0].remark
+		}
+
+		$(inspectGroupItemArr).each(function(i, v) {
+			var outpatientTechItem = {
+				chargeGroupId : v.chargeGroupId
+				,chargeItemId: v.chargeItemId
+				,outpatientTechId: ''
+				,exeOfficeId: '$currentUser.sysOrg.orgId'
+				,hospitalId:'$currentUser.unitOrgId'
+				,unitPrice : v.itemPrice
+				,giveTotalQuantity : '1'//需要手动设置
+				,orderGroupId : ''
+				,orderName : v.orderName
+				,orderItemId : ''
+				,doctorOrderType: $('#doctorOrderType').val()
+				,doctorOrderSubtype: v.doctorOrderSubtype
+				,medicalTechFlag : '${CONST.AppConstants.YES_FLAG}'
+				,lisFlag : '${CONST.AppConstants.YES_FLAG}'
+				,examFlag : '${CONST.AppConstants.NO_FLAG}'
+				,surgeryFlag : '${CONST.AppConstants.NO_FLAG}'
+				,patientId : outMainWin.grobalModel.patientId
+				,patientName : outMainWin.curPatient.patientName
+				,registerId : outMainWin.grobalModel.registerId
+				,urgentFlag : "0"
+				,testSample : v.lisSpecimenId
+				,lisSpecimenId : v.lisSpecimenId
+				,remark : v.remark
+			}
+			outpatientTechItemArr.push(outpatientTechItem);
+		});
+
+		var medicalTechEditInfo = {
+			techExamApplyOutEditInfoJson :  JSON.stringify(techApply)
+			,outpatientTechJson : JSON.stringify(outpatientTech)
+			,outpatientTechItemListJson : JSON.stringify(outpatientTechItemArr)
+			,outpatientTechItemArr : outpatientTechItemArr
+		};
+		return medicalTechEditInfo;
+	}
+	
+	//加载组套明细项
+	function loadGroupItem(orderGroupId) {
+	    var inspectGroupItemArray = [];
+	  $.ajax({  
+	      type: "POST",  
+	      url: '../bas/orderItemListData.jo',  
+	      data: {orderGroupId:orderGroupId},
+	      dataType:"json",
+	      async:false,//同步 请求
+	      success: function(data){ 
+	        if(data && data.total>0 ){
+	            inspectGroupItemArray = data.rows;
+	        }
+	      },  
+	      error: function(res){jqueryPostError(res);} 
+	  });//ajax end 
+	  return inspectGroupItemArray;
+	}
+        
+});//layui.use
+</script> 

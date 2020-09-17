@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+    <style>
+        .xm-select-parent .xm-form-select dl dd { width: calc(50% - 20px); box-sizing: padding-box; display: inline-table; float: left;}
+        .xm-select-parent .xm-form-select dl dd:first-child, .xm-select-parent .xm-form-select dl dd:last-child { width: 96%;}
+        .layui-icon {
+            cursor: pointer;
+        }
+        .xm-select-parent .xm-select-title .xm-select{height: 36px;}
+        #queryInfoList{
+            height: 300px;
+            overflow: auto;
+        }
+        #queryInfoList .layui-input-block{
+            margin-left: 0;
+        }
+    </style>
+
+</head>
+<body class="white-bg">
+    <!-- 表单 开始 -->
+    <form id="editForm" class="layui-form full-height">
+        <div class="layui-row full-height-scroll" style="height: calc(100% - 42px);">
+	        <div class="layui-row layui-form-item p-t-xs m-r-sm">
+	            <div class="layui-block">
+	                <label class="layui-form-label">模板名称</label>
+	                <div class="layui-input-block">
+	                    #formHiddenInput("emrTlpId" "$!emrTlp.emrTlpId" "id='emrTlpId'")
+	                    #formTextInput("" "#htmlEscape($!emrTlp.emrTlpName)" "class='layui-input' readOnly")
+	                </div>
+	            </div>
+	        </div>
+
+	        <div class="layui-row layui-form-item p-t-xs m-r-sm">
+	            <div class="layui-block">
+	                <label class="layui-form-label">对应类名</label>
+	                <div class="layui-input-block">
+	                    #formMultiSelectFirstNone("emrTlpClassId" $!emrTlpClassIds $dicData.dicEmrClassCHName "class='layui-input' xm-select='emrTlpClassId'" "请选择对应类名")
+	                </div>
+	            </div>
+	        </div>
+
+	        <div class="layui-row layui-form-item p-t-xs m-r-sm">
+	            <div class="layui-block">
+	                <label class="layui-form-label">#requiredTag()对应操作名</label>
+	                <div class="layui-input-block">
+	                    #formMultiSelectFirstNone("emrTlpButtonId" $!emrTlpButtonIds $dicData.dicEmrFunctionName "class='layui-input' xm-select='emrTlpButtonId' lay-verify='required'" "请选择对应类名")
+	                </div>
+	            </div>
+	        </div>
+
+            <div class="layui-row layui-form-item p-t-xs m-r-sm">
+                <div class="layui-block">
+                    <label class="layui-form-label">查询条件<i class="layui-icon layui-icon-add-1" title="新增" id="itemAdd"></i></label>
+                    <div id="queryInfoList">
+                        <div class="layui-input-block">
+                            <div class="layui-col-xs4">
+                                <select name="className" label="类名" lay-search="" lay-verify="required" required lay-filter='className'>
+
+                                </select>
+                            </div>
+                            <div class="layui-col-xs4">
+                                <select name="fieldName" label="字段名" lay-search="" lay-verify="required" required lay-filter='fieldName'>
+
+                                </select>
+                            </div>
+                            <div class="layui-col-xs2">
+                                <input type="text" name="defaultValue" maxlength="20" lay-verify="required" placeholder="请输入默认值" class="layui-input">
+                            </div>
+                            <div class="layui-col-xs2" style="line-height: 30px; text-align: center; color: red;">
+                                <i class="layui-icon layui-icon-delete" title="删除" name="itemDel"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- 表单 结束 -->
+        <div class="tool-bottom-fixed">
+            <button class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_save" type="button" operate-type="0"> 保 存  </button>
+        </div>
+    </form>
+ </body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    formSelects: 'modules/formSelects/formSelects-v4.min'
+}).use(['form', 'formSelects'], function(){
+    var form = layui.form, formSelects = layui.formSelects;
+    var queryInfoData = '$!{queryInfoData}';
+    if (queryInfoData !== '') {
+        queryInfoData = JSON.parse('$!{queryInfoData}');
+    }
+    var queryInfoFieldData = '$!{queryInfoFieldData}';
+    if (queryInfoFieldData !== '') {
+        queryInfoFieldData = JSON.parse('$!{queryInfoFieldData}');
+    }
+    var divDom = $('#queryInfoList div:first').prop("outerHTML");
+    $('#queryInfoList div:first').remove();
+    $(function() {
+        if (queryInfoData) {
+            for (var className in queryInfoData) {
+                var fieldValue = queryInfoData[className];
+                for (var fieldName in fieldValue) {
+                    var selectDom = $(divDom);
+                    selectClass(selectDom.find('select[name=className]')[0], className);
+                    selectField(selectDom.find('select[name=fieldName]')[0], className, fieldName);
+                    selectDom.find('input[name=defaultValue]').val(fieldValue[fieldName]);
+                    $('#queryInfoList').append(selectDom);
+                }
+            }
+            form.render('select');
+            monitorSelect();
+        }
+        $('#queryInfoList').height($('.layui-row.full-height-scroll').height() - 133)
+    });
+    $(window).resize(function () {
+        $('#queryInfoList').height($('.layui-row.full-height-scroll').height() - 133)
+    })
+
+    function selectClass(selectDom, value) {
+        var options = [];
+        options.push('<option value="">请选择<option>');
+        for (var className in queryInfoFieldData) {
+            if (className === value) {
+                options.push('<option value="' + className + '" selected>' + className + '</option>');
+            } else {
+                options.push('<option value="' + className + '">' + className + '</option>');
+            }
+        }
+        $(selectDom).html(options.join(''));
+    }
+
+    function selectField(selectDom, className, value) {
+        var options = [];
+        console.log(selectDom);
+        options.push('<option value="">请选择<option>');
+        var fields = queryInfoFieldData[className];
+        for (var i = 0, len = fields.length; i < len; i++) {
+            if (fields[i] === value) {
+                options.push('<option value="' + fields[i] + '" selected>' + fields[i] + '</option>');
+            } else {
+                options.push('<option value="' + fields[i] + '">' + fields[i] + '</option>');
+            }
+        }
+        $(selectDom).html(options.join(''));
+    }
+
+    function monitorSelect() {
+        $('#queryInfoList').find('i[name=itemDel]').click(deleteItem);
+        form.on('select(className)', function(data){
+            var selectFieldDom = $(data.elem).parent().parent().find('select[name=fieldName]');
+            selectField(selectFieldDom[0], data.value, '')
+            form.render('select');
+        });
+    }
+
+    formSelects.render('emrTlpClassId');
+    formSelects.render('emrTlpButtonId');
+
+    formSelects.on('emrTlpClassId', function(id, vals, val, isAdd, isDisabled){
+        //id:           点击select的id
+        //vals:         当前select已选中的值
+        //val:          当前select点击的值
+        //isAdd:        当前操作选中or取消
+        //isDisabled:   当前选项是否是disabled
+        getQueryInfoData(vals);
+    }, true);
+
+    $('#itemAdd').click(function() {
+        var selectDom = $(divDom);
+        selectClass(selectDom.find('select[name=className]')[0], '');
+        $('#queryInfoList').append(selectDom);
+        form.render('select');
+        monitorSelect();
+    });
+
+    function deleteItem() {
+        $(this).parent().parent().remove();
+    }
+
+    function getQueryInfoData(selectedDatas) {
+        var classNameList = [];
+        for (var i = 0, len = selectedDatas.length; i < len; i++) {
+            classNameList.push(selectedDatas[i].value);
+        }
+        common.post(contextPath + '/emr/getQueryInfoData.jo', {classNameList: classNameList.join(',')}, function (result){
+            console.log(result);
+            generateSelect(result.data);
+        });
+    }
+
+    function generateSelect(queryInfoDatas) {
+        $('#queryInfoList').find('select[name=className]').each(function() {
+            console.log(this);
+            var value = $(this).val();
+            var options = [];
+            options.push('<option value="">请选择<option>');
+            var existFlag = false;
+            for (var className in queryInfoDatas) {
+                console.log(className);
+                if (className === value) {
+                    options.push('<option value="' + className + '" selected>' + className + '</option>');
+                    existFlag = true;
+                } else {
+                    options.push('<option value="' + className + '">' + className + '</option>');
+                }
+            }
+            if (value && !existFlag) {
+                $(this).parent().parent().remove();
+                return;
+            }
+            $(this).html(options.join(''));
+        });
+        form.render('select');
+    }
+
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+        if (!$('#emrTlpId').val()) {
+            common.msg("病历模板编号不存", 0, function (){});
+            return;
+        }
+
+        var queryInfoData = {};
+        var arrayParams = [];
+        $('#queryInfoList > div').each(function(){
+            var params = {};
+            $(this).find('div > input, select, textarea').each(function (){
+                if (!$(this).val()) { return true; }
+                if ($(this).attr('type') == 'checkbox' && !$(this).is(':checked')) {$(this).val('0')}
+                params[$(this).attr('name')] = $(this).val();
+            });
+            if(!$.isEmptyObject(params)) { arrayParams.push(params); }
+        });
+        for (var i = 0, len = arrayParams.length; i < len; i++) {
+            var param = arrayParams[i];
+            if (!queryInfoData[param['className']]) {
+                queryInfoData[param['className']] = {}
+            }
+            queryInfoData[param['className']][param['fieldName']] = param['defaultValue'];
+        }
+        data.field.queryInfoData = JSON.stringify(queryInfoData);
+
+        common.requestServer(contextPath + '/emr/saveEmrTlpDicRel.jo', data.field, function (result){
+            if (result.code == "0") {
+                common.msg("保存成功。", 1, function (){
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+});
+</script>
+</html>

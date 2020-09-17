@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-医技组套-治疗</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="basChargeGroup_queryForm" class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item search-term">
+                    <div class="layui-inline">
+                        <div class="layui-input-inline auto-width">
+                            <input type="checkbox" name="outpatientUsageFlag" value="$!{CONST.AppConstants.YES_FLAG}"
+                                   id="q_outpatientUsageFlag" title="门诊">
+                            <input type="checkbox" name="inhospitalUsageFlag" value="$!{CONST.AppConstants.YES_FLAG}"
+                                   id="q_inhospitalUsageFlag" title="住院">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline wd-220">
+                            #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='100' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                      <div class="layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                      </div>
+                      <button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 门诊使用开关 -->
+        <script type="text/html" id="outpatientUsageFlagTpl">
+            <input type="checkbox" lay-filter="outpatientUsageFlag" name="outpatientUsageFlag"
+                   value="{{d.chargeGroupId}}" lay-skin="switch"
+                   lay-text="是|否" {{Boolean(+d.outpatientUsageFlag) && 'checked' }} >
+        </script>
+        <!-- 住院使用开关 -->
+        <script type="text/html" id="inhospitalUsageFlagTpl">
+            <input type="checkbox" lay-filter="inhospitalUsageFlag" name="inhospitalUsageFlag"
+                   value="{{d.chargeGroupId}}" lay-skin="switch"
+                   lay-text="是|否" {{Boolean(+d.inhospitalUsageFlag) && 'checked' }} >
+        </script>
+        <!-- 是否有效开关 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" lay-filter="validFlag" name="validFlag" value="{{d.chargeGroupId}}"
+                   lay-skin="switch"
+                   lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+        </script>
+        <!-- 操作栏操作按钮 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit">
+                <i class="layui-icon layui-icon-edit"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="basChargeGroupListGrid" lay-filter="basChargeGroupListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bas/basChargeGroup/basChargeGroupTreatList.js.vm")
+</body>
+</html>

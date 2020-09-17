@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>检查报告查阅</title> 
+    #parse("./common/pageCss.vm")   
+    #parse("./common/pageJs.vm") 
+    <style type="text/css">
+    .techReportExamDetail .layui-form-label{
+      font-weight: s;
+    }
+    
+    .techReportExamDetail .layui-form-label span{
+      font-weight: normal;
+    }
+    .techReportExamDetail .layui-form-label button{
+      float: left;margin-left: 15px;
+    }
+    
+  
+    </style>
+</head>
+
+<body class="white-bg techReportExamDetail">
+     <div class="main full-height-scroll">
+#*
+          <div class="layui-form-item ">
+            <label class="layui-form-label">检查项目：
+##            <button class="layui-btn  layui-btn-sm" type="button" style=""> 查看 </button>
+            </label>
+            <div class="layui-input-block p-t-xs">
+                #foreach($techItem in $!techItemList)
+                    $!techItem.orderName <br>
+                #end
+            </div>
+          </div>
+*#
+         <div class="layui-form-item ">
+             <label class="layui-form-label">检查部位：</label>
+             <div class="layui-input-block p-t-xs">
+                 $!examResult.examPartName
+             </div>
+         </div>
+         <div class="layui-form-item ">
+             <label class="layui-form-label">检查所见：</label>
+             <div class="layui-input-block p-t-xs">
+                 $!examResult.examFindings
+             </div>
+         </div>
+          <div class="layui-form-item ">
+            <label class="layui-form-label" style="width: 110px;">检查结论/诊断：</label>
+            <div class="layui-input-block p-t-xs" style="margin-left: 130px;">
+                $!examResult.pathologicDiagnosis
+            </div>
+          </div>
+          <div class="layui-form-item ">
+##            <div class="layui-inline">
+##              <label class="layui-form-label" style="width: 227px;">检查时间：<span>&nbsp;&nbsp;2018-12-09 12:33：00</span></label>
+##            </div>
+
+            <label class="layui-form-label">检查人：</label>
+            <div class="layui-input-block p-t-xs" style="margin-left: 130px;">
+                $!{examResult.diagnosisDoctorName}
+            </div>
+          </div>
+     </div>
+     <div class="layui-col-sm3 white-bg full-height border-r p-t-xs" style="padding: 42px 5px 0px;
+    overflow: auto;">
+         <table class="layui-table">
+             <tbody class="outTechList">
+             <tr>
+                 <td width="80px">申请单</td>
+                 <td>已下达项目</td>
+             </tr>
+             <tr class="data-empty">
+                 <td colspan="2">无记录</td>
+             </tr>
+             </tbody>
+         </table>
+         <table class="table-tpl layui-hide">
+             <tbody>
+             <tr class="tr-tpl">
+                 <td class="techApplyName"></td>
+                 <td class="proName"></td>
+             </tr>
+             </tbody>
+         </table>
+     </div>
+
+
+     <script>
+//注意：折叠面板 依赖 element 模块，否则无法进行功能性操作
+layui.use('element', function(){
+  var element = layui.element;
+    var loadOutTech; //右侧已申请的检验单
+    //加载已添加的申请单
+    loadOutTech = function (localFreshen) {
+            var params = {
+                inhospitalId: '$!{examResult.inhospitalId}',
+                lisFlag:'1',
+                orderGroupFlag: '1',
+                doctorOrderType: '02'
+                , validFlag: '${CONST.AppConstants.YES_FLAG}'
+            }
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/medicalTechListData.jo',
+            data: params,
+            dataType: "json",
+            success: function (result) {
+
+                var lisTbody = $('.layui-table .outTechList');
+
+                var emptyTr = $('.layui-table .data-empty');
+                if (localFreshen) {
+                    $('.outTechList tr:gt(0)').remove();//移除tr内容
+                }
+
+                if (result.data.length == 0) {
+                    return false;
+                }
+                $(result.data).each(function (index, row) {
+                    if (outMainWin.grobalModel == null) {
+                        var newTr = $('.table-tpl .tr-tpl').clone();
+                        newTr.find('.techApplyName').append($('<div><div>').html(row.orderGroupNo));
+                        newTr.find('.proName').append($('<div><div>').html(row.orderName));
+                        newTr.removeClass('tr-tpl').removeClass('layui-hide');
+                        newTr.data('row', row);
+                        lisTbody.append(newTr);
+                    }
+                });
+                emptyTr.remove();
+                outTechLisTrClickEvent();
+                if (localFreshen) {
+                    $('.outTechList tr:eq(1) td div').click();
+                }
+            },
+            error: function (res) {
+                jqueryPostError(res);
+            }
+        });//ajax end
+    }
+    $(document).ready(function () {
+
+        //加载已添加的申请单
+        loadOutTech();
+
+    });
+  //…
+});
+</script>
+</body>
+</html>

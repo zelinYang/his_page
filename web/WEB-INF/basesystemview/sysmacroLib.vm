@@ -1,0 +1,1658 @@
+#**
+ * ErrorMessage
+ *
+ * 显示错误信息，一般以红色字体来显示信息。
+ *
+ * @param message 要显示的信息
+ *
+*#
+#macro(showErrorMessage $message)#if($message)<font color="red">$!message</font>#end #end
+
+#**
+ * requiredTag
+ *
+ * 标记编辑界面中必须输入的项，一般以红色的“*”来做标记。
+ *
+*#
+#macro(requiredTag)<span style="color:red">*</span>#end
+
+#**
+ * getContextPath
+ *
+ * 获取应用上下文的路径。例如在“stock”应用中，该宏返回“/stock”
+ *
+*#
+#macro(getContextPath)${springMacroRequestContext.getContextPath()}#end
+
+#**
+ * getRequestUri
+ *
+ * 获取当前url的uri部分。例如当前访问的是“http://localhost/stock/manage/login.do?username='1'”，
+ * 该宏返回“/stock/manage/login.do”。
+ *
+*#
+#macro(getRequestUri)${springMacroRequestContext.getRequestUri()}#end
+
+#**
+ * htmlEscape
+ *
+ * 将输入的字符串中无法在浏览器中显示的字符转换为“&???;”的形式，转换后的字符串在浏览器中可以正确显示。
+ *
+ * @param message 输入的要换码的字符串
+ *
+*#
+#macro(htmlEscape $message)#if($message)$!{HELPER_HTMLHELPER.htmlEscape($message)}#end#end
+
+#**
+ * htmlEscape
+ *
+ * 将输入的字符串中在浏览器中显示的字符转换为“&???;”的形式，转换为浏览器中可以正确显示的形式。
+ *
+ * @param message 输入的要换码的字符串
+ *
+*#
+#macro(htmlUnescape $message)$!{HELPER_HTMLHELPER.htmlUnescape($message)}#end
+
+#**
+ * divData
+ *
+ * 将一个BigDecimal类型的数值$data除以一个数$div，结果保留$scale位小数。
+ *
+ * @param data BigDecimal类型的数值
+ * @param div 除数，以字符串表示
+ * @param scale 保留小数的位数，以字符串表示
+ *
+*#
+#macro(divData $data $div $scale)#if($data)${HELPER_HTMLHELPER.dataDiv($data, $div, $scale)}#end#end
+
+#macro(mulData $data $mul $scale)#if($data)${HELPER_HTMLHELPER.dataMul($data,$mul,$scale)}#end#end
+
+#macro(sumNumber $datas $result)#if($datas)#set($result=false)#set($result=${HELPER_HTMLHELPER.sumNumber($datas)})#end#end
+
+#macro(showNumber $data)#if($data)${HELPER_HTMLHELPER.showNumber($data)}#end#end
+
+#macro(showNumber2 $data)#if($data)${HELPER_HTMLHELPER.showNumber2($data)}#end#end
+
+#macro(displayOnlyDate $date )#if($date)${HELPER_HTMLHELPER.displayOnlyDate($date)}#end#end
+
+#macro(displayChinaDate $date )#if($date)${HELPER_HTMLHELPER.displayChinaDate($date)}#end#end
+#macro(displayChinaDateTime $date )#if($date)${HELPER_HTMLHELPER.displayChinaDateTime($date)}#end#end
+#macro(displayChinaTime $date )#if($date)${HELPER_HTMLHELPER.displayChinaTime($date)}#end#end
+
+#macro(displayOnlyTime $date )#if($date)${HELPER_HTMLHELPER.displayOnlyTime($date)}#end#end
+
+#macro(lookUpDict $map $key)#if($map)$!{HELPER_HTMLHELPER.getMapData($map, $key)}#end#end
+
+#macro(lookUpDicts $map $key $split)#if($map)$!{HELPER_HTMLHELPER.dictionaryStrings($map, $key, $split)}#end#end
+
+#macro(getCurrentDate)#set($CurrentDate=${HELPER_HTMLHELPER.getCurrentDate()})#end
+
+#macro(getDatePart $date $part)#if($date && $part)${HELPER_HTMLHELPER.getDatePart($date, $part)}#end#end
+
+#macro(clearXmlTag $data)#if($data)${HELPER_HTMLHELPER.clearXmlTag($data)}#end#end
+
+#macro(bindMapData $map $key)#set($MapData="")#if($map)#set($MapData=${HELPER_HTMLHELPER.getMapData($map, $key)})#end#end
+
+#macro(getProperty $bean $name)${HELPER_BEAN.getProperty($bean, $name)}#end
+
+#macro(composeString $data $num)${HELPER_HTMLHELPER.composeEscapeString($data, $num)}#end
+
+#macro(standDateFormat $data)#if($data)${HELPER_HTMLHELPER.standDateFormat($data)}#end#end
+
+#**
+ * 获取计算好的日期字符串，日期格式"yyyy-MM-dd"
+ * @param date Date 初始日期
+ * @param countYear int 要加减的年份
+ * @param countMonth int 要加减的月份
+ * @param countDay int 要加减的日子
+ * @return String
+ *#
+#macro(getCountDate $date $countYear $countMonth $countDay)#if($date && $countYear && $countMonth && $countDay)${HELPER_HTMLHELPER.getCountDate($date, $countYear, $countMonth, $countDay)}#end#end
+
+#**
+ * 将yyyy-mm-dd格式的日期转化成中文日期,例如"2015-03-10"转成"二〇一五年三月十日"
+ * @param dateString 要转化的"yyyy-mm-dd"格式的字符串
+ * @param showText 是否显示年月日
+ * @return String
+ *#
+#macro(getChineseDate $dateString $showText)#if($dateString && "$showText" != "")${HELPER_HTMLHELPER.getChineseDate($dateString, $showText)}#end#end
+
+
+#**
+ * 将数字质量转换成大写中文质量，如678千克——陆佰柒拾捌千克
+*#
+#macro(numericCountToChinese $charge $unit)#if($charge)${TOOLS.numericCountToChinese($charge,$unit)}#end#end
+#**
+ * formSpanText
+ *
+ * 生成一个类型为“span”的输入域，用来在界面中输入文本
+ *
+ * @param fieldId  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："class='t2'" 等
+ *
+ *#
+#macro(formSpanText $fieldId $fieldValue $attributes)
+    <span id="$!fieldId" $!{attributes}>$!{fieldValue}</span>
+#end
+#**
+ * formTextInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formTextInput $fieldName $fieldValue $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} />
+#end
+
+#**
+ * formLayDateInput
+ *
+ * 生成一个类型为“text”的输入域及js，用来在界面使用lay录入日期
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formLayDateInput $fieldName $fieldValue  $attributes )
+    <input type="text" name="$fieldName" id="$fieldName"  value="$!date.format('yyyy-MM-dd', $fieldValue)" $!{attributes} />
+    <script>
+    layui.use(['laydate'], function(){
+      laydate = layui.laydate;
+      $(document).ready(function () {laydate.render({elem:'#$fieldName', type:'date', format: 'yyyy-MM-dd'}); });
+    });
+    </script>
+#end
+
+#**
+ * formLayDateInput
+ *
+ * 生成一个类型为“text”的输入域及js，用来在界面使用lay录入日期
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param callbackFunction(value, date, endDate) 选择日期后的回调函数,
+ * value 得到日期生成的值，如：2017-08-18,
+ * date 得到日期时间对象：{year: 2017, month: 8, date: 18, hours: 0, minutes: 0, seconds: 0},
+ * endDate 得结束的日期时间对象，开启范围选择（range: true）才会返回。对象成员同上。
+ * @laydateAttributes 日期控件的属性 例如"min: -7,max: 0,"
+ *#
+#macro(formLayDateInput $fieldName $fieldValue  $attributes $callbackFunction $laydateAttributes)
+    <input type="text" name="$fieldName" id="$fieldName"  value="$!date.format('yyyy-MM-dd', $fieldValue)" $!{attributes} />
+    <script>
+    layui.use(['laydate'], function(){
+      laydate = layui.laydate;
+      $(document).ready(function () {laydate.render({elem:'#$fieldName', type:'date', format: 'yyyy-MM-dd',$!{laydateAttributes}done: function(value, date, endDate){$!callbackFunction(value,date);}}); });
+    });
+    </script>
+#end
+
+#**
+ * formLayDateTimeInput
+ *
+ * 生成一个类型为“text”的输入域及js，用来在界面使用lay录入日期时间
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formDateTimeInput $fieldName $fieldValue  $attributes )
+    <input type="text" name="$fieldName" id="$fieldName" value="$!date.format('yyyy-MM-dd HH:mm', $fieldValue)" $!{attributes} />
+    <script>
+    layui.use(['laydate'], function(){
+      laydate = layui.laydate;
+      laydate.render({elem:'#$fieldName', type:'datetime',format: 'yyyy-MM-dd HH:mm'});
+    });
+    </script>
+
+#end
+
+#**
+ * formLayuiDateTimeInput
+ *
+ * 生成一个类型为“text”的输入域及js，用来在界面使用lay录入日期时间
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formLayuiDateTimeInput $fieldName $fieldValue  $attributes )
+    <input type="text" name="$fieldName" id="$fieldName" value="$!date.format('yyyy-MM-dd HH:mm', $fieldValue)" $!{attributes} />
+#end
+
+#**
+ * formLayTimeInput
+ *
+ * 生成一个类型为“text”的输入域及js，用来在界面使用lay录入时间
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formLayTimeInput $fieldName $fieldValue  $attributes )
+    <input type="text" name="$fieldName" id="$fieldName" value="$fieldValue" $!{attributes} />
+    <script>
+	     layui.use([ 'laydate' ], function() {
+	         var laydate = layui.laydate;
+	         laydate.render({
+	             elem : '#$fieldName',
+	             type : 'time',
+	             format : 'HH:mm',
+	             ready : function(date) {
+	                 $("#layui-laydate" + $("#$fieldName").attr('lay-key')).find('.laydate-time-list>li').width("50%").eq(2).remove();
+	             }
+	         });
+	     });
+	 </script>
+#end
+
+#**
+ * formIntInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本 文本只能输入整型内容
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formIntInput $fieldName $fieldValue $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} onkeyup="value=value.replace(/^0|[^\d]/g,'');" onbeforepaste="clipboardData.setData('text', clipboardData.getData('text').replace(/[^\d]/g,''))" autocomplete="off"/>
+#end
+#**
+ * formIntZeroInput
+ *
+ * 生成一个类型为“Text”的输入域，用来在界面中输入文本 文本只能输入 整型 内容（允许输入0）
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formIntZeroInput $fieldName $fieldValue $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} onkeyup="value=value.replace(/[^\d]/g,'');" onbeforepaste="clipboardData.setData('text', clipboardData.getData('text').replace(/[^\d]/g,''))"/>
+#end
+
+#**
+ * formFloInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本 文本只能输入浮点数内容
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formFloInput $fieldName $fieldValue $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} onkeyup="if(isNaN(value))execCommand('undo')"  onafterpaste="if(isNaN(value))execCommand('undo')"/>
+#end
+
+#**
+ * formFloLenInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本 文本只能输入浮点数内容
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param len         表示第几位数据不能是数字，只能是"."
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formFloLenInput $fieldName $fieldValue $len $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} onkeyup="if(value.indexOf('.')<=0&&value.charAt($len)%1==0){value=value.substr(0,$len)}if(isNaN(value))execCommand('undo')"  onafterpaste="if(value.indexOf('.')<=0value.charAt($len)%1==0){value=value.substr(0,$len)}if(isNaN(value))execCommand('undo')"/>
+#end
+
+* formNotInChineseInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中限制输入文本 不能输入中文汉字
+ * 排除中文
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formNotInChineseInput $fieldName $fieldValue $attributes )
+    <input type="text" name="$fieldName" value="$!fieldValue" $!{attributes} onkeyup="value=value.replace(/[\u4E00-\u9FA5]/g,'');" onbeforepaste="clipboardData.setData('text', clipboardData.getData('text').replace(/[\u4E00-\u9FA5]/g,''))"/>
+#end
+
+#**
+#**
+ * formDefInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param length 输入域的长度
+ * @param other 其他属性
+ *
+ *#
+#macro(formDefInput $fieldName $fieldValue $length $other)
+    #set($_class = "class='text_input'")
+    #if($other && $other.toLowerCase().indexOf("readonly") >= 0)
+        #set($_class = "class='text_input_readonly'")
+    #end
+    #if($length)
+        #if($other && $other.indexOf("width:") < 0)
+            #set($attri = $_class + " style='width:99%' maxLength='$!{length}' $!{other}")
+        #else
+            #set($attri = $_class + " maxLength='$!{length}' $!{other}")
+        #end
+    #else
+        #if($other.indexOf("width:") < 0)
+            #set($attri = $_class + " style='width:99%' $!{other}")
+        #else
+            #set($attri = $_class + " $!{other}")
+        #end
+    #end
+    #formTextInput($fieldName $fieldValue $attri)
+#end
+
+#**
+ * formFloDefInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本 文本只能输入浮点数内容
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param length 输入域的长度
+ * @param other 其他属性
+ *
+ *#
+#macro(formFloDefInput $fieldName $fieldValue $length $other)
+    #if($length)
+        #if($other.indexOf("width:") < 0)
+            #set($attri = "class='text_input' style='width:99%' maxLength='$!{length}' $!{other}")
+        #else
+            #set($attri = "class='text_input' maxLength='$!{length}' $!{other}")
+        #end
+    #else
+        #if($other.indexOf("width:") < 0)
+            #set($attri = "class='text_input' style='width:99%' $!{other}")
+        #else
+            #set($attri = "class='text_input' $!{other}")
+        #end
+    #end
+    #formFloInput($fieldName $fieldValue $attri)
+#end
+
+#**
+ * formIntDefInput
+ *
+ * 生成一个类型为“text”的输入域，用来在界面中输入文本 文本只能输入整型内容
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param length 输入域的长度
+ * @param other 其他属性
+ *
+ *#
+#macro(formIntDefInput $fieldName $fieldValue $length $other)
+    #if($length)
+        #if($other && $other.indexOf("width:") < 0)
+            #set($attri = "class='text_input' style='width:99%' maxLength='$!{length}' $!{other}")
+        #else
+            #set($attri = "class='text_input' maxLength='$!{length}' $!{other}")
+        #end
+    #else
+        #if($other.indexOf("width:") < 0)
+            #set($attri = "class='text_input' style='width:99%' $!{other}")
+        #else
+            #set($attri = "class='text_input' $!{other}")
+        #end
+    #end
+    #formIntInput($fieldName $fieldValue $attri)
+#end
+
+#**
+ * formIntDefInput
+ *
+ * 生成一个类型为“textarea”的输入域，用来在界面中输入文本
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param length 输入域的长度
+ * @param other 其他属性
+ *
+ *#
+#macro(formDefArea $fieldName $fieldValue $length $other)
+    #if($length && $length != "")
+        #set($areaLength = $length - 1)
+        #set($alertMessage= '"您输入的文本长度超过限制,将自动截断。"')
+        #set($pasteType= '"text"')
+        #set($sizeScript = "onKeyDown=' if (this.value.length>${length}){       this.value=(this.value).substring(0,${length});event.returnValue=false;  }'  onpaste='var pstr = window.clipboardData.getData($pasteType);   if ((this.value + pstr).length>${length}){      this.value=(this.value + pstr).substring(0,${length});      event.returnValue=false;    }'")
+        #if($other.indexOf("width:") < 0)
+            #set($attri = "${sizeScript} class='form-control' style='width:99%' $!{other}")
+        #else
+            #set($attri = "${sizeScript} class='form-control' $!{other}")
+        #end
+    #else
+        #if($other && $other.indexOf("width:") < 0)
+            #set($attri = "class='form-control' style='width:99%' $!{other}")
+        #else
+            #set($attri = "class='form-control' $!{other}")
+        #end
+    #end
+    #formTextarea($fieldName $fieldValue $attri)
+#end
+
+#**
+ * formPasswordInput
+ *
+ * 生成一个类型为“password”的输入域，用来在界面中输入密码
+ *
+ * @param fieldName  输入域的名字
+ * @param fieldValue  输入域的当前取值
+ * @param attributes 输入域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro( formPasswordInput $fieldName $fieldValue $attributes )
+    <input type="password" name="$fieldName" value="$!fieldValue" $!{attributes} />
+#end
+
+#**
+ * formHiddenInput
+ *
+ * 生成一个类型为“hidden”的隐藏域
+ *
+ * @param fieldName  隐藏域的名字
+ * @param fieldValue  隐藏域的当前取值
+ * @param attributes 隐藏域的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro(formHiddenInput $fieldName $fieldValue $attributes )<input type="hidden" name="$fieldName" value="$!fieldValue" $!{attributes} />#end
+
+#**
+ * formTextarea
+ *
+ * 生成一个文本输入框，用来在界面中输入多行文本
+ *
+ * @param fieldName  文本输入框的名字
+ * @param fieldValue  文本输入框的当前值
+ * @param attributes 文本输入框的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+ *#
+#macro( formTextarea $fieldName $fieldValue $attributes )
+    <textarea name="$fieldName" $!{attributes}>$fieldValue</textarea>
+#end
+
+#**
+ * formDefInputFile
+ *
+ * 生成一个文件上传域
+ *
+ * @param fieldName  域名字
+ * @param attributes  其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param onchange  onchange事件
+ *
+ *#
+#macro(formDefInputFile $fieldName $attributes $onchange)
+    <input type="file" name="$!{fieldName}" class="text_input" style="width:98%" onkeydown="return false" oncontextmenu="return false" $!{attribute} #if($onchange != '')onchange="javascript:${onchange};" #end/>
+#end
+
+#**
+*21X21单一图片按钮 带点击函数
+*#
+#macro(img21Button $picture $title $onclick $attributes)
+#set($src=$picture)
+#if($picture.indexOf('\/') < 0)
+	#set($src="../app/right/images/${picture}")
+#end
+<img src="$!{src}" $!{attributes} class="img_button_21" #if($onclick && $onclick != '' ) onclick="${onclick};" #end border="0" title="$!{title}">
+#end
+
+#**
+ * formDefImg
+ *
+ * 生成一个文件上传域
+ *
+ * @param src  图片目录
+ * @param attributes  其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param onclick  onclick事件
+ *
+ *#
+#macro(formDefImg $src $attributes $onclick)
+    <img src="$!{src}" $!{attributes} #if($onclick != '')onclick="javascript:${onclick};" #end border="0">
+#end
+#**
+ * formButtonInput
+ *
+ * 生成按钮
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮值
+ * @param onclick  点击事件
+ * @param attributes 按钮的其他属性
+ *
+ *#
+#macro(formButtonInput $fieldName $fieldValue $onclick $attributes)
+    <input type="button" name="$fieldName" value="$fieldValue" onclick="javascript:$onclick;" $!{attributes}/>
+#end
+
+
+#**
+ * textValueOutput
+ *
+ * 从当前值fieldValue里产生对应map里的一组值。
+ * @param fieldValue  当前取值
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+*#
+#macro(textValueOutput  $fieldValue $options )
+    #foreach($option in $options.keySet())
+           #if($fieldValue == $option)
+              ${options.get($option)}
+           #end
+    #end
+#end
+
+#**
+ * textValueMulOutput
+ *
+ * 从list里产生对应map里的一组值。
+ * @param fieldValue  当前取值集合。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+*#
+#macro(textValueMulOutput  $fieldValue $options $separator)
+    #foreach($option in $options.keySet())
+        #foreach($item in $fieldValue)
+            #if($item == $option)
+               ${options.get($option)}
+               #if($fieldValue.size() != $!velocityCount )
+				 $!{separator}
+			   #end
+            #end
+        #end
+    #end
+#end
+
+#**
+ * formDefButtonInput
+ *
+ * 生成按钮。默认生成按钮已经包含样式
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮值
+ * @param onclick  点击事件
+ * @param attributes 按钮的其他属性
+ *
+ *#
+#macro(formDefButtonInput $fieldName $fieldValue $onclick $attributes)
+    #set($attr = $attributes + " class='input_style' ")
+    #formButtonInput($fieldName $fieldValue $onclick $attr)
+#end
+#**
+ * formSingleSelect
+ *
+ * 生成一个单选的下拉列表框.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+*#
+#macro(formSingleSelect $fieldName $fieldValue $options $attributes )
+    <select name='$fieldName' $!{attributes}>
+        #foreach($option in $options.keySet())
+            <option value='${option}'
+            #if("$fieldValue" == "$option")
+                selected='selected'
+            #end>${options.get($option)}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectFirstNone
+ *
+ * 生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectFirstNone $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' $!{attributes}>
+        <option value="">$display</option>
+        #foreach($option in $options.keySet())
+            <option value='${option}'
+            #if("$fieldValue" == "$option")
+                selected='selected'
+            #end>${options.get($option)}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectFirstNone
+ * 生成一个多选下拉选择框,但第一个选项为空值.
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前已选取的值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formMultiSelectFirstNone $fieldName $arrays $options $attributes $display)
+    <select name='$fieldName' $!{attributes}>
+        <option value="">$display</option>
+        #foreach($option in $options.keySet())
+            <option value='${option}'
+            #if("$arrays" != "" && $arrays.contains($option))
+                selected='selected'
+            #end>${options.get($option)}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectSearch
+ *
+ * 生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+  * @optionsAttributes option 其他属性
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectSearch $fieldName $fieldValue $options $attributes $optionsAttributes $display)
+    <select name='$fieldName' $!{attributes} style='border:#ccc 1px solid;'>
+        <option value="">$!display</option>
+        #foreach($option in $options.keySet())
+            <option value='${option}'
+            #if("$fieldValue" == "$option")
+                selected='selected'
+            #end $!{optionsAttributes}>${options.get($option)}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectSearchFirstNone
+ *
+ * 生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectSearchFirstNone $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' $!{attributes}>
+        <option value="">$display</option>
+        #foreach($option in $options.keySet())
+            <option value='${option}'
+            #if("$fieldValue" == "$option")
+                selected='selected'
+            #end>${options.get($option)}</option>
+        #end
+    </select>
+#end
+#**
+ * formMultiSelect
+ *
+ * 生成一个可以多选的下拉列表框.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值，它应该是一个当前所有选择值的List。
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+*#
+#macro( formMultiSelect $fieldName $fieldValue $options $attributes )
+    <select multiple="multiple" name="$fieldName" $!{attributes} style='border:#ccc 1px solid;'>
+        #foreach($option in $options.keySet())
+            <option value="${option}"
+            #foreach($item in $fieldValue)
+                #if($item == $option)
+                    selected="selected"
+                #end
+            #end
+            >${options.get($option)}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSelectInput
+ *
+ * 生成一个单选的下拉列表框,但第一个选项为空值.
+ * 选择"其他"切换成输入框 ，点击输入框右侧按钮切换成下拉框
+ * select和input的样式尽量相同
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes select下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param inputAttributes input输入框的其他属性，如："id='fid' width='100' class='t2'" 等
+  *@param optionsAttributes option 其他属性
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSelectInput $fieldName $fieldValue $options $attributes $inputAttributes $optionsAttributes $display)
+    <select  $!{attributes} style='display:
+    #if("$fieldValue"=="")
+        inline-block
+    #else
+        none
+    #end;'>
+        <option value="">$display</option>
+        <option value="other">其他（手动输入）</option>
+        #foreach($option in $options.keySet())
+        <option value='${option}' $!{optionsAttributes}>${options.get($option)}</option>
+        #end
+    </select>
+    <div class="div_input" style='position: relative;display:
+    #if("$fieldValue"=="")
+        none
+    #else
+        block
+    #end;'>
+	    <div  class="input_clear" style="position:absolute;right:2px;top:0px;bottom:0px; margin-top:auto;margin-bottom:auto; cursor:pointer;text-align: center;">
+	       <i class="layui-icon layui-icon-list" style="font-size: 20px;color:black;position:relative;top:20%;"></i>
+	    </div>
+	    <input name='$fieldName' type="text" value='$!fieldValue' $!{inputAttributes}  />
+	</div>
+    <script>
+    /*
+    var options = JSON.parse('$dicTools.changeMapToJson($options)');
+    $(".selInp_select").change(function(){
+            var value = $(this).val();
+            var select = $(this).parent().find(".selInp_select");
+            var input = $(this).parent().find(".selInp_input");
+            var div_input = $(this).parent().find(".div_input");
+            if(value == 'other'){
+                $(input).val("");
+                $(select).val("");
+                $(select).hide();
+                $(div_input).show();
+                $(input)[0].focus();
+            }else{
+                $(input).val(options[value]);
+            }
+            console.log(input.val());
+    });
+    //var inputClears = document.getElementsByClassName("input_clear")
+    $(".input_clear").click(function(){
+	    console.log("click");
+	    var select = $(this).parent().parent().find(".selInp_select");
+	    var input = $(this).parent().parent().find(".selInp_input");
+	    var div_input = $(this).parent().parent().find(".div_input");
+	    $(input).val("");
+	    $(div_input).hide();
+	    $(select).show();
+	    $(select).click();
+    });
+    */
+    </script>
+#end
+
+#**
+ * formSelectOrgForList
+ *
+ * 生成机构下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSelectOrgForList $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' $!{attributes}>
+        <option value="">$display</option>
+        #foreach($opt in $options)
+            <option value='$!{opt.orgId}'
+            #if("$fieldValue" == "$!opt.orgId")
+                selected='selected'
+            #end>$!{opt.name}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSelectEmrForList
+ *
+ * 生成机构下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSelectEmrForList $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' $!{attributes}>
+        <option value="">$display</option>
+        #foreach($opt in $options)
+            <option tlp-name="$!{opt.emrTlpName}" value='$!{opt.emrTlpId}'
+            #if("$fieldValue" == "$!opt.emrTlpId")
+                selected='selected'
+            #end>$!{opt.emrTlpName}（$!opt.emrTlpVersion）</option>
+        #end
+    </select>
+#end
+
+#**
+ * formRadioGroup
+ * 产生一组radio按钮。layui
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+*#
+#macro(formRadioGroup $fieldName $fieldValue $options $attributes)
+    #foreach($option in $options.keySet())
+        <input id="${fieldName}_${option}" type="radio" name="$fieldName" value="${option}" title="${options.get($option)}"
+        #if("$!fieldValue" == "$option")
+            checked="checked"
+        #end
+        ${attributes} />
+    #end
+#end
+
+#**
+ * formRadioButtons
+ *
+ * 产生一组radio按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+*#
+#macro(formRadioButtons $fieldName $fieldValue $options $separator $attributes )
+    #foreach($option in $options.keySet())
+        <span style="display:inline-block;"><input id="${fieldName}_${option}" type="radio" name="$fieldName" value="${option}"
+        #if("$!fieldValue" == "$option")
+            checked="checked"
+        #end
+        $!{attributes} />
+        <span><label for="${fieldName}_${option}"> ${options.get($option)}</label> $!{separator}&nbsp;</span>
+		</span>
+    #end
+#end
+
+#**
+ * formRadioButtonsNoSpan
+ *
+ * 产生一组radio按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param labelAttributes label的其他属性
+ *
+*#
+#macro(formRadioButtonsNoSpan $fieldName $fieldValue $options $separator $attributes $labelAttributes)
+    #foreach($option in $options.keySet())
+        <input id="${fieldName}_${option}" type="radio" name="$fieldName" value="${option}"
+        #if("$!fieldValue" == "$option")
+            checked="checked"
+        #end
+        ${attributes} />
+        <label for="${fieldName}_${option}" ${labelAttributes}> ${options.get($option)}</label> $!{separator}
+    #end
+#end
+
+#**
+ * formRadioButtonsLabel
+ *
+ * 产生一组radio按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param labelAttributes label的其他属性
+ *
+*#
+#macro(formRadioButtonsLabel $fieldName $fieldValue $options $separator $attributes $labelAttributes)
+    #foreach($option in $options.keySet())
+        <label  $!{labelAttributes}>
+        <input id="${fieldName}_${option}" type="radio" name="$fieldName" value="${option}"
+        #if("$!fieldValue" == "$option")
+            checked="checked"
+        #end
+        ${attributes} /> ${options.get($option)} $!{separator}
+        </label>
+    #end
+#end
+
+
+#**
+ * formCheckboxeGroup
+ *
+ * 产生一组checkbox按钮。layui
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值集合。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+*#
+#macro( formCheckboxeGroup $fieldName $fieldValue $options  $attributes )
+    #foreach($option in $options.keySet())
+        <input type="checkbox" name="${fieldName}" value="${option}" id="${fieldName}_${option}"  title="${options.get($option)}"
+         #foreach($item in $fieldValue)
+            #if($item == $option)
+                checked="checked"
+            #end
+        #end
+        ${attributes} />
+    #end
+#end
+
+
+#**
+ * formCheckboxesLable
+ *
+ * 产生一组checkbox按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值集合。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param labelAttributes label的其他属性
+*#
+#macro( formCheckboxesLable $fieldName $fieldValue $options $separator $attributes $labelAttributes)
+    #foreach($option in $options.keySet())
+        <label  ${labelAttributes}>
+        <input type="checkbox" name="$fieldName" value="${option}" id="${fieldName}_${option}"
+        #foreach($item in $fieldValue)
+            #if($item == $option)
+                checked="checked"
+            #end
+        #end
+        ${attributes} />${options.get($option)} $!{separator}
+        </label>
+    #end
+#end
+
+
+
+#**
+ * formCheckboxes
+ *
+ * 产生一组checkbox按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+*#
+#macro( formCheckboxes $fieldName $fieldValue $options $separator $attributes )
+    #foreach($option in $options.keySet())
+        <input type="checkbox" name="$fieldName" value="${option}" id="${fieldName}_${option}"
+        #foreach($item in $fieldValue)
+            #if($item == $option)
+                checked="checked"
+            #end
+        #end
+        ${attributes} />
+        <label for="${fieldName}_${option}" id="label_${fieldName}_${option}">${options.get($option)} </label>$!{separator}
+    #end
+#end
+
+#**
+ * formCheckboxesWinthRowCount
+ *
+ * 产生一组checkbox按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param options 一个由(value=label)组成的map, 是这组按钮的内容
+ * @param separator 按钮之间的分隔文本，一般是html的文本，用来分隔按钮。例如'&nbsp;'、'<br>'等。
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ *
+*#
+#macro( formCheckboxesWinthCloCount $fieldName $fieldValue $options $separator $attributes $cloCount )
+    #set($curClo = 1)
+    <tr valign="top">
+    #foreach($option in $options.keySet())
+       <td width="6">
+        <input type="checkbox" name="$fieldName" value="${option}"
+        #foreach($item in $fieldValue)
+            #if($item == $option)
+                checked="checked"
+            #end
+        #end
+        />
+        </td>
+        <td $attributes>
+        ${options.get($option)} $!{separator}
+        #if($curClo % $cloCount == 0)
+            </td></tr><tr>
+            #set($curClo = 1)
+        #else
+            </td>
+            #set($curClo = $curClo + 1)
+        #end
+    #end
+#end
+
+#**
+ * formSimpleCheckbox
+ *
+ * 产生一个checkbox按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param check checkbox是否选择
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param script checkbox的显示描述。
+ *
+*#
+#macro(formSimpleCheckbox $fieldName $fieldValue $check $attributes $script)
+<input type="checkbox" name="${fieldName}" value="$!{fieldValue}"#if("$!{check}" == "true") checked="checked"#end $!{attributes}/>$!{script}
+#end
+
+#**
+ * formSimpleRadio
+ *
+ * 产生一个radio按钮。
+ *
+ * @param fieldName  按钮的名字
+ * @param fieldValue  按钮的当前取值。
+ * @param check radio是否选择
+ * @param attributes 按钮的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param script checkbox的显示描述。
+ *
+*#
+#macro(formSimpleRadio $fieldName $fieldValue $check $attributes $script)
+<input type="radio" name="${fieldName}" value="$!{fieldValue}"#if("$!{check}" == "true") checked="checked"#end $!{attributes}/>$!{script}
+#end
+
+#**
+ * calendarRange    for IE and FireFox
+ * 显示多个日历控件（从“开始日期”到“结束日期”）
+ * @param begin 起始日期
+ * @param end 结束日期
+*#
+#macro(calendarRange $beginDate $endDate $beginDefault $endDefault)
+    $HELPER_HTMLHELPER.getCalendarRange("$beginDate", "$endDate", "$beginDefault", "$endDefault")
+#end
+
+#**
+ * calendarPicker     for IE and FireFox
+ * 显示单个日历控件
+ * @param fieldName 日期域名称
+ * @param attributes 域属性，比如可以加入“onchange=..”等
+ * @param defaultValue 默认值
+*#
+#macro(calendarPicker $fieldName $defaultValue $attributes $size)
+    $HELPER_HTMLHELPER.getCalendarPicker("$fieldName", "$defaultValue", "$attributes", $size)
+#end
+
+
+#**
+ * datatimePicker     for IE and FireFox
+ * 显示单个日期+时间控件
+ * @param fieldName 日期时间域名称
+ * @param attributes 域属性，比如可以加入“onchange=..”等
+ * @param defaultValue 默认值
+*#
+#macro(datetimePicker $fieldName $defaultValue $attributes $size)
+    $HELPER_HTMLHELPER.getDatetimePicker("$fieldName", "$defaultValue", "$attributes", $size)
+#end
+
+
+#**
+ * dateEditor      for IE only
+ *
+ * 产生一个输入日期文本框和日期选择按钮。
+ *
+ * @param title 日期文本框前的标题
+ * @param editorname  日期文本框的名字
+ * @param editorvalue 日期文本框中的当前日期值
+ * @param formname 日期文本框所在的form的名字
+ *
+*#
+#macro(dateEditor $title $editorname $editorvalue $formname)
+    $!title<input type="text" name="$editorname" value="$editorvalue" size="13" class="inputobject" readonly />
+    <input type="image" src="../images/calendar.gif" width="34" height="21" align="absmiddle"
+    onclick="javascript:calendar('document.$formname.$editorname'); return false;" alt="日期选择"/>
+
+#end
+
+#**
+ * dateEditor      for IE only
+ * 产生一个输入年 月 文本框和日期选择按钮。
+ * @param title 年 月文本框前的标题
+ * @param editorname  年 月文本框的名字
+ * @param editorvalue 年 月文本框中的当前日期值
+ * @param formname 年 月 文本框所在的form的名字
+ *
+*#
+#macro(yearMonthPicker $editorname $editorvalue $!{attributes})
+	<div id = "dateInputDiv">
+		<input id="$editorname" name = "$editorname"  value="$editorvalue" class="inputobject"  $!{attributes} />
+		<input type="image" src="../script/calendar.gif" width="23" height="21" align="absmiddle"
+			onclick="javascript:showTime('$editorname','dateDiv');return false;" alt="年月选择"/>
+    </div>
+    <div id="dateParenDiv">
+		<div id='dateDiv' class="dateDiv" style="position:absolute; margin-left:0px;display:none;"></div>
+	</div>
+#end
+
+
+
+#**
+ * dateEditorWithId      for IE only
+ * input域为数组时，使用唯一Id标识组件
+ * 产生一个输入日期文本框和日期选择按钮。
+ *
+ * @param title 日期文本框前的标题
+ * @param editorname  日期文本框的名字
+ * @param editorvalue 日期文本框中的当前日期值
+ * @param formname 日期文本框所在的form的名字
+ *
+*#
+#macro(dateEditorWithId $title $editorname $editorvalue $formname $idIndex  $attributes )
+    $!title<input type="text" name="$editorname" value="$editorvalue" size="10" id="${editorname}_${idIndex}" readonly $attributes  class="inputobject"/>
+    <input type="image" src="../images/calendar.gif" width="34" height="21" align="absmiddle"
+        onclick="javascript:calendar('document.getElementById(\'${editorname}_${idIndex}\')'); return false;" alt="日期选择"/>
+#end
+
+
+
+#macro(checkboxSelectFunc $checkboxname)
+<span id="span_allnonecheckbox">&nbsp;<input type="checkbox" id="allnonecheckbox" style="CURSOR:hand" onclick="javascript:setCheckBoxValue('$checkboxname', this.checked);" /><label for="allnonecheckbox" style="CURSOR:hand" >全选/取消</label></span>
+#end
+##<input type="button" class="input_style" value="全部选择" onclick="javascript:setCheckBoxValue('$checkboxname', true);" />
+##<input type="button" class="input_style" value="全部不选" onclick="javascript:setCheckBoxValue('$checkboxname', false);" />
+
+#**
+ * changePageWithShowCheckBox
+ *
+ * 产生分页列表的信息翻页标题行。
+ *
+ * @param page 分页对象
+ * @param action 显示其他页的url
+ * @param chekcboxname 要处理的checkbox的名字
+ * @param align 对齐方式。有：center,right,left。默认是right
+ *
+*#
+#macro(changePageWithShowCheckBox $page $action $chekcboxname $align)
+    <tr valign="bottom" height="30">
+        <td>
+            <table cellpadding="0" cellspacing="0" class="page_tab">
+<form name="changePageFrom" method="get" action="$!action"
+    onsubmit="javascript:pageSubmit(); return false;">
+<input type="hidden" name="token" value="$!{page.token}" />
+<script>
+function pageSubmit() {
+    var e = document.changePageFrom;
+    if(changePageFrom.pageNumber.value == '') {
+        return;
+    }
+    if (!isFloat(e.pageNumber.value) || Number(e.pageNumber.value) < 0) {
+        alert("请输入正确的页号！");
+        return;
+    }
+    if (Number(e.pageNumber.value) > 100000) {
+        alert("页号不能超过100000，请输入正确的页号！");
+        return;
+    }
+    e.pageNumber.value = Number(e.pageNumber.value);
+    e.submit();
+}
+</script>
+              <tr>
+#if($chekcboxname)
+                <td height="1" align="left" valign="middle" class="text12">
+                    #checkboxSelectFunc($chekcboxname)
+                </td>
+#end
+                <td align="right" class="page_link">
+					总共 $!{page.totalSize} 条记录 |
+                  第 $!{page.pageNumber} / $!{page.totalPage} 页
+                  #if($page.hasPreviousPage())
+                  | <a href="#" onclick="return gotoPage(1);" >首页</a>
+                  | <a href="#" onclick="return gotoPage($page.pageNumber - 1);">上一页</a>
+                  #else
+                  | 首页 | 上一页
+                  #end
+                  #if($page.hasNextPage())
+                  | <a href="#" onclick="return gotoPage($page.pageNumber + 1);">下一页</a>
+                  | <a href="#" onclick="return gotoPage($page.totalPage);">尾页</a>
+                  #else
+                  | 下一页 | 尾页
+                  #end
+                  | 转到 <input name="pageNumber" size="2" class="text_input" value="$!{page.pageNumber}"
+                    onkeyup="value=value.replace(/[^\d]/g,'')"
+                    onbeforepaste="clipboardData.setData('text', clipboardData.getData('text').replace(/[^\d]/g,''))" /> 页,每页$!{page.pageSize}行&nbsp;
+                </td>
+              </tr>
+</form>
+            </table>
+        </td>
+    </tr>
+#end
+
+#**
+ * changePage
+ *
+ * 产生分页列表的信息翻页标题行。
+ *
+ * @param page 分页对象
+ * @param action 显示其他页的url
+ *
+*#
+#macro(changePage $page $action)#changePageWithShowCheckBox($page $action false "right")#end
+
+#macro(changePageAlign $page $action $align)#changePageWithShowCheckBox($page $action false $align)#end
+
+#macro(selectDepartment $callbackFunction)
+    #if(!$INCLUDE_SHOW_SELECT_DEPARTMENT_DIALOG_SCRIPT)
+        #set($INCLUDE_SHOW_SELECT_DEPARTMENT_DIALOG_SCRIPT = true)
+<script type="text/javascript">
+function showSelectDepartmentDialog(callbackFunction) {
+    var theUrl = "../manage/departmentTree.do";
+
+    FCKDialog.OpenDialog("selectDepartment", "选择部门", theUrl, 400, 600, callbackFunction, window);
+}
+</script>
+    #end
+<input type="button" class="input_style" value="选择部门" onclick="javascript:showSelectDepartmentDialog($callbackFunction)" />
+#end
+
+#**
+ * selectDepartment
+ *
+ * 使用Ajax展示部门树来选择部门. 自动生成弹出按钮和部门隐含域
+ *
+ * @param callbackFunction 选择部门后的回调函数，若不填写则仅在文本框中显示部门名称
+ * @param btnTitle 弹出按钮的名称
+ * @param depIdField 部门隐含域的名称
+ * @param depId 部门隐含域的默认值
+ *
+*#
+#macro(selectDepartment $callbackFunction $depName $depIdField $depId)
+	#selectSingleDepartmentInUnit($callbackFunction $depName $depIdField $depId)
+#end
+    #**#if(!$INCLUDE_SHOW_SELECT_DEPARTMENT_DIALOG_SCRIPT)
+        #set($INCLUDE_SHOW_SELECT_DEPARTMENT_DIALOG_SCRIPT = true)
+<script type="text/javascript">
+function showSelectDepartmentDialog(callbackFunction, btnObject) {
+    var theUrl = DEFAULT_DEP_AJAX_URL;
+    #if($!rootDepId) theUrl = theUrl + "?rootDepId=$!rootDepId"; #end
+    var arguments = new Object();
+    if (typeof(callbackFunction) == 'function') {
+        arguments.callback = callbackFunction;
+    }
+    arguments.parameter = btnObject;
+    FCKDialog.OpenDialog("selectDepartment", "选择部门", theUrl, 500, 600, arguments, window);
+}
+</script>
+    ##end
+    #if($callbackFunction == "")
+<script type="text/javascript">
+function selectDepartmentFor${depIdField}(depId, depName) {
+    var idobj = document.getElementById('${depIdField}');
+    var nameobj = document.getElementById('${depIdField}Name');
+    if (idobj == null || idobj == undefined) {
+        idobj = document.getElementsByName('${depIdField}');
+    }
+    if (nameobj == null || nameobj == undefined) {
+        nameobj = document.getElementsByName('${depIdField}Name');
+    }
+    idobj.value = depId;
+    nameobj.value = depName;
+}
+</script>
+    #end
+<input type="hidden" name="${depIdField}" value="$!{depId}"/>
+<input type="text" name="${depIdField}Name" value="$!depName" readonly/><img src="../images/dep_select.gif" align="absmiddle" onclick="javascript:showSelectDepartmentDialog(#if($callbackFunction != "")$callbackFunction#else selectDepartmentFor${depIdField}#end, this)">
+*#
+
+
+
+##以下是为公告板扩展的
+#**
+ * requiredInput
+ *
+ * 以红色显示文字。
+ *
+ * @param message 要显示的信息
+ *
+*#
+#macro(requiredInput $message)#if($message)<font color="red">$!message</font>#end#end
+
+#**
+ * inputTitle
+ *
+ * 处理输入标题的显示颜色，必须录入的输入项的标题以红色显示。
+ *
+ * @param message 要显示的信息
+ *
+*#
+#macro(inputTitle $message $isRequired)#if($isRequired)#requiredInput($message)#else$!message#end#end
+
+#**
+ * formSingleSelectDictionary
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectDictionary $fieldName $fieldValue $options $attributes $display $filter)
+    <select name='$fieldName' ${attributes} style='border:#ccc 1px solid;'>
+        <option value=''>$display</option>
+        #foreach($option in $options.entrySet())
+    		#if(${filter})
+    			#if(${option.key.startsWith("${filter}")})
+                    #if("$fieldValue" == "$option.key")
+                        <option value='${option.key}'
+                            selected='selected'
+                        >${option.value}</option>
+                    #else
+                        <option value='${option.key}'>${option.value}</option>
+    				#end
+    			#end
+    		#else
+                    #if("$fieldValue" == "$option.key")
+                        <option value='${option.key}'
+                            selected='selected'
+                        >${option.value}</option>
+                    #else
+                        <option value='${option.key}'>${option.value}</option>
+    				#end
+            #end
+		#end
+    </select>
+#end
+
+#**
+ * javaScriptFormSingleSelectDictionary
+ *
+ * 由字典数据生成一个在javascript中使用的单选的下拉列表框的javascript代码,该列表第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值的变量名
+ * @param varName  记录生成的代码的变量的变量名
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(javaScriptFormSingleSelectDictionary $fieldName $fieldValue $varName $options $attributes $display)
+    $varName = $varName + "<select name='$fieldName' ${attributes} style='border:#ccc 1px solid;'><option value=''>$display</option>";
+        #foreach($option in $options.entrySet())
+    $varName = $varName + "<option value='${option.key}'";
+    if("${option.key}" == $fieldValue) {
+        $varName = $varName + " selected='selected' ";
+    }
+    $varName = $varName + ">${option.value}</option>";
+        #end
+    $varName = $varName + "</select>";
+#end
+
+#macro(tableCellCss $index)
+   #if($index % 2 == 0)
+       #set($css = "tabledata")
+   #else
+       #set($css = "tabledata1")
+   #end
+   $css
+#end
+
+
+#**
+ * formTextareaWithCheck
+ * mcj 2014-10-22
+ * 生成一个文本输入框，用来在界面中输入多行文本
+ *
+ * @param fieldName  文本输入框的名字
+ * @param fieldValue  文本输入框的当前值
+ * @param attributes 文本输入框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param maxlen 文本输入框限制字数
+ *#
+#macro( formTextareaWithCheck $fieldName $fieldValue $attributes $maxlen)
+#set( $q = '"')
+    <textarea name="$fieldName" $!{attributes} id="$!{fieldName}" onpropertychange=${q}onModChange(this.value, ${maxlen}, document.getElementById('post_status${fieldName}'))${q} maxlength=${maxlen}>$fieldValue</textarea>
+#if(${maxlen})
+    #set($statusfun = "onModChange(this.value, ${maxlen}, document.getElementById('post_status'))")
+    <div><em id="post_status${fieldName}">已输入<font color=green>0</font>个字符(最多${maxlen}个字符)</em></div>
+<script>
+
+#if(!$INCLUDE_ONMODCHANGE_JSCRIPT)
+    #set($INCLUDE_ONMODCHANGE_JSCRIPT = true)
+function onModChange(s, max, o) {    //实时显示输入字数的
+    if(document.readyState != "complete") {
+        //s = escape(s);
+        setTimeout('onModChange(s,'+ max+ ',document.getElementById("'+ o.id+ '"))', 10);
+        return;
+    }
+
+    setWords(s, max, o) ;
+
+}
+
+function setWords(s, max, o) {
+    var words=s.lenB();
+    if(words > max) {
+       words = "<font color=red>"+ words+ "</font>";
+    } else {
+        words = "<font color=green>"+ words+ "</font>";
+    }
+    o.innerHTML = "已输入"+ words+ "个字符(最多"+ max + "个字符)";
+}
+#end
+
+
+#if(${fieldValue})
+var str = document.getElementById("$!{fieldName}");
+setWords(str.value, ${maxlen}, document.getElementById('post_status${fieldName}'));
+#end
+</script>
+#end
+#end
+
+#macro(repeatString $repeat $count)
+#set($_result = "")
+#foreach($_i in [1..$count])
+    #set($_result = "${_result}${repeat}")
+#end
+$_result
+#end
+
+#**
+ * importDWRScript
+ *
+ * 导入DWR的javascript声明
+ *
+ * @param $scriptName javascript名称
+*#
+#macro(importDWRScript $scriptName)
+  <script language="javascript" type="text/javascript" src="../app/script/appcommon.js"></script>
+  <script language="JavaScript" type="text/javascript" src="../dwr/interface/${scriptName}"></script>
+  <script language="JavaScript" type="text/javascript" src="../dwr/engine.js"></script>
+<script language="javascript">
+    DWREngine.setErrorHandler(appErrorHandler);
+</script>
+#end
+
+#**
+ * selectStaffAjaxAction
+ *
+ * 使用Ajax展示部门树来选择员工.自动生成员工id隐含域、员工姓名文本框域和按钮
+ *
+ * @param staffIdField 员工编号隐含域的名称.
+ * @param staffId 默认显示的员工编号
+ * @param staffName 默认显示的员工姓名
+ * @param treeURL 查找部门数据的地址
+ * @param callbackFunction 选择员工后的回调函数
+ *
+*#
+#macro(selectStaffAjaxAction $staffIdFieldId $staffId $staffName $treeURL $callbackFunction)
+    #if(!$INCLUDE_SELECT_STAFF_SCRIPT)
+        #set($INCLUDE_SELECT_STAFF_SCRIPT = true)
+<script type="text/javascript">
+function showSelectDepartmentDialogForStaff(idFieldId, callback) {
+    var arguments = new Object();
+    arguments.custom = new Object();
+    if (typeof(callback) == 'function') {
+        arguments.custom.callback = callback;
+    }
+    arguments.custom.custom = idFieldId;
+#if($treeURL != "")
+    var theUrl = "$treeURL";
+#else
+    var theUrl = DEFAULT_STAFF_SELECT_URL;
+#end
+    FCKDialog.OpenDialog("selectDepartment", "选择部门", theUrl, 750, 500, arguments, window);
+}
+
+</script>
+    #end
+<input type="hidden" id="${staffIdFieldId}" name="${staffIdFieldId}" value="$!{staffId}" />
+<input type="text" class="form_input" id="${staffIdFieldId}Name" name="${staffIdFieldId}Name" readonly="true" value="$!{staffName}" /><img src="../images/person.gif" width="31" height="21" align="absmiddle" onclick="javascript:showSelectDepartmentDialogForStaff('${staffIdFieldId}'#if($callbackFunction != ""), ${callbackFunction}#end)">
+#end
+
+#**
+* 企业类别选择下来列表
+* @param options Map {"name":"entpType", "selected":"aaa",
+*                     "data":{"key":"001","value":"餐饮"},
+*                     "onchange":"change()",,
+*                     "emptyDisplay":"请选择",
+*                     "filter":"005",
+*                     "identMode":{3:"├",6:"├─",9:"├──" }}
+*                      如果identMode 为{}则使用默认的放回 ，如果不传，则没有ident
+*#
+#macro(identTreeSelector $options)
+    <select name="$!{options.name}"
+        #if($options.multiple) $options.multiple #end
+        #if($options.onchange) onchange="${options.onchange}" #end
+        #if($options.ondblclick) ondblclick="${options.ondblclick}" #end
+        #if($options.style) style="${options.style}" #end
+        #if($options.className) class="${options.className}" #end
+        #if($options.attrs) $options.attrs #end style='border:#ccc 1px solid;'
+    >
+    #if($options.emptyDisplay)
+       <option value=''>${options.emptyDisplay}</option>
+    #end
+    #foreach($e in $!{options.data.entrySet()})
+         #set($indent = '')
+         #if($options.identMode)
+            #if($options.identMode.size()==0)
+
+                  #set($times = ${e.key.toString().length()} )
+                  #set($times = $times / 3 )
+                  #set($times = $times - 1 )
+                  #set($_appendChar='')
+                  #if($times > 0 )
+                  #foreach($t in [1..$times])
+                      #set($_appendChar = $_appendChar + '-')
+                  #end
+                  #end
+                  #set($indent='├' + $_appendChar)
+            #else
+                #set($indent = $options.identMode.get($e.key.length()))
+            #end
+         #end
+
+        #if(${options.filter})
+            #if(${e.key.startsWith("${options.filter}")})
+                 <option value="${e.key}" #if("${e.key}"=="$!{options.selected}") selected="selected" #end>${indent} ${e.value}</option>
+            #end
+        #else
+             <option value="${e.key}" #if("${e.key}"=="$!{options.selected}") selected="selected" #end>${indent} ${e.value}</option>
+        #end
+    #end
+     </select>
+#end
+#**
+ * changePageWeb
+ *
+ * 产生分页列表的信息翻页标题行，查询申请事项进度和公示结果专用。
+ *
+ * @param page 分页对象
+ * @param action 显示其他页的url
+ * @param chekcboxname 要处理的checkbox的名字
+ * @param align 对齐方式。有：center,right,left。默认是right
+ *
+*#
+#macro(changePageWeb $page $action)
+<form name="changePageFrom" method="post" action="$!action"
+    onsubmit="javascript:pageSubmit(); return false;">
+<input type="hidden" name="token" value="$!{page.token}" />
+<script>
+function pageSubmit() {
+    var e = document.changePageFrom;
+    if(changePageFrom.pageNumber.value == '') {
+        return;
+    }
+    e.pageNumber.value = Number(e.pageNumber.value);
+    e.submit();
+}
+</script>
+#if(${page})
+$!{page.totalSize}条记录 $!{page.pageNumber}/$!{page.totalPage}页
+#else
+0条记录 0/0页
+#end
+&nbsp;
+  #if($page.hasPreviousPage())
+    <a href="#" onClick="return gotoPage(1);">首页
+    <a href="#" onClick="return gotoPage($page.pageNumber - 1);">上一页</a>
+  #else
+    <a disabled="disabled">首页</a>
+    <a disabled="disabled">上一页</a>
+  #end
+  #if($page.hasNextPage())
+    <a href="#" onClick="return gotoPage($page.pageNumber + 1);">下一页</a>
+    <a href="#" onClick="return gotoPage($page.totalPage);">尾页</a>
+  #else
+    <a disabled="disabled">下一页</a>
+    <a disabled="disabled">尾页</a>
+  #end
+&nbsp;
+第<select name="pageNumber" onChange="javascript:pageSubmit();">
+#if($page.totalPage && $page.totalPage > 0)
+    #foreach($_changePageNum in [1..$page.totalPage])
+        #if($_changePageNum == $page.pageNumber)
+        <option value="${_changePageNum}" selected="selected">${_changePageNum}</option>
+        #else
+        <option value="${_changePageNum}" >${_changePageNum}</option>
+        #end
+    #end
+#else
+    <option value="0" >0</option>
+#end
+</select>页
+</form>
+#end

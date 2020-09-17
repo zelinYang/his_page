@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>预交金主页</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #set($path = $!contextPath)
+    <style type="text/css">
+    .inSettNav{ height: calc(100% - 3px);margin-top: 0;}
+	.layui-tab-title.btn { padding: 10px; margin-left: 0}
+
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div class="layui-tab inSettNav" lay-filter="inSettNav">
+			<ul class="layui-tab-title btn">
+				<li lay-id="payHandle" href="$path/inpatient/payHandle.do" class="layui-this" >缴款处理</li>
+				<li lay-id="payInRecord" href="$path/inpatient/payInRecord.do" class="visitOffice">缴款查询</li>
+				<li lay-id="payedRecip" href="$path/inpatient/payedRecip.do">已结收据</li>
+				<li lay-id="arrearageList" href="$path/inpatient/arrearageList.do">欠费查询</li>
+				<li lay-id="unPayIn" href="$path/inpatient/unPayIn.do">未结算收据</li>
+			</ul>
+			<!-- 导航内容 根据index对应li -->
+			#set($attr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+			#set($layclass = 'class="layui-tab-item full-height"')
+			<div class="layui-tab-content" style="height: calc(100% - 49px);padding: 0;">
+				<div lay-id="inhospitalReg" class="layui-tab-item layui-show full-height">
+					<iframe $attr src="$path/inpatient/payHandle.do"></iframe>
+				</div>
+				<div lay-id="payInRecord" $layclass><iframe $attr></iframe></div>
+				<div lay-id="payedRecip" $layclass><iframe $attr></iframe></div>
+				<div lay-id="arrearageList" $layclass><iframe $attr></iframe></div>
+				<div lay-id="unPayIn" $layclass><iframe $attr></iframe></div>
+			</div>
+		</div>
+	</div>
+</div>
+
+
+
+
+
+	#parse("./settlement/inpatient/payIn/payInMaster.js.vm")<!-- 页面js -->
+</body>
+</html>

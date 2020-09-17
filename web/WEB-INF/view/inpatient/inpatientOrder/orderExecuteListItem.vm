@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>&nbsp;</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style type="text/css">
+
+    .layui-input-sm{ max-width:60px; }
+
+    .layui-form-label{ padding:5px; }
+    
+    .label-sm{ mix-width:30px; width:30%; max-width:50px; }
+    
+    .layui-form-item .layui-form-checkbox[lay-skin=primary]{ margin-top:5px; }
+    
+    .print-title{ padding:10px; text-align: center; font-weight: 600; font-size: 20px; }
+    
+    .inpatientInfo-td span{ font-size:14px; color:#333333; font-weight:500; margin-right: 30px; }
+    
+    .item-patient{ background: #e9e9e9; }
+    
+    .layui-table th{ text-align: center; }
+    
+</style>
+</head>
+<body class="full-height ">
+        
+<!--startprint1-->
+<!--打印内容开始-->
+        
+        <div class="full-height layui-bg-white" style="" >
+            <h3 class="print-title">医嘱执行单  $!date.format("yyyy年MM月dd日",$!today)</h3>
+	        <table class="layui-table layui-form">
+	           <colgroup>
+	               <col class="col-first" width="50px">
+	               <col width="80px">
+	               <col width="200px">
+	               <col width="150px">
+	               <col width="80px">
+	               <col width="200px">
+	               <col width="80px">
+	           </colgroup>
+	           <thead>
+		           <tr>
+		               <th class="col-first"><input type="checkbox" lay-skin="primary" lay-filter="check-all" name="check-all" checked></th>
+		               <th>类型</th>
+		               <th>项目名称</th>
+		               <th>用法</th>
+		               <th>频次</th>
+		               <th>说明</th>
+		               <th>签名</th>
+	               </tr>
+               </thead>   
+               <tbody>      
+               #foreach($inpatientInhospital in $inpatientInhospitalList)
+               #if($!orderGroupMap.get($!inpatientInhospital.inhospitalId).size()>0)
+		           <tr class="item-patient">
+		               <td class="col-first"><input type="checkbox" lay-skin="primary" lay-filter="check-inpatient" value="$!inpatientInhospital.inhospitalId" checked></td>
+		               <td class="inpatientInfo-td" colspan="6">
+		               <span>床号：$inpatientInhospital.currentBedNo</span><span>$!inpatientInhospital.patientName</span>
+		               <span>$!dicData.dicSex.get($!inpatientInhospital.patientSex)</span><span>$!inpatientInhospital.patientAgeShow</span>
+		               <span> 入院：$!inpatientInhospital.inhospitalDate</span><span>执行：$!date.format("MM月dd日",$!today)</span>
+		               
+		               </td>
+		           </tr>
+		           
+	               #foreach($inpatientOrder in $!orderGroupMap.get($!inpatientInhospital.inhospitalId))
+	               <tr>
+	                   <td class="col-first"><input type="checkbox" lay-skin="primary" name="orderId" inpatient="$!inpatientInhospital.inhospitalId" checked></td>
+	                   <td>$!dicData.dicOrderClassify.get($inpatientOrder.orderClassify)</td>
+	                   <td>$!inpatientOrder.orderName</td>
+	                   <td>$!dicData.dicDoseWay.get($inpatientOrder.doseWayCode.toString())</td>
+	                   <td>$!dicData.dicPharmacyFreq.get($inpatientOrder.pharmacyFreqId)</td>
+	                   <td>$!inpatientOrder.remark</td>
+	                   <td></td>
+	               </tr>
+                    #end
+               #end     
+               #end
+               </tbody>  
+	        </table>
+        </div>
+<!--打印内容结束-->
+<!--endprint1-->
+<button class="layui-btn layui-hide" id="print" title="打印1" >打印</button>
+</body>
+#parse("./inpatient/inpatientOrder/orderExecuteListItem.js.vm")
+</html>

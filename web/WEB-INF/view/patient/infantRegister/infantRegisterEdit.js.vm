@@ -1,0 +1,40 @@
+<script>
+    $(document).ready(function () {
+    	
+    	laydate.render({elem: '#infantInhospitalDate',trigger: 'click', type: 'datetime', istime: true, max: getSmpFormatNowDate(true)});
+    	laydate.render({elem: '#infantBirth',trigger: 'click', type: 'datetime', istime: true, max: getSmpFormatNowDate(true)});
+
+        function init(){
+        	var inhospitalNo=$('#inhospitalNo',parent.document).val();
+        	var patientName=$('#patientName',parent.document).val();
+        	console.log(inhospitalNo);
+        	console.log(patientName);
+        	$('#infantInhospitalNo').val(inhospitalNo+"B"+1);
+        	$('#infantName').val(patientName+"B"+1);
+        	$('#motherName').text(patientName);
+        }
+        init();
+        
+        
+     // 提交表单
+    	function submitForm() {
+    		var params = common.serializeObject($('#editForm'));
+    		common.requestServer('../patient/saveInfantRegister.jo', params, function(result){
+    			if (result.code == "0") {
+    				parent.common.alertCall("保存成功。", 1, function (){
+    					//$('#btn_query', window.parent.document).click();
+    					var index = parent.layer.getFrameIndex(window.name);
+    			        parent.layer.close(index); 
+    				});
+    			} else {
+    				parent.common.alert(result.msg, 0);
+    			}
+    		});
+    	}
+     
+        $('#btn_save').on('click',function(){
+        	submitForm();
+        });
+
+    });
+</script>

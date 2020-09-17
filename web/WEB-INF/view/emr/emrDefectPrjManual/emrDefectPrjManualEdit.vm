@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>编辑 病历缺陷设置</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("emrDefectPrjManualId" "$!{emrDefect.emrDefectPrjManualId}" " id='emrDefectPrjManualId'")
+        #formHiddenInput("emrTlpClassifyId" "$!{emrDefect.emrTlpClassifyId}" " id='emrTlpClassifyId'")
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()病历分类</label>
+                <div class="layui-input-inline">#formTextInput("emrTlpClassifyName" "$!{emrDefect.emrTlpClassifyName}" " id='emrTlpClassifyName' maxlength='50' lay-verify='required' placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()缺陷项目</label>
+                <div class="layui-input-inline">#formTextInput("defectName" "$!{emrDefect.defectName}" " id='defectName' maxlength='50' lay-verify='required'  placeholder='' class='layui-input unique'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()项目分值</label>
+                <div class="layui-input-inline">#formFloInput("defectScore" "$!{emrDefect.defectScore}" " lay-verify='required'  maxlength='10' class='layui-input unique'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100 ">#requiredTag()甲类缺陷扣分</label>
+                <div class="layui-input-inline">#formFloInput("oneNegativeScore" "$!{emrDefect.oneNegativeScore}" " lay-verify='required' maxlength='10' class='layui-input'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()乙类缺陷扣分</label>
+                <div class="layui-input-inline">#formFloInput("twoNegativeScore" "$!{emrDefect.twoNegativeScore}" " lay-verify='required' maxlength='10' class='layui-input'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()丙类缺陷扣分</label>
+                <div class="layui-input-inline">#formFloInput("threeNegativeScore" "$!{emrDefect.threeNegativeScore}" " lay-verify='required' maxlength='10' class='layui-input'")</div>
+            </div>
+        </div>
+
+        #if($!{emrDefect.emrDefectPrjManualId})
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label wd-100">#requiredTag()是否有效</label>
+                <div class="layui-input-block">#formRadioGroup("validFlag" "$!{emrDefect.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+            </div>
+        </div>
+        #else
+            #formHiddenInput("validFlag" "$!{CONST.AppConstants.YES_FLAG}" "")
+        #end
+
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label wd-100">备注</label>
+            <div class="layui-input-inline " style="width: 440px;">#formTextarea("remark" "#htmlEscape($!{emrDefect.remark})" "id='remark' class='layui-textarea' maxlength='100' placeholder='请输入内容，字数最多100字'")</div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save_dic" id="btn_save_dic" value="确认">
+        </div>
+    </div>
+    #parse("./emr/emrDefectPrjManual/emrDefectPrjManualEdit.js.vm")
+</body>
+</html>

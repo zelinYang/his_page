@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>编辑 病历缺陷设置</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("emrDefectPrjClassifyId" "$!{emrDefectPrjClassifyId}" " id='emrDefectPrjClassifyId'")
+        #formHiddenInput("emrDefectPrjId" "$!{emrDefectPrj.emrDefectPrjId}" " id='emrDefectPrjId'")
+        #formHiddenInput("emrTlpClassifyId" "$!{emrDefectPrj.emrTlpClassifyId}" " id='emrTlpClassifyId'")
+        #formHiddenInput("hospitalId" "$!{emrDefectPrj.hospitalId}" " id='hospitalId'")
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()项目名称</label>
+                <div class="layui-input-inline">#formTextInput("emrDefectPrjName" "$!{emrDefectPrj.emrDefectPrjName}" " id='emrDefectPrjName' maxlength='50' lay-verify='required'  placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()病历类别</label>
+                <div class="layui-input-inline">#formTextInput("emrTlpClassifyName" "$!{emrDefectPrj.emrTlpClassifyName}" " id='emrTlpClassifyName' maxlength='50' lay-verify='required' placeholder='' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()项目分值</label>
+                <div class="layui-input-inline">#formFloInput("emrDefectMaxScore" "$!{emrDefectPrj.emrDefectMaxScore}" " lay-verify='required'  maxlength='10' class='layui-input unique' autocomplete='off'")</div>
+            </div>
+        #if($!{emrDefectPrj.emrDefectPrjId})
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()是否有效</label>
+                <div class="layui-input-block">#formRadioGroup("validFlag" "$!{emrDefectPrj.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+            </div>
+        #else
+            #formHiddenInput("validFlag" "$!{CONST.AppConstants.YES_FLAG}" "")
+        #end
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save_emrDefectPrj" id="btn_save_emrDefectPrj" value="确认">
+        </div>
+    </div>
+    #parse("./emr/emrDefectPrj/emrDefectPrjEdit.js.vm")
+</body>
+</html>

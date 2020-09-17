@@ -1,0 +1,163 @@
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicIncisionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicIncisionLevel)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        window.getQueryParams = function (params) {
+            return $.extend({
+                incisionLevels: '',
+                incisionLevelName: ''
+            }, params || common.serializeObject($('#basSurgeryIncisionLevel_queryForm')));
+        }
+
+        //全选/反选
+        form.on('checkbox(checkboxMulti)', function (data) {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            forCheckbox.prop('checked', data.elem.checked);
+            that.indeterminate = false;//状态不确定
+            form.render('checkbox');
+        });
+        $(':checkbox[for-checkbox]').each(function () {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            form.on('checkbox(' + forName + ')', function (data) {
+                that.checked = !Boolean(forCheckbox.not(':checked').length);
+                that.indeterminate = !that.checked == forCheckbox.is(':checked');//其中部分选中时，状态不确定
+                form.render('checkbox');
+            });
+        })
+
+        //回车触发查询
+        $("#q_incisionLevelName").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basSurgeryIncisionLevelListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basSurgeryIncisionLevel_queryForm');
+            $("#basSurgeryIncisionLevel_queryForm").find(':checkbox').prop('indeterminate', false);
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/bas/BasSurgeryIncisionLevelEdit.do', '新增手术等级', {
+                area: ['50%', '50%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basSurgeryIncisionLevelListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basSurgeryIncisionLevelListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'incisionLevelName',
+                    title: '等级名称',
+                    minWidth: 200
+                }, {
+                    field: 'incisionLevel',
+                    title: '等级类别',
+                    templet: function (d) {
+                        return dicIncisionLevel[d.incisionLevel] || '';
+                    }
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);autoSetHeigt()
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#basSurgeryIncisionLevel_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/updateBasSurgeryIncisionLevelValidFlag.jo', {
+                ids: data.surgeryIncisionLevelId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basSurgeryIncisionLevelListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/bas/basSurgeryIncisionLevelShow.do?surgeryIncisionLevelId=' + row.surgeryIncisionLevelId, '手术等级详情', {
+                        area: ['50%', '50%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/bas/BasSurgeryIncisionLevelEdit.do?surgeryIncisionLevelId=' + row.surgeryIncisionLevelId, '手术等级', {
+                        area: ['50%', '50%'],
+                        scroll: true
+                    })
+                    break
+            }
+        });
+
+    })
+</script>

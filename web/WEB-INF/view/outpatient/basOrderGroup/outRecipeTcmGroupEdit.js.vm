@@ -1,0 +1,132 @@
+<script type="text/javascript">
+    var medicineRowSelect;
+    var removeTrOrderItem;
+    var dicBodyPartClassifyLis = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifyLis)');
+    var dicSysOrgDeptName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgDeptName)');
+
+    var examineOrderItemRows;//table当前页面的数据rows
+
+    //检验组套明细保存的参数，用于过滤
+    var orderItemParamFilter = [
+        'exeOfficeId'
+        ,'orderGroupId'
+        ,'orderItemId'
+        ,'lisSpecimenId'
+        ,'medicineId'
+        ,'orderGroupNo'
+        ,'orderName'
+        ,'doctorOrderType'
+        ,'examFlag'
+        ,'lisFlag'
+        ,'medicineFlag'
+        ,'surgeryFlag'
+        ,'itemPrice'
+        ,'itemTotalPrice'
+        ,'specialRemark'
+        ,'remark'
+    ]
+
+    //参数过滤 return filterArr;
+    function filterParam(srcArr,orderItemParamFilter) {
+        var filterArr = [];
+        $(srcArr).each(function(index, srcObj) {
+            var descObj = {};
+            $(orderItemParamFilter).each(function(index, key) {
+                if (srcObj[key] !== undefined ) {
+                    if (srcObj[key] == null) {
+                        descObj[key] =  '';
+                    } else {
+                        descObj[key] =  srcObj[key];
+                    }
+
+                }
+            });
+            filterArr.push(descObj);
+        });
+        return filterArr;
+    }
+
+    layui.use(['form', 'table', 'laydate', 'element'], function(){
+        var table = layui.table,  element = layui.element,laydate = layui.laydate,form = layui.form;
+        element.render();
+        form.verify({});
+
+        //监听提交
+        formtreatManageListGrid('submit(btn_save)', function(data){
+            saveBasOrderGroup();
+            return false;
+        });
+
+        // 提交表单
+        function saveBasOrderGroup() {
+            //表单参数
+            var basOrderGroupParams = common.seriElemObject('.order-group');
+			basOrderGroupParams.orderGroupClassify = $('input[name=orderGroupClassify][type=radio]:checked', parent.document).val();
+			var recipeItem = getRecipeItemArray(basOrderGroupParams);
+            // var orderItemRows = filterParam(examineOrderItemRows,orderItemParamFilter)
+            $.each(recipeItem.recipeItemArray, function (index, item) {
+				item.herbUsageWay = $("#herbUsageWay").val();
+			})
+            basOrderGroupParams.itemJsonData = JSON.stringify(recipeItem.recipeItemArray);
+			basOrderGroupParams.pasteProcessingFlag = $("input[name=pasteProcessingFlag]").is(':checked')? $("input[name=pasteProcessingFlag]").val(): '0';
+			basOrderGroupParams.commonMedicineFlag = $("input[name=commonMedicineFlag]").is(':checked')? $("input[name=commonMedicineFlag]").val(): '0';
+			console.log(basOrderGroupParams);
+            common.requestServer('$!contextPath/bas/saveBasOrderGroup.jo', basOrderGroupParams, function(result){
+                if (result.code === "0") {
+					common.alertCall('保存成功', 1, function () {
+						$("#btn_query_recipeGroup", parent.document).click();
+                        window.location.reload();
+					});
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }//save function
+
+        $("#btn_del").click(function () {
+			var checkBoxList = $(".tbody-data tr input[name=isCheck]:checked");
+			if (checkBoxList.size() <= 0) {
+				common.alert('请选择删除项', 0);
+				return false;
+			}
+			var basOrderItemIds = [];
+			checkBoxList.each(function (index) {
+				var elemTr = $(this).parent().parent();
+				var orderItemIdInput = elemTr.find('input[name="orderItemId"][value!= ""]');
+				if (orderItemIdInput.length > 0) {
+					basOrderItemIds.push(orderItemIdInput.val());
+				}
+			});
+			delOrderItem(basOrderItemIds.join(','), checkBoxList);
+		});
+
+		//删除处方
+		 function delOrderItem(orderItemIds, checkBoxList) {
+			 if (orderItemIds > 0) {
+				 common.requestServer('$!contextPath/bas/deleteOrderItem.jo', {ids: orderItemIds}, function(result){
+					 if (result.code == "0") {
+						 common.alertCall('删除成功', 1, function () {
+							 $.each(checkBoxList, function () {
+								 $(this).parent().parent().remove();
+							 })
+						 });
+					 } else {
+						 common.alert(result.msg, 0);
+					 }
+				 });
+			 }
+			 $.each(checkBoxList, function () {
+				 $(this).parent().parent().remove();
+			 })
+		}
+
+        //页面初始化
+        $(document).ready(function() {
+            //新增检验明细
+            $('#btn_add_order_item').click(function() {
+                openAddOrderItem();
+            });
+        });
+
+    });//layui.use end
+</script>

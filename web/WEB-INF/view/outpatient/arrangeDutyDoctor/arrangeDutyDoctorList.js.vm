@@ -1,0 +1,166 @@
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicStartStop = JSON.parse('$dicTools.changeMapToJson($dicData.dicStartStop)');
+    var dicVisitTimeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeFlag)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+        // 科室
+        var doctorOfficeIds = xmSelect.render({
+            el: '#doctorOfficeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'doctorOfficeIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../org/sysOrgListData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.name, value: item.orgId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                arrangeDutyDateBegin: '',
+                arrangeDutyDateEnd: '',
+                doctorOfficeIds: '',
+                arrangeDutyTypes: '',
+                consultingRoomName: '',
+                doctorName: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#arrangeDutyDoctor_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('arrangeDutyDoctorListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('arrangeDutyDoctor_queryForm');
+            doctorOfficeIds.setValue([])
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#arrangeDutyDoctorListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/outpatient/arrangeDutyDoctorPageData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'arrangeDutyDate',
+                    title: '工作日期',
+                    width: 90,
+                    templet: function (d) {
+                        return layui.util.toDateString(d.arrangeDutyDate, 'yyyy-MM-dd')
+                    }
+                }, {
+                    field: 'arrangeDutyType',
+                    title: '值班类别',
+                    width: 60,
+                    templet: function (d) {
+                        return dicVisitTimeFlag[d.arrangeDutyType] || "";
+                    }
+                }, {
+                    field: 'doctorOfficeName',
+                    title: '科室名称',
+                    minWidth: 150,
+                }, {
+                    field: 'consultingRoomName',
+                    title: '诊室名称',
+                    minWidth: 150,
+                }, {
+                    field: 'doctorName',
+                    title: '医生姓名',
+                    minWidth: 100,
+                }, {
+                    field: 'limitCount',
+                    title: '当日挂号限额',
+                    width: 90,
+                }, {
+                    field: 'registerCount',
+                    title: '已挂人数',
+                    width: 80,
+                }, {
+                    field: 'appointCount',
+                    title: '预约人数',
+                    width: 80,
+                }, {
+                    field: 'serialNum',
+                    title: '就诊序号',
+                    width: 80,
+                }, {
+                    field: 'registerNum',
+                    title: '挂号序号',
+                    width: 80,
+                }, {
+                    field: 'appointNum',
+                    title: '预约序号',
+                    width: 80,
+                }, {
+                    field: 'appointNum',
+                    title: '预约序号',
+                    width: 80,
+                }, {
+                    field: 'validFlag',
+                    title: '是否停挂',
+                    align: 'center',
+                    width: 80,
+                    templet: function (d) {
+                        return '<span class=" layui-badge ' + (Boolean(+d.validFlag) ? 'layui-bg-blue' : '') + '">' + dicStartStop[d.validFlag] + '</span>';
+                    }
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#arrangeDutyDoctor_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+    })
+</script>

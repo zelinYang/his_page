@@ -1,0 +1,381 @@
+<script>
+    var medicineId = null; // 药品ID
+    var medicineVendorId = null;
+    var producingAreaId = null;
+    var medicineRowSelect;
+    var medicineVendorRowSelect;
+    var drugstoreMedicineStockselect;//选择库存药品
+    var medicineProducingAreaRowSelect;
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugstoreId = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreId)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicDrugstoreOutFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreOutFlag)');
+    var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete','util','laydate'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete , util = layui.util , laydate = layui.laydate;
+        var itemIndex, preItemIndex;// 当前行号和前一个行号
+        var drugstoreOutFlag = '1';
+        var pharmacyApplyId = '$!{drugstoreOutEditInfo.pharmacyApplyId}'; // 当前药库/耗材库出库ID
+        var curMedicineTr; // 当前编辑的药品
+        var changeFlag = false; //计划修改标志
+        // 新增表格行
+		var templateTr = $('#itemList tr:last').clone();
+		$('#itemList tr:last').remove();
+
+        $(function () {
+			if (pharmacyApplyId) {
+				showData(pharmacyApplyId);
+			}
+			monitorInput();
+		})
+        // 监听输入框
+        function monitorInput() {
+            // 监听计划是否有修改
+            $('#itemTable').bind("input propertychange", function() {
+                changeFlag = true;
+            });
+            // 输入框获取焦点时选中输入框的内容
+            $('#itemTable').find('input').focus( function() {
+                var curDom = this;
+                curMedicineTr = $(this).parent().parent();
+                $('#selectMedicineId').val($(curMedicineTr).find('input[name="medicineId"]').val());
+                $('#selectMedicineVendorId').val($(curMedicineTr).find('input[name="medicineVendorId"]').val());
+                $('#selectProducingAreaId').val($(curMedicineTr).find('input[name="producingAreaId"]').val());
+                var inputLen = $('#itemList').find('input[type!=hidden], select').length;
+                $('#itemList').find('input[type!=hidden][readonly!=readonly], select').each(function(i) {
+                    if (curDom.isSameNode(this)) {
+                        index = i;
+                    }
+                });
+                $(this).select();
+            });
+            form.render("select");
+            form.render("checkbox");
+            // initShowMedicineNamePopover();
+            // 监听各个价格输入框，计算对应的金额
+            $('input[name="tradePrice"],input[name="retailPrice"],input[name="buyPrice"]').each(function () {
+                priceSum(this, $(this).attr('targetSum'));
+            });
+            // 初始化日控件
+            $('input[name="expireDate"]').each(function () {
+                initDate(this);
+            });
+            $('input[name="outCount"]').bind('input propertychange', function () {
+                var tr = $(this).parent().parent();
+                var count = $(this).val();
+                if (!count || count < 0) {
+                    return;
+                }
+                var tradePrice = tr.find('input[name="tradePrice"]');
+                var retailPrice = tr.find('input[name="retailPrice"]');
+                var buyPrice = tr.find('input[name="buyPrice"]');
+                if (tradePrice.val() && tradePrice.val() > 0) {
+                    tr.find('input[name="' + tradePrice.attr('targetSum') + '"]').val((count * (tradePrice.val() * 10000)) / 10000);
+                }
+                if (retailPrice.val() && retailPrice.val() > 0) {
+                    tr.find('input[name="' + retailPrice.attr('targetSum') + '"]').val((count * (retailPrice.val() * 10000)) / 10000);
+                }
+                if (buyPrice.val() && buyPrice.val() > 0) {
+                    tr.find('input[name="' + buyPrice.attr('targetSum') + '"]').val((count * (buyPrice.val() * 10000)) / 10000);
+                }
+            });
+        }
+        // 选中计划后展示计划详细内容
+        function showData(pharmacyApplyId) {
+            common.post(contextPath + '/pharmacy/getPharmacyApplyAndItem.jo', {pharmacyApplyId: pharmacyApplyId}, function (result){
+                initializeDrugstoreOut();
+				showMainData(result.data.PharmacyApply)
+                showDrugstoreOutData(result.data.pharmacyApplyItemList);
+                monitorInput();
+            });
+        }
+
+        function showMainData(data) {
+			$('#mainForm').find("input[name='pharmacyApplyId']").val(data.pharmacyApplyId);
+			$('#mainForm').find("select[id='drugstoreOutWay']").val('01');
+			$('#mainForm').find("input[name='pharmacyId']").val(data.pharmacyId);
+			$('#mainForm').find("input[name='pharmacyName']").val(data.pharmacyName);
+			$('#mainForm').find("input[name='drugstoreId']").val(data.drugstoreId);
+			$('#mainForm').find("input[name='drugstoreName']").val(data.drugstoreName);
+			$('#mainForm').find("input[name='applyTime']").val(layui.util.toDateString(data.pharmacyInDate, 'yyyy-MM-dd'));
+			$('#mainForm').find("input[name='outTime']").val(layui.util.toDateString(new Date(), 'yyyy-MM-dd'));
+			$('#mainForm').find("select[name='drugstoreOutId']").val(data.drugstoreOutId);
+			$('#mainForm').find("select[name='stockCount']").val(data.stockCount);
+			$('#mainForm').find("select[name='medicineUnit']").val(data.medicineUnit);
+			$('#mainForm').find("select[name='medicineType']").val(data.medicineType);
+			$('#mainForm').find("select[name='drugstoreOutRemak']").val(data.drugstoreOutRemak);
+		}
+
+        // 初始化计划内容
+        function initializeDrugstoreOut() {
+            $('#drugstoreOutId').val('');
+            $('#pharmacyApplyId').val('');
+            $('#drugstoreOutWay').val('');
+            $('#applyTime').val('');
+            $('#outTime').val('');
+            $('#pharmacyId').val('');
+            $('#drugstoreId').val('');
+            $('#drugstoreOutRemak').val('');
+        }
+        // 展示药库/耗材库出库内容
+        function showDrugstoreOutData(data) {
+            if (data.length === 0) {
+                return;
+            }
+			for (var i = 0, len = data.length; i < len; i++) {
+				var trDom = templateTr.clone();
+				$(trDom).find('input[name="medicineId"]').val(data[i].medicineId);
+				$(trDom).find('input[name="medicineType"]').val(data[i].medicineType);
+				$(trDom).find('input[name="drugstoreStockId"]').val(data[i].drugstoreStockId);
+				$(trDom).find('input[name="drugstoreInItemId"]').val(data[i].drugstoreInItemId);
+				$(trDom).find('input[name="pharmacyApplyItemId"]').val(data[i].pharmacyApplyItemId);
+				$(trDom).find('input[name="doctorOrderType"]').val(data[i].doctorOrderType);
+				$(trDom).find('input[name="medicineName"]').val(data[i].medicineName);
+				$(trDom).find('input[name="medicineSpec"]').val(data[i].medicineSpec);
+				$(trDom).find('input[name="stockCount"]').val(data[i].stockCount);
+				$(trDom).find('input[name="applyCount"]').val(data[i].applyCount);
+				$(trDom).find('input[name="outCount"]').val(data[i].outCount);
+				$(trDom).find('input[name="medicineVendorId"]').val(data[i].medicineVendorId);
+				$(trDom).find('input[name="medicineVendorName"]').val(data[i].medicineVendorName);
+				$(trDom).find('input[name="producingAreaId"]').val(data[i].producingAreaId);
+				$(trDom).find('input[name="producingAreaName"]').val(data[i].producingAreaName);
+				$(trDom).find('span[name="producingAreaName"]').html(data[i].producingAreaName);
+				$(trDom).find('input[name="batchNum"]').val(data[i].batchNum);
+				$(trDom).find('input[name="expireDate"]').val(layui.util.toDateString(data[i].expireDate, 'yyyy-MM-dd'));
+				$(trDom).find('input[name="medicineUnit"]').val(data[i].medicineUnit);
+				$(trDom).find('span[name="medicineUnitName"]').html(dicDrugNumUnit[data[i].medicineUnit]);
+				$(trDom).find('input[name="medicineDosage"]').val(data[i].medicineDosage);
+				$(trDom).find('input[name="dosageUnit"]').val(data[i].dosageUnit);
+				$(trDom).find('span[name="dosageUnitName"]').html(dicDrugNumUnitDosageUnit[data[i].dosageUnit]);
+				$(trDom).find('input[name="dosageForm"]').val(data[i].dosageForm);
+				$(trDom).find('span[name="dosageFormName"]').html(dicDosageForm[data[i].dosageForm]);
+				$(trDom).find('input[name="buyPrice"]').val(data[i].buyPrice);
+				$(trDom).find('input[name="outBuyTotalSum"]').val(data[i].buyTotalSum);
+				$(trDom).find('input[name="tradePrice"]').val(data[i].tradePrice);
+				$(trDom).find('input[name="tradeTotalSum"]').val(data[i].tradeTotalSum);
+				$(trDom).find('input[name="retailPrice"]').val(data[i].retailPrice);
+				$(trDom).find('input[name="retailTotalSum"]').val(data[i].retailTotalSum);
+				$(trDom).find('input[name="remark"]').val(data[i].remark);
+				$('#itemList').append(trDom);
+			}
+        }
+        // 恢复原来选中的行
+        function restoreSelectedTr(itemIndex) {
+            $('#drugstoreOutTable').find(".layui-table-body table.layui-table tbody tr").each(function(index) {
+                if (itemIndex == index) {
+                    $(this).click();
+                }
+            });
+        }
+
+        //对td的单击事件进行拦截停止，防止事件冒泡再次触发上述的单击事件  将此代码在页面初始化后执行一次即可以。
+        $('#drugstoreOutTable').on("click", "td div.layui-table-cell div.layui-form-radio", function (e) {
+            e.stopPropagation();
+        });
+        laydate.render({
+            elem: '#outTime'
+            , value: new Date()
+        });
+        // 初始化日期范围选择
+        laydate.render({
+            elem: '#searchDate'
+            ,range: true //或 range: '~' 来自定义分割字符
+        });
+
+        // 刷新列表
+        function refreshList() {
+            pharmacyInList.reload({
+                url: pharmacyInUrl,
+                page: {curr: 1},
+                where: common.serializeObject($('#queryForm'))
+            });
+        }
+
+        // 处方明细列表
+        $('#btn_addItem').click(function () {
+            $('#itemList').append(templateTr);
+            var lastTr = $('#itemList > tr:last');
+            $(lastTr).find('td:first > span').text(lastTr.index() + 1);
+            form.render("select");
+            form.render("checkbox");
+            monitorInput();
+        });
+
+        function priceSum(obj, target) {
+            $(obj).bind('input propertychange', function () {
+                var tr = $(this).parent().parent();
+                var count = $(tr).find('input[name="outCount"]').val();
+                if (count && count > 0) {
+                    $(this).parent().parent().find('input[name="' + target + '"]').val((count * ($(this).val() * 10000)) / 10000);
+                }
+            });
+        }
+
+        // 初始化日控件
+        $('input[name="billDate"],input[name="expireDate"],input[name="receiptDate"],input[name="buyDate"]').each(function () {
+            initDate(this);
+        });
+
+        function initDate(elem, doneCall) {
+            laydate.render({
+                elem: elem, range: (doneCall && doneCall.length > 0), done: function (value, date, endDate) {
+                    if (doneCall) {
+                        doneCall(value, date, endDate);
+                    }
+                }
+            });
+        }
+
+        // 初始化校验radio和checkbox控件
+        common.verify(form);
+        //监听提交
+        form.on('submit(btn_save)', function (data) {
+			save(data);
+        });
+
+        function save(data) {
+			var subimitFlag = true;
+			if (!$("#drugstoreOutWay").val()) {
+				common.msg('请选择出库方式', 0);
+				return subimitFlag = false;
+			}
+			var trDatas = common.getAllTrData('#itemList');
+			data.drugstoreOutRemak = $('#drugstoreOutRemak').val();
+			$.each(trDatas, function (i, v) {
+				if (!v.medicineName) {
+					common.msg('请输入药品名称', 0);
+					return subimitFlag = false;
+				}
+				if (!v.medicineUnit) {
+					common.msg('【' + v.medicineName + '】药品单位不能为空', 0);
+					return subimitFlag = false;
+				}
+				if (!v.applyCount) {
+					common.msg('【' + v.medicineName + '】申请数量不能为空', 0);
+					return subimitFlag = false;
+				}
+				if (!v.medicineVendorId) {
+					common.msg('【' + v.medicineName + '】供货商不能为空', 0);
+					return subimitFlag = false;
+				}
+				if (!v.producingAreaId) {
+					common.msg('【' + v.medicineName + '】产地不能为空', 0);
+					return subimitFlag = false;
+				}
+				if (!v.stockCount) {
+					common.msg('【' + v.medicineName + '】库存不能为空', 0);
+					return subimitFlag = false;
+				}
+				if (!v.outCount) {
+					common.msg('【' + v.medicineName + '】实发数量不能为空', 0);
+					return subimitFlag = false;
+				}
+			});
+
+			if (!subimitFlag) {
+				return;
+			}
+
+			var trDatas = common.getAllTrData('#itemList');
+			var params = common.serializeObject($('#mainForm'));
+			params['drugstoreOutItemJson'] = JSON.stringify(trDatas);
+			params.drugstoreOutWayName = $('#drugstoreOutWay').find('option:selected').text();
+			params.examCheckFlag = '0';
+			common.confirm("确认出库吗？", function () {
+				common.requestServerHandler(contextPath + '/drugstore/saveDrugstoreOut.jo', params, '出库成功。', function (result) {
+					if (result.code === "0") {
+						parent.location.reload();
+					} else {
+						common.open("出库失败", 2);
+					}
+				});
+			})
+		}
+
+        // 显示Popover
+        function initShowMedicineNamePopover() {
+            if (drugstoreOutFlag === '1') {
+                initPopover($("#itemList tr td input[name=medicineName]"), medicineIframeSettings, 'queryMedicine');
+            }
+        }
+
+        //选择药品回调函数
+        medicineRowSelect = function(medicine) {
+            WebuiPopovers.hideAll();
+            var isExist = false;
+            //验证未保存的医嘱里是否存在相同药品 ，
+            $('#itemList tr input[name="medicineId"]').each(function () {
+                var tr = $(this).parent().parent();
+                var medicineId = tr.find('input[name="medicineId"]').val();
+                if(medicineId == medicine.medicineId){
+                    isExist = true;
+                    return false;
+                }
+            });
+
+            if (isExist) {
+                common.alert('所选药品已存在！', 0);
+                return false;
+            }
+
+            // 输入药品数据
+            if (medicine.medicineId) {
+                $(curMedicineTr).find('input[name="medicineId"]').val(medicine.medicineId);
+                $(curMedicineTr).find('input[name="medicineName"]').val(medicine.medicineName);
+                $(curMedicineTr).find('select[name="medicineType"]').val(medicine.medicineType);
+                $(curMedicineTr).find('input[name="medicineSpec"]').val(medicine.medicineSpec);
+                $(curMedicineTr).find('select[name="medicineUnit"]').val(medicine.medicineUnit);
+                $(curMedicineTr).find('select[name="medicineType"]').val(medicine.medicineType);
+                $(curMedicineTr).find('select[name="stockCount"]').val(medicine.stockCount);
+                $(curMedicineTr).find('select[name="dosageUnit"]').val(medicine.dosageUnit);
+                $(curMedicineTr).find('select[name="dosageForm"]').val(medicine.dosageForm);
+                $(curMedicineTr).find('input[name="minMedicinePack"]').val(medicine.minMedicinePack);
+                $(curMedicineTr).find('select[name="minMedicineUnit"]').val(medicine.minMedicineUnit);
+                $(curMedicineTr).find('input[name="medicineDosage"]').val(medicine.medicineDosage);
+                $(curMedicineTr).find('input[name="doctorOrderType"]').val(medicine.doctorOrderType);
+                form.render('select');
+                common.post(contextPath + '/drugstore/getStockCountByMedicineId.jo', {medicineId: medicine.medicineId , 'medicineVendorId':medicine.medicineVendorId ,
+                    'producingAreaId':medicine.producingAreaId}, function (result){
+                    $(curMedicineTr).find('input[name="stockCount"]').val(result.data.stockCount);
+                    $(curMedicineTr).find('input[name="dragstoreStockQuantity"]').val(result.data.dragstoreStockQuantity);
+                    $(curMedicineTr).find('input[name="purchasePrice"]').val(result.data.purchasePrice);
+                });
+            }
+        }
+    });
+
+    // 删除表格行
+    function deleteTr(obj) {
+        $(obj).parent().parent().remove();
+    }
+
+    var index = 0;
+    function onEnter() {
+        if (event.keyCode == 13){
+            index++;
+            var inputLength = $('#itemList').find('input[type!=hidden][readonly!=readonly], select').length;
+            if (index >= inputLength) {
+                index = 0
+            }
+            $('#itemList').find('input[type!=hidden][readonly!=readonly], select').each(function (i) {
+                if (i == index) {
+                    if (this.nodeName === 'SELECT') {
+                        $(this).next().find('.layui-select-title input').click();
+                    }
+                    $(this).focus();
+                }
+            })
+        }
+    }
+    $(document).ready(function(){
+        $('#itemTable').height($('body').height() - $('#mainForm').height() - $('#btnForm').height() - 10);
+    });
+</script>

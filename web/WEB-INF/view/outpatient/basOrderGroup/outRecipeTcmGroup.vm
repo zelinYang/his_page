@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>门诊医嘱组套维护 - 草药组套</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+	#parse("./settlement/inpatient/payIn/payIn.css.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+	<style>
+		.layui-form-item .layui-form-checkbox[lay-skin=primary] { margin-top: -1px;}
+	</style>
+
+</head>
+<body class="outExamineGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid ">
+		<div id="container" class="full-height">
+			<!-- 历史处方明细 -->
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="recipeGroup_queryForm" class="layui-form">
+							#formTextInput("orderGroupType" "0103" " style='display:none;'")
+							#formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										#formTextInput("orderGroupName" "" " maxlength='50' class='layui-input' placeholder='组套检索' ")
+									</div>
+									<div class="layui-inline">
+										<input type="checkbox" name="commonMedicineFlag" value="1" lay-filter="commonMedicineFlag" title="常用" lay-skin="primary" >
+									</div>
+									#if(${CONST.AppConstants.NO_FLAG} == ${groupRoleFalg})
+									#formHiddenInput("orderGroupClassify" "${CONST.AppConstants.VISABLE_INDIVIDUAL}" "")
+									#else
+									<div class="layui-inline " >
+										#formRadioGroup("orderGroupClassify" "${CONST.AppConstants.VISABLE_INDIVIDUAL}" ${dicData.dicBelongSysType} " lay-filter='orderGroupClassify' ")
+									</div>
+									#end
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query_recipeGroup" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+										<button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="examineGroupTable" lay-filter="examineGroupTable"></table> <!-- 数据表格 -->
+						<script type="text/html" id="colstoolbar">
+							<a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="edit"><i class="layui-icon"></i></a>
+							<a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a
+						</script>
+					</div>
+				</div>
+			</div>
+
+			<!-- 历史处方主信息 -->
+			<div class="ui-layout-center full-height">
+				<iframe id="outRecipeTcmGroupEdit" src="$contextPath/bas/outRecipeTcmGroupEdit.do" class="resizeiframe" style="height: calc(100% - 4px);" width="100%"  scrolling="no" frameborder="0" ></iframe>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+#parse("./outpatient/basOrderGroup/outRecipeTcmGroup.js.vm")<!-- 页面js -->
+</body>
+</html>

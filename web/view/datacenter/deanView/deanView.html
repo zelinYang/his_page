@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>数据中心-运营数据中心-门诊今日动态</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    <link href="../../../resource/layuiadmin/layui/css/layui.css"  rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/style.css" rel="stylesheet" media="all">
+    <link href="./datacenter.css" rel="stylesheet" media="all">
+
+    <script src="../echarts.min.js"></script>
+    <script nomodule src="../../../resource/polyfill/polyfill.js"></script>
+    <script src="../../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+    <script src="../../../resource/hplus/js/validate/form-validator.js"></script>
+    <script src="../../../resource/hplus/js/contabs.js?v=12"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+
+    <script src="../../../resource/layuiadmin/layui/layui.js" ></script>
+<!--    <script src="../datacenter.js"></script>-->
+</head>
+<body>
+<div class="layui-fluid"  style="height:calc(100% - 40px);">
+    <!-- 油表盘 -->
+    <div class="layui-row echarts_wrap" style="height:280px;">
+        <div class="layui-col-md4 layui-col-space10"><div id="guahao_echart"></div></div>
+        <div class="layui-col-md4 m-l-md m-r-md layui-col-space10"><div id="shoufei_echart"></div></div>
+        <div class="layui-col-md4 layui-col-space10"><div id="waitTime_echart"></div></div>
+    </div>
+    <!-- 指标1 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button id="this_week_register_count" class="layui-btn bg-blue">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("weekRegisterNum") -->26</p>
+                    <p class="quota-title">本周累计挂号人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="this_week_inpatient_outhospital_count" class="layui-btn bg-green">
+                <i class="icon iconfont icon-huanzhe1"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("weekInfusionsNum") -->6</p>
+                    <p class="quota-title">本周出院人数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="inpatient_inhospital_list" class="layui-btn bg-orange">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("currInpatientNum") -->174</p>
+                    <p class="quota-title">当前在院人数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="today_surgery_count" class="layui-btn bg-purple">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("daySurgeryNum") -->4</p>
+                    <p class="quota-title">当日计划手术人次</p>
+                </div>
+            </button>
+        </div>
+    </div>
+    <!-- 指标2 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button id="last_week_register_count" class="layui-btn bg-blue">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("monthRegisterNum") -->11</p>
+                    <p class="quota-title">上月挂号人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="last_week_inpatient_outhospital_count" class="layui-btn bg-green">
+                <i class="icon iconfont icon-huanzhe1"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("lastMonthOuthospitalNum") -->1</p>
+                    <p class="quota-title">上月出院人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-orange">
+                <i class="icon iconfont icon-zhuyuanxinxi"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("inhospitalDayAvg") -->3</p>
+                    <p class="quota-title">上月平均住院天数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="last_month_surgery_count" class="layui-btn bg-purple">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("lastMonthSurgeryNum") -->16</p>
+                    <p class="quota-title">上月住院手术人次</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 收入比例 -->
+    <div class="layui-row echarts_wrap" style="height:310px;">
+        <div class="" style="width: calc(100% - 50% - 5px); margin-right: 5px">
+            <div id="shourugc"></div>
+        </div>
+        <div class="" style="width: calc(100% - 50% - 5px); margin-left: 5px">
+            <div id="menzhensrtj"></div>
+        </div>
+    </div>
+
+    <!-- 指标2 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-blue">
+                <i class="icon iconfont icon-jiaofei"></i>
+                <div class="quota-content">
+                    <p class="number">112344</p>
+                    <p class="quota-title">上月医疗收入</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-green">
+                <i class="icon iconfont icon-24x24shoufeisvg"></i>
+                <div class="quota-content">
+                    <p class="number">4457</p>
+                    <p class="quota-title">上月门诊均次费用</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-orange">
+                <i class="icon iconfont icon-yiliaomedical44 "></i>
+                <div class="quota-content">
+                    <p class="number">88.758</p>
+                    <p class="quota-title">上月药占比</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-purple">
+                <i class="icon iconfont icon-zhuyuanxinxi"></i>
+                <div class="quota-content">
+                    <p class="number">55.561</p>
+                    <p class="quota-title">上月材占比</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+</div>
+<script>
+    var smartBiRoot = "http://bofan.eicp.net:9008/databi";
+    var smartBiResource = smartBiRoot + "/vision/openresource.jsp?user=admin&password=7ujm8ik,9ol.&resid=";
+    var todayOfficePeopleResid = 'dd11e03f03763fbb19da745c4a879003';
+    var todayRegisterPeopleResid = '7e60281f4c3f6c082e9e768ebb455638';
+    // layui.use(['element'], function () {
+    //
+    //     //$('#today_office_people').attr('src', smartBiResource + todayOfficePeopleResid);
+    //     $('#today_register_people').attr('src', smartBiResource + todayRegisterPeopleResid);
+    //
+    // });
+    let docBody = document.querySelector('body')
+    let docHtml = document.querySelector('html')
+    let allHeight = document.body.clientHeight
+    console.log(allHeight);
+    docBody.style.height = docHtml.style.height = `${allHeight}px`
+
+    let allwrap = allHeight - (166*2+18+32)+5
+    console.log(allwrap)
+    let tableHeight = allwrap - 21 - 50
+
+</script>
+
+<script src="./datacenter.js"></script>
+</body>
+
+</html>

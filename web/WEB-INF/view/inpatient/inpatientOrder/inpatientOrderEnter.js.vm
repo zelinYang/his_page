@@ -1,0 +1,1633 @@
+<script type="text/javascript">
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    // 01 药品
+    var ORDER_TYPE_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_MEDICINE}";
+    // 0101	西药
+    var ORDER_TYPE_W_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_W_MEDICINE}";
+    //0102	中成药
+    var ORDER_TYPE_WTCM_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_WTCM_MEDICINE}";
+    // 0103 草药
+    var ORDER_TYPE_TCM_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_TCM_MEDICINE}"
+    // 02=检查类医嘱
+    var ORDER_TYPE_PACS_EXAM = "$!{CONST.AppConstants.ORDER_TYPE_PACS_EXAM}";
+    // 03=检验类医嘱
+    var ORDER_TYPE_LIS = "$!{CONST.AppConstants.ORDER_TYPE_LIS}";
+    //04=手术类医嘱
+    var ORDER_TYPE_SURGERY = "$!{CONST.AppConstants.ORDER_TYPE_SURGERY}";
+    //05=处置类医嘱
+    var ORDER_TYPE_TREAT = "$!{CONST.AppConstants.ORDER_TYPE_TREAT}";
+    //住院医嘱字体颜色
+    var dicInhospitalStateColor = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalStateColor)');
+    //住院医嘱颜色
+    var dicInhospitalStateBackColor = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalStateBackColor)');
+    var dicBodyPartClassifyLis = JSON.parse('$dicTools.changeMapToJson( $dicData.dicBodyPartClassifyLis)');
+    //医护类型，对应bas_dic.dic_type_id=53  1=医 2=护
+    var doctorNurseFlag = '$!{doctorNurseFlag}';
+    var fullScreenFlag = '$!{fullScreenFlag}';
+    var tableHeight = 1;
+    if (fullScreenFlag === '1') {
+        $('.edit-list').hide();
+        $('#footerBar').hide();
+        $('#btn_full_screen').hide();
+        tableHeight = 2;
+    }
+
+    var form;
+    var currentTr;
+    var mergeTd = {};// 存放计算医嘱表格数据需要合并的组号（子医嘱）
+    var orderData = [];// 存放药品、检验检索结果,单击选中药品、检验后的数据从这里获取
+    var selectOrderData = [];//已选中的医嘱项目
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicOrdrItem = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrdrItem)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)')
+    var dicPharmacyFreqDayFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqDayFreq)'); //用药频率对应的数量
+    var dicPharmacyFreqWeekFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqWeekFreq)'); //用药周频率对应的数量
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');//给药途径
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    var childOrderEditFeild = {orderName: true, dosage: true, dosageUnit: true, usageQuantity: true, orderDesc: true}
+    var modelTr = $('.orderTr').clone();
+
+    var pharmacyStockUrl = '../pharmacy/pharmacyStockPopover.do';
+    var basChargeItemUlr = '../bas/basChargeItemPopover.do?inhospitalUsageFlag=' + YES_FLAG;
+    var iframeSettings = {
+        width: '61%',//诊断内容propover 弹框参数
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: pharmacyStockUrl
+    };
+
+    // 合理用药
+    var dicReasonableMedicineApplyState = JSON.parse('$dicTools.changeMapToJson($dicData.dicReasonableMedicineApplyState)');
+    // 窗体索引
+    var iframeIndex;
+    // 处方审核组号
+    var _orderGroupNos = [];
+
+    // 初始化Popover
+    function initPopover(doms, settings, queryFun) {
+        doms.each(function (index) {
+            var elem = $(this);
+            if (!elem.webuiPopover) {
+                return;
+            }
+            elem.webuiPopover('destroy').webuiPopover($.extend({}, settings));
+        });
+
+        doms.on('input propertychange', function () {
+            var popoverId = $(this).attr('data-target');
+            $('#' + popoverId + ' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+            $('#' + popoverId + ' iframe')[0].contentWindow[queryFun](); //调用iframe的方法
+        });
+    }
+
+    // 删除一行tr（编辑医嘱）
+    function deleteTr(obj) {
+        if ($('#editOrderList > tr').length <= 1) {
+            $('#btn_reset').click();
+            return;
+        }
+        $(obj).parent().parent().remove();
+    }
+
+    function deleteSurgeryTr(obj) {
+        $(obj).parent().parent().remove();
+    }
+
+    //新增一行子医嘱医嘱编辑
+    function addChildTr(obj) {
+        var curTr = $(obj).parent().parent();
+
+        var sysGuid = $(curTr).find('input[name="orderGroupNo"]').val();
+        if (sysGuid) {
+            buildChildTr(sysGuid);
+        } else {
+            // 先从后台服务获取医嘱组号再新增子医嘱
+            common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result) {
+                if (!result.sysGuid) {
+                    return;
+                }
+                $(curTr).find('input[name="orderGroupNo"]').val(result.sysGuid);
+                buildChildTr(result.sysGuid);
+            });
+        }
+
+        function buildChildTr(sysGuid) {
+            $(curTr).find('input[name="orderGroupNo"]').val(sysGuid);
+            var childTr = $(curTr).nextAll().find('input[name="orderGroupNo"][value="' + sysGuid + '"]').last().parents('tr');
+            if (childTr.length == 0) {
+                childTr = curTr;
+            }
+            $(childTr).after($(curTr).prop("outerHTML"));
+            var lastTr = $(childTr).next();
+            $(lastTr).find('i#addChild').remove();
+            $(curTr).find('input, select').each(function (i, val) {
+                var name = $(val).attr('name');
+                if (childOrderEditFeild[name]) {
+                    return true;
+                }
+
+                var curElement = $(lastTr).find('input[name="' + name + '"]');
+                if (!curElement || !$(curElement).attr('name')) {
+                    curElement = $(lastTr).find('select[name="' + name + '"]');
+                }
+                $(curElement).val($(val).val());
+                ## $(curElement).hide();
+            });
+            $(lastTr).find('input[name="orderId"]').val('');
+            bindEvent();
+            if (form) {
+                //form.render('select');
+                //form.render('checkbox');
+            }
+        }
+    }
+
+    //选择选择检验回调函数，根据参数index引索从orderData数组取数据
+    function selectLisOrder(index) {
+        if (!currentTr || !orderData[index]) {
+            return;
+        }
+        var data = orderData[index];
+        $('#searchDrug').next().find('a.layui-layer-close').click();
+    }
+
+
+    //给增行设置数据
+    window.addTrData = function (data) {
+        var isExist = 0;
+        $("table #medicineId").each(function () {
+            if ($(this).val() == data.medicineId) {
+                isExist = 1;
+            }
+        });
+        if (isExist == 0) {
+            if (data.medicineId) {
+                common.requestServer('../medicine/getMedicineInfo.jo', {medicineId: data.medicineId}, function (result) {
+                    if (result.code === '0') {
+                        console.log(result.data)
+                        $(currentTr).find('input[name="pharmacyId"]').val(data.pharmacyId);
+                        $(currentTr).find('input[name="validUntil"]').val(data.expireDate);
+                        $(currentTr).find('input[name="medicineSpec"]').val(data.medicineSpec);
+                        $(currentTr).find('input[name="medicineId"]').val(data.medicineId);
+                        $(currentTr).find('input[name="medicineFlag"]').val('1');
+                        $(currentTr).find('input[name="minMedicineUnit"]').val(data.medicine.minMedicineUnit);//最小单位
+                        $(currentTr).find('input[name="giveTotalQuantityUnit"]').val(data.medicine.minMedicineUnit);//最小单位
+                        $(currentTr).find('input[name="minMedicineUnitText"]').val(dicDrugNumUnit[data.medicine.minMedicineUnit]);//最小单位
+                        $(currentTr).find('input[name="dosage"]').val(data.medicineDosage);//剂量对应最小包装
+                        $(currentTr).find('input[name="dosageUnit"]').val(data.medicine.dosageUnit);//剂量单位
+                        $(currentTr).find('input[name="dosageUnitText"]').val(dicDrugNumUnitDosageUnit[data.medicine.dosageUnit]);//剂量单位
+                        $(currentTr).find('input[name="orderName"]').val(data.medicineName);
+                        $(currentTr).find('input[name="highRiskFlag"]').val(data.riskMedicineFlag);
+                        $(currentTr).find('input[name="drugTherapyType"]').val(data.drugTherapyType);
+                        $(currentTr).find('input[name="medicineDosage"]').val(data.medicineDosage);
+                        $(currentTr).find('input[name="usageQuantity"]').val(data.medicineDosage);
+                        $(currentTr).find('input[name="perOrderCount"]').val(1);
+                        $(currentTr).find('input[name="giveTotalQuantity"]').val(1);
+                        $(currentTr).find('input[name="doctorOrderType"]').val(data.medicine.doctorOrderType);// 医嘱类型
+                        $(currentTr).find('input[name="producingAreaId"]').val(data.producingAreaId);
+                        $(currentTr).find('input[name="unitPrice"]').val(data.minRetailPrice);
+                        $(currentTr).find('input[name="inhospitalChargeGroupCode"]').val(result.data.medicine.inhospitalChargeGroupCode);
+                        $(currentTr).find('input[name="docChargeGroupCode"]').val(result.data.medicine.docChargeGroupCode);
+                        $(currentTr).find('select[name="doseWayCode"]').val(result.data.medicine.doseWayCode);
+                        $('#searchDrug').next().find('a.layui-layer-close').click();
+                        $(currentTr).find('input[name="orderName"]').parent().next().find('input').first().focus();
+                        if (result.data.medicineList && result.data.medicineList.length > 0) {
+                            $.each(result.data.medicineList, function (index, item) {
+                                addChildAdjunctTr(currentTr, item);
+                            });
+                        }
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            }
+        } else {
+            common.alert("已有所选医嘱", 0);
+        }
+    };
+
+    //给增行设置诊疗项目数据
+    window.addTrBasChargeItemData = function (data) {
+        var isExist = 0;
+        $("table #chargeItemId").each(function () {
+            if ($(this).val() == data.chargeItemId) {
+                isExist = 1;
+            }
+        });
+        if (isExist == 0) {
+            if (data.chargeItemId) {
+                $(currentTr).find('input[name="chargeItemId"]').val(data.chargeItemId);
+                $(currentTr).find('input[name="pharmacyId"]').val('');
+                $(currentTr).find('input[name="validUntil"]').val('');
+                $(currentTr).find('input[name="medicineSpec"]').val('');
+                $(currentTr).find('input[name="medicineId"]').val('');
+                $(currentTr).find('input[name="medicineFlag"]').val(NO_FLAG);
+                $(currentTr).find('input[name="minMedicineUnit"]').val('');//最小单位
+                $(currentTr).find('input[name="giveTotalQuantityUnit"]').val('');//最小单位
+                $(currentTr).find('input[name="minMedicineUnitText"]').val('');//最小单位
+                $(currentTr).find('input[name="dosage"]').val('');//剂量对应最小包装
+                $(currentTr).find('input[name="dosageUnit"]').val('');//剂量单位
+                $(currentTr).find('input[name="dosageUnitText"]').val('');//剂量单位
+                $(currentTr).find('input[name="orderName"]').val(data.chargeName);
+                $(currentTr).find('input[name="drugTherapyType"]').val('');
+                $(currentTr).find('input[name="medicineDosage"]').val('');
+                $(currentTr).find('input[name="usageQuantity"]').val('');
+                $(currentTr).find('input[name="perOrderCount"]').val(1);
+                $(currentTr).find('input[name="giveTotalQuantity"]').val(1);
+                $(currentTr).find('input[name="doctorOrderType"]').val(data.doctorOrderType);// 医嘱类型
+                $(currentTr).find('input[name="producingAreaId"]').val('');
+                $(currentTr).find('input[name="unitPrice"]').val(data.unitPrice);
+                $(currentTr).find('input[name="inhospitalChargeGroupCode"]').val(data.inhospitalChargeGroupCode);
+                $(currentTr).find('input[name="docChargeGroupCode"]').val(data.inhospitalChargeGroupCode);
+                $(currentTr).find('select[name="doseWayCode"]').val('');
+                $(currentTr).find('input[name="skinTestFlag"]').val(data.skinTestFlag);
+                $('#searchDrug').next().find('a.layui-layer-close').click();
+                $(currentTr).find('input[name="orderName"]').parent().next().find('input').first().focus();
+            }
+        } else {
+            common.alert("已有所选医嘱", 0);
+        }
+    };
+
+    //新增一行子医嘱医嘱编辑
+    function addChildAdjunctTr(curTr, medicine) {
+        var sysGuid = $(curTr).find('input[name="orderGroupNo"]').val();
+        $(curTr).find('input[name="orderGroupNo"]').val(sysGuid);
+        var childTr = $(curTr).nextAll().find('input[name="orderGroupNo"][value="' + sysGuid + '"]').last().parents('tr');
+        if (childTr.length == 0) {
+            childTr = curTr;
+        }
+        $(childTr).after($(curTr).prop("outerHTML"));
+        var lastTr = $(childTr).next();
+        $(lastTr).find('i#addChild').remove();
+        $(lastTr).find('input, select').each(function (i, val) {
+            var name = $(val).attr('name');
+
+            var curElement = $(lastTr).find('input[name="' + name + '"]');
+            if (!curElement || !$(curElement).attr('name')) {
+                curElement = $(lastTr).find('select[name="' + name + '"]');
+            }
+            if (name === 'orderName') {
+                $(curElement).val(medicine.medicineName);
+                return true;
+            }
+            if (medicine[name]) {
+                $(curElement).val(medicine[name]);
+            } else {
+                $(curElement).val($(val).val());
+            }
+        });
+        $(lastTr).find('input[name="orderId"]').val('');
+        bindEvent();
+    }
+
+    // 根据当前行清空数据
+    function emptyTr(currentTr) {
+        $(currentTr).find('input[name="chargeItemId"]').val("");
+        $(currentTr).find('input[name="pharmacyId"]').val("");
+        $(currentTr).find('input[name="validUntil"]').val("");
+        $(currentTr).find('input[name="medicineSpec"]').val("");
+        $(currentTr).find('input[name="medicineId"]').val("");
+        $(currentTr).find('input[name=minMedicineUnit]').val("");
+        $(currentTr).find('input[name=minMedicineUnitText]').val("");
+        $(currentTr).find('input[name=dosage]').val("");
+        $(currentTr).find('input[name=dosageUnit]').val("");
+        $(currentTr).find('input[name=dosageUnitText]').val("");
+        $(currentTr).find('input[name="highRiskFlag"]').val("");
+        $(currentTr).find('input[name="drugTherapyType"]').val("");
+
+        $(currentTr).find('input[name="doctorOrderType"]').val("");
+        $(currentTr).find('input[name="producingAreaId"]').val("");
+        $(currentTr).find('input[name="orderName"]').val("");
+        $(currentTr).find('input[name="unitPrice"]').val("");
+        $(currentTr).find('input[name="inhospitalChargeGroupCode"]').val("");
+        $(currentTr).find('input[name="docChargeGroupCode"]').val("");
+    }
+
+    function MCInit(data) {
+        var pass = new Params_MC_PASSclient_In();
+        pass.HospID = data.hospitalId;   //医院编码，单医院为"0"。区域医疗为医院编码
+        pass.UserID = "$!{currentUser.userId}";   //医生工号
+        pass.UserName = "$!{currentUser.name}"; //医生姓名
+        pass.DeptID = "a01";    //科室编码
+        pass.DeptName = "外科";  //科室名称
+        MCPASSclient = pass;         //赋值给全局变量
+    }//构造PASS客户端对象。
+
+    function HisQueryData(data) {
+        var drug = new Params_MC_queryDrug_In();
+        drug.ReferenceCode = "0370"; //查询药品的编码
+        ## drug.ReferenceCode = data.medicine.medicineCode; //查询药品的编码
+        drug.CodeName = data.medicine.medicineName;  //查询药品的名称
+        MC_global_queryDrug = drug;   //赋值给全局变量
+    }
+    //bind搜索Popover
+    function initShowPopover(elem) {
+        initPopover(elem, iframeSettings, 'query');
+    }
+
+    //监听医嘱项目、数量输入框值变化，根据输入框值模糊搜索对应的数据
+    function bindEvent(curTr) {
+        //监听药品类型并清空当前行数据
+        $('select[name="medicineType"]').change(function () {
+            var currentTr = $(this).parents('tr');
+            emptyTr(currentTr);
+            var elem = currentTr.find("td input[name='orderName']");
+            if($(this).val() == 5) {
+                iframeSettings.url = basChargeItemUlr;
+            } else {
+                iframeSettings.url = pharmacyStockUrl;
+            }
+            elem.webuiPopover('destroy').webuiPopover($.extend({}, iframeSettings));
+        });
+        initShowPopover($("table tr td input[name='orderName']"));
+        activeTrFun();
+        enterFocusConvert();
+        bindSelectedToNext();
+        dosageChange();
+        pharmacyFreqIdChange();
+        firstDayDosageChange();
+        ## usageQuantityChange();
+    }
+
+    function activeTrFun() {
+        $('table tr td input[name=orderName]').click(function () {
+			currentTr = $(this).parents('tr');
+            $(this).parents('tr').addClass('active').siblings().removeClass('active');
+        });
+    }
+
+    //绑定显示Popover
+    function bindShowPopover(elem) {
+        elem.webuiPopover('destroy').webuiPopover($.extend({}, iframeSettings));
+        elem.on('input propertychange', function () {
+            var popoverId = $(this).attr('data-target');
+            $('#' + popoverId + ' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+            $('#' + popoverId + ' iframe')[0].contentWindow.query(); //调用iframe的方法
+        });
+    }
+
+    //药品项目列表名称 row选择回调  选择医嘱药品回调函数，
+    window.pharmacyStockRowSelect = function (row) {
+        WebuiPopovers.hideAll();
+        addTrData(row);
+    }
+
+    //诊疗项目列表名称 row选择回调  选择回调函数，
+    window.basChargeItemRowSelect = function (row) {
+        WebuiPopovers.hideAll();
+        addTrBasChargeItemData(row);
+    }
+
+    //监听剂量的数值输入框变化，计算出数量的值
+    function dosageChange() {
+        $("input[name=perOrderCount]").on("input propertychange", function () {
+            var parentTr = $(this).parent().parent();
+            var perOrderCount = $(this).val();
+            if (perOrderCount != null) {
+                var medicineDosage = parentTr.find("input[name='medicineDosage']").val();
+                var amount = parseFloat(perOrderCount) * parseFloat(medicineDosage);
+                parentTr.find("input[name='dosage']").val(amount);
+                countUsageQuantity(parentTr);
+            }
+        });
+    }
+
+    function pharmacyFreqIdChange() {
+        $('select[name=pharmacyFreqId]').on('change', function () {
+            var parentTr = $(this).parent().parent();
+            countUsageQuantity(parentTr);
+        }).change();
+    }
+
+    function firstDayDosageChange() {
+        $('input[name=firstDayDosage]').on('input propertychange', function () {
+            var parentTr = $(this).parent().parent();
+            var pharmacyFreqId = parentTr.find("select[name='pharmacyFreqId']").val();
+            var pharmacyFreqCount = dicPharmacyFreqDayFreq[pharmacyFreqId];
+            if ($(this).val() > pharmacyFreqCount) {
+                common.msg('首日次数不能大于每日频次', 0);
+                $(this).val('');
+            }
+        }).change();
+    }
+
+    function countUsageQuantity(trDom) {
+        var pharmacyFreqId = trDom.find("select[name='pharmacyFreqId']").val();
+        if (pharmacyFreqId != null) {
+            var dosage = trDom.find("input[name='dosage']").val();
+            var perOrderCount = trDom.find("input[name='perOrderCount']").val();
+            if (!dosage || !perOrderCount) {
+                return;
+            }
+            var freqCount = dicPharmacyFreqDayFreq[pharmacyFreqId];
+            if (freqCount === '-') {
+                freqCount = dicPharmacyFreqWeekFreq[pharmacyFreqId] === '-' ? 1 : dicPharmacyFreqWeekFreq[pharmacyFreqId];//周频次对应的数量
+            }
+            trDom.find("input[name='usageQuantity']").val(dosage * freqCount);
+            trDom.find("input[name='giveTotalQuantity']").val(perOrderCount * freqCount);
+        }
+    }
+
+
+    //监听数量的数值输入框变化，计算出剂量的值
+    function usageQuantityChange() {
+        $("input[name=usageQuantity]").on("change", function () {
+            var parentTr = $(this).parent().parent();
+            if ($(this).val() != null) {
+                var medicineSpec = parentTr.find("input[name='medicineSpec']").val();
+                var arr = new Array();
+                arr = medicineSpec.split("*");
+                var figure = arr[0].replace(/[^0-9\\.\\^0-9]/ig, "");//匹配浮点数
+                var amount = $(this).val() * figure
+                parentTr.find("input[name='dosage']").val(amount);
+            }
+        });
+    }
+
+    // 绑定事件 下拉选择后焦点跳到下一个表单元素
+    function bindSelectedToNext() {
+        $("#editOrderList select").change(function () {
+            focusToNext(this);
+        });
+    }
+
+    // 焦点跳到下一个可编辑的表单元素
+    function focusToNext(currEle) {
+        var nextEle = $(currEle).parent("td").nextAll("td").find('input[type="text"],select').not(":disabled").first();
+        var tagName = nextEle.prop("tagName");
+        if (nextEle.length > 0 && tagName != "SELECT") {
+            nextEle.focus();
+            nextEle.click();
+        }
+    }
+
+    layui.use(['form', 'laydate', 'element', 'table', 'layer', 'util'], function () {
+        var templateTr = {
+            editOrderList: $('#editOrderList > tr:last').prop("outerHTML"),
+            lisOrderList: $('#lisOrderList > tr:last').prop("outerHTML")
+        };
+        var laydate = layui.laydate, table = layui.table, form = layui.form, layer = layui.layer, util = layui.util;
+        // 初始化绑定编辑医嘱的项目名称及药品数量值变化事件
+        bindEvent();
+
+        // 初始化医嘱表格列表数据
+        var tableIns = table.render({
+            elem: '#orderList',
+            height: getOrderListHgt(),
+            where: common.serializeObject($('#queryForm'), ['exeOrderStartTime']),
+            url: '../inpatient/inpatientOrderJsonList.jo',
+            done: function (res, curr, count) {
+                var that = this;
+                // 合并关键字段
+                var groupKeyWord = 'orderGroupNo';
+                // 存放计算医嘱表格数据需要合并的医嘱
+                var orderGroupNos = $.unique($.map(res.data, function (item) {
+                    return item[groupKeyWord];
+                }));
+                // 合并显示单元格字段
+                var groupCells = ['exeOrderStartTime', 'orderState', 'specialRemark', 'orderClassify', 'doctorOrderType', 'techApplyName', 'chargeGroupName'];
+                $.each(orderGroupNos, function (index, content) {
+                    var tr = that.elem.next().find('td[data-field="' + groupKeyWord + '"][data-content="' + content + '"]').parents('tr');
+                    $.each(groupCells, function (i, field) {
+                        tr.find('td[data-field="' + field + '"]').filter(function () {
+                            return !$(this).parents('.layui-table-fixed').length;
+                        }).not(":last").css("border-bottom", "0").end().not(":first").children('.layui-table-cell').addClass('layui-hide');
+
+                        tr.find('td[data-field="' + field + '"]').filter(function () {
+                            return $(this).parents('.layui-table-fixed').length;
+                        }).not(":last").css("border-bottom", "0").end().not(":first").children('.layui-table-cell').addClass('layui-hide');
+
+                        var trOrderState = tr.find('td[data-field="orderState"]').data('content');
+                        // 根据医嘱状态改变医嘱字体颜色
+                        tr.css('color', dicInhospitalStateColor[trOrderState]);
+                        // 根据医嘱状态改变医嘱背景颜色
+                        tr.css('background-color', dicInhospitalStateBackColor[trOrderState]);
+                    })
+                });
+                // 存放计算医嘱表格数据需要合并的医嘱
+                var orderGroupNos = $.unique($.map(res.data, function (item) {
+                    return item.orderGroupNo;
+                })).filter(function (orderGroupNo) {
+                    return !!orderGroupNo;
+                });
+                $.each(orderGroupNos, function (index, contains) {
+                    var allTrs = that.elem.next().find('.layui-table-main tr td[data-field="orderGroupNo"][data-content=' + contains + ']').parents('tr');
+                    // 移入背景颜色
+                    allTrs.hover(function () {
+                        allTrs.addClass('layui-table-hover');
+                    }, function () {
+                        allTrs.removeClass('layui-table-hover');
+                    });
+                });
+                // 加急标志
+                $(".order-urgentFlag").css('color', 'red');
+                $(".order-urgentFlag").css('font-weight', '700');
+            },
+            cols: [[
+                {
+                    type: 'checkbox',
+                    // fixed: 'left',
+                    width: 30,
+                }, {
+                    field: 'makeOrderDate',
+                    // fixed: 'left',
+                    width: 130,
+                    title: '开嘱时间',
+                    templet: function (row) {
+                        return row.makeOrderDate ? util.toDateString(row.makeOrderDate, 'yyyy-MM-dd HH:mm') : "";
+                    }
+                }, {
+                    field: 'orderState',
+                    width: 105,
+                    // fixed: 'left',
+                    title: '医嘱状态',
+                    templet: function (row) {
+                        var urgentFlag = '';
+                        if (row.urgentFlag == 1) {
+                            urgentFlag = '急';
+                        }
+                        if (row.orderState) {
+                            return $('select#orderState > option[value="' + row.orderState + '"]').text() + '<span class="layui-hide" group=' + row.orderGroupNo + ' orderState=' + row.orderState + '></span>' + '<span class="order-urgentFlag">&nbsp' + urgentFlag + '</span>';
+                        } else {
+                            return "";
+                        }
+                    }
+                }, {
+                    field: 'orderClassify',
+                    width: 60,
+                    // fixed: 'left',
+                    title: '医嘱类别',
+                    templet: function (row) {
+                        if (row.orderClassify) return $('select#orderClassify > option[value="' + row.orderClassify + '"]').text();
+                        return "";
+                    }
+                }, {
+                    field: 'doctorOrderType',
+                    // fixed: 'left',
+                    width: 100,
+                    title: '类型',
+                    templet: function (row) {
+                        return dicDoctorOrderType[row.doctorOrderType];
+                    }
+                }, {
+                    field: 'orderName',
+                    // fixed: 'left',
+                    width: 250,
+                    title: '医嘱项目',
+                    templet :function (row) {
+                        if (row.orderName && row.rationalDrugUseApproveFlag && row.rationalDrugUseApproveFlag != '2') return row.orderName + '(' + dicReasonableMedicineApplyState[row.rationalDrugUseApproveFlag] + ')';
+                        return row.orderName;
+                    }
+                }, {
+                	field: 'chargeGroupId',
+                    hide: true
+                }, {
+                    field: 'chargeGroupName',
+                    width: 150,
+                    title: '项目分类'
+                }, {
+                    field: 'medicineSpec',
+                    width: 105,
+                    title: '规格'
+                }, {
+                    field: 'perOrderCount',
+                    width: 80,
+                    title: '每次数量',
+                    templet: function (row) {
+                        return row.perOrderCount ? (row.perOrderCount + (dicDrugNumUnit[row.giveTotalQuantityUnit] || '')) : '';
+                    }
+                }, {
+                    field: 'dosage',
+                    width: 90,
+                    title: '每次剂量/用量',
+                    templet: function (row) {
+                        return row.dosage ? (row.dosage + (dicDrugNumUnitDosageUnit[row.dosageUnit] || '')) : '';
+                    }
+                }, {
+                    field: 'usageQuantity',
+                    title: '每日剂量',
+                    width: 80,
+                    templet: function (row) {
+                        return row.usageQuantity ? (row.usageQuantity + (dicDrugNumUnitDosageUnit[row.dosageUnit] || '')) : '';
+
+                    }
+                }, {
+                    field: 'doseWayCode',
+                    title: '用法',
+                    width: 80,
+                    templet: function (row) {
+                        return dicDoseWay[row.doseWayCode] || dicHerbUsage[row.herbUsageWay] || "";
+                    }
+                }, {
+                    field: 'pharmacyFreqId',
+                    title: '频次',
+                    width: 80
+                },
+                {
+                    field: 'firstDayDosage',
+                    title: '首',
+                    width: 40
+                },
+                {
+                    field: 'specialRemark',
+                    title: '整组说明',
+                    width: 130,
+                    edit: true
+                },
+                {
+                    field: 'orderDesc',
+                    title: '单条说明',
+                    width: 130
+                },
+                {
+                    field: 'lisSpecimenId',
+                    title: '化验标本',
+                    width: 80,
+                    templet: function (row) {
+                        return dicBodyPartClassifyLis[row.bodyPartClassify] || '';
+                    }
+                }, {
+                    field: 'makeOrderDoctorName',
+                    title: '开嘱人',
+                    width: 80
+                }, {
+                    field: 'recheckNurseName',
+                    title: '复核人',
+                    width: 80
+                }, {
+                    field: 'recheckTime',
+                    title: '复核时间',
+                    width: 130,
+                    templet: function (row) {
+                        return row.recheckTime ? util.toDateString(row.recheckTime, 'yyyy-MM-dd HH:mm') : "";
+                    }
+                }, {
+                    field: 'stopOrderDoctorName',
+                    title: '停嘱人',
+                    width: 80
+                }, {
+                    field: 'exeOrderEndTime',
+                    title: '停嘱时间',
+                    width: 130,
+                    templet: function (row) {
+                        return row.exeOrderEndTime ? util.toDateString(row.exeOrderEndTime, 'yyyy-MM-dd HH:mm') : "";
+                    }
+                },
+                {
+                    field: 'endDayDosage',
+                    title: '末',
+                    width: 40
+                }, {
+                    field: 'orderGroupNo',
+                    hide: true,
+                    templet: function (row) {
+                        if (row.orderGroupNo) {
+                            mergeTd[row.orderGroupNo] = row.orderGroupNo;
+                            return '<span group-id="' + row.orderId + '" tr-group="' + row.orderGroupNo + '"></span>';
+                        }
+                        return "";
+                    }
+                }
+            ]]
+        });
+
+        // 重载刷新医嘱列表
+        function reloadOrderList() {
+            mergeTd = {};
+
+            var params = common.serializeObject($('#queryForm'), ['exeOrderStartTime']);
+            tableIns.reload({
+                url: '../inpatient/inpatientOrderJsonList.jo',
+                where: $.extend({orderState: '', orderClassify: '', orderName: '', doctorOrderType: ''}, params)
+            });
+            initOrderButton("layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled");
+        }
+
+        // 初始化医嘱列表操作按钮状态
+        function initOrderButton(editClass, subClass, checkClass, orderType) {
+            $('button[btn-type="edit"]').each(function () {
+                $(this).attr('class', editClass);
+            });
+            $('button[btn-type="submit"]').each(function () {
+                $(this).attr('class', subClass);
+            });
+            $('button[btn-type="check"]').each(function () {
+                $(this).attr('class', checkClass);
+            });
+            if (orderType) {
+                var type = [];
+                $.each(orderType, function (k, v) {
+                    type.push(v);
+                });
+                if (type.length > 1) {
+                    $('#btn_edit').attr('class', 'layui-btn layui-btn-sm layui-btn-disabled');
+                } else {
+                    $('#btn_edit').attr('data-type', type.join(''));
+                }
+            }
+        }
+
+        // 整组说明编辑
+        table.on('edit(orderList)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var data = obj.data;
+            var current = $(this);
+            var orderParams = {
+                inhospitalId: data.inhospitalId,
+                orderGroupNo: data.orderGroupNo,
+                hospitalId: data.hospitalId,
+                patientId: data.patientId,
+                specialRemark: data.specialRemark
+            };
+            common.requestServer('../inpatient/updateOrderSpecialRemark.jo', orderParams, function (result) {
+                if (result.code == 0) {
+                    common.msg('修改成功', 1);
+                } else {
+                    common.msg('修改失败', 2);
+                    current.click();
+                }
+            });
+        });
+
+        // 按医嘱状态查询
+        form.on('select(orderState)', function () {
+            reloadOrderList();
+        });
+        // 按医嘱类别查询
+        form.on('select(orderClassify)', function (obj) {
+            reloadOrderList();
+            var value = obj.value;
+            if (value) {
+                $('#editOrderList').find('select[name="orderClassify"]').val(value);
+            }
+            var orderClassify = $('#editOrderList').find('select[name="orderClassify"]').val();
+            if (value == orderClassify) {
+                changeTcmBtn(orderClassify);
+            }
+        });
+        // 按医嘱类型查询
+        form.on('select(doctorOrderType)', function () {
+            reloadOrderList();
+        });
+
+        // 医嘱分类为长期时, 不允许开草药
+        $('select[id=orderClassifyNew]').on('change', function () {
+            var orderClassify = $(this).find(':selected').val();
+            changeTcmBtn(orderClassify);
+        });
+
+        // 改变草药按钮状态
+        function changeTcmBtn(orderClassify) {
+            if (orderClassify == 01) {
+                $('#btn_tcm').attr('disabled', 'disabled');
+                $('#btn_tcm').attr('class', 'layui-btn layui-btn-sm layui-btn-disabled');
+            } else {
+                $('#btn_tcm').removeAttr('disabled');
+                $('#btn_tcm').attr('class', 'layui-btn layui-btn-sm');
+            }
+        }
+
+        // 按医嘱项目和医嘱开始日期查询
+        $('#orderName').bind('input propertychange', function () {
+            reloadOrderList();
+        });
+        //按日期范围查询
+        laydate.render({
+            elem: '#exeOrderStartTime', range: true, done: function (value, date, endDate) {
+                reloadOrderList()
+            }
+        });
+
+        // 监听医嘱列表的复选框选择, 根据状态判断对应按钮是否为可点击
+        table.on('checkbox(orderList)', function (obj) {
+            var groupKeyWord = 'orderGroupNo';
+            obj.tr.siblings().find('td[data-field="' + groupKeyWord + '"][data-content="' + obj.data[groupKeyWord] + '"]').parent('tr').find(':checkbox[name="layTableCheckbox"]').click();
+            $.each(table.cache.orderList, function (i, item) {
+                if (item.orderGroupNo === obj.data.orderGroupNo) {
+                    if (obj.checked) {
+                        item.LAY_CHECKED = true;
+                    } else {
+                        delete item.LAY_CHECKED;
+                    }
+                }
+            });
+            form.render('checkbox');
+
+            $('button[order-type]').addClass("layui-btn-disabled");
+            // 将数组倒序然后重新复制
+            var checkStatus = table.checkStatus('orderList');
+            var editClassName = "layui-btn layui-btn-sm";
+            var sbtClassName = "layui-btn layui-btn-sm";
+            var urgentClass = "layui-btn layui-btn-sm";
+            var orderType = {};
+            if (checkStatus.data.length > 0) {
+                var orderStates = $.unique($.map(checkStatus.data, function (item) {
+                    return item.orderState;
+                }));
+                $('button[order-type]').each(function (index, data) {
+                    var orderType = $(this).attr('order-type');
+                    if (orderType.indexOf(orderStates.sort().toString()) > -1) {
+                        $(this).removeClass('layui-btn-disabled');
+                    }
+                });
+            }
+        });
+
+        // 获取医嘱列表选中行的引索
+        function getTableSelectedRowIndex() {
+            var checkStatus = table.checkStatus('orderList');
+            var indexs = $.map(checkStatus.data, function (v) {
+                return $.makeArray($('div.layui-table-fixed-l span[tr-group="' + v.orderGroupNo + '"]').map(function (i, cell) {
+                    return $(cell).parents('tr').index();
+                }));
+            });
+            return indexs;
+        }
+
+        $("#btn_add").click(function () {
+            common.confirm('新增会清除现在编辑的医嘱，是否新增医嘱？', function () {
+                $('i[name="btn_add_tr"]').show();
+                $("#editOrderList").html('');
+                $('i[name="btn_add_tr"]').click();
+            });
+        });
+
+        // 修改按钮
+        $('#btn_edit1').click(function () {
+            if (RegExp(/layui-btn-disabled/).test($(this).attr('class'))) {
+                return;
+            }
+            var orderType = $(this).attr('data-type');
+            console.log(orderType);
+            if (orderType == ORDER_TYPE_PACS_EXAM) {
+                // 修改检查类型医嘱
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    orderGroupNo = v.orderGroupNo;
+                    selectOrderData.push({
+                        orderDesc: v.orderDesc,
+                        urgentFlag: v.urgentFlag,
+                        unitPrice: v.unitPrice,
+                        orderGroupNo: v.orderGroupNo,
+                        chargeName: v.orderName,
+                        chargeItemId: v.chargeItemId,
+                        chargeGroupId: v.chargeGroupId,
+                        lisSpecimenId: v.lisSpecimenId,
+                        orderId: v.orderId
+                    });
+                });
+                // 将当前tab窗口的ID赋值给父窗口的currentTabId，提供给弹出窗口调用
+                parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                parent.common.open(contextPath + '/tech/techExamApplyEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val(), '检查申请', {area: ['95%', '95%']});
+
+            } else if (orderType == ORDER_TYPE_LIS) {
+                // 修改检验类型医嘱
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    orderGroupNo = v.orderGroupNo;
+                    selectOrderData.push({
+                        orderDesc: v.orderDesc,
+                        urgentFlag: v.urgentFlag,
+                        unitPrice: v.unitPrice,
+                        orderGroupNo: v.orderGroupNo,
+                        chargeName: v.orderName,
+                        chargeItemId: v.chargeItemId,
+                        chargeGroupId: v.chargeGroupId,
+                        lisSpecimenId: v.lisSpecimenId,
+                        orderId: v.orderId
+                    });
+                });
+                // 将当前tab窗口的ID赋值给父窗口的currentTabId，提供给弹出窗口调用
+                parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                parent.common.open(contextPath + '/tech/inpatientOrderLisApplyEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val(), '检验申请', {area: ['95%', '95%']});
+
+            } else if (orderType == ORDER_TYPE_SURGERY) {
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    selectOrderData = [v];
+                    orderGroupNo = v.orderGroupNo;
+                });
+                common.open(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val(), '手术申请单', {area: ['95%', '95%']});
+
+            } else if (orderType == ORDER_TYPE_TREAT) {
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    selectOrderData = [v];
+                    orderGroupNo = v.orderGroupNo;
+                });
+                parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val(), '治疗申请单', {area: ['95%', '95%']});
+
+            } else if (orderType == ORDER_TYPE_W_MEDICINE || orderType == ORDER_TYPE_WTCM_MEDICINE) {
+                var groupNo = {};
+                $('#editOrderList').html('');
+                var indexs = getTableSelectedRowIndex();
+                $.each(indexs, function (i, index) {
+                    // 根据引索获取行数据
+                    var val = table.cache.orderList[index];
+                    if (val.orderState == '0' && val.doctorOrderType == '01') {
+                        groupNo[val.orderGroupNo] = val.orderGroupNo;
+                        $('i[name="btn_add_tr"]').click();
+                    } else {
+                        return true;
+                    }
+                    var lastTr = $('#editOrderList > tr:last');
+                    // 将long类型时间转为yyyy-MM-dd hh:mm:ss格式
+                    val.exeOrderStartTime = util.toDateString(row.exeOrderStartTime, 'yyyy-MM-dd HH:mm:ss');
+                    $.each(val, function (key, value) {
+                        if (!value) {
+                            return true;
+                        }
+                        var curElement = $(lastTr).find('input[name="' + key + '"]');
+                        if (!curElement || !$(curElement).attr('name')) {
+                            curElement = $(lastTr).find('select[name="' + key + '"]');
+                        }
+                        if (curElement && $(curElement).attr('name')) {
+                            $(curElement).val(value);
+                        }
+                    });
+                });
+
+                // 合并同组医嘱
+                $.each(groupNo, function (k, v) {
+                    var groupNoNum = $('#editOrderList').find('input[name="orderGroupNo"][value="' + k + '"]');
+                    if (groupNoNum <= 1) {
+                        return true;
+                    }
+                    var groupNoNumLen = $(groupNoNum).length - 1;
+                    $(groupNoNum).each(function (i, ele) {
+                        if (i == 0) {
+                            return true;
+                        }
+                        $(ele).parent().find('i#addChild').remove();
+                        $(ele).parent().find('i').remove();
+                        $(ele).parent().parent().find('select[name="orderClassify"]').hide();
+                        $(ele).parent().parent().find('select[name="medicineType"]').hide();
+                        $(ele).parent().parent().find('input[name="exeOrderStartTime"]').hide();
+                    });
+                });
+            } else if (orderType == ORDER_TYPE_TCM_MEDICINE) {
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    selectOrderData = [v];
+                    orderGroupNo = v.orderGroupNo;
+                });
+                common.open(contextPath + '/inpatient/inpatientOrderTcmEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val() + '&orderClassify=' + $('#editOrderList').find('select[name="orderClassify"]').val(), '草药', {area: ['80%', '85%']});
+            }
+        });
+
+        // 配置操作医嘱列表的按钮链接 作废和删除调用一样的链接，区别在于删除是针对新开的医嘱，作废是针对已审核过后的医嘱
+        var operateUrl = {
+            1: {msg: '确定要提交吗？', url: '/inpatient/updateOrderState.jo?orderState=1'},
+            2: {msg: '确定要停嘱吗？', url: '/inpatient/updateStopFlag.jo'},
+            3: {msg: '确定要取消停嘱吗？', url: '/inpatient/updateOrderState.jo?orderState=3'},
+            4: {msg: '确定要撤销吗？', url: '/inpatient/updateOrderState.jo?orderState=6'},
+            5: {msg: '确定要删除吗？', url: '/inpatient/deleteDiagnosisOrder.jo'},
+            6: {msg: '确定要加急吗？', url: '/inpatient/updateUrgentFlag.jo?orderState=1'},
+            7: {msg: '确定要取消加急吗？', url: '/inpatient/updateUrgentFlag.jo?orderState=0'}
+        };
+
+        $('button[btn-type="edit"]').click(function () {
+            if (!$(this).attr('op-type') || RegExp(/layui-btn-disabled/).test($(this).attr('class'))) {
+                return;
+            }
+            var orderIds = [];
+            var noMedicineGroupNo = [];
+            var medicineGroupNo = [];
+            var checkStatus = table.checkStatus('orderList');
+            var orderGroupNos = $.unique($.map(checkStatus.data, function (item) {
+                return item.orderGroupNo;
+            }));
+
+            if (!orderGroupNos || orderGroupNos.length <= 0) {
+                common.alert('请选择医嘱项', 0);
+            }
+
+            $.each(checkStatus.data, function (i, order) {
+                orderIds.push(order.orderId);
+                var medicineType = order.medicineType;
+                if (medicineType == '1' || medicineType == '2' || medicineType == '3') {
+                    medicineGroupNo.push(order.orderGroupNo);
+                } else {
+                    noMedicineGroupNo.push(order.orderGroupNo);
+                }
+            });
+
+            if (noMedicineGroupNo && noMedicineGroupNo.length > 0){
+                var opt = operateUrl[$(this).attr('op-type')];
+                if (!opt || !opt.url) {
+                   return;
+                }
+                common.confirm(opt.msg, function () {
+                    common.requestServer(contextPath + opt.url, {orderGroupNos: noMedicineGroupNo.join(',')}, function (result) {
+                        if (result.code == "0") {
+                            reloadOrderList();
+                            if (medicineGroupNo && medicineGroupNo.length > 0) {
+                                _orderGroupNos = orderGroupNos;
+                                recipeAudit();
+                            } else {
+                                common.msg(result.msg);
+                            }
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                });
+            } else {
+                _orderGroupNos = orderGroupNos;
+                recipeAudit();
+            }
+        });
+
+
+
+        $('button[btn-type="submit"], button[btn-type="check"]').click(function () {
+            if (!$(this).attr('op-type') || RegExp(/layui-btn-disabled/).test($(this).attr('class'))) {
+                return;
+            }
+            var orderIds = [];
+            var checkStatus = table.checkStatus('orderList');
+            $.each(checkStatus.data, function (i, order) {
+                orderIds.push(order.orderId);
+            });
+            var orderGroupNos = $.unique($.map(checkStatus.data, function (item) {
+                return item.orderGroupNo;
+            }));
+            if (!orderGroupNos || orderGroupNos.length <= 0) {
+                common.alert('请选择医嘱项', 0);
+            }
+            var opt = operateUrl[$(this).attr('op-type')];
+            if (!opt || !opt.url) {
+                return;
+            }
+            //停止医嘱执行,填写末日次数
+            if ($(this).attr('op-type') == 2) {
+                if (orderGroupNos.length == 1) {
+                    stopOrder(orderGroupNos, checkStatus.data[0]);
+                } else {
+                    stopOrderAll(orderGroupNos);
+                }
+                return;
+            }
+            if ($(this).attr('op-type') == 1) {
+                var flag = false;
+                var orderNames = [];
+                $.each(checkStatus.data, function (i, order) {
+                    if (order.orderGroupFlag === '1' && order.doctorOrderType === '04' && !order.surgeryArrangeDate) {
+                        flag = true;
+                        orderNames.push(order.orderName);
+                    }
+                });
+                if (flag) {
+                    common.msg(orderNames.join('，') + '手术医嘱未安排，不能提交', 0);
+                    return;
+                }
+            }
+            common.confirm(opt.msg, function () {
+                common.requestServer(contextPath + opt.url, {orderGroupNos: orderGroupNos.join(',')}, function (result) {
+                    if (result.code == "0") {
+                        reloadOrderList();
+                        common.msg(result.msg);
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        });
+        //绑定数字输入事件
+        function buildInNumber(elem) {
+            var inputNumber = $(elem);
+            var options = {
+                min: Number(inputNumber.attr('min')) || 0 //最小值
+                ,max: Number(inputNumber.attr('max')) || 99 //最大值，默认100
+                ,step: Number(inputNumber.attr('step')) || 1 //间隔值
+            }
+            var SLIDER_INPUT_BTN = 'layui-slider-input-btn';
+
+            //点击加减输入框
+            inputNumber.next('.' + SLIDER_INPUT_BTN).children('i').each(function(index){
+                $(this).off('click').on('click', function(){
+                    var inputValue = inputNumber.val();
+                    if(index == 1){
+                        inputValue = inputValue - options.step < options.min
+                            ? options.min
+                            : Number(inputValue) - options.step;
+                    }else{
+                        inputValue = Number(inputValue) + options.step > options.max
+                            ? options.max
+                            : Number(inputValue) + options.step;
+                    };
+                    inputNumber.val(inputValue.toFixed(options.step.toString().indexOf('.') != -1 ? options.step.toString().split(".")[1].length : 0));
+                    inputNumber.change();
+                });
+            });
+        }
+
+        //停嘱：单条停止医嘱,并填写末日次数
+        function stopOrder(orderGroupNos, data) {
+            var url = "/inpatient/selectInpatientOrderStop.do?" + $.param({
+                inhospitalId: $("#inhospitalId").val(),
+                orderGroupNos: orderGroupNos.join()
+            });
+            layer.prompt({ title: '停嘱时间', success:function (layero) {
+                        layero.find('input').attr('placeholder', 'yyyy-MM-dd HH:mm:ss')
+                        laydate.render({
+                            elem: layero.find('input').get(0)
+                            ,trigger: 'click' //采用click弹出
+                            ,type: 'datetime'
+                            ,min : data.exeOrderStartTime
+                            ,value:new Date()
+                        });
+                        layero.find('.layui-layer-btn').before($("#endDayDosageTpl").html());
+                        //直接默认跟频次相同的数字，比如他的频次是qd，你的末日次数就显示1
+                        var freq = dicPharmacyFreqDayFreq[data.pharmacyFreqId] || dicPharmacyFreqWeekFreq[data.pharmacyFreqId] || '';
+                        var endDayDosageElem = layero.find(':input[name="endDayDosage"]').val(isNaN(freq) ? '' : freq);
+                        buildInNumber(endDayDosageElem);
+                    }},
+                function(time, index, elem){
+                    var endDayDosageElem = elem.parents('.layui-layer-prompt').find(':input[name="endDayDosage"]');
+                    var endDayDosage = endDayDosageElem.val();
+                    if(!endDayDosage) {
+                        common.msg('末日次数不能为空', 0);
+                        setTimeout(function() {
+                            endDayDosageElem.addClass('layui-form-danger').focus();
+                        });
+                        return;
+                    }
+                    if(endDayDosage > (dicPharmacyFreqDayFreq[data.pharmacyFreqId] || dicPharmacyFreqWeekFreq[data.pharmacyFreqId] || '')) {
+                        common.msg('末日次数不能大于频次', 0);
+                        setTimeout(function() {
+                            endDayDosageElem.addClass('layui-form-danger').focus();
+                        });
+                        return true;
+                    }
+                    var settings = {
+                        "url": contextPath + "/inpatient/updateStopFlag.jo",
+                        "method": "POST",
+                        "contentType": "application/json",
+                        "data": JSON.stringify({orderId: data.orderId, exeOrderEndTime:time, endDayDosage: endDayDosage}),
+                        error: function(res){
+                            jqueryPostError(res);
+                        }
+                    };
+                    $.ajax(settings).done(function (result) {
+                        if (result.code == '0') {
+                            common.msg('保存成功。', 1, function () {
+                                $('#btn_refresh').click()
+                                layer.close(index);
+                            })
+                        } else {
+                            common.alert(result.msg, 2)
+                        }
+                    });
+                });
+        }
+        //停嘱：医嘱全停止医嘱,并填写末日次数
+        function stopOrderAll(orderGroupNos) {
+            var url = "/inpatient/selectInpatientOrderStop.do?" + $.param({
+                inhospitalId: $("#inhospitalId").val(),
+                orderGroupNos: orderGroupNos.join()
+            });
+            common.open(contextPath + url, '医嘱全停', {area: ['80%', '80%']});
+        }
+        $("#btn_edit").click(function () {
+            var checkStatus = table.checkStatus('orderList');
+            if (checkStatus.data.length === 0) {
+                common.msg('请选择要修改的医嘱', 0);
+                return;
+            }
+            var orderGroupNos = $.unique($.map(checkStatus.data, function (item) {
+                return item.orderGroupNo;
+            }));
+            if (orderGroupNos.length > 1) {
+                common.msg('每次只能修改一项医嘱', 0);
+                return;
+            }
+            var orderType = checkStatus.data[0].doctorOrderType;
+            console.log(orderType);
+            if (orderType == ORDER_TYPE_MEDICINE || orderType == ORDER_TYPE_W_MEDICINE || orderType == ORDER_TYPE_WTCM_MEDICINE || orderType == ORDER_TYPE_SURGERY) {
+                $('#editOrderList').html('');
+                $.each(checkStatus.data, function (index, order) {
+                    var trDom = modelTr.clone();
+                    for (var key in order) {
+                        $(trDom).find('[name="' + key + '"]').val(order[key]);
+                        if (index === 0) {
+                            $(trDom).find('i[name=deleteChild]').remove();
+                        } else {
+                            $(trDom).find('i[id="addChild"]').remove();
+                        }
+                    }
+                    $('#editOrderList').append(trDom);
+                });
+                $('i[name="btn_add_tr"]').hide();
+            } else if (orderType == ORDER_TYPE_TCM_MEDICINE) {
+                var orderGroupNo = checkStatus.data[0].orderGroupNo;
+                common.open(contextPath + '/outpatient/recipeTcmEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val() + '&orderClassify=' + $('#editOrderList').find('select[name="orderClassify"]').val(), '草药', {area: ['80%', '85%']});
+            } else if (orderType == ORDER_TYPE_LIS) {
+                // 修改检验类型医嘱
+                var indexs = getTableSelectedRowIndex();
+                if (indexs.length <= 0) {
+                    common.alert('请选择要修改的项目', 0);
+                    return;
+                }
+                var orderGroupNo = "";
+                selectOrderData = [];
+                $.each(indexs, function (i, index) {
+                    var v = table.cache.orderList[index];
+                    orderGroupNo = v.orderGroupNo;
+                    selectOrderData.push({
+                        orderDesc: v.orderDesc,
+                        urgentFlag: v.urgentFlag,
+                        unitPrice: v.unitPrice,
+                        orderGroupNo: v.orderGroupNo,
+                        chargeName: v.orderName,
+                        chargeItemId: v.chargeItemId,
+                        chargeGroupId: v.chargeGroupId,
+                        lisSpecimenId: v.lisSpecimenId,
+                        orderId: v.orderId
+                    });
+                });
+                // 将当前tab窗口的ID赋值给父窗口的currentTabId，提供给弹出窗口调用
+                parent.currentTabId = window.frameElement && window.frameElement.id || '';
+                parent.common.open(contextPath + '/tech/inpatientOrderLisApplyEdit.do?makeOrderFlag=1&orderGroupNo=' + orderGroupNo + '&patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val(), '检验申请', {area: ['95%', '95%']});
+            }
+        });
+
+        // 存新组套
+        $('#btn_saveOrderGroup').click(function () {
+            var checkStatus = table.checkStatus('orderList').data;
+            if (checkStatus.length === 0) {
+                common.msg('请选择要存为组套的医嘱项目', 0);
+                return;
+            }
+            var isAllEqualFlag = $.unique($.map(checkStatus, function (d) {
+                return d.orderClassify;
+            })).length === 1;
+
+            if (!isAllEqualFlag) {
+                common.alert('选择的医嘱类别必须一致', 0);
+                return;
+            }
+            /*    var url = $(this).attr('id') == "btn_saveNewGroup" ? '/bas/orderGroupEdit.do?orderGroupType=0' : '/bas/orderItemEdit.do?orderGroupType=0';*/
+            //医嘱组套组号
+            var orderGroupNos = $.unique($.map(checkStatus, function (item) {
+                return item.orderGroupNo;
+            }));
+            var url = '/bas/basOrderGroupEdit.do?orderGroupNos=' + orderGroupNos.join();
+            // var url ='/bas/selectOrderGroup.do'
+            /* var url ='/bas/orderItemEdit.do'      */
+
+            /*  /bas/basOrderGroupEdit.do?orderGroupId=58849*/
+            common.open(contextPath + url, '组套编辑', {area: ['65%', '75%']});
+        });
+
+        // 刷新按钮
+        $('#btn_refresh').click(function () {
+            reloadOrderList();
+        });
+
+        // 全屏显示医嘱
+        $('#btn_full_screen').click(function () {
+            parent.currentTabId = window.frameElement && window.frameElement.id || '';
+            parent.common.open(contextPath + '/inpatient/inpatientOrder.do?fullScreenFlag=1&makeOrderFlag=1&patientId=$!patientId&inhospitalId=' + $('#inhospitalId').val() + '&registerId=$!registerId', '住院医嘱', {});
+        });
+
+        // 绑定医嘱开始时间
+        //laydate.render({elem: $('#editOrderList > tr:last > td > input[name="exeOrderStartTime"]')[0], type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+        //laydate.render({elem: $('#lisOrderList > tr:last > td > input[name="exeOrderStartTime"]')[0], type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+
+        // 新增一行医嘱编辑
+        $('i[name="btn_add_tr"]').click(function () {
+            var self = this;
+            common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result) {
+                if (!result.sysGuid) {
+                    return;
+                }
+                var targetId = $(self).attr('target-id');
+                $('#' + targetId).append(templateTr[targetId]);
+                var lastTr = $('#' + targetId + ' > tr:last');
+                $(lastTr).find('input[name="orderGroupNo"]').val(result.sysGuid);
+                // 绑定诊断时间
+                var diagnosisTime = $(lastTr).find('input[name="exeOrderStartTime"]')[0];
+                laydate.render({elem: diagnosisTime, type: 'datetime', istime: true, value: getSmpFormatNowDate(true)});
+                bindEvent();
+                //form.render('select');
+                //form.render('checkbox');
+            });
+        });
+
+        // 手术申请
+        $('#btn_surgery').click(function () {
+            selectOrderData = [];
+            common.open(contextPath + '/surgery/surgeryApplyEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val(), '手术申请单', {area: ['95%', '95%']});
+        });
+
+        // 治疗申请
+        $('#btn_treat').click(function () {
+            selectOrderData = [];
+            parent.currentTabId = window.frameElement && window.frameElement.id || '';
+            parent.common.open(contextPath + '/surgery/treatApplyEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val(), '治疗申请单', {area: ['95%', '95%']});
+        });
+
+        // 取组套
+        $('#btn_getGroup').click(function () {
+            common.open(contextPath + '/bas/selectOrderGroup.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val(), '取组套', {area: ['95%', '95%']});
+            /* common.open(contextPath + '/bas/orderItemEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val(), '取组套', {area:['95%','95%']}); */
+        });
+
+        // 草药
+        $('#btn_tcm').click(function () {
+            common.open(contextPath + '/outpatient/recipeTcmEdit.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val() + '&orderClassify=' + $('#editOrderList').find('select[name="orderClassify"]').val(), '草药', {area: ['80%', '85%']});
+        });
+        // 草药组套
+        $('#btn_tcmGroup').click(function () {
+            common.open(contextPath + '/outpatient/recipeTcmGroup.do?makeOrderFlag=1&inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val() + '&orderClassify=' + $('#editOrderList').find('select[name="orderClassify"]').val(), '草药组套', {area: ['80%', '85%']});
+        });
+        // 检验检查申请按钮
+        $('#btn_lis').click(function () {
+            selectOrderData = [];
+            // 将当前tab窗口的ID赋值给父窗口的currentTabId，提供给弹出窗口调用
+            parent.currentTabId = window.frameElement && window.frameElement.id || '';
+            parent.common.open(contextPath + '/tech/techApply.do?patientType=1&makeOrderFlag=1&patientId=$!patientId&inhospitalId=' + $('#inhospitalId').val() + '&registerId=$!registerId', '检验检查申请', {});
+        });
+
+        // 检验、检查报告按钮
+        $('#btn_pacs').click(function () {
+            selectOrderData = [];
+            // 将当前tab窗口的ID赋值给父窗口的currentTabId，提供给弹出窗口调用
+            parent.currentTabId = window.frameElement && window.frameElement.id || '';
+
+            parent.common.open(contextPath + '/outpatient/techReport.do?patientId=$!patientId&inhospitalId=' + $('#inhospitalId').val(), $(this).text(), {area: ['95%', '95%']});
+        });
+
+        // 会诊申请
+        $('#btn_consultation').click(function () {
+            var url = '$contextPath' + '/consultationApply/inpatientConsultationApplyEdit.do?consultationApplyId=&inhospitalId='
+                    + $("#inhospitalId").val() + '&patientId=' + $("#patientId").val()
+                    + '&modelType=strict&showBtn=1&consultationApplyType=' + $("#consultationApplyType").val();
+            common.open(url, '编辑会诊申请', {
+                area: ['90%', '90%'],
+                scroll: true
+            })
+        });
+
+        // 会诊申请
+        $('#btn_blood').click(function () {
+            var url = '$contextPath' + '/transfusion/transfusionApplyEdit.do?inhospitalId='
+                    + $("#inhospitalId").val() + '&patientId=' + $("#patientId").val()
+                    + '&modelType=strict&showBtn=1';
+            common.open(url, '编辑输血申请', {
+                area: ['95%', '95%'],
+                scroll: true
+            })
+        });
+
+        // 保存或提交医嘱
+        $('#btn_save, #btn_submit').click(function () {
+            var self = this;
+            var arrayObj = [];
+            var orderGroupNos = [];
+            var validFlag = false;
+            $('#editOrderList > tr').each(function () {
+                var obj = {};
+                $(this).find('td > input, select').each(function () {
+                    var name = $(this).attr('name');
+                    var value = $(this).val();
+                    if (name && value) {
+                        obj[name] = value;
+                        if (name == 'pharmacyFreqId') {
+                            obj['pharmacyFreqName'] = $(this).find("option:selected").text();
+                        }
+                    }
+                });
+                if (!orderGroupNos.contains(obj.orderGroupNo)) {
+                    orderGroupNos.push(obj.orderGroupNo);
+                }
+
+                var medicineType = obj.medicineType;
+
+                if ($(self).attr('operate-type') == '1' && medicineType != '1' && medicineType != '2' && medicineType != '3' ){
+                    obj.orderState = '1';
+                } else {
+                    obj.orderState = '0';
+                }
+
+                if(medicineType == '1' || medicineType == '2' || medicineType == '3'){
+                    validFlag = true;
+                }
+
+                if (!$.isEmptyObject(obj) && obj.orderState
+                        && obj.orderName && obj.orderState) {
+                    arrayObj.push(obj);
+                }
+            });
+            common.confirm('确定保存吗？', function () {
+                if (arrayObj.length > 0 && $('#inhospitalId').val()) {
+                    var params = {inhospitalId: $('#inhospitalId').val(), inpatientOrderJson: JSON.stringify(arrayObj), orderGroupNos: orderGroupNos.join(',')};
+                     common.openLoad();
+                      common.requestServer('../inpatient/saveOrderForMedicine.jo', params, function (result) {
+                          if (result.code == "0") {
+                              reloadOrderList();
+                              $('#btn_reset').click();
+                              if ($(self).attr('operate-type') == '1' && validFlag == true) {
+                                  _orderGroupNos = orderGroupNos;
+                                  recipeAudit();
+                              }
+                          } else {
+                              common.alert(result.msg, 0);
+                          }
+                      });
+                }
+            });
+        });
+
+        // 处方审核
+        function recipeAudit() {
+            ## common.requestServer('$contextPath/rationalDrugUse/inpatientRecipeAudit.jo',
+            ##     {inhospitalId: $('#inhospitalId').val(), orderGroupNos: _orderGroupNos.join(',')}, function (result) {
+            ##     common.closeLoad();
+            ##     if (result.code == "0") {
+            ##         if (result.data.type.indexOf('recloud') > -1) { // 进入瑞思云审核
+            ##             var data = $.parseJSON(result.data.result);
+            ##             // console.log(data);
+            ##             // iframeIndex = common.open('http://fat.ppt.web.recloud.cn/his/prescription/doctorPrescription.html?prescriptionId=3314FCCB-EEFE-4C97-A13D-EB4EF5732A91', '处方药品审核结果', {area: ['920px', '630px']});
+            ##             // window.addEventListener('message', eventListener);
+            ##              if (data.success && (data.code == '1' || data.code == '2')) {
+            ##                  common.openLoad();
+                              common.requestServer('$contextPath/rationalDrugUse/inpatientRecipeApproved.jo', {inhospitalId: $('#inhospitalId').val(), orderGroupNos: _orderGroupNos.join(',')}, function (result) {
+                                  common.closeLoad();
+                                  if (result.code == "0") {
+                                      common.alertCall("审核通过，保存成功", 1, function () {
+                                          reloadOrderList();
+                                          layer.close(iframeIndex);
+                                      });
+                                  } else {
+                                      common.alert(result.msg, 0);
+                                  }
+                              });
+            ##              } else if (data.success && data.code == '0') {
+            ##                  var url = data.data.url.replaceAll("prescription.html", "doctorPrescription.html");
+            ##                  iframeIndex = common.open(url, '处方药品审核结果', {area: ['90%', '90%'], scroll: 'scroll'});
+            ##                  window.addEventListener('message', eventListener);
+            ##              } else {
+            ##                  common.alert(data.msg, 0);
+            ##              }
+            ##         } else if (result.data.type.indexOf('ninghao') > -1) {
+            ##             common.open('$contextPath' + '/rationalDrugUse/inpatientRecipeNinghaoAudit.do?inhospitalId=' + $('#inhospitalId').val() + '&orderGroupNos=' + _orderGroupNos.join(','), '处方药品审核结果', {area: ['90%', '90%']});
+            ##         }
+            ##     } else {
+            ##         common.alert(result.msg, 0);
+            ##     }
+            ## });
+        }
+
+        //  瑞思云处方审核结果监听事件
+        function eventListener(e) {
+            console.log(e.data);
+            if (e.data == '1') {
+                common.openLoad();
+                window.removeEventListener('message', eventListener);
+                var registerId = outMainWin.grobalModel.registerId;
+                common.requestServer('$contextPath/rationalDrugUse/inpatientRecipeApproved.jo', {inhospitalId: $('#inhospitalId').val(), orderGroupNos: _orderGroupNos.join(',')}, function (result) {
+                    common.closeLoad();
+                    if (result.code == "0") {
+                        common.alertCall("审核通过，保存成功", 1, function () {
+                            reloadOrderList();
+                            layer.close(iframeIndex);
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            } else if (e.data == '0') {
+                layer.close(iframeIndex);
+            }
+        }
+
+        // 重置医嘱编辑
+        $('#btn_reset').click(function () {
+            $('#editOrderList').html('');
+            $('i[name="btn_add_tr"]').click();
+        });
+
+        function getOrderListHgt() {
+            return (($('body').height() - $('#queryForm').height() - $('#centerBar').height() - $('#footerBar').height() - 36) / 2 * tableHeight)
+        }
+
+        $(window).resize(function () {
+            table.reload('orderList', {
+                height: getOrderListHgt()
+            })
+            $('.edit-list').height(getOrderListHgt());
+        });
+
+        $(function () {
+            var surgeryTr = $('.surgeryTr').clone();
+            $('#btn_surgery_fee').click(function () {
+                var params = {inhospitalId: $('#inhospitalId').val(), surgeryFlag: '1', orderGroupFlag: '1'};
+                common.requestServer('../inpatient/inpatientOrderJsonList.jo', params, function (result) {
+                    for (var i = 0; i < result.count; i++) {
+                        var curSurgeryTr = surgeryTr.clone();
+                        if (i === 0) {
+                            curSurgeryTr = $('.surgeryTr');
+                        } else {
+                            $('.editOrderList').append(curSurgeryTr);
+                        }
+                        for (var key in result.data[i]) {
+                            curSurgeryTr.find('[name="' + key + '"]').val(result.data[i][key]);
+                        }
+                    }
+                })
+            });
+        });
+    });
+
+    //回车焦点转移
+    function enterFocusConvert() {
+        function activeNextTd(curTd) {
+            var nextFocusElem = curTd.nextAll().find('input,select,.layui-unselect').not('[readonly]').not('[type^=hidden]').first();
+            if (nextFocusElem.length == 0) return false;
+            $('.curFocus').removeClass('curFocus');
+            nextFocusElem.addClass('curFocus');
+            //如果是layui-unselect
+            if (nextFocusElem.hasClass('layui-unselect')) {
+                nextFocusElem.find('.layui-edge').click();
+            } else {
+                //一般的input
+                nextFocusElem.focus();
+            }
+            return true;
+        }
+
+        //回车焦点移至同列下一行单元格的输入框，如果到了底部，则焦点移至下一列第一行的单元格输入框
+        $(document).keydown(function (event) {
+            if (event.keyCode == 13) {
+                var inputFocus = $(event.target);
+                var curTd;
+                var nextFocusElem;
+                //td的input元素下一个input框
+                nextFocusElem = inputFocus.nextAll().not('[readonly]').not(':hidden').first();
+                if (nextFocusElem.length > 0) {
+                    nextFocusElem.focus();
+                    return true;
+                }
+
+                //下一个td的input元素的第一个input框或者select控件
+                curTd = inputFocus.parents('td');
+                if (activeNextTd(curTd)) return true;
+                curTd = inputFocus.parents('td').parent().next("tr").find("td").first();
+                if (activeNextTd(curTd)) return true;
+                //curTd =  $('.curFocus').parents('td'); if (activeNextTd(curTd)) return true;
+                //此处新增行有bug，会新增多次
+                //inputFocus.parents('table').prev('table').find(".btn-add").click();
+            }
+        });
+    }
+
+    $("#table1_tbodyDiv").scroll(function (e) {
+        $("#table1_theadDiv").scrollLeft($("#table1_tbodyDiv").scrollLeft());
+    });
+    $(document).ready(function () {
+        $('.edit-list').height(($('body').height() - $('#queryForm').height() - $('#centerBar').height()  - $('#footerBar').height() - 26) / 2)
+    })
+</script>

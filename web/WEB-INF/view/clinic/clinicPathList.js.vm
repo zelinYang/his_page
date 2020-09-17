@@ -1,0 +1,258 @@
+<script type="text/html" id="specialMedicineTpl">
+	{{# if(dicAntibioticGen[d.antibioticType] || dicSpecialMedicineLevel[d.specialMedicineLevel]) { }}
+	<button class="layui-btn layui-btn-xs layui-btn-normal">
+		{{dicAntibioticGen[d.antibioticType] || ''}}{{dicSpecialMedicineLevel[d.specialMedicineLevel] || ''}}
+	</button>
+	{{# } }}
+</script>
+<script>
+	var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}';
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicEmrParting = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrParting)');
+	var dicInpatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientCondition)');
+	var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+	var dicPathStageType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathStageType)');
+	var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+	var dicPathAuditStatus = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathAuditStatus)');
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'form', 'table', 'util'], function () {
+		var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+		//表单实时查询
+		$("#clinicPathName").on("input propertychange", function () {
+			setTimeout(function () {
+				$("#btn_query").click();
+			})
+		})
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			return $.extend({
+				clinicPathParting: '',
+				inpatientCondition: '',
+				sexFlag: '',
+				singleDiseaseFlag: '',
+				clinicPathName: ''
+			}, common.serializeObject($('#queryForm')));
+		}
+
+		//回车触发查询
+		$("#clinicPathName").keydown(function (event) {
+			if (event.keyCode == 13) {
+				$('#btn_query').click();
+				return false;
+			}
+		});
+
+		form.on('checkbox(singleDiseaseFlag)', function(data){
+			table.reload('mainTable', {
+				where: getQueryParams()
+			});
+		});
+
+		// 查询按钮
+		$('#btn_query').click(function () {
+			//执行重载
+			table.reload('mainTable', {
+				where: getQueryParams()
+			});
+		})
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		})
+		// 新增按钮
+		$('#btn_add').click(function () {
+			top.openTabMenu({
+				href: '$contextPath' + '/clinic/clinicPathEdit.do',
+				title: '新增临床路径'
+			})//打开新标签页
+		});
+		//表格设置
+		table.render($.extend(basePageTable, {
+			elem: '#mainTable',
+			height: getTableHgt(),
+			url: contextPath + '/clinic/clinicPathPageJson.jo',
+			where: getQueryParams(),
+			cols: [[
+				{
+					type: 'numbers',
+					width: 50,
+					fixed: 'left'
+				},
+				{
+					field: 'clinicPathName'
+					, title: '名称'
+					, minWidth: 500
+					, fixed: 'left'
+				},
+				{
+					field: 'clinicPathVersion'
+					, title: '版本号'
+					, width: 50
+				}, {
+					field: 'clinicPathParting'
+					, title: '病例分型'
+					, width: 100
+					, templet: function (res) {
+						return res.clinicPathParting ? dicEmrParting[res.clinicPathParting] : '';
+					}
+				}, {
+					field: 'inpatientCondition'
+					, title: '适用病情'
+					, width: 100
+					, templet: function (res) {
+						return res.inpatientCondition ? dicInpatientCondition[res.inpatientCondition] : '';
+					}
+				}, {
+					field: 'sexFlag'
+					, title: '适用性别'
+					, width: 100
+					, templet: function (res) {
+						return res.sexFlag ? dicSexLimit[res.sexFlag] : '';
+					}
+				},
+				{
+					field: 'estimatedCost'
+					, title: '预估费用'
+					, width: 100
+				},
+				{
+					field: 'inputPathDay'
+					, title: '确诊准入天数'
+					, width: 100
+				},
+				{
+					field: 'hospitalStayDay'
+					, title: '标准住院日'
+					, width: 100
+				},
+				{
+					field: 'hospitalStayRange'
+					, title: '上下浮动'
+					, width: 100
+				},
+				{
+					field: 'singleDiseaseFlag'
+					, title: '是否单病种'
+					, width: 100
+					, templet: function (res) {
+						return res.singleDiseaseFlag ? dicYesNo[res.singleDiseaseFlag] : '';
+					}
+				}, {
+					field: 'auditFlag'
+					, title: '审核状态'
+					, width: 100
+					, templet: function (res) {
+						var content = [];
+						content.push('<span ');
+						if (res.auditFlag === '1') {
+							content.push('style="color: #FFB800;"');
+						}
+						if (res.auditFlag === '2') {
+							content.push('style="color: #5fb878;"');
+						}
+						if (res.auditFlag === '3') {
+							content.push('style="color: red;"');
+						}
+						content.push('>');
+						content.push(res.auditFlag ? dicPathAuditStatus[res.auditFlag] : '');
+						if (res.auditFlag === '3') {
+							content.push('<i class="layui-icon layui-icon-about auditFlag" content="' + res.auditFailedReason + '"></i>');
+						}
+						content.push('</span>');
+						return content.join('');
+					}
+				}, {
+					field: 'validFlag',
+					title: '是否有效',
+					unresize: true,
+					width: 80,
+					fixed: 'right',
+					templet: '#validFlagTpl'
+				}, {
+					title: '操作',
+					width: 120,
+					align: 'center',
+					fixed: 'right',
+					toolbar: '#operateTpl'
+				}
+			]], done: function () {
+				autoSetHeigt();
+				$(".layui-table-body tbody tr td i.auditFlag").on("mouseenter", function() {
+					layer.tips($(this).attr('content'), $(this), {
+						tips: 1,
+						time: 0
+					});
+				}).on("mouseleave", function() {
+					layer.closeAll();
+				});
+			}
+		}));
+
+
+		//处理行高问题
+		function autoSetHeigt() {
+			$(".layui-table-main tr").each(function (index, val) {
+				$($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+				$($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+			});
+		}
+
+		// 获取表格高度
+		function getTableHgt() {
+			return ($('body').height() - $('#queryForm').height() - 10)
+		}
+
+		//监听是否有无效事件
+		form.on('switch(validFlag)', function (obj) {
+			common.requestServer('../clinic/updateClinicPathValidFlag.jo', {
+				clinicPathIds: obj.value,
+				validFlag: Number(obj.elem.checked)
+			}, function (result) {
+				common.responseAtcion(result);
+			});
+		});
+
+		//操作栏操作按钮的事件
+		table.on('tool(mainTable)', function (obj) {
+			var row = obj.data
+			switch (obj.event) {
+				case 'btn_show':
+					common.open('$contextPath' + '/clinic/clinicPathShow.do?clinicPathId=' + row.clinicPathId, '临床路径详情', {
+						area: ['99%', '98%']
+					});
+					break;
+				case 'btn_edit':
+					if (row.auditFlag === '1' || row.auditFlag === '2') {
+						common.alert('该临床路径已审核或者已审核通过，不能修改', 2);
+						return;
+					}
+					top.openTabMenu({
+						href: '$contextPath' + '/clinic/clinicPathEdit.do?clinicPathId=' + row.clinicPathId,
+						title: '修改临床路径 : ' + row.clinicPathName
+					})//打开新标签页
+					break;
+				case 'btn_copy':
+					top.openTabMenu({
+						href: '$contextPath' + '/clinic/clinicPathEdit.do?copyClinicPathId=' + row.clinicPathId,
+						title: '复制临床路径 : ' + row.clinicPathName
+					})//打开新标签页
+					break;
+			}
+		});
+
+		// 重置表格高度
+		$(window).resize(function () {
+			var height = getTableHgt();
+			table.reload('mainTable', {
+				height: height
+			});
+		})
+
+	})
+</script>

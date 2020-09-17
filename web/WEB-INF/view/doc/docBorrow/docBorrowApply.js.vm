@@ -1,0 +1,186 @@
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicClearSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicClearSex)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete',
+        formSelects: 'modules/formSelects/formSelects-v4.min'
+    }).use(['table', 'form', 'layer', 'autocomplete', 'formSelects', 'util'], function () {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, autocomplete = layui.autocomplete,
+            formSelects = layui.formSelects, util = layui.util;
+        formSelects.btns('inhospitalOfficeIds', ['select', 'remove'], {
+            show: 'icon'
+        });
+
+         ## // 获取表格高度
+         ## function getTableHgt() {
+         ##     return ($('body').height() - $('#layui-form').height() - 28)
+         ## }
+         ## // 重置表格高度
+         ## $(window).resize(function () {
+         ##     var height = getTableHgt()
+         ##     table.reload('inpatientInhospitalListGrid', {
+         ##         height: height
+         ##     })
+         ## })
+
+        //表列表
+        var tables = table.render({
+            elem: '#inpatientInhospitalListGrid',//INHOSPITAL_STATE_CONFIRM_OUT 5 = 确认出院
+            url: '../inpatient/inpatientInhospitalPage.jo?inhospitalState=$!{CONST.AppConstants.INHOSPITAL_STATE_CONFIRM_OUT}',
+             ## height: getTableHgt(),
+             height: 'full-60',
+            limit: 20,
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'patientMedicalNo',
+                title: '病案号',
+                width: 100
+
+            }, {
+                field: 'patientName',
+                title: '姓名',
+                width: 100
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                width: 100,
+                templet: function (d) {
+                    return dicClearSex[d.patientSex] || ''
+                }
+            }, {
+                field: 'patientIdCard',
+                title: '证件号码',
+                width: 140
+            }, {
+                field: 'inhospitalOfficeName',
+                title: '入院科室',
+                width: 100
+            }, {
+                field: 'inhospitalDate',
+                title: '入院日期',
+                width: 150,
+                templet: function (d) {
+                    return util.toDateString(d.inhospitalDate)
+                }
+            }, {
+                field: 'outhospitalDate',
+                title: '出院日期',
+                width: 150,
+                templet: function (d) {
+                    return util.toDateString(d.outhospitalDate)
+                }
+            },
+                {
+                    field: 'inhospitalDiagnosis',
+                    title: '入院诊断',
+                    width: 225
+                }, {
+                    field: 'modifyDiagnosis',
+                    title: '修正诊断',
+                    width: 225
+                }, {
+                    field: 'modifyDiagnosis',
+                    title: '补充诊断',
+                    width: 225
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#colstoolbar'
+                }]],
+            page: true,
+            done: function (res, curr, count) {
+                this.where = {}
+            },
+            request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,
+                limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+        });
+
+        // 根据诊断/疾病名称查询icd
+        autocomplete.render({
+            cache: false,
+            searchField: 'keyWord',
+            elem: $('#q_diseaseName')[0],
+            url: '../basDisease/basDiseaseListData.jo?pageSize=7',
+            template_val: '{{d.diseaseName}}',
+            template_txt: '{{d.diseaseName}} （{{d.diseaseIcdTcd}}）'
+        });
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function (data) {
+            console.log(JSON.stringify(data.field))
+            var field = data.field;
+            //执行重载
+            tables.reload({
+                url: '../inpatient/inpatientInhospitalPage.jo?inhospitalState=$!{CONST.AppConstants.INHOSPITAL_STATE_CONFIRM_OUT}',
+                where: field
+            });
+            return false;
+        });
+
+        //重置查询表单并刷新表格
+        $("#btn_reset").click(function () {
+            setTimeout(function () {
+                $('#btn_query').click();
+            }, 50);
+        })
+
+
+        //监听工具条
+        table.on('tool(inpatientInhospitalListGrid)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'applyBorrow':
+                    applyBorrow(data);
+                    break;
+                case 'rBack':
+                    reBack(data);
+                    break;
+                case 'del':
+                    delDocBorrow(data);
+                    break;
+            }
+        });
+
+
+        //借阅
+        function applyBorrow(data) {
+            var title = '借阅申请'
+            var content = '$contextPath' + '/doc/docBorrowEdit.do?inhospitalId=' + data.inhospitalId;
+            //true 执行
+            common.open(content, title, {
+                area: ['520px', '420px'],
+                btn: ['保存'],
+                yes: function (index, layero) {
+                    save(index, layero);
+                }
+            });
+        }
+        //召回
+        function reBack(data) {
+            var title = '召回申请'
+            var content = '$contextPath' + '/doc/docBorrowReturn.do?inhospitalId=' + data.inhospitalId;
+            //true 执行
+            common.open(content, title, {
+                area: ['520px', '420px'],
+                btn: ['保存'],
+                yes: function (index, layero) {
+                    save(index, layero);
+                }
+            });
+        }
+
+        //保存
+        function save(index, layero) {
+            layero.find('iframe').contents().find('#btn_save').click();
+        }
+
+    });
+</script>

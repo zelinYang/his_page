@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle} - 个人套餐维护</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table, .layui-table-view{margin:0}
+.layui-table th {padding: 7px 8px;}
+.layui-table td {padding: 2px 3px;}
+.layui-table tbody tr td:first-child {padding: 2px 8px;}
+.layui-table-view .layui-table[lay-size="lg"] .layui-table-cell {height: 30px; line-height: 30px;}
+.layui-black { padding: 5px 5px 10px; text-align: center;}
+.layui-fluid { display: flex}
+.page-content-side { width: 200px;}
+.page-content { width: calc(100% - 210px); margin-left: 10px; flex-grow: 1; background-color: #fff;}
+
+
+
+
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <!-- 左 -->
+            <div class="page-content-side">
+                <div class=" layui-bg-white">
+                    <form class="layui-form" action="" id="queryForm">
+                        <div class="layui-black">
+                            #if("$!orderGroupClassify" != "")
+                                    #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入识别码' maxLength='50'")
+                            #else
+                                    #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入识别码' maxLength='50'")
+                                    #formSingleSelectFirstNone("orderGroupClassify" "" $!dicData.dicBelongSysType "lay-filter='orderGroupClassify' class='layui-input'" "类型")
+                            #end
+                        </div>
+                        <div class="layui-btn-group p-l-xs p-b-sm">
+                            <button id="btn_addGroup" type="button" class="layui-btn layui-btn-sm"> 增 加 </button>
+                            <button id="btn_editGroup" type="button" class="layui-btn layui-btn-sm"> 修 改 </button>
+                            <button id="btn_deleteGroup" type="button" class="layui-btn layui-btn-sm"> 删 除 </button>
+                        #*
+                                                <button id="btn_refreshGroup" type="button" class="layui-btn layui-btn-sm" style="display: none"> 刷新 </button>
+                        *#
+                        </div>
+                    </form>
+                    <table class="layui-hide" class="layui-table-tabs" id="groupList" lay-filter="groupList"></table>
+                </div>
+            </div>
+            <!-- 右 -->
+            <div class="page-content ">
+                <div class="layui-btn-group p-sm">
+                    <button id="btn_save" type="button" class="layui-btn layui-btn-sm">保存</button>
+                    <button id="btn_copy" type="button" class="layui-btn layui-btn-sm">复制</button>
+                    <button id="btn_paste" type="button" class="layui-btn layui-btn-sm">粘贴</button>
+                </div>
+
+                <div class="full-height" style="height: calc(100% - 46px); overflow-x: scroll;">
+                    <form class="layui-form full-height" action="">
+                        #formHiddenInput("orderGroupId" "" "id='orderGroupId'")
+                        <table class="layui-table m-t-n" lay-skin="row" style="width: 1500px">
+                            <thead>
+                                <tr>
+                                    <th style="width: 100px;">
+                                        #formSimpleCheckbox("allBox" "" "" "lay-filter='allBox' lay-skin='primary'" "")
+                                        <i id="btn_addItem" target-id="editOrderList" class="layui-icon layui-icon-add-1 btn-img-green" title="新增项目"></i>
+                                    </th>
+                                    <th width="60px">项目类型</th>
+                                     <th width="80px">医嘱类别</th>
+                                    <th>项目名称</th>
+                                    <th width="60">用量</th>
+                                    <th width="60px">单位</th>
+                                    <th width="60px">领量</th>
+                                    <th width="60px">单位</th>
+                                    <th width="120px">给药途径</th>
+                                    <th width="100px">频次</th>
+                                    <th width="80px">检验标本</th>
+                                    <th width="120px">执行科室</th>
+                                    <th width="160px">单条说明</th>
+                                </tr>
+                            </thead>
+                            <tbody id="itemList">
+                                <tr>
+                                    <td>
+                                        #formSimpleCheckbox("orderGroupId" "" "" "lay-skin='primary'" "")
+                                        <i id="addChild" class="layui-icon layui-icon-add-1 btn-img-green" title="新增子医嘱"></i>
+                                        <i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+                                    </td>
+                                    <td>
+                                        #formHiddenInput("medicineId" "" "")
+                                        #formHiddenInput("chargeItemId" "" "")
+                                        #formHiddenInput("orderName" "" "")
+                                        #formHiddenInput("orderGroupNo" "" "")
+                                        #formHiddenInput("orderItemId" "" "")
+                                        #formSingleSelectFirstNone("doctorOrderType" "" $!dicData.dicDoctorOrderType "class='layui-input' " "类型")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("orderClassify" " " $!dicData.dicOrderClassify "id='orderClassify' lay-filter='orderClassify'" "")
+
+                                    </td>
+                                    <td>
+                                        #formHiddenInput("medicineId" "" "")
+                                        #formTextInput("orderName" "" "maxlength='50' class='layui-input'")
+                                    </td>
+                                    <td>
+                                        #formTextInput("dosage" "" "maxlength='5' class='layui-input' ")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "单位")
+                                    </td>
+                                    <td>
+                                        #formTextInput("usageQuantity" "" "maxlength='5' class='layui-input' ")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "单位")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("doseWayCode" "" $dicData.dicDoseWay "class='layui-input' " "")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("pharmacyFreqId" "" $!dicData.dicPharmacyFreq "class='layui-input' style='border:0;'" "")
+                                    </td>
+                                    <td>
+                                        #formSingleSelectFirstNone("lisSpecimenId" "" $dicData.dicBodyPartClassifyLis "class='layui-input' " "")
+                                    </td>
+                                    <td>
+                                        <!--  #formSingleSelectFirstNone("exeOfficeId" "" $dicData.dicSysOrgDeptName "class='layui-input' " "") -->
+                                        #formSingleSelectFirstNone("exeOfficeId" "" $dicData.dicSysOrgDeptName "class='layui-input' " "")
+                                        
+                                    </td>
+                                    <td>
+                                        #formTextInput("remark" "" "maxlength='50' class='layui-input' ")
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var templateTr;
+var copyData = [];
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    index: 'lib/index',
+    yutons_sug: 'modules/yutons_sug'
+}).use(['table', 'form', 'yutons_sug'], function(){
+    templateTr = $('#itemList tr:last').prop("outerHTML");
+    $('#itemList tr:last').remove();
+
+
+	// 获取表格高度
+	function getTableHgt() {
+		return ($('body').height() - $('#queryForm').height() - 18)
+	}
+	// 重置表格高度
+	$(window).resize(function () {
+		var height = getTableHgt()
+		table.reload('.layui-table-tabs', {
+			height: height
+		})
+	})
+
+    var table = layui.table, form = layui.form, yutons_sug = layui.yutons_sug;
+    var tableUrl = '../bas/basOrderGroupListData.jo?orderGroupClassify=$!orderGroupClassify';
+    table.render($.extend(basePageTable, {
+        url: tableUrl,
+        elem: '#groupList',
+        height: getTableHgt(),
+        cols: [[
+            {field:'orderGroupName', title: '组套名称', event: 'callClick'}
+        ]],
+        page: {layout: ['prev', 'page', 'next']}
+    }));
+
+    // 刷新组套列表
+    $('#btn_refreshGroup').click(function() {
+        table.reload('groupList', {url: tableUrl, page:{curr: 1}, where: {keyWord: $('#keyWord').val(), orderGroupClassify: $('#orderGroupClassify').val()}});
+    })
+    // 关键字检索
+    $('#keyWord').on('input propertychange', function (){
+        $('#btn_refreshGroup').click();
+    });
+
+    // 类型检索
+    form.on('select(orderGroupClassify)', function (data){
+        $('#btn_refreshGroup').click();
+    });
+
+    //监听点击组套表格行
+    table.on('tool(groupList)', function(obj){
+    	
+        if(obj.event != 'callClick') {
+            return;
+        }
+        // 从后台获取组套明细数据
+        $('#orderGroupId').val(obj.data.orderGroupId);
+        
+        loadOrderItem(obj.data.orderGroupId);
+    });
+
+    // 新增组套
+    $('#btn_addGroup').click(function (){
+        common.open(contextPath + '/bas/orderGroupEdit.do', '组套编辑', {area:['65%','70%']});
+    });
+
+    // 修改组套
+    $('#btn_editGroup').click(function (){
+        if (!groupId) { common.alert('请选择要修改的组套', 0); return ;}
+        common.open(contextPath + '/bas/orderGroupEdit.do?orderGroupId=' + groupId, '组套修改', {area:['65%','70%']});
+    });
+
+    // 删除组套
+    $('#btn_deleteGroup').click(function (){
+        if (!groupId) { common.alert('请选择要删除的组套', 0); return ;}
+        common.confirm('确定要删除该组套吗？', function (){
+            common.requestServer(contextPath + '/bas/deleteOrderGroup.jo', {ids: groupId}, function (){
+                if (result.code == '0') {
+                    $('#btn_refreshGroup').click();
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+    });
+
+    // 选择全部或取消全部
+    form.on('checkbox(allBox)', function(data){
+        $('#itemList').find('input[name="orderGroupId"]').each(function (){
+            $(this).prop('checked', data.elem.checked);
+        });
+        form.render('checkbox');
+    });
+
+    // 新增组套项（医嘱）
+    $('#btn_addItem').click(function (){
+        if (!$('#orderGroupId').val()) {
+            common.alert('请选择组套名称', 0);
+            return ;
+        }
+        // 先从后台服务获取医嘱组号
+        common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result){
+            if (!result.sysGuid) { return ;}
+            $('#itemList').append(templateTr);
+            var tr = $('#itemList tr:last');
+            tr.find('input[name="orderGroupNo"]').val(result.sysGuid);
+            tr.find('input[name="orderName"]').attr('id', 'item_' + tr.index());
+            tr.find('select[name="doctorOrderType"]').attr('lay-filter', 'doctorOrderType_' + tr.index());
+            // 新增子医嘱图标事件
+            addChildTr(tr);
+            form.render('select');
+            form.render('checkbox');
+            listenItemType();
+        });
+    });
+
+    // 保存按钮
+    $('#btn_save').click(function (){
+        var arrayParams = [];
+        $('#itemList > tr').each(function(){
+            var params = {};
+            $(this).find('td > input, select').each(function (){
+                if (!$(this).val()) { return true; }
+                params[$(this).attr('name')] = $(this).val();
+            });
+            params.lisFlag = (params.doctorOrderType == '03' ? '1' : '0');
+            params.examFlag = (params.doctorOrderType == '02' ? '1' : '0');
+            params.surgeryFlag = (params.doctorOrderType == '04' ? '1' : '0');
+            params.medicineFlag = (params.doctorOrderType == '01' ? '1' : '0');
+            if(!$.isEmptyObject(params) && params.orderName && params.doctorOrderType && params.medicineId) { arrayParams.push(params); }
+        });
+        if (arrayParams.length) {
+            var formParams = {orderGroupId: $('#orderGroupId').val(), orderItemJson: JSON.stringify(arrayParams)};
+            common.requestServer(contextPath + '/bas/saveOrderItem.jo', formParams, function (result){
+                if (result.code == "0") {
+                    if (parent.selectOrderData) {parent.selectOrderData = []}
+                    common.msg('保成功存', 1, function  (){
+                        loadOrderItem($('#orderGroupId').val());
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }
+    });
+
+    // 复制按钮
+    $('#btn_copy').click(function (){
+        $('#itemList').find('input[name="orderGroupId"]:checked').each(function (){
+            copyData.push($(this).parent().parent().prop("outerHTML"));
+        });
+    });
+
+    // 粘贴按钮按钮
+    $('#btn_paste').click(function (){
+        $(copyData).each(function (i, v){
+            $('#itemList').append(v);
+            var tr = $('#itemList tr:last');
+            tr.find('input[name="orderName"]').attr('id', 'item_' + tr.index());
+        });
+
+        $('#itemList').find('input[name="orderGroupId"]:checked').each(function (){
+            $(this).prop('checked', false);
+        });
+
+        form.render('checkbox');
+        listenItemType();
+        copyData = [];
+    });
+
+    // 加载医嘱明细项目
+    function loadOrderItem(orderGroupId) {
+    	
+        var params = {orderGroupId: orderGroupId, pageSize:1000}
+        common.requestServer('../bas/orderItemAllList.jo', params, function (result){
+        	
+            var newData = newOrderItem();
+            if (!result || !result.data) {
+                if (!newData) {
+                    return ;
+                }
+                result = {data: newData};
+            } else {
+                $(newData).each(function (i, v){
+                    result.data.push(v);
+                });
+            }
+            $('#itemList').html('');
+            $.each(result.data, function (i, v){
+                $('#itemList').append(templateTr);
+                var tr = $('#itemList tr:last');
+                tr.find('input[name="medicineId"]').val(v.medicineId);
+                tr.find('input[name="orderGroupNo"]').val(v.orderGroupNo);
+                tr.find('input[name="orderItemId"]').val(v.orderItemId);
+                tr.find('select[name="doctorOrderType"]').val(v.doctorOrderType);
+                tr.find('select[name="doctorOrderType"]').attr('lay-filter', 'doctorOrderType_' + i);
+                tr.find('select[name="orderClassify"]').val(v.orderClassify);
+                tr.find('select[name="orderClassify"]').attr('lay-filter', 'orderClassify' + i);
+                tr.find('input[name="orderName"]').val(v.orderName);
+                tr.find('input[name="orderName"]').attr('id', 'item_' + i);
+                tr.find('input[name="dosage"]').val(v.dosage);
+                tr.find('select[name="dosageUnit"]').val(v.dosageUnit);
+                tr.find('input[name="usageQuantity"]').val(v.usageQuantity);
+                tr.find('select[name="pharmacyFreqId"]').val(v.pharmacyFreqId);
+                tr.find('select[name="doseWayCode"]').val(v.doseWayCode);
+                tr.find('select[name="lisSpecimenId"]').val(v.lisSpecimenId);
+           //   tr.find('select[name="exeOfficeId"]').val(v.exeOfficeId);
+                tr.find('select[name="exeOfficeId"]').val(v.exeOfficeId);
+                tr.find('input[name="remark"]').val(v.remark);
+                // 新增子医嘱图标事件
+                addChildTr(tr);
+                listenItem(i, v.doctorOrderType);
+            });
+            form.render('select');
+         	   form.render('checkbox');
+        });
+    }
+
+    //医嘱录入页面点击“存旧组套”得到医嘱信息
+    function newOrderItem() {
+        var orderItems = [];
+        if (parent.selectOrderData && parent.selectOrderData.length > 0) {
+            $(parent.selectOrderData).each(function (i, v){
+                orderItems.push({
+                    lisFlag: v.lisFlag,
+                    examFlag: v.examFlag,
+                    surgeryFlag: v.surgeryFlag,
+                    medicineFlag: v.medicineFlag,
+                    remark: v.remark,
+                    dosage: v.dosage,
+                    dosageUnit: v.dosageUnit,
+                    usageQuantity: v.usageQuantity,
+                    doseWayCode: v.doseWayCode,
+                    firstDayDosage: v.firstDayDosage,
+                    pharmacyFreqId: v.pharmacyFreqId,
+                    orderGroupNo: v.orderGroupNo,
+                    orderName: v.orderName,
+                    doctorOrderType: v.doctorOrderType,
+                    lisSpecimenId: v.lisSpecimenId,
+                    orderClassify: v.orderClassify,
+                   
+                //  exeOfficeId: v.exeOfficeId,
+                    exeOfficeId: v.exeOfficeId,
+                    medicalTechFlag: v.medicalTechFlag,
+                    medicineId: v.medicineId,
+                    chargeItemId: v.chargeItemId
+                });
+            });
+        }
+        return orderItems;
+    }
+    // 监听项目类型选择，并且绑定项目名称检索动作
+    function listenItemType() {
+        $('select[name="doctorOrderType"]').each(function (i){
+            form.on('select(doctorOrderType_' + i + ')', function(data){
+                listenItem(i, data.value);
+          });
+        });
+    }
+    // 监听弹出项目选择框
+    function listenItem(index, groupItemType) {
+        $('#item_' + index).each(function (){
+            if (groupItemType == '01') {
+                selectMedicine(yutons_sug, $(this).attr('id'), this);
+            } else {
+                selectChageItem(yutons_sug, $(this).attr('id'), this, groupItemType);
+            }
+        });
+    }
+
+    //新增一行子医嘱医嘱编辑
+    function addChildTr(parentTr){
+        $(parentTr).find('#addChild').click(function (){
+            if (!$(parentTr).find('input[name="orderGroupNo"]').val()){
+                common.alert('项目组号无效', 0);
+                return ;
+            }
+
+            $(parentTr).after(templateTr);
+            var tr = $(parentTr).next();
+            // 占空间隐藏，保证图标按钮的整齐
+            tr.find('#addChild').css('visibility', 'hidden');
+            tr.find('select[name="doctorOrderType"]').next().hide();
+            tr.find('select[name="exeOfficeId"]').next().hide();
+            tr.find('input[name="orderName"]').attr('id', 'item_' + tr.index());
+            tr.find('select[name="doctorOrderType"]').attr('lay-filter', 'doctorOrderType_' + tr.index());
+            tr.find('input[name="orderGroupNo"]').val($(parentTr).find('input[name="orderGroupNo"]').val());
+            //form.render('select');
+            //form.render('checkbox');
+            listenItem(tr.index(), parentTr.find('select[name="doctorOrderType"]').val());
+        });
+    };
+});
+
+// 选择药品
+function selectMedicine(yutons_sug, eleId, self) {
+    var tr = $(self).parent().parent();
+    yutons_sug.render({
+        id: eleId,
+        page: false,
+        height: "350",
+        width:'650px',
+        type: 'sugTable',
+        cols: [
+            [
+             {field: 'medicineName', width: '200', title: '项目名称'},
+             {field: 'medicineSpec', width: '100', title: '规格'},
+             {field: 'riskMedicineFlag', width: '60', title: '高危', templet: function (row) {if (row.riskMedicineFlag) return dicYesNo[row.riskMedicineFlag];}},
+             {field: 'producingArea', title: '产地'}
+            ]
+        ],
+        url: "../pharmacy/pharmacyStockListData.jo?keyWord=",
+        callBack: function (v){
+            tr.find('input[name="dosage"]').val(v.dosage);
+            tr.find('select[name="dosageUnit"]').val(v.dosageUnit);
+            tr.find('input[name="usageQuantity"]').val(v.usageQuantity);
+            tr.find('select[name="pharmacyFreqId"]').val(v.pharmacyFreqId);
+            tr.find('select[name="doseWayCode"]').val(v.doseWayCode);
+            $(self).prev().val(v.medicineId);
+            $(self).val(v.medicineName);
+        }
+    });
+}
+
+// 选择收费项目
+function selectChageItem(yutons_sug, eleId, self, type) {
+    yutons_sug.render({
+        id: eleId,
+        type: 'sug',
+        labelName: 'chargeName',
+        url: "../bas/lisChargeItemJsonList.jo?doctorOrderType=" + type,
+        callBack: function (data){
+            $(self).prev().val(data.chargeItemId);
+            $(self).val(data.chargeName);
+        }
+    });
+}
+
+//删除一行
+function deleteTr(obj) {
+    var curTr = $(obj).parent().parent();
+    var orderItemId = curTr.find('input[name="orderItemId"]').val();
+    if (!orderItemId) {
+        curTr.remove();
+        return ;
+    }
+
+    // 从库中删除
+    common.confirm('确定要删除吗？', function (){
+        common.requestServer(contextPath + '/bas/deleteOrderItem.jo', {ids: orderItemId}, function (result){
+            if (result.code == "0") {
+                curTr.remove();
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+}
+</script>
+</html>

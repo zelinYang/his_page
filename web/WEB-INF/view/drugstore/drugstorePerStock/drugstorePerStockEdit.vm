@@ -1,0 +1,60 @@
+<html>
+<head>
+    <title>盘点选择</title>
+    #parse("./common/layuiCss.vm")
+##    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .col-xs-8 label {
+            margin-top: 8px;
+        }
+        .layui-unselect.layui-form-checkbox span {
+            color: #555;
+        }
+        .layui-unselect.layui-form-checkbox.layui-form-checked span {
+            color: #fff;
+        }
+        #emrTlpForm{padding-top: 10px}
+    </style>
+</head>
+
+<body>
+<form class="layui-form" action="" id="emrTlpForm">
+	<div class="layui-form-item">
+		<label class="layui-form-label">药库</label>
+		<div class="layui-input-inline">
+            #formHiddenInput("drugstoreName" "" "id='drugstoreName'")
+			<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" class="layui-input">
+				<option value="">全部药库</option>
+                #foreach($drugstore in $drugstoreList)
+					<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+                #end
+			</select>
+		</div>
+	</div>
+	<div class="layui-form-item">
+		<label class="layui-form-label">备注</label>
+		<div class="layui-input-inline">
+			<textarea name="remark" placeholder="请输入备注" maxlength="250" class="layui-textarea">$!emrTlp.remark</textarea>
+		</div>
+	</div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    layui.use(['form', 'element'], function() {
+        var form = layui.form;
+        form.render('select');
+
+		form.on('select(drugstoreId)', function(data){
+			$('#drugstoreName').val($(data.elem).find("option:selected").text());
+		});
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+#parse("./common/pageCss.vm") 
+<style>
+    .layui-table > thead > tr > th,td{
+        text-align: center;
+    }
+    .btn-add { font-size: 24px;color:#009587;position:relative; top:10%; left:0; cursor: pointer; }
+    
+</style>
+<div class="layui-bg-white "  style="height:calc(100% - 10px);">
+    #formHiddenInput("registerId" "$!registerId" "id='registerId'")
+    <table class="layui-table " id="diseaseTable" lay-filter="diseaseTable"></table>
+    <div class="tool-bottom-fixed">
+        <button type="button" class="layui-btn layui-btn-sm" id="btn_close"> 关 闭 </button>
+    </div>
+</div>
+#parse("./common/pageJs.vm")
+<script>
+var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+layui.use(['table','element'],function(){
+    table = layui.table;
+    
+    var diseaseTable = table.render({
+       elem: '#diseaseTable'
+       ,url: '../outpatient/diagnosisListData.jo'
+       ,where: {registerId: $("#registerId").val()}
+       ,page: false
+       ,height:'full-60'
+       ,cols: [[
+           {field: 'diseaseDiagnosisName', title: '诊断名称', width:200}
+           ,{field: 'diseaseIcdTcd', title: '诊断ICD', width:120 }
+            ,{field: 'diseaseId', title: '诊断ID', hide:true }
+           ,{field: 'diseaseDiagnosisDesc', title: '诊断描述', width:220 }
+           ,{field: 'diagnosisFlag', title: '是否初诊病例', width:100
+               ,templet:function(row){ 
+                   if(row.diagnosisFlag)
+                       return dicYesNo[row.diagnosisFlag]
+                   else return""
+           }}
+           ,{field: 'diagnosisTime', title: '诊断时间', width:150, templet:function(row) {
+               if(row.diagnosisTime) {
+                   return getSmpFormatDateByLong(row.diagnosisTime,true);
+               } else {
+                   return "";
+               }}
+           } 
+           ,{field: 'diagnosisDoctorId', title: '诊断医生', width:200
+                ,templet:function(row){
+                    if(row.diagnosisDoctorId)
+                        return dicSysUser[row.diagnosisDoctorId]
+                    else return""
+                }
+           }
+       ]]
+       ,done: function(res,curr,count){
+       }
+    });
+
+    $('#btn_close').click(function () {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+    
+
+    //判断父页面是否是电子病历
+    if(parent.minieditorDesign){
+        //显示导入诊断按钮
+        $("#btn_import").removeClass("layui-hide");
+	    //单击选择一条诊断，回写到电子病历控件
+	    table.on('row(diseaseTable)',function(obj){
+	        var flag = parent.selectSingleDiagnosisCall(obj.data);
+	        var index = parent.layer.getFrameIndex(window.name);
+	        parent.layer.close(index); 
+	    });
+
+    }    
+});
+</script>
+            

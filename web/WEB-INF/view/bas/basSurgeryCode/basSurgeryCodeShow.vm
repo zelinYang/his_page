@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-手术流程配置-手术名称代码-编辑</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-select dl {
+            max-height: 220px;
+        }
+
+        .input2 {
+            width: 463px !important
+        }
+
+        .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 8px;
+            cursor: pointer;
+        }
+
+        input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<form class="layui-form" lay-filter="" id="basSurgeryCodeForm" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("surgeryCodeIdOld" "$!{basSurgeryCode.surgeryCodeId}" " ")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()手术分类名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("" "" " id='surgeryClassifyName' lay-verify='required' class='layui-input '
+                maxlength='100' autocomplete='off' required")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()手术分类编码</label>
+            <div class="layui-input-inline">
+                #if(${basSurgeryCode})
+                #set($surgeryClassify = $!{basSurgeryCode.surgeryClassify})
+                #end
+                #formTextInput("surgeryClassify" "$!{surgeryClassify}" " maxlength='24' autocomplete='off'
+                lay-verify='required' id='surgeryClassify' class='layui-input' readonly ")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()手术名称</label>
+            <div class="layui-input-inline input2">#formTextInput("surgeryName" "$!{basSurgeryCode.surgeryName}"
+                "class='layui-input' lay-verify='required' maxlength='100' placeholder='' autocomplete='off'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()手术CM3码</label>
+            <div class="layui-input-inline">#formTextInput("surgeryCodeId" "$!{basSurgeryCode.surgeryCodeId}" "
+                class='layui-input' lay-verify='required' maxlength='20' placeholder='' autocomplete='off'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">来源标识</label>
+            <div class="layui-input-inline">#formRadioGroup("surgerySourceFlag" "$!{basSurgeryCode.surgerySourceFlag}"
+                ${dicData.dicSurgerySourceFlag} "")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">手术等级</label>
+            <div class="layui-input-inline" style="width: auto;">#formRadioGroup("surgeryLevel"
+                "$!{basSurgeryCode.surgeryLevel}"
+                ${dicData.dicSurgeryLevel} "")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">切口等级</label>
+            <div class="layui-input-inline">#formSingleSelectSearchFirstNone("surgeryIncisionLevelId"
+                "$!basSurgeryCode.surgeryIncisionLevelId" $!{dicData.dicSurgeryIncisionLevel} " maxlength='10'
+                lay-search" "直接选择或搜索选择")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">排序序号 </label>
+            <div class="layui-input-inline">#formTextInput("sort" "$!{basSurgeryCode.sort}" "class='layui-input'
+                maxlength='18' placeholder='' autocomplete='off'")
+            </div>
+        </div>
+        #if(${basSurgeryCode})
+        <div class="layui-inline">
+            <label class="layui-form-label">是否有效</label>
+            <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{basSurgeryCode.validFlag}"
+                ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+            </div>
+        </div>
+        #end
+    </div>
+
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-inline input2">#formTextarea("remark" "#htmlEscape($!{basSurgeryCode.remark})"
+            "class='layui-textarea' maxlength='100' placeholder='请输入内容，字数最多100字' autocomplete='off' ")
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+        </button>
+    </div>
+</form>
+
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var DIC_TYPE_SURGERY_CLASSIFY = "$!{CONST.AppConstants.DIC_TYPE_SURGERY_CLASSIFY}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form)
+
+        //初始化手术分类名称 请求参数
+        var surgeryClassifyOption = {
+            url: contextPath + '/basDic/basDicListData.jo?validFlag=1&dicTypeId=' + DIC_TYPE_SURGERY_CLASSIFY,
+            data: {
+                dicCodeEqu: $("#surgeryClassify").val()
+            },
+            success: function (result) {
+                var data = result.data;
+                if (data && data.length > 0) {
+                    $("#surgeryClassifyName").val(data[0].dicName);
+                    $("#surgeryClassify").val(data[0].dicCode);
+                }
+            }
+        }
+        if (surgeryClassifyOption.data.dicCodeEqu) {
+            common.requestServer(surgeryClassifyOption.url, surgeryClassifyOption.data, surgeryClassifyOption.success);
+        }
+        common.setFormReadOnly($("#basSurgeryCodeForm"));
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+
+</body>
+</html>

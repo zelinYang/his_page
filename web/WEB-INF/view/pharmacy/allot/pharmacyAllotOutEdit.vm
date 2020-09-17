@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药房调拨出库</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style>
+		.payInFeeTab tr td{ height: 40px;line-height: 40px;padding: 0px;}
+		.payInFeeTab tr td input{ height: 100%;border: none;}
+		.payInFeeTab tr td input:hover,.payInFeeTab tr td input:focus{ border:1px solid mediumaquamarine; background-color: #f5f6f7;}
+		.search-term .layui-inline label.layui-form-label {
+			width: 80px;
+		}
+
+		@media screen and (max-width: 1024px){
+			.layui-form-item .layui-input-inline{
+				width: 170px;
+			}
+		}
+		@media screen and (max-width: 768px){
+			.layui-form-item .layui-input-inline{
+				width: 120px;
+			}
+		}
+	</style>
+</head>
+
+<body>
+<div class="layui-content-wrapper layui-bg-white overflow-x-h" id="drugstoreInItemDiv">
+	<form class="layui-form" action="" id="editForm">
+		<div class="layui-row-query search-term border-b-n">
+			<div class="layui-form-item">
+				#formHiddenInput("pharmacyAllotId" "" "id='pharmacyAllotId'")
+				#formHiddenInput("pharmacyId" "" "id='pharmacyId'")
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()申请药房</label>
+					<div class="layui-input-inline">
+						#formHiddenInput("applyPharmacyId" "" "id='applyPharmacyId'")
+                        #formTextInput("applyPharmacyName" "" "id='applyPharmacyName' class='layui-input' placeholder='申请药房' autocomplete='off' readonly ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()目标医院</label>
+					<div class="layui-input-inline">
+						#formHiddenInput("allotOutHospitalId" "" "id='allotOutHospitalId' ")
+						#formTextInput("allotOutHospitalName" "" "id='allotOutHospitalName' class='layui-input' placeholder='目标医院' autocomplete='off' readonly ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()目标药房</label>
+					<div class="layui-input-inline">
+						#formHiddenInput("allotOutPharmacyId" "" "id='allotOutPharmacyId'")
+						#formTextInput("allotOutPharmacyName" "" "id='allotOutPharmacyName' class='layui-input' placeholder='目标药房' autocomplete='off' readonly ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()申请日期</label>
+					<div class="layui-input-inline">
+						#formTextInput("applyDate" "" "id='applyDate' class='layui-input' disabled ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag()出库日期</label>
+					<div class="layui-input-inline">
+						#formTextInput("allotOutDate" "" "id='allotOutDate' class='layui-input' ")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">备注</label>
+					<div class="layui-input-inline">
+						#formIntZeroInput("remark" "" "id='remark' class='layui-input' placeholder='备注' autocomplete='off' ")
+					</div>
+				</div>
+			</div>
+		</div>
+
+	</form>
+	<div class="layui-bg-white full-scroll" onkeyup="onEnter()" id="pharmacyAllotItemTable" style="height: calc(100% - 121px);">
+		<table class="layui-table layui-table-input m-t-n" style="min-width: 2000px;">
+			<thead>
+			<tr>
+				<th width="80">药品名称</th>
+				<th width="60">药品单位</th>
+				<th width="80">药房库存</th>
+				<th width="80">申请数量</th>
+				<th width="80">实发数量</th>
+				<th width="80">药品规格</th>
+				<th width="80">药品剂量</th>
+				<th width="80">剂量单位</th>
+				<th width="80">药品剂型</th>
+				<th width="150">产地名称</th>
+				<th width="80">零售价</th>
+				<th width="80">药品批号</th>
+				<th width="80">药品效期</th>
+			</tr>
+			</thead>
+			<tbody id="itemList">
+			<tr>
+				<td>
+					#formHiddenInput("pharmacyAllotItemId" "" "")
+					#formHiddenInput("pharmacyAllotId" "" "")
+					#formHiddenInput("medicineId" "" "")
+					#formHiddenInput("confirmFlag" "1" "")
+					#formHiddenInput("pharmacyStockId" "0" "")
+					#formHiddenInput("pharmacyPack" "" "")
+					#formHiddenInput("retailSum" "" "")
+					#formHiddenInput("tradePrice" "" "")
+					#formHiddenInput("tradeSum" "" "")
+					#formTextInput("medicineName" "" "maxlength='10' class='layui-input' autocomplete='off' readonly ") ## 药品名称
+				</td>
+				<td>
+					#formSingleSelectFirstNone("medicineUnit" "" $dicData.dicDrugNumUnit "class='layui-input' disabled readonly autocomplete='off' " "") ## 药品单位
+				</td>
+				<td>
+					#formFloLenInput("stockCount" "" 8 "maxlength='10' class='layui-input' readonly autocomplete='off' ") ## 药房库存
+				</td>
+				<td>
+					#formTextInput("applyMedicineCount" "" "class='layui-input' autocomplete='off' readonly ") ## 申请数量
+				</td>
+				<td>
+					#formTextInput("allotActualCount" "" "class='layui-input' autocomplete='off' ") ## 实发数量
+				</td>
+				<td>
+					#formTextInput("medicineSpec" "" "class='layui-input' autocomplete='off' readonly ") ## 药品规格
+				</td>
+				<td>
+					#formTextInput("medicineDosage" "" "id='medicineDosage' maxlength='5' class='layui-input' autocomplete='off' disabled readonly")  ##药品剂量
+				</td>
+				<td>
+					#formSingleSelectFirstNone("dosageUnit" "" $dicData.dicDrugNumUnitDosageUnit "class='layui-input' autocomplete='off' disabled readonly" "") ## 剂量单位
+				</td>
+				<td>
+					#formSingleSelectFirstNone("dosageForm" "" $dicData.dicDosageForm " class='layui-input' autocomplete='off' disabled readonly " "") ## 药品剂型
+				</td>
+				<td>
+					#formHiddenInput("producingAreaId" "" "id='producingAreaId'")
+					#formTextInput("producingAreaName" "" "class='layui-input' autocomplete='off' readonly ") ## 产地名称
+				</td>
+				<td>
+					#formFloLenInput("retailPrice" "" 8 "maxlength='10' targetSum='retailSum' class='layui-input' readonly autocomplete='off' ") ## 零售价
+				</td>
+				<td>
+					#formTextInput("batchNum" "" "class='layui-input' readonly autocomplete='off' ") ## 药品批号
+				</td>
+				<td>
+					#formFloLenInput("expireDate" "" 8 "maxlength='10' class='layui-input' readonly autocomplete='off' readonly ") ## 药品效期
+				</td>
+			</tr>
+			</tbody>
+		</table>
+	</div>
+	<form class="layui-form" action="" id="btnForm">
+		<div class="layui-form-item text-center search-term">
+			<div class="layui-inline">
+				<button type="button" id="btn_confirm" class="layui-btn layui-btn-sm"><span>提交</span></button>
+			</div>
+		</div>
+	</form>
+</div>
+    #parse("./common/commonSelect.js.vm")
+    #parse("./pharmacy/allot/pharmacyAllotOutEdit.js.vm")
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-治疗管理-治疗查询</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="treatRecord_queryForm" class="layui-form">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">治疗日期</label>
+                        <div class="layui-input-inline wd-100">
+                            #formLayDateInput("therapyTimeBegin" "" " maxlength='17' autocomplete='off'
+                            class='layui-input' ")
+                        </div>
+                        <div class="layui-form-mid">至</div>
+                        <div class="layui-input-inline wd-100">
+                            #formLayDateInput("therapyTimeEnd" "" " maxlength='17' autocomplete='off'
+                            class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">治疗类型</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearchFirstNone("treatDicTypeId" "" $!dicData.dicTreatDicTypeId
+                            "id='q_variationFactor'
+                            lay-filter='q_variationFactor' lay-search" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">治疗措施</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("treatMeasures" "" "class='layui-input' id='q_treatMeasures'
+                            autocomplete='off' maxlength='40'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">治疗部位</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("cureBodyPart" "" "class='layui-input' id='q_cureBodyPart' autocomplete='off'
+                            maxlength='40'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">理疗方法</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("therapyMethod" "" "class='layui-input' id='q_therapyMethod'
+                            autocomplete='off' maxlength='40'")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i
+                                class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="treatRecord_ListGrid" lay-filter="treatRecord_ListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./treat/treatRecord/treatRecordList.js.vm")
+</body>
+</html>

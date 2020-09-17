@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-colla-content { color: #000; font-family: 宋体, SimSun; }
+</style>
+</head>
+<body class="de-bg">
+    <!-- 模板类型树 -->
+    <div class="layui-col-xs3 white-bg full-height-scroll m-r-xs  p-t-xs" id="kbTypeTreeDiv" style="width: 200px;">
+        <h5>
+            <i class="dtreefont dtree-theme-dtreefont dtree-theme-ficon dtree-icon-jian"></i>
+            <i class="dtreefont dtreefont-special dtree-theme-dtreefont dtree-theme-icon dtree-icon-wenjianjiazhankai"></i>
+            <span>模板分类</span>
+        </h5>
+        <ul id="kbTypeTree" class="dtree" data-id="0"></ul>
+    </div>
+
+    <!-- 模板列表 -->
+    <div class="layui-col-xs10 white-bg full-height-scroll" style="width: calc(100% - 205px);">
+        <div class="layui-collapse full-height" id="kbContentList" lay-filter="kbContentList"></div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var selectEmrTreeServer;
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['element', 'dtree'], function(){
+    var element = layui.element, dtree = layui.dtree;
+    // 初始化左边树型
+    var dtreeObj = dtree.render({
+        dot:false,
+        initLevel: 2,
+        record:"",
+        elem: "#kbTypeTree",
+        url: contextPath + "/emr/kbTypeTree.jo",
+    });
+
+    // 监听树型节点点击事件
+    dtree.on("node('kbTypeTree')" ,function(obj){
+        var curNode = JSON.parse(obj.param.basicData);
+        if (!curNode.kbTypeId) {
+            common.msg('模板类型编号无效', function (){});
+            return ;
+        }
+        common.requestServer(contextPath + '/emr/kbTypeContentJsonList.jo', {kbTypeId: curNode.kbTypeId}, function (result){
+            console.log(result);
+            if (!result || !result.data) {
+                return ;
+            }
+
+            var html = [];
+            $.each(result.data, function (i, v){
+                var btn = '<button name="leadingIn" class="layui-btn layui-btn-xs layui-btn-radius layui-btn-normal m-l-sm"><i class="iconfont icon-daoru3"> 导入</i></button>';
+                html.push('<div class="layui-colla-item">');
+                html.push('<h2 class="layui-colla-title">' + (v.kbName ? v.kbName : '') + '</h2>');
+                html.push('<div class="layui-colla-content">' + btn + '<div>' + (v.kbContent ? v.kbContent : '') + '</div></div>');
+                html.push('</div>');
+            });
+            $('#kbContentList').html(html.join(''));
+            // 监听导入按钮
+            $('button[name="leadingIn"]').click(function (){
+                if (parent.leadingIn && typeof(parent.leadingIn) == 'function') {
+                    console.log($(this).next().text());
+                    parent.leadingIn($(this).next().text());
+                }
+            });
+            // 从新渲染DIV
+            element.render();
+            // 打开第一个面板
+            $('h2.layui-colla-title:first').click();
+        });
+    });
+    window.reder = function (){
+        var kbName = $('#mouseroOnClick' , window.parent.document).val();
+        var html = [];
+        $.ajax({
+            type:"post"
+            ,data:{'kbTypeName':kbName}
+            ,url:contextPath + '/emr/findEmrKbType.jo'
+            ,async:true
+            ,success: function(result){
+                if (null != result.kbTypeId){
+                    $.ajax({
+                        type:"post"
+                        ,data:{'kbBelongFlag':"$!{CONST.AppConstants.BELONGS_DOCTOR}" , 'kbTypeId':result.kbTypeId}
+                        ,url:contextPath + '/emr/emrKbContentList.jo'
+                        ,async:true
+                        ,success: function(result){
+                            if (!result || !result.data) {
+                                return ;
+                            }
+                            $.each(result.data, function (i, v){
+                                var btn = '<button name="leadingIn" class="layui-btn layui-btn-xs layui-btn-radius layui-btn-normal m-l-sm"><i class="iconfont icon-daoru3"> 导入</i></button>';
+                                html.push('<div class="layui-colla-item">');
+                                html.push('<h2 class="layui-colla-title">' + (v.kbName ? v.kbName : '') + '</h2>');
+                                html.push('<div class="layui-colla-content">' + btn + '<div>' + (v.kbContent ? v.kbContent : '') + '</div></div>');
+                                html.push('</div>');
+                            });
+                            $('#kbContentList').html(html.join(''));
+                            // 从新渲染DIV
+                            element.render();
+                            // 监听导入按钮
+                            $('button[name="leadingIn"]').click(function (){
+                                if (parent.leadingIn && typeof(parent.leadingIn) == 'function') {
+                                    console.log($(this).next().text());
+                                    parent.leadingIn($(this).next().text());
+                                }
+                            });
+                            // 打开第一个面板
+                            $('h2.layui-colla-title:first').click();
+                        }
+                    });
+                }else{
+                    $('#kbContentList').html(html.join(''));
+                    // 从新渲染DIV
+                    element.render();
+                }
+            }
+        });
+    }
+    reder();
+ selectEmrTreeServer = function(data) {
+    common.requestServer(contextPath + '/emr/emrKbContentListByKbType.jo', {kbTypeName:data.desc,kbContent:data.textContent}, function (result){
+        console.log(result);
+        if (!result || !result.data) {
+            return ;
+        }
+
+        var html = [];
+        $.each(result.data, function (i, v){
+            var btn = '<button name="leadingIn" class="layui-btn layui-btn-xs layui-btn-radius layui-btn-normal m-l-sm"><i class="iconfont icon-daoru3"> 导入</i></button>';
+            html.push('<div class="layui-colla-item">');
+            html.push('<h2 class="layui-colla-title">' + (v.kbName ? v.kbName : '') + '</h2>');
+            html.push('<div class="layui-colla-content">' + btn + '<div>' + (v.kbContent ? v.kbContent : '') + '</div></div>');
+            html.push('</div>');
+        });
+        $('#kbContentList').html(html.join(''));
+        // 监听导入按钮
+        $('button[name="leadingIn"]').click(function (){
+            if (parent.leadingIn && typeof(parent.leadingIn) == 'function') {
+                console.log($(this).next().text());
+                parent.leadingIn($(this).next().text());
+            }
+        });
+        // 从新渲染DIV
+        element.render();
+        // 打开第一个面板
+        $('h2.layui-colla-title:first').click();
+    });
+}
+
+});
+
+function selectEmrTree(data) {
+    var da = data;
+    selectEmrTreeServer(data);
+}
+</script>
+</html>

@@ -1,0 +1,371 @@
+<script>
+    var users = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var wardMap = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+    var aae140, yab139, ykb065;// 分别是险种类型，参保所属机构，执行社会保险办法
+    var mbfParam = {
+        "insure_type": "GXYHJK",
+        "bus_code": "I0001",
+        "control": {
+            "edition": "",
+            "ykf008": "",
+            "yab278": "",
+            "aae011": "$!{curUser.userId}",
+            "ykc141": "$!{curUser.name}",
+            "aae036": ""
+        },
+        "input": {}
+    };
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index', //主入口模块
+        cascader: 'cascader'
+    }).use(['index', 'form', 'laydate', 'cascader','layer', 'util'], function () {
+        var $ = layui.$, form = layui.form, laydate = layui.laydate
+        var cascader = layui.cascader;
+        var layer = layui.layer;
+        var util = layui.util;
+
+        //如果状态为已入院,禁用保存按钮
+        if ($('#inpatientState').val() == 1) {
+            $('#save').attr('disabled', 'disabled');
+            $('#save').attr('class', 'layui-btn layui-btn-sm layui-btn-disabled');
+        }
+
+        common.verify(form);
+        //获取住院预交款收据号码
+        var url = "../billRecipient/getUseInpatientBillRecipient.jo"
+        var params = {usageMode: "$!{CONST.AppConstants.USAGE_MODE_HOSPITALIZATION_INVOICE}"}
+        common.requestServer(url, params, function (result) {
+            if (result.code === '0') {
+                $("#receiptNo").val(result.data.currentNum);
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+        //入院登记
+        if ($('#inhospitalDate').val()) {
+            $('#inhospitalDate').prop('readonly', true);
+        } else {
+            laydate.render({elem: '#inhospitalDate', type: 'datetime',format :'yyyy-MM-dd HH:mm', value:new Date(),min:0});
+        }
+
+        var len = 2// 每个区域ID长度的倍数
+        // 行政区域数据加载及监听选择
+        $(function() {
+            common.requestServer('../basRegion/selectRegion.jo', {regionIdLen: 8}, function (data) {
+                if (!data) {
+                    return
+                }
+                // 出生地
+                layui.cascader({
+                    data: data,
+                    elem: '#birthRegionName',
+                    value: ["45"],
+                    success: function (data) {
+                        $('#birthRegionId').val(data[data.length - 1])
+                    }
+                })
+                // 现住地址
+                layui.cascader({
+                    data: data,
+                    elem: '#regionName',
+                    value: $('#regionId').val() ? common.strToRegionIdArray($('#regionId').val(), len) : [],
+                    success: function (data) {
+                        $('#regionId').val(data[data.length - 1])
+                    }
+                })
+                // 户口地址
+                layui.cascader({
+                    data: data,
+                    elem: '#nativeRegionName',
+                    value: $('#nativeRegionId').val() ? common.strToRegionIdArray($('#nativeRegionId').val(), len) : [],
+                    success: function (data) {
+                        $('#nativeRegionId').val(data[data.length - 1])
+                    }
+                })
+                // 工作单位
+                layui.cascader({
+                    data: data,
+                    elem: '#companyRegionName',
+                    value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#companyRegionId').val(), len) : [],
+                    success: function (data) {
+                        $('#companyRegionId').val(data[data.length - 1])
+                    }
+                })
+
+                // 联系人地址
+                layui.cascader({
+                    data: data,
+                    elem: '#contactRegionName',
+                    value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#contactRegionId').val(), len) : [],
+                    success: function (data) {
+                        $('#contactRegionId').val(data[data.length - 1])
+                    }
+                })
+            })
+        });
+        // 籍贯
+        layui.cascader({
+            type: 'post',
+            elem: '#nativePlace',
+            url: '../basRegion/selectRegion.jo',
+            where: {regionIdLen: 6},
+            value: $('#nativePlaceId').val() ? common.strToRegionIdArray($('#nativePlaceId').val(), len) : [],
+            success: function (data) {
+                $('#nativePlaceId').val(data[data.length - 1])
+            }
+        })
+        $("#toEmpty").click(function () {
+            clearForm();
+        });
+
+//自定义验证规则
+        form.verify({
+            dateTime: function(value, item){
+                //转化格式完整日期时间格式
+                $(item).val(layui.util.toDateString(new Date(value)))
+            }
+        });
+        //提交表单
+        form.on("submit(btn-save)", function (data) {
+            var params = data.field;
+            console.log(params);
+            params['recvDoctorName'] = users[params['recvDoctorId']];
+            params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+            params['managerDoctorName'] = users[params['managerDoctorId']];
+            params['bedDoctorName'] = users[params['bedDoctorId']];
+            params['headNurserName'] = users[params['headNurserId']];
+            params['dutyNurserName'] = users[params['dutyNurserId']];
+            params['outpatientDoctorName'] = users[params['outpatientDoctorId']];
+            params['wardName'] = wardMap[params['wardId']];
+            common.requestServer('../inpatient/saveInhospitalRegister.jo', params, function (result) {
+                if (result.code == "0") {
+                    common.alertCall("保存成功。", 1, function () {
+                        clearForm();
+                        parent.window.location.href = parent.window.location.href;
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+        //监听“是否一个月内再入院”单选框，如果选择是，相关的输入项做必填校验
+        form.on('radio(oneMonthVisitFlag)', function (obj) {
+            var input = $("#oneMonthVisitAim");
+            var label = input.parent().prev();
+            var hasReqFlag = label.find("span").length > 0;
+            console.log(hasReqFlag);
+            if (obj.value == '1' && !hasReqFlag) {
+                label.prepend('<span class="reqFlag" style="color:red">*</span>');
+                input.attr("lay-verify", "required")
+            } else if (obj.value == '0' && hasReqFlag) {
+                label.find("span.reqFlag").remove();
+                input.attr("lay-verify", "");
+            }
+        });
+        //监听“是否脑颅损伤”单选框，如果选择是，相关的输入项做必填校验
+        form.on('radio(brainInjuryFlag)', function (obj) {
+            var requiredTag = '#requiredTag()'
+            $('.bebraininjuryTitle').children('span').remove()//标题移除必填;
+            var $bebraininjury = $(".bebraininjury input");
+            if (Boolean(+obj.value)) {
+                $('.bebraininjuryTitle').html(function (index, text) {
+                    return requiredTag + text
+                })//标题显示必填
+                $bebraininjury.attr('lay-verify', 'required')//添加必填
+            } else {
+                $bebraininjury.attr('lay-verify', "")//添加必填
+            }
+        });
+        form.render();
+    });
+
+
+    //清空表单信息
+    function clearForm() {
+        var form = $("#register_form");
+        var inputs = form.find('input');
+        var textareas = form.find('textarea');
+        var selects = form.find('select');
+        inputs.val(null);
+        textareas.val(null);
+        selects.val(null);
+    }
+
+    //预付款是否为null
+    $('#prepayInAmount').bind("input propertychange", function () {
+        var prepayInAmount = this.value.replace(/\ +/g, '');
+        if (prepayInAmount != "") {
+            $('[name="payInWay"]').attr("lay-verify", "required");
+            $('#span_payInWay').css('display', 'inline');
+        } else {
+            $('[name="payInWay"]').removeAttr("lay-verify");
+            $('#span_payInWay').css('display', 'none');
+        }
+    });
+
+    $(function() {
+        function initWS() {
+            ws = new WebSocket("ws://127.0.0.1:8080/bfweb");
+            ws.onopen = function (e) {
+                console.log("Openened connection to websocket");
+                console.log(e);
+                // initializationMbf();
+            };
+            ws.onclose = function () {
+                console.log("Close connection to websocket");
+                // 断线重连
+                initWS();
+            };
+
+            ws.onmessage = function (e) {
+                console.log("收到",e.data);
+                var div=$("<div>");
+                var data=e.data;
+                $("#messages").append(div);
+            };
+        }
+
+        // initWS();
+
+        $('#readCard').click(function() {
+            readCard();
+        });
+
+        $('#mbfRegister').click(function() {
+            mbfRegister();
+        });
+
+
+    });
+
+    function readCard() {
+        ws.onmessage = function (e) {
+            console.log("读卡收到", e.data);
+            mbfData = e.data;
+            aae140 = mbfData.output.rows.row.aae140; //险种类型
+            yab139 = mbfData.output.rows.row.yab139; //参保所属机构
+            ykb065 = mbfData.output.rows.row.ykb065; //执行社会保险办法
+        };
+        mbfParam.bus_code = 'I0001';
+        mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+        mbfParam.input.aae140 = "310";
+        ws.send(JSON.stringify(mbfParam));
+    }
+
+    function mbfRegister() {
+        ws.onmessage = function (e) {
+            console.log("住院登记收到", e.data);
+        };
+        mbfParam.bus_code = 'I0001';
+        mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+        mbfParam.input = {
+            "aaz217": "就诊编号",
+            "aac001": "人员ID",
+            "yldybz": "1",
+            "gsdybz": "0",
+            "sydybz": "0",
+            "ykc010": "住院号",
+            "akc197": "入院顺序号",
+            "aae030": "入院时间",
+            "ykc013": "入院经办人",
+            "yke019": "入院经办时间",
+            "ykc009": "病历号",
+            "yldycs": {
+                "aka130": "31",
+                "ake020": "病区床位",
+                "aka082": "护理等级",
+                "aka120": "医保病种  单病种结算需要传单病种编码，普通结算和akc193一致",
+                "akc193": "诊断疾病编码",
+                "#text": " ICD10编码\r\n",
+                "bkc004": "次要诊断疾病编码1",
+                "bkc005": "次要诊断疾病编码2",
+                "bkc178": "次要诊断疾病编码3",
+                "bkc169": "次要诊断疾病编码4",
+                "bkc170": "次要诊断疾病编码5",
+                "akc199": "多疾病诊断",
+                "ake024": "主要病情描述",
+                "bkf007": "诊断医生编码",
+                "ake022": "诊断医生",
+                "ykc012": "床位",
+                "ykc011": "科室",
+                "yke397": "是否转科室",
+                "alc022": "治疗部位",
+                "aae006": "家庭地址",
+                "aae004": "联系人姓名",
+                "aae005": "联系电话",
+                "aae013": "备注",
+                "yke398": "15日内同病种住院标识",
+                "ykc378": "是否肿瘤患者",
+                "aka042": "住院类型",
+                "aka206": "跨年度住院标志",
+                "bkf136": "先行支付标志",
+                "bkc182": "校外就医标志"
+            },
+            "gsdycs": {
+                "aka130": "31",
+                "ake020": "病区床位",
+                "aka082": "护理等级",
+                "aka120": "医保病种  单病种结算需要传单病种编码，普通结算和akc193一致",
+                "akc193": "诊断疾病编码",
+                "#text": " ICD10编码\r\n",
+                "bkc004": "次要诊断疾病编码1",
+                "bkc005": "次要诊断疾病编码2",
+                "bkc178": "次要诊断疾病编码3",
+                "bkc169": "次要诊断疾病编码4",
+                "bkc170": "次要诊断疾病编码5",
+                "akc199": "多疾病诊断",
+                "ake024": "主要病情描述",
+                "bkf007": "诊断医生编码",
+                "ake022": "诊断医生",
+                "ykc012": "床位",
+                "ykc011": "科室",
+                "yke397": "是否转科室",
+                "alc022": "治疗部位",
+                "aae006": "家庭地址",
+                "aae004": "联系人姓名",
+                "aae005": "联系电话",
+                "aae013": "备注",
+                "yke398": "15日内同病种住院标识",
+                "ykc378": "是否肿瘤患者",
+                "aka042": "住院类型",
+                "aka206": "跨年度住院标志",
+                "bkf136": "先行支付标志",
+                "bkc182": "校外就医标志"
+            },
+            "sydycs": {
+                "aka130": "31",
+                "ake020": "病区床位",
+                "aka082": "护理等级",
+                "aka120": "医保病种  单病种结算需要传单病种编码，普通结算和akc193一致",
+                "akc193": "诊断疾病编码",
+                "#text": " ICD10编码\r\n",
+                "bkc004": "次要诊断疾病编码1",
+                "bkc005": "次要诊断疾病编码2",
+                "bkc178": "次要诊断疾病编码3",
+                "bkc169": "次要诊断疾病编码4",
+                "bkc170": "次要诊断疾病编码5",
+                "akc199": "多疾病诊断",
+                "ake024": "主要病情描述",
+                "bkf007": "诊断医生编码",
+                "ake022": "诊断医生",
+                "ykc012": "床位",
+                "ykc011": "科室",
+                "yke397": "是否转科室",
+                "alc022": "治疗部位",
+                "aae006": "家庭地址",
+                "aae004": "联系人姓名",
+                "aae005": "联系电话",
+                "aae013": "备注",
+                "yke398": "15日内同病种住院标识",
+                "ykc378": "是否肿瘤患者",
+                "aka042": "住院类型",
+                "aka206": "跨年度住院标志",
+                "bkf136": "先行支付标志",
+                "bkc182": "校外就医标志"
+            }
+        };
+        ws.send(JSON.stringify(mbfParam));
+    }
+</script>

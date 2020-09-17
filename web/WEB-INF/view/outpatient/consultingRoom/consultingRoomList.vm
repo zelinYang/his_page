@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-诊室管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="consultingRoom_queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">门诊科室</label>
+                        <div class="layui-input-inline wd-220">
+                            <div id="depIds" style="height: 30px;"></div>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室名称</label>
+                        <div class="layui-input-inline wd-120">
+                            #formTextInput("roomName" "" "id='q_roomName' maxlength='20' autocomplete='off'
+                            class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室电话</label>
+                        <div class="layui-input-inline wd-120">
+                            #formNotInChineseInput("roomTel" "" " autocomplete='off' maxlength='40' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室地址</label>
+                        <div class="layui-input-inline ">
+                            #formTextInput("roomLocation" "" "id='q_roomLocation' autocomplete='off' maxlength='50' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">按诊室设置收费</label>
+                        <div class="layui-input-inline">#formRadioGroup("roomPayFlag" "$!{consultingRoom.roomPayFlag}" ${dicData.dicYesNo} "")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-btn-group">
+                            <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                        <button id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" type="button" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 是否有效开关 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" lay-filter="validFlag" name="validFlag" value="{{d.consultingRoomId}}" lay-skin="switch"
+                   lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+        </script>
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-primary layui-btn-xs" lay-tips="查看" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+            <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i class="layui-icon"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="consultingRoomListGrid" lay-filter="consultingRoomListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./outpatient/consultingRoom/consultingRoomList.js.vm")
+</body>
+</html>

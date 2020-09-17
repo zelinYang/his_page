@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>住院院内会诊</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    #parse("./common/pageCss.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox { margin-top: 0; }
+        .layui-form-item .layui-inline.fr, .layui-btn > button.layui-btn { margin-right: 0;}
+        .layui-icon-delete { cursor: pointer; color: red; }
+        .layui-icon-edit { cursor: pointer; color: #009688; }
+    </style>
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form id="queryForm" class="layui-form">
+            <div class="layui-row-query layui-form-item search-term" >
+                #formHiddenInput("inhospitalId" "$!consultationApplyEditInfo.inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("patientId" "$!consultationApplyEditInfo.patientId" "id='patientId'")
+                #formHiddenInput("consultationApplyType" "$!consultationApplyEditInfo.consultationApplyType" "id='consultationApplyType'")
+                <div class="layui-inline">
+                    <label class="layui-form-label">会诊日期</label>
+                    <div class="layui-input-inline">
+                        <input class="layui-input" name="consultationTime" id="consultationTime" autocomplete="off" readonly>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-submit="" lay-filter="LAY-search" lay-tips="查询" title="查询"><i class="layui-icon layui-icon-search"></i></button>
+                </div>
+            </div>
+        </form>
+        <table id="mainTable" lay-filter="mainTable"></table>
+    </div>
+</div>
+<script type="text/html" id="toolbarDemo">
+        <button class="layui-btn layui-btn-sm" lay-event="btn_add" lay-tips="新增"  title="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+</script>
+<script type="text/html" id="barDemo">
+    {{#  if(d.applyDoctorId == "$!{curSysUser.userId}"){ }}
+    <i class="layui-icon layui-icon-edit" title="编辑" lay-event="edit"></i>&nbsp;&nbsp;
+    <i class="layui-icon layui-icon-delete" title="删除" lay-event="del"></i>
+    {{#  } }}
+</script>
+    #parse("./common/common.js.vm")
+    #parse("./common/pageJs.vm")
+<script>
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+    var dicConsttStateFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttStateFlag)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicConsttLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttLevel)');
+    var dicConsultationSpeciallFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsultationSpeciallFlag)');
+    var query;
+    layui.use(['form', 'table', 'laydate'], function () {
+        var table = layui.table, form = layui.form, laydate = layui.laydate;
+
+        laydate.render({
+            elem: '#consultationTime',
+            value: new Date().format('yyyy-MM-dd')
+        });
+
+        table.render({
+            elem: '#mainTable'
+            , url: '../consultationApply/inConsultationApplyListData.jo'
+            , toolbar: '#toolbarDemo'
+            , title: '用户数据表'
+            , height: getTableHight()
+            , limit: 20
+            , defaultToolbar: []
+            , where: common.serializeObject($('#queryForm'))
+            , request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            , cols: [[
+                {
+                    type: 'numbers'
+                },
+                {
+                    field: 'patientName',
+                    width: 80,
+                    title: '姓名'
+                }, {
+                    field: 'patientSex',
+                    width: 60,
+                    title: '性别',
+                    templet: function (row) {
+                        if (row.patientSex) return dicSex[row.patientSex];
+                    }
+                }, {
+                    field: 'currentWardName',
+                    width: 150,
+                    title: '病区'
+                }, {
+                    field: 'currentBedNo',
+                    width: 100,
+                    title: '床号',
+                }, {
+                    field: 'consultationStateFlag',
+                    title: '状态',
+                    width: 100,
+                    templet: function (row) {
+                        if (row.consultationStateFlag) return dicConsttStateFlag[row.consultationStateFlag] ? dicConsttStateFlag[row.consultationStateFlag] : '';
+                    }
+                }, {
+                    field: 'consultationLevelFlag',
+                    title: '会诊级别',
+                    templet: function (row) {
+                        if (row.consultationLevelFlag) return dicConsttLevel[row.consultationLevelFlag] ? dicConsttLevel[row.consultationLevelFlag] : '';
+                    }
+                }, {
+                    field: 'consultationSpeciallFlag',
+                    title: '会诊情况',
+                    templet: function (row) {
+                        if (row.consultationSpeciallFlag) return dicConsultationSpeciallFlag[row.consultationSpeciallFlag] ? dicConsultationSpeciallFlag[row.consultationSpeciallFlag] : '';
+                    }
+                }, {
+                    field: 'diseaseName',
+                    title: '诊断名称'
+                }, {
+                    field: 'applyDoctorName',
+                    title: '申请医生'
+                }, {
+                    field: 'applyOfficeName',
+                    title: '申请科室'
+                }, {
+                    field: 'applyTime',
+                    title: '申请日期',
+                    templet: function (row) {
+                        if (row.applyTime) {
+                            return layui.util.toDateString(row.applyTime, 'yyyy-MM-dd HH:mm:ss');
+                        }
+                    }
+                }, {
+                    field: 'consultationTime',
+                    title: '会诊时间',
+                    templet: function (row) {
+                        if (row.consultationTime) {
+                            return layui.util.toDateString(row.consultationTime, 'yyyy-MM-dd HH:mm:ss');
+                        }
+                    }
+                }
+                , {fixed: 'right', title: '操作', align: 'center', toolbar: '#barDemo', width: 60}
+                ]]
+            , page: true
+        });
+
+        //工具栏事件
+        table.on('toolbar(mainTable)', function (obj) {
+            if (obj.event === 'btn_add') {
+                editConsultationApply('', 'strict', '1');
+            }
+        });
+
+        //操作事件
+        table.on('tool(mainTable)', function (obj) {
+            switch (obj.event) {
+                case 'edit':
+                    editConsultationApply(obj.data.consultationApplyId, 'strict', '1');
+                    break;
+                case 'del':
+
+                    break;
+
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+        //查询列表
+        query = function() {
+            var queryParams = common.serializeObject($('#queryForm'));
+            if (!queryParams.consultationTime) {
+                queryParams.consultationTime = '';
+            }
+            table.reload('mainTable', {where: queryParams});
+
+        }
+
+        //监听行单击事件
+        table.on('row(mainTable)', function(obj){
+            editConsultationApply(obj.data.consultationApplyId, 'readonly', '0');
+        });
+
+        function editConsultationApply(consultationApplyId, modelType, showBtn) {
+            var url = '$contextPath' + '/consultationApply/inpatientConsultationApplyEdit.do?consultationApplyId=' + consultationApplyId
+                    + '&inhospitalId=' + $("#inhospitalId").val() + '&patientId=' + $("#patientId").val() + '&modelType=' + modelType
+                    + '&showBtn=' + showBtn + '&consultationApplyType=' + $("#consultationApplyType").val();
+            common.open(url, '编辑会诊申请', {
+                area: ['90%', '90%'],
+                scroll: true
+            })
+        }
+
+        function getTableHight(){
+            return ($('body').height() - $('.search-term').height() - 10)
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'element', 'element', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, element = layui.element,
+            tableSelect = layui.tableSelect;
+        common.verify(form);
+
+        //医生选择
+        form.on('select(doctorId)', function () {
+            var doctorId = $("#doctorId").val();
+            $("#doctorName").val($("#doctorId option:selected").text());
+            if (doctorId) {
+                var basPostDoctor = getBasPostDoctorByUserId(doctorId);
+                //表单赋值
+                form.val('basPostDoctorForm', basPostDoctor);
+            }
+        });
+
+        //根据医生获取医生诊查费列表
+        function getBasPostDoctorByUserId(userId) {
+            var basPostDoctor;
+            $.ajax({
+                type: "GET",
+                url: "../basPostDoctor/basPostDoctorList.jo?doctorId=" + userId,
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    basPostDoctors = result.data;
+                    if (basPostDoctors && basPostDoctors.length > 0) {
+                        basPostDoctor = basPostDoctors[0]
+                    }
+                }
+            });
+            return basPostDoctor;
+        }
+
+        //职称费选择
+        form.on('select(doctorPost)', function (data) {
+            reloadBasPostEmrSign();
+            reloadBasPostFee();
+        });
+
+        //加载病历签名
+        function reloadBasPostEmrSign() {
+            var doctorPost = $("#doctorPost").val();
+            common.requestServer(contextPath + '/bas/findBasPostEmrSign.jo?doctorPost= ' + doctorPost, function (result) {
+                var data = result.data;
+                if (result.code == '0') {
+                    $("#doctorSign").val(data.doctorSign);
+                    $("#doctorSignName").val(dicDoctorSignType[data.doctorSign] || '');
+                } else {
+                    $("#doctorSign").val('');
+                    $("#doctorSignName").val('');
+                }
+            })
+        }
+
+        //职称诊查费设置表列表
+        table.render({
+            elem: '#basPostFeeListGrid',
+            where: {'validFlag': YES_FLAG},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'chargeName',
+                    title: '诊查费用名称'
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    totalRow: true,
+                    width: 60,
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    field: 'emergencyFeeFlag',
+                    title: '急诊收费',
+                    width: 80,
+                    templet: function (d) {
+                        return dicYesNo[d.emergencyFeeFlag] || '';
+                    }
+                }, {
+                    field: 'ageFeeFlag',
+                    title: '收费年龄段',
+                    width: 80,
+                    templet: function (d) {
+                        return dicAgeFeeFlag[d.ageFeeFlag] || '';
+                    }
+                }]], done: function (res) {
+            }
+        });
+
+
+        //加载职称费
+        function reloadBasPostFee() {
+            var doctorPost = $("#doctorPost").val();
+            table.reload('basPostFeeListGrid', {
+                url: doctorPost ? contextPath + '/bas/basPostFeeListData.jo?doctorPostCode=' + doctorPost : '', //接口
+            });
+        }
+
+        reloadBasPostFee();
+
+        //自定义验证规则
+        form.verify({
+            chargeItem: function (value) {
+                //职称诊查费
+                var basPostFees = $.map(table.cache['basPostFeeListGrid'], function (item) {
+                    if (item.chargeItemId) return item.chargeItemId;
+                })
+                if (basPostFees.length == 0) {
+                    $('#btn_add_basPostFee').focus(function () {
+                        $('#basPostFeeListGrid').next().addClass('table-danger');
+                    }).blur(function () {
+                        $('#basPostFeeListGrid').next().removeClass('table-danger');
+                    }).focus();
+                    return "职称诊查费不能为空";
+                }
+            }
+        });
+
+        //提交表单
+        function saveBasPostDoctor() {
+            var basPostDoctorParams = common.serializeObject($('#basPostDoctorForm'))
+            common.requestServer(contextPath + '/bas/saveBasPostDoctor.jo', basPostDoctorParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasPostDoctor()
+            return false
+        })
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            reloadBasPostFee();
+        })
+    })
+</script>

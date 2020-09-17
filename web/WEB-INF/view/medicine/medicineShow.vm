@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>药品维护</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title> #parse("./common/pageCss.vm")
+<style>
+	tr td:nth-child(odd){
+		background-color: #dce3f1;
+		font-weight: bold;
+		text-align: center;
+	}
+</style>
+</head>
+<body class="full-height">
+<div class="full-height-scroll">
+	<table class="layui-table">
+		<tbody>
+		<colgroup>
+			<col width="150">
+			<col width="150">
+			<col width="150">
+			<col width="150">
+			<col width="150">
+			<col width="150">
+		</colgroup>
+		<tr>
+			<td>药品名称</td>
+			<td>$!{medicine.medicineName}</td>
+			<td>商品名称</td>
+			<td>$!{medicine.tradeName}</td>
+			<td>化学名</td>
+			<td>$!{medicine.chemicalName}</td>
+		</tr>
+		<tr>
+			<td>药品别称</td>
+			<td>$!{medicine.medicineOtherName}</td>
+			<td>药品分类</td>
+			<td>#lookUpDict(${dicData.dicMedicineType} $!{medicine.medicineType})</td>
+			<td>药品剂型</td>
+			<td>#lookUpDict(${dicData.dicDosageForm} $!{medicine.dosageForm})</td>
+		</tr>
+		<tr>
+			<td>药品档次</td>
+			<td>#lookUpDict(${dicData.dicMedicineGrade} $!{medicine.medicineGrade})</td>
+			<td></td>
+			<td></td>
+			<td>五笔编码</td>
+			<td>$!{medicine.wubiCode}</td>
+		</tr>
+		<tr>
+			<td>账簿类别</td>
+			<td>#lookUpDict(${dicData.dicAccountBookType} $!{medicine.accountBookType})</td>
+			<td>TPN药房</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.tpnFlag})</td>
+			<td>药品编码</td>
+			<td>$!{medicine.medicineCode}</td>
+		</tr>
+		<tr>
+			<td>药品性质（监管类型）</td>
+			<td>#lookUpDict(${dicData.dicMedicineAttribute} $!{medicine.medicineAttribute})</td>
+			<td>是否制剂</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.preparationFlag})</td>
+			<td>急诊用药</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.urgentUsageFlag})</td>
+		</tr>
+		<tr>
+			<td>可拆包</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.outpatientUnpackFlag})</td>
+			<td>注射药品</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.injectionFlag})</td>
+			<td>是否皮试</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.needSkinTestFlag})</td>
+		</tr>
+		<tr>
+			<td>皮试使用药</td>
+			<td>#lookUpDict(${dicData.dicYesNo} $!{medicine.skinTestFlag})</td>
+			<td>皮试关联药品</td>
+			<td>$!{medicine.skinTestMedicineName}</td>
+			<td>皮试使用药</td>
+			<td>#lookUpDict(${dicData.dicWardDispensingWay} $!{medicine.wardDispensingWay})</td>
+		</tr>
+		<tr>
+			<td>费用归并名称</td>
+			<td>$!{medicine.chargeGroupName}</td>
+			<td>药品规格</td>
+			<td>$!{medicine.medicineSpec}</td>
+			<td>药品单位</td>
+			<td>#lookUpDict(${dicData.dicDrugNumUnit} $!{medicine.medicineUnit})</td>
+		</tr>
+		<tr>
+			<td>药品剂量</td>
+			<td>$!{medicine.medicineDosage}</td>
+			<td>剂量单位</td>
+			<td>#lookUpDict(${dicData.dicDrugNumUnitDosageUnit} $!{medicine.dosageUnit})</td>
+			<td>最小单位</td>
+			<td>#lookUpDict(${dicData.dicDrugNumUnitDosageUnit} $!{medicine.minMedicineUnit})</td>
+		</tr>
+		<tr>
+			<td>最小包装</td>
+			<td>$!{medicine.minMedicinePack}</td>
+			<td>药房单位</td>
+			<td>#lookUpDict(${dicData.dicDrugNumUnit} $!{medicine.pharmacyUnit})</td>
+			<td>病房单位</td>
+			<td>#lookUpDict(${dicData.dicDrugNumUnit} $!{medicine.wardUnit})</td>
+		</tr>
+		<tr>
+			<td>报告用药</td>
+			<td>#lookUpDict(${dicData.dicReportDrugUseFlag} $!{medicine.reportDrugUseFlag})</td>
+			<td>发药方式</td>
+			<td>#lookUpDict($!{dicData.dicDispensingWay} $!{medicine.doseMode})</td>
+			<td>给药方法</td>
+			<td>#lookUpDict($!{dicData.dicDoseWay} $!{medicine.doseWayCode})</td>
+		</tr>
+		<tr>
+			<td>特殊药品</td>
+			<td>#lookUpDict($!{dicData.dicMedicineRecipeClassify} $!{medicine.medicineRecipeClassify})</td>
+			<td>医保甲乙丙类</td>
+			<td>#lookUpDict($!{dicData.dicMedicineFirstType} $!{medicine.healthInsuranceType})</td>
+			<td>医保用药</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.healthInsuranceFlag})</td>
+		</tr>
+		<tr>
+			<td>农合用药</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.ncmsInsuranceFlag})</td>
+			<td>自费用药</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.selfPayFlag})</td>
+			<td>抗菌药物DDDD值</td>
+			<td>$!{medicine.antibioticDddd}</td>
+		</tr>
+		<tr>
+			<td>抗菌药物DDDs值</td>
+			<td>$!{medicine.antibioticDdds}</td>
+			<td>大型输液标志</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.transfuseFlag})</td>
+			<td>高危药品</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.riskMedicineFlag})</td>
+		</tr>
+		<tr>
+			<td>药品处方分类</td>
+			<td>#lookUpDict($!{dicData.dicMedicineRecipeClassify} $!{medicine.medicineClassify})</td>
+			<td>病房包装</td>
+			<td>$!{medicine.wardPack}</td>
+			<td>病房规格</td>
+			<td>$!{medicine.wardSpec}</td>
+		</tr>
+		<tr>
+			<td>药房规格</td>
+			<td>$!{medicine.pharmacySpec}</td>
+			<td>药房包装</td>
+			<td>$!{medicine.pharmacyPack}</td>
+			<td>是否有效</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.validFlag})</td>
+		</tr>
+		<tr>
+			<td>药品国标码</td>
+			<td>$!{medicine.internationalCode}</td>
+			<td>药物用药类型</td>
+			<td>#lookUpDict($!{dicData.dicDrugTherapyTypeWestern} $!{medicine.drugTherapyType})</td>
+			<td>高存储数量</td>
+			<td>$!{medicine.highStockCount}</td>
+		</tr>
+		<tr>
+			<td>低存储数量</td>
+			<td>$!{medicine.lowStockCount}</td>
+			<td>药房低储</td>
+			<td>$!{medicine.pharmacyLowCount}</td>
+			<td>药房高储</td>
+			<td>$!{medicine.pharmacyHighCount}</td>
+		</tr>
+		<tr>
+			<td>病房低储</td>
+			<td>$!{medicine.wardLowCount}</td>
+			<td>病房高储</td>
+			<td>$!{medicine.wardHighStockCount}</td>
+			<td>长期备案</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.longTermFilingFlag})</td>
+		</tr>
+		<tr>
+			<td>紧急备案</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.urgentFilingFlag})</td>
+			<td>报告科室</td>
+			<td>#lookUpDict($!{dicData.dicSysOrgName} $!{medicine.reportOfficeId})</td>
+			<td>标准零售价</td>
+			<td>$!{medicine.standardRetailPrice}</td>
+		</tr>
+		<tr>
+			<td>国家基本用药目录分类</td>
+			<td>#lookUpDict($!{dicData.dicNationMedicineDirClassify} $!{medicine.nationMedicineDirClassify})</td>
+			<td>国家基本用药目录</td>
+			<td>$!{medicine.nationMedicineDir}</td>
+			<td>账簿分类</td>
+			<td>#lookUpDict($!{dicData.dicAccountBookClassify} $!{medicine.accountBookClassify})</td>
+		</tr>
+		<tr>
+			<td>是否抗菌药物</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.specialMedicineFlag})</td>
+			<td>抗菌药物类型</td>
+			<td>#lookUpDict($!{dicData.dicAntibioticType} $!{medicine.antibioticType})</td>
+			<td>抗生素级别</td>
+			<td>#lookUpDict($!{dicData.dicAntibioticLevel} $!{medicine.antibioticLevel})</td>
+		</tr>
+		<tr>
+			<td>毒麻级别</td>
+			<td>#lookUpDict($!{dicData.dicSpecialMedicineLevel} $!{medicine.specialMedicineLevel})</td>
+			<td>市医保编码</td>
+			<td>$!{medicine.cityInsuranceCode}</td>
+			<td>自付比例</td>
+			<td>$!{medicine.selfPayPercent}</td>
+		</tr>
+		<tr>
+			<td>肿瘤化疗用药</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.tumorMedicineFlag})</td>
+			<td>招标药品</td>
+			<td>#lookUpDict($!{dicData.dicYesNo} $!{medicine.bidFlag})</td>
+			<td>备注</td>
+			<td>$!{medicine.remark}</td>
+		</tr>
+		<tr>
+			<td>记录时间</td>
+			<td>$!date.format('yyyy-MM-dd HH:mm:ss',$!{medicine.recordTime})</td>
+			<td>创建时间</td>
+			<td>$!date.format('yyyy-MM-dd HH:mm:ss',$!{medicine.createTime})</td>
+			<td>最近操作时间</td>
+			<td>$!date.format('yyyy-MM-dd HH:mm:ss',$!{medicine.latestTime})</td>
+		</tr>
+		<tr>
+			<td>最近操作人</td>
+			<td>#lookUpDict(${dicData.dicSysUser} $!medicine.latestUserId)</td>
+			<td>用药嘱咐</td>
+			<td>$!{medicine.medicineUsage}</td>
+		</tr>
+		</tbody>
+	</table>
+</div>
+	#parse("./common/pageJs.vm")
+</body>
+<script type="text/javaScript">
+    layui.use('form', function() {
+        var $ = layui.$, form = layui.form;
+        common.setFormReadOnly($("#medicineForm"));
+    });
+</script>
+</html>

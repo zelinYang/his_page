@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊-检验申请</title>
+    #parse("./common/pageCss.vm")
+    #parse("./outpatient/tech/tech.css.vm")
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <style>
+        .comment {
+            white-space: normal;
+            word-break: break-all;
+            overflow: hidden;
+        }
+        .layui-btn .layui-icon {
+            margin-right: 1px;
+        }
+        #selectedItem .layui-btn {
+            border-radius: 10px;
+            margin: 3px;
+        }
+        #selectedItem span {
+            margin-left: 5px;
+            border-radius: 100%;
+        }
+        .layui-form-item .layui-form-checkbox[lay-skin=primary] {
+             margin-top: 0;
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+</head>
+<body class="tech">
+<div class="layui-col-xs1 layui-col-md1 layui-col-xs1 white-bg full-scroll border-r p-t-xs">
+    <!--  <div id="tree" lay-filter="tree"></div> -->
+    <ul id="treeDemo" class="ztree"></ul>
+</div>
+
+<div class="layui-col-lg8 layui-col-md8 layui-col-xs8 full-height">
+    <div class="layui-row" style="height: 50%;">
+        <!--搜索条件 开始-->
+        <form id="basLisChargeItem_queryForm" class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item search-term">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">名称</label>
+                        <div class="layui-input-inline" >
+                            #formHiddenInput("doctorOrderSubtype" "" " id='doctorOrderSubtype' ")
+                            #formTextInput("keyWord" "" "id='q_keyWord' class='layui-input' autocomplete='off' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询">
+                            <i class="layui-icon layui-icon-search"></i>
+                        </button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i>
+                        </button>
+						<button type="button" id="btn_add" class="layui-btn layui-btn-sm" lay-tips="新增检验">新增检验</button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <table id="basLisChargeItemGrid" lay-filter="basLisChargeItemGrid"></table>
+    </div>
+    <div class="layui-row" style="height: 50%;">
+        <p id="selectedItem" style="min-height: 38px;max-height: 60px;overflow: auto;">
+
+        </p>
+        <form class="layui-form p-t-xs" id="inpatientOrder_editForm">
+            #formHiddenInput("techApplyName" "" " id='techApplyName' ")
+            #formHiddenInput("patientId" "$!{patientId}" "id='patientId'")
+            #formHiddenInput("visitCardNo" "$!{visitCardNo}" "id='visitCardNo'")
+            #formHiddenInput("inhospitalId" "$!{inhospitalId}" "id='inhospitalId'")
+            #formHiddenInput("orderId" "" "id='orderId'")
+            #formHiddenInput("doctorOrderType" "${CONST.AppConstants.ORDER_TYPE_LIS}" "id='doctorOrderType'")
+            #formHiddenInput("makeOrderDoctorId" "" "id='makeOrderDoctorId'")
+            #formHiddenInput("orderOfficeId" "" "id='orderOfficeId'")
+            #formHiddenInput("techExamApplyId" "" "id='techExamApplyId'")
+            #formHiddenInput("orderGroupId" "" "id='orderGroupId'")
+            <!--特殊说明-->
+            #formHiddenInput("remark" "" "id='remark'")
+
+
+            #formHiddenInput("registerId" "$!{registerId}" "id='registerId'")
+            #formHiddenInput("examApplyName" "$!examApplyName" "id='examApplyName'")
+            #formHiddenInput("outpatientTechId" "" "id='outpatientTechId'")
+            <div class="center-top" id="headerBar">
+                <div class="layui-form-item">
+                    <div class="layui-inline m-l-sm">
+                        <div class="layui-input-inline" style="width: auto;">
+                            #formSimpleCheckbox("urgentFlag" "" "" "lay-skin='primary' id='urgentFlag' lay-filter='urgentFlag' title='加急'" "")
+                        </div>
+                    </div>
+##                    <div class="layui-inline">
+##                        <label class="layui-form-label">#requiredTag检验样本</label>
+##                        <div class="layui-input-inline">
+##                            #formSingleSelectFirstNone("bodyPartClassify" "" $!dicData.dicBodyPartClassifyLis
+##                            "id='bodyPartClassify' lay-search='' lay-verify='required' autocomplete='off' class='layui-input'" "请选择样本")
+##                        </div>
+##                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag执行科室</label>
+                        <div class="layui-input-inline">
+                            #formSelectOrgForList("exeOfficeId" "" $!deptList
+                            "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId' lay-search"
+                            "执行科室")
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+            <div class="layui-form-item layui-hide">
+                <input type="button" lay-submit="" lay-filter="btn_save_inpatientOrder" id="btn_save_inpatientOrder" value="保存">
+            </div>
+        </form>
+        <!--附加医嘱-->
+        <!-- 列表表格 begin -->
+        <table id="basChargeItemGrid" lay-filter="basChargeItemGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+
+<div class="layui-col-lg3 layui-col-md3 layui-col-xs3 white-bg full-height-scroll border-r p-t-xs" style="padding: 42px 5px 0px;">
+    <table class="layui-table">
+        <tbody class="outTechList">
+        <tr>
+			<td width="30px">类型</td>
+            <td width="60px">缴费状态</td>
+            <td width="80px">项目名称</td>
+        </tr>
+        <tr class="data-empty">
+            <td colspan="4">无记录</td>
+        </tr>
+        <tr class="tr-tpl layui-hide">
+            <td class="examApplyName"></td>
+            <td class="editApply"><i class="layui-icon layui-icon-edit" title="编辑" lay-event="edit" onclick="editApplay(this)"></i></td>
+            <td class="proName">免疫球蛋白4项，补体2项</td>
+        </tr>
+        </tbody>
+    </table>
+    <table class="table-tpl layui-hide">
+        <tbody>
+        <tr class="tr-tpl">
+            <td class="examApplyName"></td>
+            <td class="payFeeFlag"></td>
+            <td class="proName"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="tool-bottom-fixed">
+    <button class="layui-btn layui-btn-sm" type="button" id="btn_submit"> 保 存</button>
+    <button class="layui-btn layui-btn-sm" type="button" id="btn_save"> 保存并关闭</button>
+    <button class="layui-btn layui-btn-sm" type="button" id="btn_"> 打 印</button>
+    <button class="layui-btn layui-btn-sm" type="button" onclick="winClose()"> 关 闭</button>
+</div>
+
+#parse("./tech/techLisInspectEdit.js.vm")
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<script>
+
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'jquery','table', 'element', 'form', 'util'], function(){
+		var table = layui.table, element = layui.element, $ = layui.$, form = layui.form, util = layui.util;
+		element.render();
+
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 430//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onresize_end: refreshTable
+		});
+		}
+
+		//页面初始化
+		$(function() {
+			initLayout();
+		});
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'));
+			return $.extend({
+				pharmacyId:''
+			}, queryForm);
+		}
+		//组套tabel
+		var mainTable = table.render({
+			elem: '#mainTable'
+			,defaultToolbar: []
+			,url: '../pharmacy/pharmacyPerStockPageData.jo' //数据接口
+			,page: true //开启分页
+			,where: getQueryParams()
+			,height: getTableHeight()//高度
+			,request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			,cols: [[ //表头
+				{type : 'radio' }
+				,{field : 'pharmacyPerStockId',title : '盘点单号'}
+				,{field : 'pharmacyName',title : '药房名称'}
+				,{field : 'perStockTime',title : '盘点日期',templet: function(row){
+						if (row.perStockTime){
+							return util.toDateString(row.perStockTime, 'yyyy-MM-dd');
+						}else{
+							return '';
+						}
+					}
+				}
+				,{field : 'operUserName',title : '操作人'}
+			]], done:function () {
+
+			}
+		});
+
+		//监听行单击事件
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var row = obj.data;
+			var src = '$contextPath/pharmacy/pharmacyPerStockItemList.do?pharmacyPerStockId=' + obj.data.pharmacyPerStockId;
+			$('#itemEdit').attr('src',src);
+		});
+
+		function getTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		function refreshTable() {
+			table.reload('mainTable',{
+				where: getQueryParams()
+			})
+		}
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+		// 新增按钮
+		$('#btn_add').click(function () {
+			layer.open({
+				type: 2
+				, title: '新增盘点'
+				, content: '../pharmacy/pharmacyPerStockEdit.do'
+				, area: ['420px', '500px']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						console.log(field);
+						common.requestServer('$contextPath/pharmacy/generatePharmacyPerStockAndItem.jo', field, function (result) {
+							layer.close(index); //关闭弹层
+							if (result.code === "0") {
+								common.msg("保存成功!", 1, function () {
+									table.reload('mainTable'); //数据刷新
+								});
+							} else {
+								common.alert(result.msg, 0);
+							}
+						});
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		})
+	});
+</script>

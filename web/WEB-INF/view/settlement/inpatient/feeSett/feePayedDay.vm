@@ -1,0 +1,148 @@
+	<!DOCTYPE html>
+<html>
+<head>
+    <title>缴款处理页面</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style type="text/css">
+      .payInFeeTab tr td{ height: 40px;line-height: 40px;padding: 0px;}
+      .payInFeeTab tr td input{ height: 100%;border: none;}
+      .payInFeeTab tr td input:hover,.payInFeeTab tr td input:focus{ border:1px solid medium ; background-color: #f5f6f7;}
+      .inSettNav{ height: calc(100% - 3px);margin-top: 0;}
+    </style>
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container">
+			<div class="layui-form ui-layout-center" style="height:100%;float: left;width: 50%; overflow-y: hidden;">
+				<div class="layui-tab full-height m-t-xs ">
+					<ul class="layui-tab-title btn m-b-sm">
+						<li tab="payHandle" class="layui-this" >缴款明细</li>
+						<li tab="payInRecord" class="visitOffice">结算明细</li>
+					</ul>
+
+					<div class="layui-tab-content" style="height:100%;padding: 0;">
+						<div tab="payHandle" class="layui-tab-item full-height layui-show">
+							<iframe src="$!contextPath/inpatient/prepayInAmountDetail.do" #iframeAttr></iframe>
+						</div>
+						<div tab="payInRecord" class="layui-tab-item full-height ">
+							<iframe src="$!contextPath/inpatient/feeAmountDetail.do" #iframeAttr></iframe>
+						</div>
+					</div>
+					<form id="reg_patient_EditForm">
+						#formHiddenInput("inhospitalId" "" "id='inhospitalIdjo'")
+					</form>
+				</div>
+			</div>
+
+			<!-- 添加预交收费 -->
+			<div class="ui-layout-east full-height" style="float: left;width: 50%;" >
+				<div class="layui-card m-n">
+					<div class="layui-card-header print">
+						<h5 class="text-center" style="font-weight: 700;font-size: 18px;color: #000;">票据详细(不包含作废)
+							<span id="dayTitle"></span>
+						</h5>
+					</div>
+				</div>
+				<div class="layui-card-body text-center" >
+					<!-- 数据表格 -->
+					<table class="layui-table payInFeeTab m-n" >
+						<colgroup>
+							<col data-index="1" width="16%">
+							<col data-index="2" width="16%">
+							<col data-index="3" width="16%">
+							<col data-index="4" width="16%">
+							<col data-index="5" width="16%">
+							<col data-index="6" width="16%">
+							<col>
+						</colgroup>
+						<!-- 票据结算表 -->
+						<tbody class="tbody-data" >
+						<tr>
+							<td colspan="6">
+								<div style="font-size:16px;">**医院票据详细</div>
+							</td>
+						</tr>
+						<tr>
+							<td>合计张数</td>
+							<td>
+								<div id="number"></div>
+							</td>
+							<td>作废张数</td>
+							<td>
+								<div id="unValidLength"></div>
+							</td>
+							<td>有效张数</td>
+							<td>
+								<div id="validLength"></div>
+							</td>
+						</tr>
+						<tr>
+							<td>收入金额</td>
+							<td>
+								<div id="prepayInAmounts"></div>
+							</td>
+							<td>网银收入</td>
+							<td>
+								<div id="unCashPayInAmounts"></div>
+							</td>
+							<td>现金收入</td>
+							<td>
+								<div id="cashPayInAmounts"></div>
+							</td>
+						</tr>
+						<tr>
+							<td>人民币大写</td>
+							<td colspan="5">
+								<div id="rmblarge" align="left" style="margin-left:10px;"></div>
+							</td>
+						</tr>
+						</tbody>
+						<!-- 票据结算表 -->
+					</table>
+					<table class="layui-table fee m-n">
+						<colgroup>
+							<col data-index="1" width="32%">
+							<col data-index="2" width="32%">
+							<col data-index="3" width="32%">
+							<col>
+						</colgroup>
+						<thead>
+						<tr>
+							<th data-index="1">费用名称</th>
+							<th data-index="2">费用金额</th>
+							<th data-index="3">自付金额</th>
+						</tr>
+						</thead>
+					</table>
+					<table class="layui-table fee m-n">
+						<colgroup>
+							<col data-index="1" width="32%">
+							<col data-index="2" width="32%">
+							<col data-index="3" width="32%">
+							<col>
+						</colgroup>
+						<tbody class="tbody-data" id="FeeItemTal" align="left">
+						<!-- 收费项目 -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<script type="text/html" id="toolbarDemo">
+				<div class="layui-btn-container">
+					<button class="layui-btn layui-btn-sm" lay-event="toolbarvalid">作废</button>
+				</div>
+			</script>
+			#parse("./settlement/inpatient/feeSett/feePayedDay.js.vm") <!-- 页面js -->
+
+	</div>
+</div>
+
+
+</body>
+</html>

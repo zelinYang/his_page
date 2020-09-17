@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+
+
+        .layui-form {
+            overflow-x: auto;
+            height: 100%;
+        }
+
+        /*用于校验表单错误的样式 */
+        .input-error {
+            outline: #FF5722 solid 1px;
+        }
+
+        /*疾病名称搜索居右*/
+        dl.layui-anim.layui-anim-upbit {
+            text-align: left;
+        }
+        .layui-table th { padding: 0;}
+        .layui-table td { padding: 3px 10px;}
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid ">
+        <div class="layui-row full-height-scroll layui-bg-white" style="height: calc(100% - 40px);">
+            <form class="layui-form" action="">
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                <table class="layui-table custom-table" table-eidt>
+                    <colgroup>
+                        <col width="30">
+                        <col width="120">
+                        <col width="100">
+                        <col >
+                        <col width="120">
+                        <col >
+                        <col width="100">
+                        <col width="60">
+                        <col width="80">
+                        <col width="80">
+						<col width="100">
+						<col width="60">
+                        <col width="100">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                    #*<th ></th>*#
+                        <th >
+                            <i id="btn_add_tr" class="layui-icon layui-icon-add-1 btn-img-green" title="新增"></i>
+                        </th>
+                        <th >#requiredTag()诊断类别</th>
+                        <th data-index="3">#requiredTag()西医/中医</th>
+                        <th >疾病名称</th>
+                        <th>ICD</th>
+                        <th >描述性诊断</th>
+                        <th>病情转归</th>
+                        <th>初诊病例</th>
+                        <th>是否传染病</th>
+                        <th>是否慢性病</th>
+						<th>是否入临床路径</th>
+						<th>入径</th>
+                        <th width="90px" nowrap>操作</th>
+
+                    </tr>
+                    </thead>
+                    <tbody id="diagnosisEnterList">
+                        #foreach($opt in $!diagnosiList)
+                        <tr >
+                            <td>
+                                #formHiddenInput("inpatientDiagnosisId" "$!opt.inpatientDiagnosisId" "")
+                                #formHiddenInput("clinicNotInPathReason" "$!opt.clinicNotInPathReason" "")
+                                #formHiddenInput("infectiousFlag" "0" "")
+                                #formHiddenInput("chronicFlag" "0" "")
+                                <input type="hidden" name="hid-items" item-type="$!opt.diagnosisClassify"
+                                       item-name="#htmlEscape($!opt.diseaseName)">
+                                <input type="checkbox" lay-skin="primary">
+                            </td>
+                            <td>
+                                <!-- 诊断类别 -->
+                                #if("$!opt.diagnosisClassify" == "")
+                                    #set($diagnosisClassify = "$!defDiagnosis")
+                                #else
+                                    #set($diagnosisClassify = "$!opt.diagnosisClassify")
+                                #end
+                                #formSingleSelectFirstNone(
+                                    "diagnosisClassify" "$!diagnosisClassify" $dicData.dicDiagnosisClassify
+                                    "class='layui-input' ", "")
+                            </td>
+                            <td>
+                                <!-- 中西医诊断 -->
+                                ##formTextInput("diseaseTypeFlagName" "#lookUpDict(${dicData.dicDiseaseTypeFlag} $!opt.diseaseTypeFlag)" "class='layui-input' readonly")
+                                ##formHiddenInput("diseaseTypeFlag" "$!{opt.diseaseTypeFlag}" "")
+                                #formSingleSelectFirstNone("diseaseTypeFlag" "$!opt.diseaseTypeFlag" $dicData.dicDiseaseTypeFlag "class='layui-input' lay-filter='diseaseTypeFlag' " "")
+                            </td>
+                            <td>
+                                <!-- 疾病标准名称 -->
+                                #formHiddenInput("diseaseId" "$!opt.diseaseId" "")
+                                #formHiddenInput("infectiousFlag" "$!opt.infectiousFlag" "")
+                                #formHiddenInput("chronicFlag" "$!opt.chronicFlag" "")
+                                #formTextInput(
+                                    "diseaseName" "#htmlEscape($!opt.diseaseName)" "class='layui-input' maxlength='25'")
+                            </td>
+                            <td>
+                                <!-- 疾病ICD -->
+                                #formTextInput("diseaseIcdTcd" "#htmlEscape($!opt.diseaseIcdTcd)"
+                                "class='layui-input' maxlength='50' readonly")
+                            </td>
+                            <td>
+                                <!-- 描述性诊断 -->
+                                #formTextInput("diseaseDiagnosisDesc" "#htmlEscape($!opt.diseaseDiagnosisDesc)"
+                                    "class='layui-input' maxlength='50'")
+                            </td>
+                            <td>
+                                <!-- 转归 -->
+                                #if("$!opt.inpatientState" == "") #set($inpatientState =
+                                "") #else #set($inpatientState = "$!opt.inpatientState") #end
+                                #formSingleSelectFirstNone(
+                                "inpatientState" "$!inpatientState" $dicData.dicPrognosis "class='layui-input' " "")
+                            </td>
+                            <td class="text-center">
+                                <input type="checkbox" name="firstDiagnosisFlag" lay-filter='firstDiagnosisFlag' lay-skin="primary"
+                                       #if($!opt.firstDiagnosisFlag =='1' ) checked="checked"  value="1" #else value="0" #end  >
+                            </td>
+                            <td><span style="color: red;" name="infectiousFlag">#if($!opt.infectiousFlag == '1')是#end</span></td>
+                            <td><span style="color: red;" name="chronicFlag">#if($!opt.chronicFlag == '1')是#end</span></td>
+							<td>
+                                #formHiddenInput("clinicInPathFlag" "$!opt.clinicInPathFlag" "")
+								<input type="text" #if("$!opt.clinicInPathFlag" == "1") value="是" #elseif("$!opt.clinicInPathFlag" == "0") value="否" #end readonly >
+							</td>
+							<td nowrap >
+								<i lay-tips="临床路径" class="layui-icon layui-icon-template" onclick="inClinic(this)" ></i>
+							</td>
+                            <td nowrap >
+                                <i lay-tips="上移" class="layui-icon layui-icon-triangle-d" style="transform: rotate(180deg);display: inline-block;" data-vertical="up" onclick="moveTr(this)"></i>
+                                <i lay-tips="下移" class="layui-icon layui-icon-triangle-d" data-vertical="down" onclick="moveTr(this)"></i>
+                                <i lay-tips="删除" class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="deleteTr(this)" ></i>
+                            </td>
+                        </tr>
+                        #end
+                    </tbody>
+                </table>
+            </form>
+        </div>
+        <div class="tool-bottom-fixed">
+            <button class="layui-btn layui-btn-sm " lay-submit lay-filter="btn_save" id="btn_save" type="button"
+                    operate-type="0"> 保 存
+            </button>
+            <button class="layui-btn layui-btn-sm layui-hide" id="btn_import" type="button" operate-type="0"> 导入诊断</button>
+        </div>
+    </div>
+</div>
+</body>
+#parse("./inpatient/diagnosis/diagnosisEnter.js.vm")
+</html>

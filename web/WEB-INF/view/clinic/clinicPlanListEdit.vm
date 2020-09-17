@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>临床诊疗计划</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<link rel="stylesheet" href="../resource/layuiadmin/layui/css/layui.css" media="all">
+
+##<script src="../resource/layuiadmin/layui/layui.js"></script>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+<script src="../resource/layuiadmin/modules/tableSelect.js?v=4" ></script>
+
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card">
+            <div class="layui-card-header">临床诊疗计划</div>
+            <div class="layui-card-body">
+                <!-- 列表表格 工具栏-->
+#*
+                <!--搜索条件 开始-->
+                <form class="layui-form" id="clinicPlanQueryForm">
+                    <div class="layui-form-item m-b-n" >
+                        <div class="layui-inline">
+                            <label class="layui-form-label">项目类别</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelect("activityProperty" "" ${$dicData.dicActivityProperty} " class='form-control' style='border:1;'  " "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: 80px;">创建日期</label>
+                            <div class="layui-input-inline" style="width: 180px;">
+                                #formTextInput("" "" "id='createTime' tag='createTimeBegin,createTimeEnd' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline" style="margin-right: 0px">
+                         <div class="layui-btn-group">
+                            <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                <i class="layui-icon layui-icon-search "></i>
+                            </button>
+                            <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_reset" style="margin-left: auto;">
+                                <i class="layui-icon layui-icon-refresh"></i>
+                            </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+*#
+                 <!--列表 begin-->
+                <div class="layui-row">
+                    <div class="layui-col-md10" >
+                        <div class="layui-card">
+                            ##<button class="layui-btn layuiadmin-btn-tags" id="btn_save">保&nbsp;存</button>
+                        </div>
+                    </div>
+                    <div class="layui-col-md2">
+                    </div>
+                </div>
+                <div class="layui-row">
+                    ################################### 表格开始 ######################################
+                    <div class="main-content full-height table-width-full" style="overflow-x: scroll;">
+                    <form id="clinicPlanListForm" class="layui-form full-height" >
+                    <table class="layui-table recipe" id="clinicPlanTable" border="1" style="width: 100%;">
+                        <colgroup>
+                            ##<col width="20">
+                            <col width="3%">
+                            <col data-index="1" width="8%">
+                            <col data-index="2" width="20%">
+                            <col data-index="3" width="8%">
+                            <col data-index="4" width="7%">
+                            <col data-index="5" width="8%">
+                            <col data-index="6" width="7%">
+                            <col data-index="7" width="8%">
+                            <col data-index="8" width="8%">
+                            <col data-index="9" width="8%">
+                            <col data-index="10" width="8%">
+                            <col data-index="11" width="10%">
+                            <col>
+                        </colgroup>
+                        <thead>
+                            <tr>
+                                ##<th><!-- <input type="checkbox" name="checkAll" id='checkAll' lay-filter='checkAll' lay-skin="primary" > --></th>
+                                <th><i id="btn_add" class="layui-icon layui-icon-add-1 icon-btn btn_add_tr"  ></i></th>
+                                <th data-index="1">类别</th>##activityProperty
+                                <th data-index="2">病历模板</th>##emrTlpName电子病历模板名称
+##                                <th data-index="3">入院首日填</th>##firstDayFlag入院首日填
+##                                <th data-index="4">填写时间</th>##hospitalStayDay#当天填写时间点
+##                                <th data-index="5">入院填写日</th>##recordDay入院填写日，入院第几天填写
+                                <th data-index="6">手术填写</th>##surgeryDay
+                                <th data-index="7">术前填写</th>##beforeDay 在手术提前第几天填写
+                                <th data-index="8">术后填写</th>##afterDay 术后几天填写 
+                                <th data-index="9">每天填写</th>##everydayRecordFlag
+                                <th data-index="10">检验填写</th>##lisDay 
+                                <th data-index="11">检查填写</th>##pacsDay
+                            </tr> 
+                        </thead>
+                        <tbody class="tbody-data" >
+                            <!-- 显示行 foreach 循环-->
+                            ##changePage($page "../systemdata/systemDataQuery.do")
+                            #foreach($clinicPlan in ${page.data})
+                                <tr>
+                                    ##<td><input type="checkbox" name="isCheck" lay-skin="primary" > </td>
+                                   <td style="padding-left: 15px;">
+                                       <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeBtnTableRow(this)" ></i>
+                                   </td>
+                                   <td data-index="1" style="width: 200px; ">
+                                       #formHiddenInput("clinicPlanId" "$!{clinicPlan.clinicPlanId}" "")
+##                                       #formHiddenInput("hospitalStayDay" "$!{clinicPlan.hospitalId}" "")
+                                       #formHiddenInput("createTime" "$!{clinicPlan.createTime}" "")
+                                       #formHiddenInput("createUserId" "$!{clinicPlan.createUserId}" "")
+                                       #formHiddenInput("onDutyType" "$!{clinicPlan.onDutyType}" "")
+                                       #formHiddenInput("emrTlpId" "$!{clinicPlan.emrTlpId}" "")
+                                       #formSingleSelect("activityProperty" "$!{clinicPlan.activityProperty}" ${dicData.dicActivityProperty} " class='form-control' style='border:0;'  " "")
+                                   </td>
+                                   <td data-index="2">
+                                       #formTextInput("emrTlpName" "$!{clinicPlan.emrTlpName}" "class='layui-input emrTlp-input' readonly")
+                                   </td>
+##                                   <td data-index="3">##是否入院第一天填写
+##                                       <input type="checkbox" name="firstDayFlag" value="${clinicPlan.firstDayFlag}" lay-skin="switch" lay-text="是|否" lay-filter="firstDayFlag"  #if(${clinicPlan.firstDayFlag} == "1") checked #end >
+##                                   </td>
+##                                   <td data-index="4">##当天填写时间点
+##                                       #formIntInput("hospitalStayDay" "$!{clinicPlan.hospitalStayDay}" "maxlength='3' class='layui-input'")
+##                                   </td>
+##                                   <td data-index="5">##入院填写日
+##                                       #formIntInput("recordDay" "$!{clinicPlan.recordDay}" "maxlength='3' class='layui-input'")
+##                                   </td>
+                                   <td data-index="6">##是否手术填写
+                                       <input type="checkbox" name="surgeryDay" value="${clinicPlan.surgeryDay}" lay-skin="switch" lay-text="是|否" lay-filter="surgeryDay"  #if(${clinicPlan.surgeryDay} == "1") checked #end >
+                                   </td>
+                                   <td data-index="7">##术前填写
+                                       #formIntInput("beforeDay" "$!{clinicPlan.beforeDay}" "maxlength='3' class='layui-input'")
+                                   </td>
+                                   <td data-index="8">##术后几天填写 
+                                       #formIntInput("afterDay" "$!{clinicPlan.afterDay}" "maxlength='3' class='layui-input'")
+                                   </td>
+                                   <td data-index="9">##是否每天填写
+                                       <input type="checkbox" name="everydayRecordFlag" value="${clinicPlan.everydayRecordFlag}" lay-skin="switch" lay-text="是|否" lay-filter="everydayRecordFlag"  #if(${clinicPlan.everydayRecordFlag} == "1") checked #end >
+                                   </td>
+                                   <td data-index="10">##是否检验填写
+                                       <input type="checkbox" name="lisDay" value="${clinicPlan.lisDay}" lay-skin="switch" lay-text="是|否" lay-filter="lisDay"  #if(${clinicPlan.lisDay} == "1") checked #end >
+                                   </td>
+                                   <td data-index="11">##是否检查填写
+                                       <input type="checkbox" name="pacsDay" value="${clinicPlan.pacsDay}" lay-skin="switch" lay-text="是|否" lay-filter="pacsDay"  #if(${clinicPlan.pacsDay} == "1") checked #end >
+                                   </td>
+                              </tr>
+                              #end
+                        </tbody>
+                    </table>
+                    </form>
+                    </div><!--  列表表格 end -->
+
+                    <div class="tool-bottom-fixed">
+                        <button type="button" id="btn_save" lay-submit lay-filter="btn_save" id="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+                    </div>
+
+                    <div class="layui-hide"><!-- 表格模板 -->
+                        <table class="rowTpl">
+                            <tbody>
+                                <!-- tpl_row 模板行 数据 -->
+                                <tr class="tplRow trRow">
+                                    ##<td><input type="checkbox" name="isCheck" lay-skin="primary" > </td>
+                                    <td style="padding-left: 15px;">
+                                        <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeBtnTableRow(this)" ></i>
+                                    </td>
+                                    <td data-index="1" style="width: 200px; ">
+                                        #formHiddenInput("clinicPlanId" "" "")
+##                                        #formHiddenInput("hospitalStayDay" "" "")
+                                        #formHiddenInput("createTime" "" "")
+                                        #formHiddenInput("createUserId" "" "")
+                                        #formHiddenInput("emrTlpId" "" "")
+                                        #formSingleSelect("activityProperty" "" ${dicData.dicActivityProperty} " class='form-control' style='border:0;'  " "")
+                                    </td>
+                                    <td data-index="2">
+                                         #formTextInput("emrTlpName" "" "class='layui-input emrTlp-input' ")
+                                    </td>
+##                                    <td data-index="3">##是否入院第一天填写
+##                                        <input type="checkbox" name="firstDayFlag" value="0" lay-skin="switch" lay-text="是|否" lay-filter="firstDayFlag"  #if(${clinicPlan.firstDayFlag} == "1") checked #end >
+##                                    </td>
+##                                    <td data-index="4">##当天填写时间点
+##                                         #formIntInput("hospitalStayDay" "" "maxlength='3' class='layui-input'")
+##                                    </td>
+##                                    <td data-index="5">##入院填写日
+##                                         #formIntInput("recordDay" "" "maxlength='3' class='layui-input'")
+##                                    </td>
+                                    <td data-index="6">##是否手术填写
+                                         <input type="checkbox" name="surgeryDay" value="0" lay-skin="switch" lay-text="是|否" lay-filter="surgeryDay"  #if(${clinicPlan.surgeryDay} == "1") checked #end >
+                                    </td>
+                                    <td data-index="7">##术前填写
+                                        #formIntInput("beforeDay" "" "maxlength='3' class='layui-input'")
+                                    </td>
+                                    <td data-index="8">##当天填写时间点
+                                        #formIntInput("afterDay" "" "maxlength='3' class='layui-input'")
+                                    </td>
+                                    <td data-index="9">##是否每天填写
+                                        <input type="checkbox" name="everydayRecordFlag" value="0" lay-skin="switch" lay-text="是|否" lay-filter="everydayRecordFlag"  #if(${clinicPlan.everydayRecordFlag} == "1") checked #end >
+                                    </td>
+                                    <td data-index="10">##是否检验填写
+                                        <input type="checkbox" name="lisDay" value="0" lay-skin="switch" lay-text="是|否" lay-filter="lisDay"  #if(${clinicPlan.lisDay} == "1") checked #end >
+                                    </td>
+                                    <td data-index="11">##是否检查填写
+                                        <input type="checkbox" name="pacsDay" value="0" lay-skin="switch" lay-text="是|否" lay-filter="pacsDay"  #if(${clinicPlan.pacsDay} == "1") checked #end >
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table><!--table 模板  -->
+                    </div><!-- 表格模板 -->
+
+            </div><!-- layui-card-body -->
+        </div><!-- layui-card -->
+    </div><!-- layui-fluid -->
+    <!-- 本页面js -->
+    #parse("./pathway/clinicPlanListEdit.js.vm")
+</body>
+</html>

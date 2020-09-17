@@ -1,0 +1,192 @@
+<script>
+  var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)')
+  var dicDoctorNurseFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorNurseFlag)')
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'tree', 'form', 'table', 'laytpl'], function () {
+      var $ = layui.$, tree = layui.tree, form = layui.form, table = layui.table, laytpl = layui.laytpl
+
+      //初始化病区树
+      function initTree () {
+        common.requestServer(contextPath + '/emr/getWardDepTree.jo', function (result) {
+          if (result.code == '0') {
+            loadTree(result.data)
+          } else {
+            common.alert(result.msg, 2)
+          }
+        })
+      }
+
+      //执行初始化
+      //initTree()
+
+      //加载 病区树
+      function loadTree (data) {
+        var wardAdnOfficeTree = tree.render({
+          elem: '#wardAdnOfficeTree' //默认是点击节点可进行收缩
+          , data: data
+          , showCheckbox: true  //是否显示复选框
+          , showLine: false  //是否开启连接线
+          , oncheck: function (obj) {
+            var wardIds = []
+            var inpatientWardOfficeIds = []
+            $.each(wardAdnOfficeTree.getChecked(), function (index, item) {//获得被勾选的节点
+              var wardId = item[1].split('wardId_')[1]
+              var inpatientWardOfficeId = item[1].split('inpatientWardOfficeId_')[1]
+              wardId && wardIds.push(+wardId)
+              inpatientWardOfficeId && inpatientWardOfficeIds.push(+inpatientWardOfficeId)
+            })
+            //重载表格
+            table.reload('emrTlpClassifyListGrid', {
+              where: {
+                wardIds: wardIds.join(','), inpatientWardOfficeIds: inpatientWardOfficeIds.join(',')
+              }
+            })
+          }
+        })
+      }
+
+      // 新增按钮
+      $('#btn_add').click(function () {
+        common.open('$contextPath' + '/emr/emrTlpClassifyEdit.do', '电子病历分类', {
+          area: ['1000px', '500px']
+        })
+      })
+
+      // 查询按钮
+      $('#btn_query').click(function () {
+        var queryParams = getQueryParams()
+        //执行重载
+        table.reload('emrTlpClassifyListGrid', {
+          where: queryParams
+        })
+      })
+
+      // 清空按钮
+      $('#btn_clean').click(function () {
+        common.cleanForm('emrTlpClassify_queryForm')
+      })
+
+      //电子病历分类列表
+      table.render($.extend(basePageTable, {
+        elem: '#emrTlpClassifyListGrid',
+        height: getTableHgt(),
+        url: contextPath + '/emr/emrTlpClassifyListData.jo',
+        where: getQueryParams(),
+        cols: [[{
+          type: 'numbers'
+        }, {
+          field: 'emrTlpClassifyName',
+          title: '模板分类名称'
+        }, {
+          field: 'emrTreeCode',
+          title: '树形排序'
+        }, {
+          field: 'doctorNurseFlag',
+          title: '医护类型', templet: function (row) {
+            return dicDoctorNurseFlag[row.doctorNurseFlag] || ''
+          }
+        }, {
+          field: 'emrTlpClassifyType',
+          title: '分类属性',
+          width: 100,
+          templet: function (row) {
+            return dicBelongSysType[row.emrTlpClassifyType] || ''
+          }
+        }, {
+          field: 'classifyOfficeIdStr',
+          title: '关联医生科室',
+          width: 120
+        }, {
+          field: 'createTimeLimit',
+          title: ' 填写时限'
+        }, {
+          field: 'remark',
+          title: '注释'
+        }, {
+          field: 'validFlag',
+          title: '是否有效',
+          templet: '#validFlagTpl',
+          width: 100,
+          unresize: true,
+          align: 'center',
+          fixed: 'right'
+        }, {
+          title: '操作',
+          width: 80,
+          align: 'center',
+          fixed: 'right',
+          toolbar: '#operatebar'
+        }]]
+      }))
+
+      //操作栏操作按钮的事件
+      table.on('tool(emrTlpClassifyListGrid)', function (obj) {
+        var row = obj.data
+        switch (obj.event) {
+          case 'btn_edit':
+            common.open('$contextPath' + '/emr/emrTlpClassifyEdit.do?emrTlpClassifyId=' + row.emrTlpClassifyId, '电子病历分类', {
+              area: ['1000px', '500px']
+            })
+            break
+          case 'btn_delete':
+            common.confirm('确定要删除吗？', function () {
+              common.requestServer('$contextPath' + '/emr/delEmrTlpClassify.jo', {
+                ids: row.emrTlpClassifyId
+              }, function (result) {
+                if (result.code == '0') {
+                  $('#btn_query').click()
+                } else {
+                  common.alert(result.msg, 0)
+                }
+              })
+            })
+            break
+        }
+      })
+
+      //表格单击事件 详情
+      table.on('row(emrTlpClassifyListGrid)', function (obj) {
+        var row = obj.data
+        common.open('$contextPath' + '/emr/emrTlpClassifyShow.do?emrTlpClassifyId=' + row.emrTlpClassifyId, '电子病历分类详情', {
+          area: ['1000px', '500px']
+        })
+      })
+
+      //监听是否有无效事件
+      form.on('switch(validFlag)', function (obj) {
+        common.requestServer('../emr/emrTlpClassifyUpdateValidFlag.jo', {
+          emrTlpClassifyIds: obj.value,
+          validFlag: Number(obj.elem.checked)
+        }, function (result) {
+          common.responseAtcion(result)
+          $('#btn_query').click()
+        })
+      })
+
+      // 获取查询表单参数对象
+      function getQueryParams () {
+        return $.extend({
+          emrTlpClassifyName: '',
+          doctorNurseFlags: '',
+          emrTlpClassifyTypes: ''
+        }, common.serializeObject($('#emrTlpClassify_queryForm')))
+      }
+
+      // 获取表格高度
+      function getTableHgt () {
+        return ($('body').height() - $('#emrTlpClassify_queryForm').height() - 20)
+      }
+
+      // 重置表格高度
+      $(window).resize(function () {
+        var height = getTableHgt()
+        table.reload('emrTlpClassifyListGrid', {
+          height: height
+        })
+      })
+    }
+  )
+</script>

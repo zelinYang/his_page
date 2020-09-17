@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+</head>
+<body class="">
+    <div class="layui-row white-bg p-xs">
+        <form id="queryForm" class="layui-form">
+            #formHiddenInput("inhospitalState" "0" "")
+            <div class="layui-form-item search-term">
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">住院号码</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("inhospitalNo" "" "id='inhospitalNo' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">床号</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("currentBedNo" "" "id='currentBedNo' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("patientName" "" "id='patientName' class='layui-input'")
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <!-- 按钮 -->
+    <div class="layui-row white-bg m-t-xs p-t-xs p-b-xs p-l-sm p-r-sm">
+        <div class="layui-col-xs6 text-left">
+            <button class="layui-btn layui-btn-sm" id="btn_next" type="button"> 导  入  </button>
+        </div>
+        <div class="layui-col-xs6 text-right">
+            <button class="layui-btn layui-btn-sm" type="button" id="btn_refresh"> 刷 新 </button>
+        </div>
+    </div>
+    <!-- 列表 -->
+    <div class="layui-row white-bg full-height" style="height: calc(100% - 68px);">
+        <table class="layui-hide" id="wizardList" lay-filter="wizardList"></table>
+    </div>
+</body>
+<!-- 全局js -->
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+layui.use('table', function(){
+    var table = layui.table;
+    var tableList = table.render($.extend(basePageTable, {
+        url:'', 
+        id: 'wizardList',
+        elem: '#wizardList', 
+        height: 'full-85',
+        cols: [[
+                {type:'radio'}, 
+                {
+                    field:'inhospitalNo', 
+                    width:180, 
+                    title: '住院号码'
+                }, {
+                    field:'currentBedNo', 
+                    width:180, 
+                    title: '床号'
+                }, {
+                    field:'patientName', 
+                    width:180, 
+                    title: '姓名'
+                }, {
+                    field:'patientSex', 
+                    width:100, 
+                    title: '性别', 
+                    templet :function (row) { if (row.patientSex) return dicSex[row.patientSex]; }
+                }, {
+                    field:'age', 
+                    width:100, 
+                    title: '年龄'
+                }, {
+                    field:'recordDate', 
+                    width:190, 
+                    title: '登记时间',
+                    templet :function (row) { if (row.recordDate) return getSmpFormatDateByLong(row.recordDate, 'yyyy-MM-dd hh:mm'); }
+                }, {
+                    field:'managerDoctorName', 
+                    title: '主管医生'
+                }
+         ]], 
+    }));
+
+    var requestUrl = contextPath + "/inpatient/inpatientWizardInfoEdit.do?defDiagnosis=2&inhospitalId=";
+    // 监听查询条件输入值变化
+    $('#inhospitalNo, #currentBedNo, #patientName').bind('input propertychange', function() {
+        query();
+    });
+
+    //监听行单击事件
+    table.on('row(wizardList)', function(obj){
+        var row = obj.data;
+        if (!row.inhospitalId){return ;}
+        window.location.href = requestUrl + row.inhospitalId;
+    });
+
+    // 导入
+    $('#btn_next').click(function (){
+        var checkStatus = table.checkStatus('wizardList');
+        if (!checkStatus.data || !checkStatus.data[0].inhospitalId) {
+            common.alert('请选择入院患者', 0);
+            return ;
+        }
+        window.location.href = requestUrl + checkStatus.data[0].inhospitalId;
+    });
+
+    // 刷新
+    $('#btn_refresh').click(function (){
+        tableList.reload({url: '../inpatient/inpatientInhospitalRegisterJsonPage.jo', page: {curr: 1}});
+    });
+    
+    // 查询函数
+    function query() {
+        var queryParams = common.serializeObject($('#queryForm'));
+        tableList.reload({url: '../inpatient/inpatientInhospitalRegisterJsonPage.jo', page: {curr: 1}, where: queryParams});
+    }
+
+    //页面初始化加载数据
+    query();
+});
+</script>
+</html>

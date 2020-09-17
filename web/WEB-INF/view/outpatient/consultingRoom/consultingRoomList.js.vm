@@ -1,0 +1,173 @@
+<script>
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'xmSelect', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+        // 门诊科室
+        var depIds = xmSelect.render({
+            el: '#depIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'depIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../outpatient/arrangeDutyOfficePageData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.arrangeDutyOfficeName, value: item.arrangeDutyOfficeId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                depIds: '',
+                roomName: '',
+                roomTel: '',
+                roomLocation: '',
+                roomPayFlag: ''
+            }, common.serializeObject($('#consultingRoom_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('consultingRoomListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('consultingRoom_queryForm');
+            depIds.setValue([]);
+        })
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/outpatient/consultingRoomEdit.do', '新增诊室', {
+                area: ['80%', '80%']
+            })
+        })
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#consultingRoomListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/outpatient/consultingRoomListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'depId', title: '科室', templet: function (d) {
+                        return dicSysOrgName[d.depId] || d.depId
+                    }
+                }, {
+                    field: 'roomName',
+                    title: '诊室名称'
+                }
+                , {
+                    field: 'roomTel',
+                    title: '诊室电话',
+                    width: 100
+                }
+                , {
+                    field: 'roomLocation',
+                    title: '诊室地址'
+                }
+                , {
+                    field: 'roomDescription',
+                    title: '诊室描述'
+                }
+                , {
+                    field: 'roomDeviceCode',
+                    title: '设备绑定码',
+                    width: 100
+                }
+                , {
+                    field: 'roomPayFlag',
+                    title: '按诊室设置收费',
+                    width: 100,
+                    templet: function (d) {
+                        return dicYesNo[d.roomPayFlag] || '';
+                    }
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }]],
+            done: function () {
+                autoSetHeigt()
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#consultingRoom_queryForm').height() - 13)
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../outpatient/consultingRoomUpdateValidFlag.jo', {
+                depIds: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(consultingRoomListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/outpatient/consultingRoomShow.do?consultingRoomId=' + row.consultingRoomId, '诊室表详情', {
+                        area: ['80%', '80%']
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/outpatient/consultingRoomEdit.do?consultingRoomId=' + row.consultingRoomId, '诊室表', {
+                        area: ['80%', '80%']
+                    })
+                    break
+            }
+        });
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('consultingRoomListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>

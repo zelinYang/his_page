@@ -1,0 +1,140 @@
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN = "$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN}";
+    var MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE = '$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE}';
+    var basDoctorOrderRoles = JSON.parse('$AppTools.toJSONString($!{basDoctorOrderRoles})');
+    var dicAntibioticLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticLevel)');
+    var dicSpecialMedicineLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicineLevel)');
+    var dicSpecialMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicine)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect, laytpl = layui.laytpl
+        common.verify(form)
+
+        //加载特殊药品和级别
+        function loadMedicineRecipeClassify(basDoctorOrderRoles) {
+            $(".medicineRecipeClassify").html(laytpl($('#specialMedicineTpl').html()).render({}));
+            $($.map(basDoctorOrderRoles ? basDoctorOrderRoles : [], function (basDoctorOrderRole) {
+                if (basDoctorOrderRole.validFlag != YES_FLAG) return;
+                var strs = [':checkbox[name="medicineRecipeClassify"][value="' + basDoctorOrderRole.medicineRecipeClassify + '"]'];
+                if (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == basDoctorOrderRole.medicineRecipeClassify) {
+                    //抗菌级别
+                    strs.push(':radio[name="antibioticGen"][value="' + basDoctorOrderRole.antibioticGen + '"]');
+                } else if (MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE == basDoctorOrderRole.medicineRecipeClassify) {
+                    //精神级别
+                    strs.push(':radio[name="specialMedicineLevel_' + basDoctorOrderRole.medicineRecipeClassify + '"][value="' + basDoctorOrderRole.specialMedicineLevel + '"]');
+                }
+                //赋值特殊药品
+                return strs.join();
+            }).join()).prop('checked', true);
+            //特殊药品级别禁用开启
+            changeMedicineRecipeClassify()
+            form.render();
+        }
+
+        loadMedicineRecipeClassify(basDoctorOrderRoles);
+
+        //根据医生获取处方权限
+        function getBasDoctorOrderRoleByDoctorId(doctorId) {
+            var basDoctorOrderRoles = [];
+            $.ajax({
+                type: "GET",
+                url: "../bas/basDoctorOrderRoleListData.jo?doctorId=" + doctorId,
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    basDoctorOrderRoles = result.data;
+                }
+            });
+            return basDoctorOrderRoles;
+        }
+
+        //选择医生
+        $('#doctorName,.region-search').click(function () {
+            top.common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {
+                area: ['750px', '450px'], success: function (layero, index) {
+                    var iframeWindow = top.window['layui-layer-iframe' + index]
+                        , tableId = 'userList';
+                    setTimeout(function () {
+                        iframeWindow.layui.table.on('row(' + tableId + ')', function (obj) {
+                            selectSingleUserCall(obj.data);
+                            top.layui.layer.close(index); //关闭弹层
+                        });
+                        //监听行工具事件
+                        iframeWindow.layui.table.on('tool(' + tableId + ')', function (obj) {
+                            var layEvent = obj.event; //获得 lay-event 对应的值
+                            if (layEvent === "select") {
+                                selectSingleUserCall(obj.data)
+                                top.layui.layer.close(index); //关闭弹层
+                            }
+                        });
+                    }, 50);
+                }
+            });
+
+        })
+
+        //选择医生触发方法的回调函数
+        function selectSingleUserCall(data) {
+            var basDoctorOrderRoles = getBasDoctorOrderRoleByDoctorId(data.userId);
+            //表单赋值
+            form.val('basDoctorOrderRoleForm', basDoctorOrderRoles[0] || {doctorId: data.userId, doctorName: data.name});
+            loadMedicineRecipeClassify(basDoctorOrderRoles)
+        }
+
+        //显示抗菌类特殊药品级别
+        function changeMedicineRecipeClassify() {
+            $(':checkbox[name="medicineRecipeClassify"]').each(function () {
+                var value = $(this).val();
+                var flag = $(this).is(':checked');
+                if (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == value) {
+                    //抗菌级别
+                    $(':radio[name="antibioticGen"]').prop('disabled', !flag)[flag ? 'attr' : 'removeAttr']('lay-verify', 'reqRedio');
+                } else {
+                    //非抗菌级别
+                    $(this).closest('.layui-form-item').find(':radio[name^="specialMedicineLevel"]').prop('disabled', !flag);
+                }
+            })
+            form.render();
+        }
+
+        //初始化 特殊药品级别
+        form.on('checkbox(medicineRecipeClassify)', function (data) {
+            changeMedicineRecipeClassify()
+        });
+
+        //提交表单
+        function saveWardBed() {
+            var basDoctorOrderRoleParams = common.serializeObject($('#basDoctorOrderRoleForm'))
+            basDoctorOrderRoleParams.doctorOrderRoleJsonData = JSON.stringify($.map(basDoctorOrderRoleParams.medicineRecipeClassify ? basDoctorOrderRoleParams.medicineRecipeClassify.split(',') : [], function (medicineRecipeClassify) {
+                var params = $.extend({}, basDoctorOrderRoleParams);
+                params.medicineRecipeClassify = medicineRecipeClassify;
+                //抗菌级别
+                params.antibioticGen = (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == params.medicineRecipeClassify) ? basDoctorOrderRoleParams.antibioticGen : '';
+                //非抗菌级别
+                params.specialMedicineLevel = (MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE.indexOf(params.medicineRecipeClassify) !== -1) ? basDoctorOrderRoleParams['specialMedicineLevel_' + params.medicineRecipeClassify] : '';
+                return params;
+            }))
+            common.requestServer(contextPath + '/bas/saveBasDoctorOrderRole.jo', basDoctorOrderRoleParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveWardBed()
+            return false
+        })
+    })
+</script>

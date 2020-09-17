@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") 
+</head>
+<body class="white-bg">
+    <form class="full-height layui-form" action="" id="">
+        #formHiddenInput("clinicPathId" "$!treatPath.clinicPathId" "")
+        <div class="layui-row full-height-scroll" style="height: calc(100% - 40px);">
+            <div class="layui-row layui-form-item p-t-xs">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()路径名称</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("clinicPathName" "#htmlEscape($!treatPath.clinicPathName)" "class='layui-input' maxlength='30' required lay-verify='required' placeholder='请输入路径名称'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()所属病种</label>
+                    <div class="layui-input-inline">
+                        #formHiddenInput("diseaseId" "$!treatPath.diseaseId" "id='diseaseId'")
+                        #formTextInput("diseaseName" "#htmlEscape($!disease.diseaseName)" "class='layui-input' id='diseaseName' lay-verify='required' placeholder='请选择所属病种'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()病历分析</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("clinicPathParting" "$!treatPath.clinicPathParting" $!dicData.dicEmrParting "class='layui-input' lay-verify='required'" "病历分析")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()版本号</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("clinicPathVersion" "#htmlEscape($!treatPath.clinicPathVersion)" "class='layui-input' maxlength='6' required lay-verify='required' placeholder='请输入版本号'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()标准住院日</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("hospitalStayDay" "$!treatPath.hospitalStayDay" "class='layui-input' maxlength='5' required lay-verify='required' placeholder='请输入标准住院日'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()手术日</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("surgeryDay" "$!treatPath.surgeryDay" "class='layui-input' maxlength='5' required lay-verify='required' placeholder='请输入手术日'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()手术推迟</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("surgerPutOff" "$!treatPath.surgerPutOff" "class='layui-input' maxlength='5' required lay-verify='required' placeholder='请输入手术推迟'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">出院时间</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("hospitalStayRange" "$!treatPath.hospitalStayRange" "class='layui-input' maxlength='5' placeholder='请输入出院时间范围'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">适用病情</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("inpatientCondition" "$!treatPath.inpatientCondition" $!dicData.dicPatientCondition "class='layui-input' style='border:0;'" "适用病情")
+                    </div>
+                </div>
+                <div class="layui-inline" style="width: 350px">
+                    <label class="layui-form-label">#requiredTag()适用性别</label>
+                    <div class="layui-input-inline" style="width: 250px">
+                        #formRadioGroup("sexFlag" "$!treatPath.sexFlag" $!dicData.dicSexLimit "lay-skin='primary' lay-verify='reqRedio' check-msg='请选择适用性别'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()是否通用</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("pathFlag" "$!treatPath.pathFlag" $!dicData.dicYesNo "lay-skin='primary'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">预估费用</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("estimatedCost" "$!treatPath.estimatedCost" "class='layui-input' maxlength='8'placeholder='请输入预估费用'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">路径阶段</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("clinicPathStage" "$!treatPath.clinicPathStage" "class='layui-input' maxlength='5' placeholder='请输入路径阶段'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">主观条件</label>
+                    <div class="layui-input-inline">
+                        #formIntZeroInput("subjectiveCondition" "#htmlEscape($!treatPath.subjectiveCondition)" "class='layui-input' maxlength='100'placeholder='请输入主观条件'")
+                    </div>
+                </div>
+            </div>
+    
+            <fieldset class="layui-elem-field layui-field-title m-t-xs m-b-xs">
+                <legend class="font-weight">关联科室</legend>
+            </fieldset>
+            <div class="layui-row p-xs m-l-md">
+                #set($resourceLevel = $!dicData.dicSysOrgDeptName)
+                #foreach($option in $!resourceLevel.keySet())
+                    <div class="layui-col-xs2 p-b-xs">
+                        #formSimpleCheckbox("dept" "$!option" "" " id='office_$!option' title='$!{resourceLevel.get($!option)}' pathOfficeId='' lay-skin='primary'" "")
+                    </div>
+                #end
+            </div>
+        </div>
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit lay-filter="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+            <button type="button" id="btn_submit" lay-submit lay-filter="btn_submit" class="layui-btn layui-btn-sm"> 提 交  </button>
+        </div>
+    </form>
+    <div style="display: none">
+        #foreach($data in $!pathOfficeList)
+            #formSimpleCheckbox("checkedDept" "$!data.clinicPathOfficeId" "true" " id='del_$!data.relateOfficeId'" "")
+        #end
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script>
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    autocomplete: 'modules/autocomplete'
+}).use(['form', 'element', 'autocomplete'], function(){
+    var form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+
+    // 初始化校验radio和checkbox控件
+    common.verify(form);
+    // 保存按钮
+    form.on('submit(btn_save)', function(data){
+        data.field.auditFlag = '0';
+        submitForm(data);
+    });
+
+    // 提交按钮
+    form.on('submit(btn_submit)', function(data){
+        data.field.auditFlag = '1';
+        submitForm(data);
+    });
+
+    // 提交表单
+    function submitForm(data) {
+        var deptJson = [];
+        var delPathOfficeId= [];
+        // 需要保存的科室
+        $('input[name="dept"]:checked').each(function (){
+            deptJson.push({clinicPathOfficeId: $(this).attr('pathOfficeId'), relateOfficeId: $(this).val(), relateOfficeName: $(this).attr('title')});
+            $('#del_' + $(this).val()).prop('checked', false);
+        });
+
+        // 需要删除的科室
+        $('input[name="checkedDept"]:checked').each(function (){
+            delPathOfficeId.push($(this).val());
+        });
+
+        data.field.deptJson = JSON.stringify(deptJson);
+        data.field.delPathOfficeId = delPathOfficeId.join(',');
+        common.requestServer(contextPath + '/pathway/saveTreatPath.jo', data.field, function (result){
+            if (result.code == "0") {
+                // 将提交按钮置为不可点击
+                $('#btn_save').addClass('layui-btn-disabled');
+                common.msg("保存成功。", 1, function (){
+                    $('#btn_refresh', window.parent.document).click();
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }
+    // 自动检索病种
+    autocomplete.render({
+        cache: false,
+        method: 'post',
+        searchField: 'diseaseName',
+        elem: $('#diseaseName')[0],
+        url: contextPath + '/basDisease/basDiseaseListData.jo',
+        template_val: '{{d.diseaseName}}',
+        template_txt: '{{d.diseaseName}}',
+        onselect: function (obj) {
+            $('#diseaseId').val(obj.diseaseId)
+        }
+    });
+
+    // 页面加载时设置已选择的科室
+    $('input[name="checkedDept"]').each(function (){
+        if(!$(this).attr('id')) { return false; }
+        var items = $(this).attr('id').split('_');
+        if(!items[1]) { return false; }
+
+        var office = $('#office_' + items[1]);
+        if (!office) { return ;}
+
+        $(office).attr('pathOfficeId', $(this).val());
+        $(office).prop('checked', true);
+        form.render('checkbox');
+    });
+});
+</script>
+</html>

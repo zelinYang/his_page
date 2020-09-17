@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挂号记录 MS_GHMX管理</title>
+#parse("./common/pageCss.vm")
+
+</head>
+
+
+<body class="gray-bg">
+    <div class="wrapper wrapper-content">
+            <div class="ibox float-e-margins full-height">
+                <div class="ibox-content">
+                    <div class="row">
+                        <form id="register_queryForm" method="get" class="form-horizontal">
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">挂号时间</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="createTime" name="createTime" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">挂号时间</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="createTime" name="createTime" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">科室名称</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="depName" name="depName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">挂号职称</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="chargeName" name="chargeName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">接诊医生姓名</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="doctorName" name="doctorName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">就诊卡号</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="visitCardNo" name="visitCardNo" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">患者姓名</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="patientName" name="patientName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">性别</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="patientSex" name="patientSex" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">诊室名称</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="roomName" name="roomName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 text-center">
+                                <button type="button" id="btn_query" class="btn btn-sm btn-outline btn-primary">
+                                    <i class="layui-icon layui-icon-search"></i> <span>查 询</span>
+                                </button>
+                                &nbsp;&nbsp;&nbsp;
+                                <button type="button" id="btn_clean" class="btn btn-sm btn-outline btn-info">
+                                    <i class="iconfont fa icon-qingchu"></i> <span>清 空</span>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ibox float-e-margins full-height m-b-none">
+                <div class="ibox-content p-b-n">
+                    <div class="table-responsive">
+
+                        <!-- 列表表格 -->
+                        <div class="example">
+                            <table id="registerListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+    </div>
+    #parse("./common/pageJs.vm")
+    #parse("./common/common.js.vm")
+    <script>
+
+ //查询函数
+function queryRecord() {
+        var queryParams = common.serializeObject($('#register_queryForm'));
+        var options = {url: '../register/registerListData.jo', silent: false, query: queryParams};
+        $('#registerListGrid').bootstrapTable('refresh', options);
+}
+
+    $(document).ready(function () {
+
+            // 查询按钮
+            $('#btn_query').click(function (){
+                queryRecord();
+            });
+
+            // 清空按钮
+            $('#btn_clean').click(function (){
+            // 清空按钮
+           $('#createTimeBegin').val('');
+           $('#createTimeEnd').val('');
+           $('#depName').val('');
+           $('#registerFeeId').val('');
+           $('#doctorName').val('');
+           $('#visitCardNo').val('');
+           $('#patientName').val('');
+           $('#patientSex').val('');
+           $('#roomName').val('');
+            });
+
+            //查询挂号记录 MS_GHMX列表
+            $('#registerListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../register/registerListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#register_queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true,},
+                    {
+                        field : 'createTime',
+                        title : '挂号时间',
+                        templet :function (row) {
+                            return layui.util.toDateString(row.registerTime, 'yyyy-MM-dd HH:mm');
+                        }
+                    },
+                    {
+                        field : 'depName',
+                        title : '科室名称'
+                    },
+                    {
+                        field : 'registerFeeId',
+                        title : '挂号职称'
+                    },
+                    {
+                        field : 'doctorName',
+                        title : '接诊医生姓名'
+                    },
+                    {
+                        field : 'patientBirth',
+                        title : '出生年月'
+                    },
+                    {
+                        field : 'visitCardNo',
+                        title : '就诊卡号'
+                    },
+                    {
+                        field : 'visitCardType',
+                        title : '诊疗卡类型'
+,
+                        formatter :function (value, row) {
+                            var dicCardType = JSON.parse('$dicTools.changeMapToJson($dicData.dicCardType)');
+                            if (value) {
+                                return dicCardType[value];
+                            }
+                        }
+                    },
+                    {
+                        field : 'patientName',
+                        title : '患者姓名'
+                    },
+                    {
+                        field : 'patientSex',
+                        title : '性别'
+,
+                        formatter :function (value, row) {
+                            var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+                            if (value) {
+                                return dicSex[value];
+                            }
+                        }
+                    },
+                    {
+                        field : 'regFee',
+                        title : '挂号费'
+                    },
+                    {
+                        field : 'registerType',
+                        title : '挂号类型'
+,
+                        formatter :function (value, row) {
+                            var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+                            if (value) {
+                                return dicRegisterType[value];
+                            }
+                        }
+                    },
+                    {
+                        field : 'roomName',
+                        title : '诊室名称'
+                    }                    ],
+                    onCheck:function(row){
+                        parent.selectRegisterCallBack(row);
+                        // 关闭窗口
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#registerGrid').parents("body").height() - $('#register_queryForm').parents("#registerQuery").first().height() - 130);
+                        $('#registerGrid').bootstrapTable('resetView', {height: height});
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+
+
+    </script>
+</body>
+</html>

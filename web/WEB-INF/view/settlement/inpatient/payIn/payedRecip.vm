@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>已结算收据查询</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./settlement/inpatient/payIn/payIn.css.vm")<!-- 页面js -->
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <form id="PayedRecip_queryForm" class="layui-form">
+        <div class="layui-row-query search-term">
+            <div class="layui-form-item">
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">结算员</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("settlementUserName" "" "id='settlementUserName' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">收费员</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("operPrepayUserName" "" "id='operPrepayUserName' class='layui-input' ")
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">退费员</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("refundOperPrepayUserName" "" "id='refundOperPrepayUserName' class='layui-input' ")
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">结算日期</label>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("settlementDateBegin" "" "id='settlementDateBegin' class='layui-input' ")
+                    </div>
+                    <div class="layui-form-mid">至</div>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("settlementDateEnd" "" "id='settlementDateEnd' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">缴款日期</label>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("prepayDateBegin" "" "id='prepayDateBegin' class='layui-input' ")
+                    </div>
+                    <div class="layui-form-mid">至</div>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("prepayDateEnd" "" "id='prepayDateEnd' class='layui-input' ")
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">退款日期</label>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("refundPrepayDateBegin" "" "id='refundPrepayDateBegin' class='layui-input' ")
+                    </div>
+                    <div class="layui-form-mid">至</div>
+                    <div class="layui-input-inline wd-100">
+                        #formTextInput("refundPrepayDateEnd" "" "id='refundPrepayDateEnd' class='layui-input' ")
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <div class="layui-input-inline wd-220">
+                        #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='收据号/姓名/住院流水号' lay-tips='支持收据号/姓名/住院流水号查询'")
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button class="layui-btn layui-btn-sm" id="btn_query" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                    <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button id="btn_regPass" class="layui-btn layui-btn-sm" type="button" lay-tips="打印"><i class="layui-icon layui-icon-print"></i></button>
+                    <button id="btn_regPass" class="layui-btn layui-btn-sm" type="button" lay-tips="导出"><i class="layui-icon layui-icon-export"></i></button>
+                </div>
+            </div>
+        </div>
+    </form>
+    <div class="layui-form-item tb-header">住院患者已结算收据统计</div>
+    <!-- 数据表格 -->
+    <table id="payedRecipTable" lay-filter="regTab"></table>
+</div>
+#parse("./settlement/inpatient/payIn/payedRecip.js.vm")
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>医疗文书选择</title> 
+<link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+</head>
+
+<body class="white-bg">
+      <div class="main full-height">
+         #set($emrTlpId = 222)
+         #formHiddenInput("emrTlpId" "$!emrTlpId" "")
+         <div class="layui-form-item p-t-xs p-l-sm"> 
+             <button id="btn_add"  class="layui-btn layui-btn-sm" type="button" >新增医疗文书</button>
+         </div>
+         
+         <!--tree--> 
+         <div style="height: calc(100% - 30px); width: 100%;max-width: 1200px;">
+            <ul id="treeUL" class="ztree"></ul>
+         </div>
+    </div>
+    
+<script>
+var outMainWin = parent; //门诊医生主窗口页面对象 
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var editMedicineDoc;
+layui.use([ 'table', 'form', 'layer' ],function() {
+   var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table;
+
+   editMedicineDoc = function() { 
+       var emrTlpId = $('input[name=emrTlpId]').val();
+       var param = $.extend({emrTlpId: emrTlpId, businessKeyId: ''},parent.grobalModel);
+       var url = '$contextPath/outpatient/medicalDocEmrEdit.do'+common.objToParamStr(param);
+       parent.tabAddOutNav('medicalDocEmrEdit'+ emrTlpId,'医疗文书编辑',url);
+   }
+   
+    //加载左侧分类 ，初始化树形列表
+    loadTree = function () {
+        zTree_Menu = $.fn.zTree.init($("#treeUL"), setting, []);
+    }
+  
+    /**zTree 配置**/
+    function showIconForTree(treeId, treeNode) {
+       return !treeNode.isParent;
+    }
+    var setting = {
+        data: {key: { title: "t" },simpleData: { enable: true }},
+        view: {fontCss: getFontCss,showLine: false,showTitle: false,showIcon: showIconForTree},
+        async : {
+           enable : true,
+           url : "$contextPath/outpatient/getMedicalDocTypeTree.jo",
+           dataType : "json",
+           autoParam : [ "id" ],
+           type : "POST"
+         },
+         callback: {
+             onClick: function(event, treeId, treeNode) { 
+                  //树节点点击事件-渲染右侧检验明细列表
+                  console.log(treeNode);
+             }
+         }
+   };
+
+   function getFontCss(treeId, treeNode) {
+       return (!!treeNode.highlight) ? {color:"#A60000", "font-weight":"bold"} : {color:"#333", "font-weight":"normal"};
+   }
+   /**zTree 配置**/
+   
+   //页面初始化
+    $(document).ready(function() {
+        loadTree();
+        $('#btn_add').click(function() {
+            editMedicineDoc();
+        });
+    });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-药品/耗材-药品注射设置-详情</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style>
+        /*新增表单加入点击按钮*/
+        .layui-form-item .layui-input-inline > button.layui-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            border: #e6e6e6 1px solid;
+            cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            background: #f1f1f1;
+            padding: 0 6px;
+            height: 30px;
+            line-height: 1;
+        }
+
+        /* 底部按钮条 */
+        #medicineInfusionsRelForm.layui-form {
+            margin-bottom: 50px;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" id="medicineInfusionsRelForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("medicineInfusionsRelId" "$!{medicineInfusionsRel.medicineInfusionsRelId}" "
+    id='medicineInfusionsRelId' ")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()药物使用途径</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("doseWayCode" "$!medicineInfusionsRel.doseWayCode"
+                $!dicData.dicDoseWay " lay-filter='doseWayCode' id='doseWayCode'
+                lay-verify='required' autocomplete='off' lay-search" " ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()收费年龄段</label>
+            <div class="layui-input-inline" style="width: auto;">#formRadioGroup("ageFeeFlag"
+                "$!{medicineInfusionsRel.ageFeeFlag}"
+                ${dicData.dicAgeFeeFlag} " lay-verify='reqRedio' check-msg='请选择收费年龄段'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()收费标识</label>
+            <div class="layui-input-inline" style="width: auto;">#formRadioGroup("infusionsFeeFlag"
+                "$!{medicineInfusionsRel.infusionsFeeFlag}"
+                ${dicData.dicInfusionsFeeFlag} " lay-verify='reqRedio' check-msg='请选择收费标识'")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label" style="color: #ff4500!important;">#requiredTag()使用限制</label>
+            <div class="layui-input-inline">
+                <!--默认为公用-->
+                #if(!$!{basChargeGroup.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} ==
+                $!{basChargeGroup.hospitalId})
+                #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                #else
+                #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                #end
+                #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary'
+                class='layui-input' check-msg='请选择使用限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">诊疗项目</label>
+            <div class="layui-input-inline " style="width: 425px;">
+                #formHiddenInput("chargeItemId" "$!{medicineInfusionsRel.chargeItemId}" "id='chargeItemId'")
+                #formTextInput("chargeName" "#htmlEscape($!{medicineInfusionsRel.chargeName})" "class='layui-input'
+                ts-selected='$!{medicineInfusionsRel.chargeItemId}' id='chargeName' autocomplete='off' maxlength='50'
+                lay-verify='skinCharge' readonly ")
+            </div>
+            <div class="layui-input-inline wd-80">
+                #formTextInput("chargeItemUnitPrice" "$!{medicineInfusionsRel.chargeItemUnitPrice}" "
+                id='chargeItemUnitPrice' class='layui-input' readonly")
+                <button class="layui-btn" type="button">元</button>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-inline ">#formTextInput("remark" "$!medicineInfusionsRel.remark"
+                    "class='layui-input'
+                    id='remark' autocomplete='off' maxlength='20' ")
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item ">
+        <label class="layui-form-label">使用耗材</label>
+        <div class="layui-input-block">
+            #formHiddenInput("materialId" "$!{medicineInfusionsRel.materialId}" " id='materialId'
+            lay-verify='medicine'")
+            #formHiddenInput("materialName" "$!{medicineInfusionsRel.materialName}" " id='materialName'")
+            <table id="medicineListGrid" class="layui-table-tabs" lay-filter="medicineListGrid"></table>
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    //科室名称
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'tableSelect', 'layer'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, tableSelect = layui.tableSelect, layer = layui.layer;
+        common.verify(form)
+
+        var medicineIds = $("#materialId").val();
+        //耗材列表
+        table.render({
+            elem: '#medicineListGrid',
+            url: medicineIds ? contextPath + '/medicine/medicineSimpleListData.jo?validFlag=' + YES_FLAG + '&medicineIds=' + medicineIds : '', //接口
+            limit: 10000,
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'medicineName',
+                    title: '耗材名称',
+                    minWidth: 200
+                }, {
+                    field: 'medicineType',
+                    title: '耗材类型',
+                    width: 130,
+                    templet: function (d) {
+                        return dicMedicineType[d.medicineType] || '';
+                    }
+                },
+                {
+                    field: 'medicineSpec',
+                    title: '耗材规格',
+                    width: 180
+                },
+                {
+                    field: 'medicineUnit',
+                    title: '单位',
+                    sort: true,
+                    width: 100,
+                    templet: function (d) {
+                        return dicDrugNumUnit[d.medicineUnit] || '';
+                    }
+                },
+                {
+                    field: 'standardRetailPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                }]], done: function (res) {
+            }
+        });
+
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+        common.setFormReadOnly($("#medicineInfusionsRelForm"));
+    })
+</script>
+</body>
+</html>

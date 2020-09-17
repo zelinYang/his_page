@@ -1,0 +1,125 @@
+<script>
+    layui.use(['element', 'form'], function () {
+        var element = layui.element;
+        var form = layui.form;
+        var patientSex = "${inpatientInhospital.patientSex}"
+
+        laydate.render({
+            elem: '#startDate',
+            type: 'datetime',
+            value: new Date(),
+            istime: true,
+            max: getSmpFormatNowDate(true)
+        });
+        var users = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+
+
+        //转出科室
+        function caseSelect(wardId) {
+
+            $.post("../inpatient/selectInpatientWardOfficeMap.jo", {wardId: wardId}, function (data) {
+                //加载科室列表
+                var targetEle = $('#afterOfficeId');
+                $(targetEle).empty();
+
+                if (data == null || targetEle == "" || targetEle == undefined) {
+                    return false;
+                }
+                console.log(JSON.stringify(data) + "vieonchu");
+                $.each(data.data, function (key, value) {
+                    var jqOption = "<option value='" + key + "'>" + value + "</option>";
+                    $(targetEle).append(jqOption);
+                });
+                $(targetEle).trigger("chosen:updated");
+                form.render('select');
+            }, "json");
+
+            $.post("../inpatient/selectInpatientWardBedMap.jo", {
+                wardId: wardId,
+                patientSex: patientSex
+            }, function (data) {
+                //加载床位列表
+                var targetEle = $('#afterBedNum');
+                $(targetEle).empty();
+
+                if (data == null || targetEle == "" || targetEle == undefined) {
+                    return false;
+                }
+                console.log(JSON.stringify(data) + "gaga");
+                $.each(data, function (key, value) {
+                    var jqOption = "<option value='" + value + "'>" + value + "</option>";
+                    $(targetEle).append(jqOption);
+                });
+                $(targetEle).trigger("chosen:updated");
+                form.render('select');
+
+            }, "json");
+        }
+
+// 提交表单
+        function submitForm() {
+            var params = common.serializeObject($('#editForm'));
+            if (params.afterBedNum == null || params.afterBedNum == "") {
+                common.alert("请选择转后床位号", 0);
+                return;
+            }
+            if (params.afterOfficeId == null || params.afterOfficeId == "") {
+                common.alert("请选择转后科室", 0);
+                return;
+            }
+            if (params.afterWardId == null || params.afterWardId == "") {
+                common.alert("请选择转后病区", 0);
+                return;
+            }
+            if (params.inhospitalId == null || params.inhospitalId == "") {
+                common.alert("住院流水号丢失", 0);
+                return;
+            }
+            params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+            params['archiaterDoctorName'] = users[params['archiaterDoctorId']];
+            params['managerDoctorName'] = users[params['managerDoctorId']];
+            params['dutyNurserName'] = users[params['dutyNurserId']];
+            params['headNurserName'] = users[params['headNurserId']];
+            params['bedDoctorName'] = users[params['bedDoctorId']];
+            params['currentOfficeId'] = params.afterOfficeId
+            params['currentWardId'] = params.afterWardId
+            params['currentBedNo'] = params.afterBedNum;
+
+            console.log(params + "params");
+            common.requestServer('../inpatient/saveOfficeBedExchange.jo', params, function (result) {
+                if (result.code == "0") {
+                    parent.common.alertCall("转科成功。", 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    });
+                } else {
+                    parent.common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        $(document).ready(function () {
+
+
+        });
+
+
+        $('#btn_subim').on('click', function () {
+            submitForm();
+        });
+        $('#btn_cancel').on('click', function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+        form.on('select(aihao)', function (data) {
+
+            console.log(JSON.stringify(data) + "ppop")
+
+            caseSelect(data.value)
+        });
+
+
+    });
+</script>

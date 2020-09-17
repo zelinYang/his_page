@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-注销卡列表-患者列表-门诊挂号</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="patient_queryForm" class="layui-form autoWidth">
+          <div class="layui-row-query search-term">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">性别</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("patientSex" "" ${dicData.dicClearSex} "")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">出生日期</label>
+                    <div class="layui-input-inline wd-100">
+                        #formLayDateInput("patientBirthBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                    </div>
+                    <div class="layui-form-mid">至</div>
+                    <div class="layui-input-inline wd-100">
+                        #formLayDateInput("patientBirthEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline" style="width: auto">
+                        #formCheckboxeGroup("patientClassifys" "" $dicData.dicPatientClassify "")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline wd-220">
+                        #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+                    </div>
+                </div>
+              <div class="layui-inline layui-btn-group">
+                <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+              </div>
+            </div>
+          </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs layui-btn-normal " lay-tips="详情" lay-event="btn_show"><i class="layui-icon layui-icon-tips"></i></a>
+            <a class="layui-btn layui-btn-xs" lay-tips="恢复" lay-event="enable"><i class="layui-icon layui-icon-ok"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="patientListGrid" lay-filter="patientListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./patient/patientListReissue.js.vm")
+</body>
+</html>

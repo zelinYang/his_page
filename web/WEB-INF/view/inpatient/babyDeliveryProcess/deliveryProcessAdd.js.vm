@@ -1,0 +1,159 @@
+<script type="text/javascript">
+    layui.use(['form', 'element', 'laydate'], function(){
+    var laydate = layui.laydate, form = layui.form;
+    laydate.render({elem: '#firstOccurTime',trigger: 'click', type:'datetime', format: 'yyyy-MM-dd HH:mm:ss'});
+
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+## var inhospitalId = {inhospitalId: $('#inhospitalId').val()};
+## var patientId = {patientId: $('#patientId').val()};
+## var params=$.extend(inhospitalId, patientId);
+    data.field.patientId = $('#patientId', parent.document).val();
+    data.field.inhospitalId = $('#inhospitalId', parent.document).val();
+    common.requestServer(contextPath + '/inpatient/addBabyDeliveryProcess.jo', data.field, function (result){
+    if (result.code == "0") {
+    common.msg("保存成功。", 1, function (){
+    $('#btn_refresh', window.parent.document).click();
+    var index = parent.layer.getFrameIndex(window.name);
+    parent.layer.close(index);
+ ## reloadOrderList();
+});
+} else {
+    common.alert(result.msg, 0);
+}
+});
+});
+    // 重载刷新医嘱列表
+    function reloadOrderList() {
+## var params = common.serializeObject($('#inhospitalId')]);
+    var params = {inhospitalId: $('#inhospitalId').val()};
+    console.log("开始刷新");
+    console.log(params);
+   ## reload({url: '../inpatient/babyDeliveryProcessListData.jo', where: params});
+   ##  reload({url: '../inpatient/babyDeliveryProcessShow.do', where: params});
+    window.location.href = window.location.href;
+   console.log("刷新结束");
+## initOrderButton();
+}
+});
+    //待产日期时间
+    laydate.render({elem: '#predeliveryDate',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#predeliveryDate").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#predeliveryDate").val("");
+}
+}
+});
+    //末次月经日期
+    laydate.render({elem: '#lastMenstrualTime',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#lastMenstrualTime").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#lastMenstrualTime").val("");
+}
+}
+});
+    //临产日期时间
+    laydate.render({elem: '#parturitionTime',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#parturitionTime").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#parturitionTime").val("");
+}
+}
+});
+    //日期控件初始化
+    laydate.render({elem: '#deliveryBabyTime',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#deliveryBabyTime").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#deliveryBabyTime").val("");
+}
+}
+});
+    //日期控件初始化
+    laydate.render({elem: '#placentaDeliveryDate',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#placentaDeliveryDate").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#placentaDeliveryDate").val("");
+}
+}
+});
+    //日期控件初始化
+    laydate.render({elem: '#caulBreakTime',trigger: 'click', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#caulBreakTime").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#caulBreakTime").val("");
+}
+}
+});
+    //日期控件初始化
+    laydate.render({elem: '#afterDeliveryObserveTime', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#afterDeliveryObserveTime").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#afterDeliveryObserveTime").val("");
+}
+}
+});
+    //日期控件初始化
+    laydate.render({elem: '#preParturitionDate', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+    //日期被选中事件
+    ,done: function (value, date, endDate){
+    var beginDate
+    if(date.year){
+    beginDate = date.year+"-"+date.month+"-"+date.date;
+    $("#preParturitionDate").val(beginDate);
+    $("#weekNo").val("");
+    form.render("select");
+}else{
+    $("#preParturitionDate").val("");
+}
+}
+});
+</script>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-票据领用表管理</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body >
+<div class="layui-content-wrapper">
+    <div class="layui-fluid ">
+        <div class="layui-bg-white">
+            <!--搜索条件 开始-->
+            <form id="billRecipient_queryForm" class="layui-form">
+                <div class="layui-row-query">
+                    <div class="layui-form-item search-term">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">领用人 </label>
+                            <div class="layui-input-inline">#formSingleSelectSearchFirstNone("recipientNameId"
+                                "$!billRecipient.recipientNameId" $!{sysUser} " maxlength='10' lay-search" " ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">票据类型</label>
+                            <div class="layui-input-inline wd-200">#formRadioGroup("billType" "" ${dicData.dicBillType} "")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">使用方式</label>
+                            <div class="layui-input-inline wd-120">#formSingleSelectSearchFirstNone("usageMode" ""
+                                $!{dicData.dicUsageMode} "lay-search" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">当前票据号</label>
+                            <div class="layui-input-inline wd-120">#formTextInput("startNumLessEqu" "" "id='q_startNumLessEqu'
+                                maxlength='20' autocomplete='off' class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-btn-group">
+                                <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+
+            <!--列表 begin-->
+            <!-- 列表表格 工具栏-->
+            <!-- 是否有效开关 -->
+            <script type="text/html" id="usageFinishFlagTpl">
+                {{#  if(d.usageFinishFlag == '0'){ }}
+                <button class="layui-btn layui-btn-normal layui-btn-xs">未用完</button>
+                {{#  } else if(d.usageFinishFlag == '1'){ }}
+                <button class="layui-btn layui-btn-primary layui-btn-xs">使用完</button>
+                {{#  } else{ }}
+                <button class="layui-btn layui-btn-warm layui-btn-xs">使用中</button>
+                {{#  } }}
+            </script>
+            <!-- 进度条 -->
+            <script type="text/html" id="billUseNumTpl">
+                <div class="layui-progress layuiadmin-order-progress">
+                    <span class="layui-progress-text">{{d.pah}}</span> <span
+                        style="right: 0; position: absolute; top: -15px; color: #999;" class="layui-progress-text">{{d.billUseNum}}</span>
+                    <div class="layui-progress-bar {{d.bar || ''}}" lay-percent="{{d.pah}}" style="width: {{d.pah}};"></div>
+                </div>
+            </script>
+            <!-- 列表表格 工具栏 结束-->
+            <!-- 列表表格 begin -->
+            <table id="billRecipientListGrid" lay-filter="billRecipientListGrid"></table>
+            <!--  列表表格 end -->
+            <!--列表end-->
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bill/billRecipient/billRecipientShowList.js.vm")
+</body>
+</html>

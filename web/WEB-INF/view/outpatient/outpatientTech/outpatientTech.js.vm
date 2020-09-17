@@ -1,0 +1,414 @@
+<script>
+    var NO_FLAG = "${CONST.AppConstants.NO_FLAG}";
+    var YES_FLAG = "${CONST.AppConstants.YES_FLAG}";
+    var dicDoctorOrderSubtype = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderSubtype)');
+    var dicFreeOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicFreeOrderType)');
+    var dicBodyPartClassifyLis = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifyLis)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicOutTechExamState = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutTechExamState)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    console.log(dicPayFeeState);
+    var techApply;
+    var techDelete;
+    var query;
+    var selectOrderData = [];//已选中的医嘱项目
+    var initLayout;
+    var resizetab;
+    var initLayIfamePage;//初始化iframe页面
+    var outMainWin = parent; //门诊医生主窗口页面对象
+    layui.use(['jquery', 'table', 'element', 'form', 'util'], function () {
+        var table = layui.table;
+        var element = layui.element;
+        var form = layui.form;
+        var $ = layui.$;
+        var util = layui.util;
+
+        element.render();
+
+        function hideSouthLayout() {
+            $(".ui-layout-resizer-south .content-open").trigger('click');
+        }
+
+        initLayout = function () {
+            var interval = setInterval(function () {
+                if ($('#container').height() > 0) {
+                    $('#container').layout({
+                        south__size: 350//pane的大小
+                        , togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▼</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                        , togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▲</div>"//pane关闭时，同上。
+                        , spacing_open: 8//边框的间隙
+                        , maskIframesOnResize: ".resizeiframe"
+                    });
+                    clearInterval(interval);//停止
+                    hideSouthLayout();
+                }
+            }, 10);
+        }
+
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#oupatientTechTable'
+            , defaultToolbar: []
+            , height: 'full-50'//高度
+            , url: '../outpatient/outpatientTechList.jo' //数据接口
+            , where: common.serializeObject($('#oupatientTech_queryForm'))
+            , limit: 200
+            , parseData: function (res) { //res 即为原始返回的数据
+                res.data = $.map(res.data, function (outpatientTech) {
+                    return $.map(outpatientTech.outpatientTechItems, function (outpatientTechItem) {
+                        outpatientTechItem.billMoney = outpatientTech.billMoney;
+                        outpatientTechItem.bodyPartClassify = dicBodyPartClassifyLis[outpatientTechItem.bodyPartClassify] || '';
+                        outpatientTechItem.outpatientTechName = outpatientTech.techApplyName;
+                        outpatientTechItem.techState = outpatientTech.techState;
+                        outpatientTechItem.techExamApply = outpatientTech.techExamApply;
+                        outpatientTechItem.payFeeFlag = outpatientTech.payFeeFlag;
+                        outpatientTechItem.applyFeeReturnFlag = outpatientTech.applyFeeReturnFlag;
+                        outpatientTechItem.orderLockFlag = outpatientTech.orderLockFlag;
+                        return outpatientTechItem;
+                    });
+                });
+                return res;
+            }
+            , cols: [[ //表头
+                {
+                    type: 'checkbox'
+                }
+                , {field: 'outpatientTechId', title: '门诊医技ID', hide: true}
+                , {
+                    field: 'makeOrderTime', title: '开单时间', minWidth: '130', templet: function (row) {
+                        return util.toDateString(row.makeOrderTime, 'yyyy-MM-dd HH:mm');
+                    }
+                }
+
+                , {
+                    field: 'payFeeFlag', title: '缴费状态', templet: function (row) {
+                    	if (row.orderLockFlag === '1') {
+                    		return '已锁定';
+                        }
+                        return dicPayFeeState[row.payFeeFlag] || "";
+                    }
+                }
+                , {field: 'outpatientTechName', title: '项目分类'}
+                , {field: 'chargeGroupName', title: '项目名称', minWidth: '200'}
+                , {field: 'orderName', minWidth: '400', title: '项目明细'}
+                , {
+                    field: 'unitPrice', title: '单价',
+                    templet: function (row) {
+                        return common.toMoney(row.unitPrice, 2);
+                    }
+                }
+                , {
+                    field: 'billMoney', title: '总价',
+                    templet: function (row) {
+                        return common.toMoney(row.billMoney, 2);
+                    }
+                }
+                , {field: 'exeOfficeName', title: '执行科室'}
+                , {field: 'bodyPartClassify', title: '样本'}
+                , {
+                    field: 'techState', title: '单据状态',
+                    templet: function (row) {
+                        return dicOutTechExamState[row.techState] || "";
+                    }
+                }
+                , {
+                    field: 'remark', title: '备注'
+                }
+                , {
+                    field: 'urgentFlag', title: '加急',
+                    templet: function (row) {
+                        return dicYesNo[row.urgentFlag] || "";
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+				autoSetHeight();
+                var that = this;
+                //获取医技费用
+                $('.totalPriceValue').html($.map(res.data, function (item) {
+                    if (item.validFlag === '1') {
+                        return item.unitPrice;
+                    }
+                }).reduce(function (total, num) {
+                    return total + num;
+                }, 0).toFixed(2));
+                //存放计算医技表格数据需要合并的医技 id
+                var outpatientTechIds = $.unique($.map(res.data, function (item) {
+                    return item.outpatientTechId;
+                }));
+                $.each(res.data, function (index, item) {
+                    var trDom = that.elem.next().find('.layui-table-main tr[data-index="' + index + '"]');
+                    if (item.validFlag === '0') {
+                        trDom.addClass('del-tr');
+                        trDom.children(":first").children(":first").html('');
+                    }
+                    if (item.applyFeeReturnFlag === '1') {
+                        trDom.addClass('apply-refund');
+                    }
+                    if (item.applyFeeReturnFlag === '3') {
+                        trDom.addClass('apply-refund');
+                    }
+                });
+                //合并显示单元格字段
+                var groupCells = ['makeOrderTime', 'payFeeFlag', 'exeOfficeName', 'outpatientTechName', 'chargeGroupName', 'billMoney', 'bodyPartClassify', 'techState', 'remark', 'urgentFlag'];
+                var oldData = [];
+                //合并关键字段
+                var groupKeyWord = 'outpatientTechId';
+                $.each(res.data, function (index, contains) {
+                    var allTrs = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains.outpatientTechId + ')').filter(function () {
+                        return $(this).text() == contains.outpatientTechId;
+                    }).parents('tr');
+                    $.each(groupCells, function (i, field) {
+                        if (oldData.contains(contains.outpatientTechId + field)) {
+                            return;
+                        }
+                        var trs = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains.outpatientTechId + ')').filter(function () {
+                            return $(this).text() == contains.outpatientTechId;
+                        }).parents('tr');
+                        trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+                        oldData.push(contains.outpatientTechId + field);
+                    })
+                    //移入背景颜色
+                    allTrs.hover(function () {
+                        allTrs.addClass('layui-table-hover');
+                    }, function () {
+                        allTrs.removeClass('layui-table-hover');
+                    })
+                });
+            }
+        });
+
+		//处理行高问题
+		function autoSetHeight() {
+			$(".layui-table-main tr").each(function (index, val) {
+				$($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+				$($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+			});
+		}
+
+        table.on('checkbox(oupatientTechTable)', function (obj) {
+            var groupKeyWord = 'outpatientTechId';
+            console.log([obj.data.outpatientTechId])
+            obj.tr.siblings().find('td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + obj.data.outpatientTechId + ')').filter(function () {
+                return $(this).text() == obj.data.outpatientTechId;
+            }).parents('tr').find(':checkbox[name="layTableCheckbox"]').click();
+            form.render('checkbox');
+        });
+
+        techApply = function () {
+            var param = $.extend({patientType: '2'}, parent.grobalModel);
+            var url = '$contextPath/tech/techApply.do' + common.objToParamStr(param);
+            var title = '检验检查申请';
+            var options = {
+                id: 'win',
+                type: 2,
+                move: '.layui-layer-title',
+                title: title,
+                shadeClose: false,
+                offset: 'b',
+                shade: 0.5,
+                maxmin: true,
+                area: ['99%', '99%'],
+                content: [url, 'no']
+            }
+            parent.layer.open(options);
+        }
+
+        techDelete = function () {
+            var checkStatus = table.checkStatus('oupatientTechTable');
+            if (checkStatus.data.length == 0) {
+                common.alert('请选择要删除的项！', 0);
+                return false;
+            }
+            var paidFlag = false;
+            var outpatientTechNames = '';
+            $.each(checkStatus.data, function (index, item) {
+                console.log(item.payFeeFlag);
+                if (item.payFeeFlag !== '0') {
+                    paidFlag = true;
+                    outpatientTechName = item.outpatientTechName;
+                    return true;
+                }
+            });
+            if (paidFlag) {
+                common.alert(outpatientTechName + '已缴费，不能删除', 0);
+                return false;
+            }
+            //存放计算医技表格数据需要合并的医技 id
+            var outpatientTechIds = $.unique($.map(checkStatus.data, function (item) {
+                return item.outpatientTechId;
+            })).join();
+            var registerId = $('#registerId').val();
+
+            var emrIframe = $('div[lay-id=outpatientEmr] iframe', window.parent.document);
+            var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+            $.modal.loading();
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/techDelete.jo',
+                data: {outpatientTechIds: outpatientTechIds},
+                dataType: "json",
+                success: function (result) {
+                    $.modal.closeLoading();
+                    if (result.code == web_status.SUCCESS) {
+                        $.modal.msgSuccess(result.msg);
+                        query();
+                        outMainWin.countOutpatientFee(registerId);
+                        emrEditWin.getEmrOutTechExamine(registerId);
+                        emrEditWin.getEmrOutTechInspect(registerId);
+                    } else {
+                        $.modal.alertError(result.msg);
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        };
+
+        techShow = function () {
+            var checkStatus = table.checkStatus('oupatientTechTable'); //idTest 即为基础参数 id 对应的值
+            if (checkStatus.data.length == 0) {
+                common.alert('请选择要删除的项！', 0);
+                return false;
+            }
+            if (checkStatus.data.length > 1) {
+                common.alert('请选择单项查看', 0);
+                return false;
+            }
+        };
+
+        // 医技申请按钮
+        $('#btn_apply').click(function () {
+            techApply();
+        });
+
+        // 申请退费按钮
+        $('#btn_refund').click(function () {
+            techApplyRefund();
+        });
+
+        function techApplyRefund() {
+            var checkStatus = table.checkStatus('oupatientTechTable');
+            if (checkStatus.data.length == 0) {
+                common.alert('请选择要申请退费的项！', 0);
+                return false;
+            }
+            var paidFlag = false;
+            var chargeGroupNames = [];
+            $.each(checkStatus.data, function (index, item) {
+                console.log(item.payFeeFlag);
+                if (item.payFeeFlag !== '1') {
+                    paidFlag = true;
+                    chargeGroupNames.push(item.chargeGroupName);
+                    return true;
+                }
+            });
+            if (paidFlag) {
+                common.alert(chargeGroupNames.join(',') + '未缴费，不能申请退费', 0);
+                return false;
+            }
+            //存放计算医技表格数据需要合并的医技 id
+            var outpatientTechIds = $.unique($.map(checkStatus.data, function (item) {
+                return item.outpatientTechId;
+            })).join();
+            var registerId = $('#registerId').val();
+
+            $.modal.loading();
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/techApplyRefund.jo',
+                data: {outpatientTechIds: outpatientTechIds},
+                dataType: "json",
+                success: function (result) {
+                    $.modal.closeLoading();
+                    if (result.code == web_status.SUCCESS) {
+                        $.modal.msgSuccess(result.msg);
+                        query();
+                    } else {
+                        $.modal.alertError(result.msg);
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        //查询列表
+        query = function () {
+            var queryParams = common.serializeObject($('#oupatientTech_queryForm'));
+            tableIns.reload({where: queryParams});
+        }
+
+        //单选按钮触发查询
+        form.on('radio(diagnosisClassify)', function (data) { //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+            query();
+        });
+
+        //延迟加载Ifame页面
+        initLayIfamePage = function () {
+            function loadIfamePage() {
+                $('iframe[targetSrc]').each(function (index) {
+                    var elem = $(this);
+                    var src = elem.attr('targetSrc') + common.objToParamStr(outMainWin.grobalModel);
+                    elem.attr('src', src);
+                });
+            }
+
+            //延迟加载
+            setTimeout(function () {
+                loadIfamePage();
+            }, 500);
+        }
+
+        //页面初始化
+        $(document).ready(function () {
+            ckOutRegExist();
+            initLayout();
+            initLayIfamePage();
+
+            /* 切换到指定Tab项 */
+            tabChange = function (filter, layid) {
+                element.tabChange(filter, layid);
+            }
+
+            $('#tech_tpl, #tech_history, #tech_examine, #tech_inspect').click(function () {
+                //切换到指定的tab
+                var targetTab = $(this).attr('targetTab');
+                element.tabChange('outItemTabs', targetTab);
+                showSouthLayout();
+            });
+
+            resizetab = function () {
+                table.resize('oupatientTechTable');
+            }
+
+            initHistoryReq = function () {
+                setTimeout(function () {
+                    var src = '../outpatient/outpatientItemHistory.do?patientId=' + outMainWin.grobalModel.patientId;
+                    $('.history iframe').attr('src', src);
+                }, 1000);
+            }
+
+            //显示隐藏底部窗口
+            function showSouthLayout() {
+                var southDisplay = $(".ui-layout-resizer-south .content-open").css("display");
+                if (southDisplay == 'none') {
+                    $('.ui-layout-south').removeClass('layui-hide');
+                    $(".ui-layout-resizer-south .content-open").trigger('click');
+                }
+            }
+        });
+        //刷新页面按钮
+        $("#btn_refresh").click(function () {
+			outMainWin.countOutpatientFee(outMainWin.grobalModel.registerId);
+            location.reload();
+        });
+    });//layui.use
+</script>

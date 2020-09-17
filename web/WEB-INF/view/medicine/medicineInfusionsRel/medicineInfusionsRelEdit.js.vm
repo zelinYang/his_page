@@ -1,0 +1,260 @@
+
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+##parse("./bas/medicineInfusionsRel/medicineInfusionsRelExamEdit.js.vm")
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    //科室名称
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'tableSelect', 'layer'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, tableSelect = layui.tableSelect, layer = layui.layer;
+        common.verify(form)
+        //根据name 归类下拉框
+        function loadSelectGroup(name) {
+            var selectElem = $('select[name=' + name + ']');
+            //多个选项组合
+            selectElem.children('option').each(function () {
+                var options = $(this).siblings('[value^="' + $(this).val() + '"]');
+                if (options.length > 0) {
+                    $('<optgroup value="' + $(this).val() + '" label="' + $(this).text() + '"></optgroup>').replaceAll(this).append(options);
+                }
+            });
+            //单个选项作为本身
+            selectElem.children('option').each(function () {
+                if ($(this).val()) {
+                    $('<optgroup value="' + $(this).val() + '" label="' + $(this).text() + '"></optgroup>').replaceAll(this).append(this);
+                }
+            })
+            form.render();
+        }
+
+        //药物使用途径
+        loadSelectGroup('doseWayCode');
+
+        //诊疗项目
+        tableSelect.render({
+            elem: '#chargeName',
+            checkedKey: 'chargeName', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '诊疗项目',	//搜索输入框的提示文字 默认关键词搜索
+            table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: contextPath + '/bas/basChargeItemListData.jo',
+                page: true,
+                cols: [[{type: 'radio'},
+                    {
+                        field: 'chargeName',
+                        title: '费用名称',
+                        minWidth: 200
+                    },
+                    {
+                        field: 'chargeItemUnit',
+                        title: '单位',
+                        sort: true,
+                        width: 80
+                    },
+                    {
+                        field: 'unitPrice',
+                        title: '单价',
+                        sort: true,
+                        width: 80,
+                    }]]
+            }),
+            done: function (elem, result) {
+                var NEWJSON = []
+                var ids = []
+                var chargeItemUnitPrices = []
+                layui.each(result.data, function (index, item) {
+                    NEWJSON.push(item.chargeName);
+                    ids.push(item.chargeItemId)
+                    chargeItemUnitPrices.push(item.unitPrice)
+                })
+                $('#chargeItemId').val(ids.join(','));
+                $('#chargeItemUnitPrice').val(chargeItemUnitPrices.join(','));
+                elem.val(NEWJSON.join(","))
+            }
+        })
+
+        //设置 耗材id 和 名称
+        function setMedicines() {
+            $('#materialId').val($.map(table.cache['medicineListGrid'], function (medicine) {
+                if (medicine.medicineId) return medicine.medicineId;
+            }).join());
+            $('#materialName').val($.map(table.cache['medicineListGrid'], function (medicine) {
+                if (medicine.medicineName) return medicine.medicineName;
+            }).join());
+        }
+
+        var medicineIds = $("#materialId").val();
+        //耗材列表
+        table.render({
+            elem: '#medicineListGrid',
+            url: medicineIds ? contextPath + '/medicine/medicineSimpleListData.jo?validFlag=' + YES_FLAG + '&medicineIds=' + medicineIds : '', //接口
+            limit: 10000,
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_medicine" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'medicineName',
+                    title: '耗材名称',
+                    minWidth: 200
+                }, {
+                    field: 'medicineType',
+                    title: '耗材类型',
+                    width: 130,
+                    templet: function (d) {
+                        return dicMedicineType[d.medicineType] || '';
+                    }
+                },
+                {
+                    field: 'medicineSpec',
+                    title: '耗材规格',
+                    width: 180
+                },
+                {
+                    field: 'medicineUnit',
+                    title: '单位',
+                    sort: true,
+                    width: 100,
+                    templet: function (d) {
+                        return dicDrugNumUnit[d.medicineUnit] || '';
+                    }
+                },
+                {
+                    field: 'standardRetailPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                },
+                {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#operateTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+                //新增耗材项目
+                renderAddMedicine();
+            }
+        });
+
+        //新增耗材项目按钮
+        function renderAddMedicine() {
+            tableSelect.render({
+                elem: '#btn_add_medicine',	//定义输入框input对象 必填
+                checkedKey: 'medicineId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '耗材名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: contextPath + '/medicine/materialPageData.jo',
+                    cols: [[
+                        {type: 'checkbox'},
+                        {
+                            field: 'medicineName',
+                            title: '耗材名称',
+                            minWidth: 200
+                        }, {
+                            field: 'medicineType',
+                            title: '耗材类型',
+                            width: 130,
+                            templet: function (d) {
+                                return dicMedicineType[d.medicineType] || ""
+                            }
+                        }, {
+                            field: 'medicineSpec',
+                            title: '耗材规格',
+                            minWidth: 100
+                        },
+                        {
+                            field: 'medicineUnit',
+                            title: '单位',
+                            sort: true,
+                            width: 80,
+                            templet: function (d) {
+                                return dicDrugNumUnit[d.medicineUnit] || '';
+                            }
+                        },
+                        {
+                            field: 'standardRetailPrice',
+                            title: '单价',
+                            sort: true,
+                            width: 80,
+                            style: 'text-align: right;'//金额居右显示
+                        }
+                    ]]
+                }),
+                done: function (elem, result) {
+                    var materialId = $.grep($.map(result.data, function (item) {
+                        return item.medicineId;
+                    }).concat($.map(table.cache['medicineListGrid'], function (item) {
+                        return item.medicineId
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).join();
+                    table.reload('medicineListGrid', {
+                        url: materialId ? contextPath + '/medicine/medicineSimpleListData.jo?validFlag=' + YES_FLAG + '&medicineIds=' + materialId : '', //接口
+                    });
+                }
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(medicineListGrid)', function (obj) {
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    break;
+            }
+        });
+
+        // 获取坐标回调函数
+        function selectMapCoordinateBack(lng, lat) {
+            //$('#longitude').val(lng);
+            //$('#latitude').val(lat);
+        }
+
+        //自定义验证规则
+        form.verify({
+            medicine: function (value) {
+                //同步耗材
+                setMedicines();
+            }
+        });
+
+        //提交表单
+        function saveMedicineInfusionsRel() {
+            var params = common.serializeObject($('#medicineInfusionsRelForm'))
+            common.requestServer(contextPath + '/medicine/saveMedicineInfusionsRel.jo', params, function (result) {
+                if (result.code == '0') {
+                    $("#medicineInfusionsRelId").val(result.data.medicineInfusionsRelId);
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveMedicineInfusionsRel()
+            return false
+        })
+    })
+</script>

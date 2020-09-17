@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>移动支付结算平台</title>
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+    <meta content="yes" name="apple-mobile-web-app-capable">
+    <meta content="black" name="apple-mobile-web-app-status-bar-style">
+    <meta content="telephone=no" name="format-detection">
+
+    <style>
+        html,body { width: 100%; padding: 0; margin: 0; border: 0; height: 100%; background: url("images/bg.jpg") repeat-x left top #fafafa; font-size: 14px;}
+        header { height: 85px; padding-top: 50px; width: 1002px; margin: 0 auto;}
+        .logo { width: 47%; float: left; margin-left: 2%; background: url("images/logo.png") no-repeat left; height: 85px;}
+        .date { width: 47%; float: right; margin-right: 2%;  height: 45px; text-align: right; padding-top: 40px;}
+        article { background: url("images/banner.jpg") no-repeat center; height: 484px; }
+        .formtable {width: 1002px; margin: 0 auto; height: 484px;}
+        .formtable dl { float: right; margin-top: 80px; margin-right: 60px; width: 256px;}
+        .formtable dl dt { height: 50px; font-size: 30px; color: #ffffff; text-align: center; margin-bottom: 30px; text-shadow: 0 1px 1px #ccc; }
+        .formtable dl dd{ padding: 12px 0; margin: 0 auto; text-align: center}
+        .formtable dl dd input {border-radius: 3px; border: #e5e5e5 1px solid; height: 40px; line-height: 45px; overflow-y: hidden; padding: 0 9px 0 40px; width: 81%; font-size: 16px;}
+        .formtable dl dd input.user, .formtable dl dd input.pass {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABlUlEQVRIS8WVzVHDMBCFn5QCCBWQEqJZ3YEKSDqACoAKgAqADkgFpAPC3Rq5A5IO0kC0zGasmfzYlkQO7NXS+7w/equQEd77UQjhCcAEwFCuMPMcwNxaO+uTUCl97/04hPAVhQ/PM/NiMBhMjTHrNq1egPd+GEL46RLfEXwnoodigHNOLr2mspTvWuvztix6M3DOLQBc5gCYeWqtlb7sRS+gqqq1UuosBwDghYieiwDOOc4Ul2NlgGY0pcFZwcy1tdZkZ1DS4ChKREcl7+yBZLDZbOqCHnwT0VV2BnKwqqqJUuozo0YrIhoVvwO54JxbArhIQFobLHdyrEJ8SN5DK4SZZ9ba264fSAKaLGS+xeyOoq2xu4dOBnRZRIQkASk3BfBBRHfFJWom6AZAZ313RGUQ5lrrmTGm7ixRY8/3AMRFt4vlD7Fk5sdofHslcs69ARDAyaG1vjbGLA4BOTOfC9++jUNAiXumQP8DyN5gqd+PG+7oHXjvr0IIY5kiZh4rpeI0ta3OFQDpm4SM51prLT9Zx/38C3bmsxl5+XVhAAAAAElFTkSuQmCC"); background-position: 6px center; background-repeat: no-repeat; background-size: 22px; }
+        .formtable dl dd input.user:hover, .formtable dl dd input.user:focus {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABkklEQVRIS72WzVECMRiGny/qWaxASsAK1AqEg8tVKxArUCtQO5CT43qADsQOtgOwA+46eZ0IOyLukuw4Y6775X3y/eTNGinrUW23xZWga9AKWyTGgjF9G26SsKh+ro7BSym8Hi+YaIcePZtXaW0GjNSyd6Z14iuC9z6zQXPAswZO3EazBPwOe1VZbMzAck0MDpMAokffxuuxMcDcYDcFgLjxfbtuBHC5lCT+NVZNAYvRnKYCBIUyO0jPoEGDS1Gf2a+S1/fgUW3bokjtgeBVmR2lZxAin9R1xihWJsGbMms3vweA5ZoZ7G+E1DQ47IlbxaJU4T5UQ8TQ9+2s7gBxAOCedI1xVSVS1djVuL8DaiyihMQBETcFHnxm581LtJigE6C2vqWoRBiEsTeGZFbUl2iklvvgQmKQYNGVhw4wwWVpfD9K5HLdARexuU/57o1jTi1M3/dKmvkU9RXzW88g3T1joOXl+19AkxcsloBfvnC/78GzgiN2nKclo8PyN6Xq6QwmB8yWnlMg5t4xYZuifJ8/AVjunhkXIrvzAAAAAElFTkSuQmCC");}
+        .formtable dl dd input.pass {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAABhUlEQVRIS82VUU7CQBCG5ye8izegCbPPeAM9AXgC8ARyA/UE4gnkBuIJ1BOIr7tNyg2U94bfLClJbUtbiiHMS5Nt9v9mdmf+hRwpcCSO1AY55y5JjgB0k+QW7Xb7KQiCZZ1ka4GstTMAoyJBkjfGmFkVrBLknLsXkbtE6IHkHEBHRCYiMkjWr1T1vQxWB/QjImcArnu93jwtFobhlOStiLyq6rAxyN+LiLyR/DLG9LNCURR14jj+9uuqWpp06c8tSEQ+VNVDc+Gc4+mDrLV9AAOSXQBjkksAuzrLN4uPzTdpeX+vfyJ3dFEUdeM4/hQR31l7h0/KGBNUgqy1YwDPexNSG0heGGMWaY1cRZm5acrLzdXJglYpZ9i6QlHVh1WUPnvnnLegxx1n2xyUdYe0KxTAmoOSGTkPgmAzI2EYDkm+/HtFXpDkotVqTdfrdQeAH9Bds3ZYRXv0+mmByrqpblHVFSWG6r2uaaxUNXd3he9R4nfjJiSSk6zPeZ3Kp7wJrGjP0UC/9JXRG2vcqR0AAAAASUVORK5CYII="); background-size: 26px;}
+        .formtable dl dd input.pass:hover, .formtable dl dd input.pass:focus {background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAABe0lEQVRIS9WVzU3DQBCFv1ngTOgAOggdQAUJBxxxwlRAOiBUAFQANxRzIFQAVEDoIB0AZ6R9yDagEC+2MVEEe7Hkn/fN2515Nha0bEEc6oOutOXEvmA9Lc7E2HvO2LNJnWJrgdxQFxj7IUEPB0R2UQWrBLmhBhhHmZA49sYIo2Wib9BJb3tjm127K4NVgizRs8GqFzv0bDQt5hKdAoeCG0XWbQ7Kz+VW4lE9axeErtVyrzxlriIrLbrc0QcI7hXZVqhil0j/AJSo7YwOylo5lpiYI9xZYpA5tfzqlzljx55n3Re37lLrtsSDQauqZUPP06LUs41qUKLYwXkTyMc3HjaJbDytUXD0ZW4a0kJz9TdBghcTI6XJ8J4KwVgKJMWPHH3Z+yv1nTiZO6iQDlOpMAv79Rn5FdY+Z2SorjOu5+4oD2/GEqdZesPgu1n7taO63f63QJR001wdkQYqPNQVnX0vnTVFVsjJ8P8oUWwQN4EJ+rM5l4f7gtbCQG9LXbsbOTf0JAAAAABJRU5ErkJggg==");}
+        .formtable dl dd.yzm { width: 40%; float: left; display: inline-block; margin-bottom: 15px;}
+        .formtable dl dd.yzm input { padding: 0 15px; text-align: center; }
+        .formtable dl dd.yzm + dd{ width: 60%; display: inline-block}
+
+        .formtable dl dd button { width: 98%; margin: 0 auto; height: 40px; background: #faa600; border-radius: 3px; border: 0; color: #fff; font-weight: 600; font-size: 18px;}
+        footer { text-align: center; color: #545454; padding-top: 50px;}
+    </style>
+    <script>
+        function showTime() {
+            var now = new Date();
+            var nowTime = now.toLocaleString();
+            var date = nowTime.substring(0,10);//截取日期
+            var time = nowTime.substring(10,20); //截取时间
+            var week = now.getDay(); //星期
+            var hour = now.getHours(); //小时
+            //判断星期几
+            var weeks = ["日","一","二","三","四","五","六"];
+            var getWeek = "星期" + weeks[week];
+            var sc;
+            //判断是AM or PM
+            if(hour >= 0 && hour < 5){
+                sc = '凌晨';
+            }
+            else if(hour > 5 && hour <= 7){
+                sc = '早上';
+            }
+            else if(hour > 7 && hour <= 11){
+                sc = '上午';
+            }
+            else if(hour > 11 && hour <= 13){
+                sc = '中午';
+            }
+            else if(hour> 13 && hour <= 18){
+                sc = '下午';
+            }
+            else if(hour > 18 && hour <= 23){
+                sc = '晚上';
+            }
+            document.getElementById('time').innerHTML ="当前时间：" + date+" " + getWeek +" "+"   "+sc+"  "+time;
+            setTimeout('showTime()',1000);
+        }
+    </script>
+</head>
+<body>
+    <header>
+        <div class="logo"></div>
+        <div class="date">
+            <div id="linkweb" style=" display:inline;"></div>
+            <script>
+                setInterval("document.getElementById('linkweb').innerHTML=new Date  ().toLocaleString()+' 星期'+'日一二三四五六'.charAt(new Date().getDay  ());",1000);
+            </script>
+
+        </div>
+    </header>
+    <article>
+        <div class="formtable">
+            <dl>
+                <dt>商户登录</dt>
+                <dd><input type="text" maxlength="20" class="user" placeholder="请输入用户名"></dd>
+                <dd><input type="password" maxlength="20" class=" pass" placeholder="请输入密码"></dd>
+                <dd class="yzm"><input type="text" maxlength="6"></dd>
+                <dd><img src="images/yzm.jpg"></dd>
+                <dd><button type="submit" > 登 录 </button></dd>
+               <!-- <dd><a href="javascript:void (0)">找回登录密码？</a></dd>-->
+            </dl>
+        </div>
+
+        
+
+
+    </article>
+    <footer>
+        技术支持：博繁软件
+
+
+
+
+    </footer>
+
+
+
+
+
+
+
+
+
+
+
+</body>
+</html>

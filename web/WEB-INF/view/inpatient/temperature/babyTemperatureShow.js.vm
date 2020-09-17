@@ -1,0 +1,50 @@
+<script type="text/javascript">
+var weeksMap = JSON.parse('$dicTools.changeMapToJson($!weeksMap)');
+
+layui.use(['element','form','table','layer'], function(){
+    var table = layui.table;
+    var form = layui.form;
+    
+    //初始化加载体温单
+    buildTemperatureList({temperatureDateBegin : $("#beginDate").val()});
+    
+    //监听周数下拉选择
+    form.on("select(weekNo)",function(obj){
+        if(obj.value){
+	        $("#beginDate").val(obj.value);
+        }
+        buildTemperatureList({temperatureDateBegin : obj.value});
+    });
+    
+    //日期控件初始化
+    laydate.render({elem: '#beginDate', type: 'date',  istime: true, max: getSmpFormatNowDate(true)
+        //日期被选中事件
+        ,done: function (value, date, endDate){
+            var beginDate
+            if(date.year){
+                beginDate = date.year+"-"+date.month+"-"+date.date;
+                $("#beginDate").val(beginDate);
+                $("#weekNo").val("");
+                form.render("select");
+            }else{
+                $("#beginDate").val("");
+            }
+            buildTemperatureList({temperatureDateBegin : beginDate});
+        }
+    });
+    
+    function buildTemperatureList(params) {
+        params['inhospitalId'] = "$!inpatientInhospital.inhospitalId";
+        console.log(params);
+        common.requestServer('../inpatient/temperatureData.jo', params, function (data){
+            if (!data) { return ;}
+            $("#temp").html('');
+            console.log(data)
+            var tempFootData = {shitCount:{title:'大便次数'}, bloodP: {title:'血压mmHg'}, weight: {title:'体重kg'}};
+            new babyTemperature("#temp", {height:930}).initTemp(tempFootData).initData(data);
+        });
+    }
+    
+    
+});
+</script>

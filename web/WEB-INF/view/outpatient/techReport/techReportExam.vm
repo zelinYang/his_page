@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>检查报告查阅</title>
+    #parse("./common/pageCss.vm")
+    #parse("./outpatient/techReport/techReport.css.vm")
+    #parse("./common/pageJs.vm")
+</head>
+
+<body class="white-bg techReportExam">
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10 full-height">
+            <!--搜索条件 开始-->
+            <form id="queryForm" class="layui-form">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请时间</label>
+                            <div class="layui-input-inline wd-200">
+                                <div class="layui-input-inline input-inline-long" style="width:180px;">
+                                  #formTextInput("makeOrderTime" "" "class='layui-input layer-date' tag=''  id='makeOrderTime' placeholder='申请时间范围' readOnly")
+                                  <input type="hidden" name="makeOrderTimeBegin" id="makeOrderTimeBegin"/>
+                                  <input type="hidden" name="makeOrderTimeEnd" id="makeOrderTimeEnd"/>
+                                  <input type="hidden" name="makeOrderDateBegin" id="makeOrderDateBegin"/>
+                                  <input type="hidden" name="makeOrderDateEnd" id="makeOrderDateEnd"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="button" id="btn_query" lay-filter="btn_query" lay-submit class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="layui-col-md3 layui-col-xs3 full-height">
+                <!-- 列表表格 begin -->
+                <table id="examApplyGrid" lay-filter="examApplyGrid" lay-skin="line" class="layui-hide"></table>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md3 layui-col-xs3 full-height">
+                <div class="layui-form" lay-filter="readOnlyForm" id="readOnlyForm" style="padding: 0;height: calc(100% - 52px);">
+                    <div class="layui-form-item  full-height-scroll">
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">检查部位</label>
+                            <div class="layui-input-inline">#formTextInput("examPartName" "" " id='examPartName' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">检查时间</label>
+                            <div class="layui-input-inline">#formTextInput("examTime" "" " id='examTime' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">登记医生</label>
+                            <div class="layui-input-inline">#formTextInput("recordDoctorName" "" " id='recordDoctorName' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">登记时间</label>
+                            <div class="layui-input-inline">#formTextInput("recordTime" "" " id='recordTime' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">检查所见</label>
+                            <div class="layui-input-inline">
+                                <div class="layui-input-inline">#formTextarea("examFindings" "" "id='examFindings' class='layui-textarea'")</div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">检查提示</label>
+                            <div class="layui-input-inline">
+                                <div class="layui-input-inline">#formTextarea("examHint" "" "id='examHint' class='layui-textarea'")</div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">检查建议</label>
+                            <div class="layui-input-inline">
+                                <div class="layui-input-inline">#formTextarea("examAdvise" "" "id='examAdvise' class='layui-textarea'")</div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: auto;">病理诊断</label>
+                            <div class="layui-input-inline">
+                                <div class="layui-input-inline">#formTextarea("pathologicDiagnosis" "" "id='pathologicDiagnosis' class='layui-textarea'")</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6 layui-col-xs6 full-height-scroll" style="height: calc(100% - 52px);">
+               <div class="layui-colla-item" style="position:relative;">
+                   <div id="pacs_div" class="layui-colla-content layui-show" style="height: 600px;padding: 0px 5px;">
+                       <div class="layui-inline" >
+                           <label id="pacs_label" class="layui-form-label" style="width: auto;">没有影像图片</label>
+                       </div>
+                       <iframe name="pacs_iframe" width="100%" scrolling="yes" frameBorder="0"  height="100%"
+                               src="">
+                       </iframe>
+                   </div>
+               </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+//注意：折叠面板 依赖 element 模块，否则无法进行功能性操作
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    index: 'lib/index'
+}).use(['index','element','form','table', 'util'], function(){
+  var element = layui.element, form = layui.form, table = layui.table, util = layui.util;
+  var $ = layui.jquery;
+    //刷新页面按钮
+    $("#btn_refresh").click(function () {
+        location.reload();
+    });
+  $(function() {
+      $('.pacs').click(function() {
+          var thirdpartyExamNum = $(this).attr('data');
+          $.post(contextPath + '/tech/getStuuid.jo', {pid: thirdpartyExamNum}, function (res){
+              if(res.code === "0") {
+                  window.open('http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=' + res.data);
+                  //window.open('http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=1.2.840.112618.2.216.6947.2378723.56558703.47677611756602419');
+              } else {
+                  common.msg("没有影响数据", 0);
+              }
+          }, 'json');
+      });
+  });
+
+  table.render({
+      elem: '#examApplyGrid'
+          ,id: 'examApplyGrid'
+          ,url: '../tech/techExamApplyPageData.jo'
+          ,where: getQueryParams()
+          //,toolbar: '#toolbarDemo'
+          ,title: ''
+          ,height: 'full-70'
+          ,limit : 20
+          ,defaultToolbar: []
+          ,request: {
+              pageName: 'pageNumber' //页码的参数名称，默认：page
+              ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+          }
+          ,cols: [[
+              {type: 'numbers', title:'序号', event:'click_call'}//event属性用于增加table点击后的背景,里面的值不需要有实际意义
+              ,{field:'techApplyName', title:'检查类型', event:'click_call'}
+              ,{field:'applyTime', title:'申请时间', width:200, event:'click_call', templet: function(d){
+                  return d.applyTime ? util.toDateString(d.applyTime) : "";
+              }}
+          ]]
+          ,page: true
+      });
+
+  // 获取查询表单参数对象
+  function getQueryParams() {
+      var queryParam = $.extend({
+          patientId: '$!{patientId}',
+          inhospitalId: '',
+          registerId: '',
+          doctorOrderTypeLeftLike: '$!{CONST.AppConstants.ORDER_TYPE_EXAM}',
+          validFlag: '$!{CONST.AppConstants.YES_FLAG}',
+          makeOrderTimeBegin: '',
+          makeOrderTimeEnd: ''
+      }, common.serializeObject($('#queryForm')));
+      var inhospitalId = "$!{inhospitalId}";
+      var registerId = "$!{registerId}";
+      if (null != inhospitalId && "" != inhospitalId) {
+          queryParam["inhospitalId"] = inhospitalId;
+      } else if (null != registerId && "" != registerId) {
+          queryParam["registerId"] = registerId;
+      }
+      return queryParam;
+  }
+
+
+  //监听检查项目行单击事件
+  table.on('row(examApplyGrid)', function(obj) {
+      var data = obj.data;
+      //初始化数据
+      $("#examPartName").val("");
+      $("#examTime").val("");
+      $("#recordDoctorName").val("");
+      $("#recordTime").val("");
+      $("#examFindings").val("");
+      $("#examHint").val("");
+      $("#examAdvise").val("");
+      $("#pathologicDiagnosis").val("");
+      $("#pacs_label").html("没有影像图片");
+      $("#pacs_iframe").attr("src", "");
+      if ("" == data.examApplyId) {
+          return;
+      }
+      var queryParams = {hospitalId : data.hospitalId}
+      var registerId = data.registerId;
+      var inhospitalId = data.inhospitalId;
+      if (null != inhospitalId && "" != inhospitalId) {
+          queryParams["inhospitalId"] = inhospitalId;
+      } else if (null != registerId && "" != registerId) {
+          queryParams["registerId"] = registerId;
+      }
+      $.ajax({
+          type: "POST",
+          url: '$contextPath/tech/findExamResult.jo',
+          data: queryParams,
+          traditional: true,
+          dataType: "json",
+          success: function (result) {
+              var examResult = result.data;
+              if (null == examResult || [] == examResult) {
+                  return;
+              }
+              $("#examPartName").val(examResult.examPartName);
+              $("#examTime").val(examResult.examTime ? util.toDateString(examResult.examTime) : "");
+              $("#recordDoctorName").val(examResult.recordDoctorName);
+              $("#recordTime").val(examResult.recordTime ? util.toDateString(examResult.recordTime) : "");
+              $("#examFindings").val(examResult.examFindings);
+              $("#examHint").val(examResult.examHint);
+              $("#examAdvise").val(examResult.examAdvise);
+              $("#pathologicDiagnosis").val(examResult.pathologicDiagnosis);
+              if ("" != examResult.thirdpartyExamNum) {
+                  $("#pacs_label").html("没有影像图片");
+                  $("#pacs_iframe").attr("src", "");
+                  $.post('$contextPath/tech/getStuuid.jo', {pid: examResult.thirdpartyExamNum}, function (res){
+                      if (res.code === "0") {
+                          var iframeSrc = 'http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=' + res.data;
+                          $("#pacs_label").html("");
+                          $("#pacs_iframe").attr("src", iframeSrc);
+                      } else {
+
+                      }
+                  }, 'json');
+              }
+          },
+          error: function (res) {
+              jqueryPostError(res);
+          }
+      });//ajax end
+  });
+});
+</script>
+</body>
+</html>

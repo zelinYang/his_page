@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+.layui-table-view .layui-table td {padding: 3px 0;}
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper layui-bg-white">
+        <form id="queryForm " class="layui-form" style="padding-top: 10px">
+            #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+		</form>
+            <table class="layui-table m-n" lay-skin="nob" lay-size="md">
+                <colgroup>
+                    <col width="50">
+                    <col width="50">
+                    <col width="50">
+                    <col width="50">
+                    <col width="50">
+                    <col width="50">
+                    <col>
+                </colgroup>
+                <tbody>
+                <tr>
+                    <td><label>住院号：</label><span id="inhospitalNo">$!inpatientInhospital.inhospitalNo</span></td>
+                    <td><label>性质：</label><span id="patientKind">$!inpatientInhospital.patientKind</span></td>
+                    <td><label>总费用：</label><span id="totalPrice"></span></td>
+                    <td><label>自负：</label><span id="selfPayAmount"></span></td>
+                    <td><label>已缴费：</label><span id="settlementPrice"></span></td>
+                    <td><label>欠款：</label><span id="arrears"></span></td>
+                </tr>
+                </tbody>
+            </table>
+        <!-- 费用明细 -->
+        <div class="layui-row p-t-n full-height white-bg" style="height: calc(100% - 50px);margin-top: 10px">
+            <table class="layui-hide full-height" id="orderList" lay-filter="orderList"></table>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['jquery', 'form', 'laydate', 'element', 'table'], function(){
+    var laydate = layui.laydate, form = layui.form, table = layui.table;
+    // 初始化医嘱表格列表数据
+    var tableIns = table.render($.extend(singlePageTable, {
+        id: 'orderList',
+        elem: '#orderList',
+        height: 'full-50',
+        url: '../inpatient/inpatientFeeItemDetailPage.jo',
+        where: {
+			patientId: $("#patientId").val(),
+			inhospitalId: $("#inhospitalId").val(),
+			registerId: $("#registerId").val(),
+        },
+        cols : [ [
+            {
+                minWidth : 200,
+                align : 'left',
+                title : '费用名称',
+                templet :function (row) {
+                    return row[0].chargeName || '';
+                }
+            }, {
+                width : 120,
+                align : 'right',
+                title : '费用金额',
+                templet :function (row) {
+                    return row[0].actualPrice || '';
+                }
+            }, {
+                width : 120,
+                align : 'right',
+                title : '自负费用',
+                templet :function (row) {
+                    return row[0].selfPayAmount || '';
+                }
+            },{
+                minWidth : 200,
+                align : 'left',
+                title : '费用名称',
+                templet :function (row) {
+                    return row[1].chargeName || '';
+                }
+            }, {
+                width : 120,
+                align : 'right',
+                title : '费用金额',
+                templet :function (row) {
+                    return row[1].actualPrice || '';
+                }
+            }, {
+                width : 120,
+                align : 'right',
+                title : '自负费用',
+                templet :function (row) {
+                    return row[1].selfPayAmount || '';
+                }
+            }
+        ] ],parseData: function(res) { //将原始数据解析成 table 组件所规定的数据
+            res.data = semiData(res.data.reverse())
+            return res;
+        }
+        ,done: function(res){
+            var data = res.data;
+            //当无费用明细时，显示费用类别不用计算费用
+            if(data[0] && data[0].chargeGroupCode != null){
+                return;
+            }
+
+            //计算总费用,自负费用,已缴费金额，欠费金额
+            var totalPrice = 0;
+            var totalSelfPayAmount = 0;
+            var totalSettlementPrice = 0;
+            var totalArrears = 0;
+            for(var i=0;i<data.length;i++){
+                var actualPrice = parseInt(data[i].actualPrice);
+                var selfPayAmount = parseInt(data[i].selfPayAmount);
+                var settlementPrice = parseInt(data[i].settlementPrice);
+
+                totalPrice = totalPrice + actualPrice;
+                totalSelfPayAmount = totalSelfPayAmount + selfPayAmount
+                totalSettlementPrice = totalSettlementPrice + settlementPrice
+                totalArrears = totalPrice - totalSettlementPrice;
+            }
+            $("#totalPrice").text(totalPrice || 0);
+            $("#selfPayAmount").text(totalSelfPayAmount || 0);
+            $("#settlementPrice").text(totalSettlementPrice || 0);
+            $("#arrears").text(totalArrears || 0);
+        }
+
+    }));
+//将数据分半
+    function semiData(list) {
+        var semiIndex = Math.ceil(list.length / 2);
+        return $.map(list,function (item, index) {
+            if(semiIndex > index){
+                return [[item, list[semiIndex+index] || {}]]
+            }
+        });
+    }
+
+    // 重载刷新医嘱列表
+    function reloadOrderList() {
+        mergeTd = {};
+        var params = common.serializeObject($('#queryForm'));
+        tableIns.reload({url: '../inpatient/inpatientOrderJsonPageList.jo', where: params});
+        initOrderButton("layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled");
+    }
+
+
+    // 按医嘱状态查询
+    form.on('select(orderState)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱类别查询
+    form.on('select(orderClassify)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱项目和医嘱开始日期查询
+    $('#orderName').bind('input propertychange', function (){
+        reloadOrderList();
+    });
+    //按日期范围查询
+    laydate.render({elem: '#exeOrderStartTime', range: true, done: function (value, date, endDate){ reloadOrderList() }});
+
+
+    // 刷新按钮
+    $('#btn_refresh').click(function (){
+        reloadOrderList();
+    });
+});
+</script>
+</html>

@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-table td, .layui-table th {padding: 5px;}
+    .layui-form{height: 100%;}
+    .p-xs{height: calc(100% - 85px);}
+
+    @media screen and (max-width: 768px){
+        .p-xs{height: calc(100% - 115px);}
+    }
+</style>
+</head>
+<body>
+    <div class="layui-col-xs2 white-bg full-height border-r p-t-xs">
+        <div id="tree" lay-filter="tree"></div>
+    </div>
+
+    <div class="layui-col-xs10 white-bg full-height p-t-xs">
+        <form class="layui-form" action="">
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("techExamApplyId" "$!techExamApply.techExamApplyId" "id='techExamApplyId'")
+            #formHiddenInput("orderGroupNo" "#htmlEscape($!techExamApply.orderGroupNo)" "id='orderGroupNo'")
+            #formHiddenInput("examApplyName" "#htmlEscape($!techExamApply.examApplyName)" "id='examApplyName'")
+            #formHiddenInput("patientHospitalEmrId" "#htmlEscape($!inpatientInhospital.patientHospitalEmrId)" "id='patientHospitalEmrId'")
+            ##医嘱类型 03为检验
+            #formHiddenInput("makeOrderFlag" "$!makeOrderFlag" "id='makeOrderFlag'")
+            <div class="layui-form-item">
+                <div class="layui-inline" style="width: 265px">
+                    <label class="layui-form-label">开始时间</label>
+                    <div class="layui-input-inline" style="width: 152px">
+                        #formTextInput("exeOrderStartTime" "" "id='exeOrderStartTime' class='layui-input' placeholder='' maxLength='50'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">执行科室</label>
+                    <div class="layui-input-inline">
+                        #if($techExamApply.examSampleOfficeId)
+                            #formSelectOrgForList("exeOfficeId" "$!techExamApply.examSampleOfficeId" $!deptList "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId'" "执行科室")
+                        #else
+                            #formSelectOrgForList("exeOfficeId" "$!orgId" $!deptList "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId'" "执行科室")
+                        #end
+                    </div>
+                </div>
+
+                <div class="layui-inline m-l-sm">
+                    <div class="layui-input-inline">
+                        #if($techExamApply.urgentFlag == "0")
+                            #formSimpleCheckbox("urgentFlag" "$techExamApply.urgentFlag" "" "lay-skin='primary' id='urgentFlag' lay-filter='urgentFlag' title='加急' " "")
+                        #else
+                            #formSimpleCheckbox("urgentFlag" "" "" " lay-skin='primary' id='urgentFlag' lay-filter='urgentFlag' title='加急' " "")
+                        #end
+                    </div>
+                </div>
+            </div>
+            <!-- 检验项目 -->
+            <div class="p-xs" style="overflow: auto;">
+                <table class="layui-table abuui-table-zljh">
+                    <colgroup>
+                        <col width="30px">
+                        <col width="16%">
+                        <col width="15%">
+                        <col>
+                        <col width="30px">
+                        <col width="16%">
+                        <col width="15%">
+                        <col>
+                    </colgroup>
+                    <tr>
+                        <th></th>
+                        <th>项目</th>
+                        <th>样本</th>
+                        <th>备注</th>
+                        <th></th>
+                        <th>项目</th>
+                        <th>样本</th>
+                        <th>备注</th>
+                    </tr>
+                    <tbody id="lisItemList">
+                        <tr>
+                            <td>
+                                #formHiddenInput("chargeItemId" "" " field-name='lisItem_one'")
+                                #formHiddenInput("chargeGroupId" "" " field-name='lisItem_one'")
+                                #formHiddenInput("itemPrice" "" " field-name='lisItem_one'")
+                                #formHiddenInput("itemTotalPrice" "" " field-name='lisItem_one'")
+                                #formHiddenInput("orderName" "" " field-name='lisItem_one'")
+                                #formHiddenInput("orderId" "" " field-name='lisItem_one'")
+                                #formSimpleCheckbox("lisItem" "1" "" "lay-skin='primary' index-key='one' lay-filter='lisItem' title=''" "")
+                            </td>
+                            <td><span field-name='lisItem_one' name="orderName"></span></td>
+                            <td>
+                               #formSingleSelectFirstNone("lisSpecimenId" "" $!dicData.dicBodyPartClassifyLis "lay-search='' field-name='lisItem_one' class='layui-input'" "请选择样本")
+                            </td>
+                            <td>
+                               #formTextInput("remark" "#htmlEscape($!disease.wubiCode)" "maxlength='20' field-name='lisItem_one' class='layui-input'")
+                            </td>
+                            <td>
+                                #formHiddenInput("chargeItemId" "" " field-name='lisItem_two'")
+                                #formHiddenInput("chargeGroupId" "" " field-name='lisItem_two'")
+                                #formHiddenInput("itemPrice" "" " field-name='lisItem_two'")
+                                #formHiddenInput("itemTotalPrice" "" " field-name='lisItem_two'")
+                                #formHiddenInput("orderName" "" " field-name='lisItem_two'")
+                                #formHiddenInput("orderId" "" " field-name='lisItem_two'")
+                                #formSimpleCheckbox("lisItem" "1" "" "lay-skin='primary' index-key='two' lay-filter='lisItem' title=''" "")
+                            </td>
+                            <td><span field-name='lisItem_two' name="orderName"></span></td>
+                            <td>
+                               #formSingleSelectFirstNone("lisSpecimenId" "" $!dicData.dicBodyPartClassifyLis "lay-search='' field-name='lisItem_two' class='layui-input'" "请选择样本")
+                            </td>
+                            <td>
+                               #formTextInput("remark" "#htmlEscape($!disease.wubiCode)" "maxlength='20' field-name='lisItem_two' class='layui-input'")
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="tool-bottom-fixed">
+                <button class="layui-btn layui-btn-sm" type="button" id="btn_save"> 保存 </button>
+                <button class="layui-btn layui-btn-sm" type="button" id="btn_submit"> 提 交  </button>
+            </div>
+        </form>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    //03=检验类医嘱
+    var ORDER_TYPE_LIS  = "$!{CONST.AppConstants.ORDER_TYPE_LIS}"
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['form', 'element', 'dtree'], function(){
+    var dtree = layui.dtree, form = layui.form;
+    laydate.render({ elem:'#exeOrderStartTime', type:'datetime', value: getFormatDate()});
+    var urgentFlag;
+    // 初始化表格列表模板
+    var tempEle = $('#lisItemList > tr:last');
+    $(tempEle).find('div.layui-form-select').remove();
+    $(tempEle).find('div.layui-form-checkbox').remove();
+    var templateTr = $(tempEle).prop("outerHTML");
+    $(tempEle).remove();
+
+    // 要编辑的数据（库中已有的数据）
+    var prevIframe = $('iframe#' + parent.currentTabId, parent.document)[0];
+    if (prevIframe && prevIframe.contentWindow && prevIframe.contentWindow.selectOrderData.length > 0) {
+        $('#lisItemList').html('');
+        buildTrHtml(prevIframe.contentWindow.selectOrderData);
+    }
+
+    common.requestServer('../basDic/basDicTree.jo', {dicTypeId: 36, valid: true}, function (result){
+        if (!result) { return ;}
+        var treeData = [{title: '检验单', spread: true, parentId: '0', children: result}];
+        dtree.render({ elem: '#tree', data: treeData });
+    });
+
+    // 监听左边树型点击事件
+    dtree.on("node('tree')", function(data) {
+        var node = JSON.parse(data.param.basicData);
+        if (!node.dicCode) { return ;}
+        if (!ORDER_TYPE_LIS) {
+            common.alert('医嘱类型：参数无效', 2);
+            return ;
+        }
+
+        $('#examApplyName').val(node.dicName ? node.dicName : '');
+        common.requestServer(contextPath + '/bas/chargeItemJsonList.jo', {doctorOrderType: ORDER_TYPE_LIS, doctorOrderSubtype: node.dicCode}, function (result){
+            $('#lisItemList').html('');
+            if (prevIframe && prevIframe.contentWindow && prevIframe.contentWindow.selectOrderData.length > 0) {
+                buildTrHtml(prevIframe.contentWindow.selectOrderData);
+            }
+            if (!result || !result.data) {
+                return;
+            }
+            buildTrHtml(result.data);
+        });
+    });
+
+
+    // 创建检验项目列表
+    function buildTrHtml(dataList) {
+        var html = [];
+        var curBody = $('#lisItemList');
+        var len = dataList ? dataList.length : 0;
+        for (var i = 0; i < len; i++) {
+            var data = dataList[i];
+            if (i % 2 === 0) {
+                curBody.append(templateTr);
+                var lastTr = $('#lisItemList > tr:last');
+                $(lastTr).find('input[name="itemPrice"]:first').val(data.unitPrice);
+                $(lastTr).find('input[name="itemTotalPrice"]:first').val(data.unitPrice);
+                $(lastTr).find('span[name="orderName"]:first').html(data.chargeName);
+                $(lastTr).find('input[name="orderName"]:first').val(data.chargeName);
+                $(lastTr).find('input[name="chargeItemId"]:first').val(data.chargeItemId);
+                $(lastTr).find('input[name="chargeGroupId"]:first').val(data.chargeGroupId);
+                $(lastTr).find('input[name="remark"]:first').val(data.remark ? data.remark : '');
+                $(lastTr).find('input[name="urgentFlag"]:first').attr('lay-filter', 'urgentFlag_' + lastTr.index());
+                $(lastTr).find('input[name="lisSpecimenId"]:first').val(data.lisSpecimenId ? data.lisSpecimenId : '');
+                $(lastTr).find('input[name="orderId"]:first').val(data.orderId ? data.orderId : '');
+                if (data.urgentFlag == '1') {
+                    $(lastTr).find('input[name="urgentFlag"]:first').val('1');
+                    $(lastTr).find('input[name="urgentFlag"]:first').prop('checked', true);
+                }
+                if (data.orderId) {
+                    $(lastTr).find('input[name="lisItem"]:first').prop('checked', true);
+                }
+            } else {
+                var lastTr = $('#lisItemList > tr:last');
+                $(lastTr).find('input[name="itemPrice"]:last').val(data.unitPrice);
+                $(lastTr).find('input[name="itemTotalPrice"]:last').val(data.unitPrice);
+                $(lastTr).find('span[name="orderName"]:last').html(data.chargeName);
+                $(lastTr).find('input[name="orderName"]:last').val(data.chargeName);
+                $(lastTr).find('input[name="chargeItemId"]:last').val(data.chargeItemId);
+                $(lastTr).find('input[name="chargeGroupId"]:last').val(data.chargeGroupId);
+                $(lastTr).find('input[name="remark"]:last').val(data.remark ? data.remark : '');
+                $(lastTr).find('input[name="urgentFlag"]:last').attr('lay-filter', 'urgentFlag_t_' + lastTr.index());
+                $(lastTr).find('input[name="lisSpecimenId"]:last').val(data.lisSpecimenId ? data.lisSpecimenId : '');
+                $(lastTr).find('input[name="orderId"]:last').val(data.orderId ? data.orderId : '');
+                if (data.urgentFlag == '1') {
+                    $(lastTr).find('input[name="urgentFlag"]:last').val('1');
+                    $(lastTr).find('input[name="urgentFlag"]:last').prop('checked', true);
+                }
+                if (data.orderId) {
+                    $(lastTr).find('input[name="lisItem"]:last').prop('checked', true);
+                }
+            }
+        }
+
+        // 删除最后一行没有检验项目的td
+        var hasChargeItemId = $('#lisItemList > tr:last').find('input[name="chargeItemId"][field-name="lisItem_two"]').val();
+        if (!hasChargeItemId) {
+            var lastTd = $('#lisItemList > tr:last').find('td');
+            if (lastTd.length <= 0) {
+                return ;
+            }
+            for (var i = 5; i < 10; i++) {
+                lastTd[i].remove();
+            }
+        }
+
+        form.render('select');
+        form.render('checkbox');
+        // 监听加急复选框，选中赋值1否则0
+        $(curBody).find('input[name="urgentFlag"]').each(function (){
+            form.on('checkbox(' + $(this).attr('lay-filter') + ')', function (data){
+                $(this).val(data.elem.checked ? '1' : '0');
+            });
+        });
+    }
+
+    // 保存按钮
+    $('#btn_save').click(function (){
+        submitForm('0');
+    });
+
+    // 提交按钮
+    $('#btn_submit').click(function (){
+        submitForm('1');
+    });
+
+    form.on('checkbox(urgentFlag)', function(data){
+        if(data.elem.checked == true){
+            urgentFlag = "1";
+        } else {
+            urgentFlag = "0";
+        }
+    });
+
+    // 提交表单
+    function submitForm(orderState) {
+        if (!$('#inhospitalId').val() || !$('#orderGroupNo').val()) {
+            common.alert('参数无效', 2);
+            return ;
+        }
+        if (!$('#exeOfficeId').val()) {
+            common.alert('请选择执行科室', 0);
+            return ;
+        }
+
+        var params = [];
+        $('input[name = "lisItem"]:checked').each(function (i, v){
+            var curTr = $(this).parent().parent();
+            var indexKey = $(this).attr('name') + "_" + $(this).attr('index-key');
+            var obj = {
+                    urgentFlag: urgentFlag ? urgentFlag : "0",
+                    lisFlag: '1', // 是否检验
+                    injectionFlag: '0',
+                    transfuseFlag: '0',
+                    antibioticFlag: '0',
+                    needSkinTestFlag: '0',
+                    tumorMedicineFlag: '0',
+                    examFlag: '0', // 是否检查
+                    surgeryFlag: '0', // 是否手术
+                    medicineFlag: '0', // 是否药品
+                    overdueBillFlag: '0', // 是否欠费
+                    orderClassify: '02', // 医嘱类别 2临时
+                    medicalTechFlag: '0', //是否医技
+                    exeOrderFlag: '1', //执行人类型 1为医生
+                    orderState: orderState, // 状态
+                    exeOrderStartTime: $('#exeOrderStartTime').val(),
+                    inhospitalId: $('#inhospitalId').val(),
+                    orderGroupNo: $('#orderGroupNo').val(),
+                    makeOrderFlag: $('#makeOrderFlag').val(),  //开嘱人类型 1为医生
+                    doctorOrderType: ORDER_TYPE_LIS,
+                    exeOfficeId: $('#exeOfficeId').val(),
+                    exeOfficeName: $('#exeOfficeId').find('option:selected').text()
+                    };
+            $(curTr).find('input[field-name="' + indexKey + '"], select[field-name="' + indexKey + '"], span[field-name="' + indexKey + '"]').each(function (i){
+                var name = $(this).attr('name');
+                if (!name) {
+                    return true ;
+                }
+                obj[name] = $(this).is('span') ? $(this).text() : $(this).val();
+            });
+            params.push(obj);
+        });
+        if (!params || params.length <= 0) { return ;}
+        var p = {
+                patientType: '2', // 申请类型， 2表示住院
+                injectionFlag: '0',
+                transfuseFlag: '0',
+                antibioticFlag: '0',
+                needSkinTestFlag: '0',
+                tumorMedicineFlag: '0',
+                urgentFlag: $('#urgentFlag').val(),
+                inhospitalId: $('#inhospitalId').val(),
+                orderGroupNo: $('#orderGroupNo').val(),
+                examApplyName: $('#examApplyName').val(),
+                techExamApplyId: $('#techExamApplyId').val(),
+                doctorOrderType: ORDER_TYPE_LIS,
+                examSampleOfficeId: $('#exeOfficeId').val(),
+                examSampleOffice: $('#exeOfficeId').find('option:selected').text(),
+                inpatientOrderJson: JSON.stringify(params)
+            };
+        //console.log(params);
+        common.requestServer(contextPath + '/inpatient/saveInpatientOrderForSurgery.jo', p, function (result){
+            console.log(result);
+            if (result.code == "0") {
+                var index = parent.layer.getFrameIndex(window.name);
+                // // parent.layer.close(index);
+                if (parent.currentTabId) {
+                    $('iframe#' + parent.currentTabId + '.layadmin-iframe' , parent.document).contents().find('#btn_refresh').click();
+                }
+                if(typeof parent.reloadOrderList === "function"){
+                    parent.reloadOrderList();
+                }
+                common.confirm('保存成功, 是否关闭?', function () {
+                    parent.layer.close(index);
+                });
+
+            } else {
+                common.alert(result.msg, 0);
+            }
+        })
+    }
+});
+</script>
+</html>

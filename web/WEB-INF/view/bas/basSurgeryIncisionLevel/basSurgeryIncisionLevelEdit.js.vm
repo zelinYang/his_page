@@ -1,0 +1,32 @@
+<script>
+
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+    var $ = layui.$, form = layui.form;
+    common.verify(form)
+
+    //提交表单
+    function saveBasSurgeryIncisionLevel() {
+      var basSurgeryIncisionLevelParams = common.serializeObject($('#basSurgeryIncisionLevelForm'))
+      common.requestServer(contextPath + '/bas/saveBasSurgeryIncisionLevel.jo', basSurgeryIncisionLevelParams, function (result) {
+        if (result.code == '0') {
+          common.msg('保存成功。', 1, function () {
+            $('#btn_query', window.parent.document).click()
+            var index = parent.layer.getFrameIndex(window.name)
+            parent.layer.close(index)
+          })
+        } else {
+          common.alert(result.msg, 2)
+        }
+      })
+    }//save function
+     // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveBasSurgeryIncisionLevel()
+      return false
+    })
+  })
+</script>

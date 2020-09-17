@@ -1,0 +1,207 @@
+<!-- 组套开关 -->
+<script type="text/html" id="groupRoleFalgTpl">
+    <input type="checkbox" lay-filter="groupRoleFalg"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch"
+           lay-text="有效|无效" {{Boolean(+d.groupRoleFalg) && 'checked' }} >
+</script>
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 列表表格 工具栏 结束-->
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+        // 科室
+        var officeIds = xmSelect.render({
+            el: '#officeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'officeIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../org/sysOrgListData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.name, value: item.orgId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                officeIds: '',
+                doctorName: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#basDoctorGroupRole_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_doctorName").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basDoctorGroupRoleListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basDoctorGroupRole_queryForm');
+            officeIds.setValue([]);
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/bas/basDoctorGroupRoleAdd.do', '新增科室组套权限', {
+                area: ['90%', '90%'],
+                scroll: true
+            });
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basDoctorGroupRoleListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basDoctorGroupRoleListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    title: '科室',
+                    minWidth: 200,
+                    templet: function (d) {
+                        return $.map(d.orgMap, function (name) {
+                            return name;
+                        }).join();
+                    }
+                }, {
+                    field: 'doctorName',
+                    title: '医生',
+                    minWidth: 200
+                }, {
+                    field: 'groupRoleFalg',
+                    title: '科室组套权限',
+                    templet: '#groupRoleFalgTpl',
+                    width: 130,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 80,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#basDoctorGroupRole_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize()
+        }
+
+        //监听科室组套开关事件
+        form.on('switch(groupRoleFalg)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/basDoctorGroupRoleGroupRoleFalg.jo', {
+                doctorGroupRoleId: data.doctorGroupRoleId,
+                groupRoleFalg: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/updateBasDoctorGroupRoleValidFlag.jo', {
+                doctorGroupRoleId: data.doctorGroupRoleId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basDoctorGroupRoleListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../bas/delBasDoctorGroupRole.jo', {
+                            ids: row.doctorGroupRoleId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+    })
+</script>

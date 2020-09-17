@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-诊室管理-详情</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-card-body {
+            height: calc(100vh - 100px);
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-card layui-col-md7 layui-col-xs7">
+                <div class="layui-card-header">诊室信息</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" id="consultingRoomForm" style="padding: 20px 0 0 0;">
+                        <!-- 表单 开始 -->
+                        #formHiddenInput("consultingRoomId" "$!{consultingRoom.consultingRoomId}" " id='consultingRoomId' ") #formHiddenInput("roomDeviceCode" "#htmlEscape($!{consultingRoom.roomDeviceCode})" " id='roomDeviceCode' ")
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()门诊科室</label>
+                                <div class="layui-input-inline">
+                                    #formSingleSelectSearchFirstNone("depId" "$!consultingRoom.depId" $arrangeDutyOfficeMap "id='depId' lay-filter='depId' lay-verify='required' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()诊室名称</label>
+                                <div class="layui-input-inline">#formTextInput("roomName" "#htmlEscape($!{consultingRoom.roomName})" " id='roomName' autocomplete='off' lay-verify='required' maxlength='20' class='layui-input unique'")</div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">诊室电话</label>
+                                <div class="layui-input-inline">#formNotInChineseInput("roomTel" "#htmlEscape($!{consultingRoom.roomTel})" " id='roomTel' autocomplete='off' maxlength='40' class='layui-input'")</div>
+                            </div>
+                            #if(${consultingRoom})
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()是否有效</label>
+                                <div class="layui-input-block">#formRadioGroup("validFlag" "$!{consultingRoom.validFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            #end
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">诊室地址</label>
+                            <div class="layui-input-inline" style="width: 465px;">#formTextInput("roomLocation" "#htmlEscape($!{consultingRoom.roomLocation})" " autocomplete='off' id='roomLocation' maxlength='50' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-form-item layui-form-text " style="margin-top: 8px;">
+                            <label class="layui-form-label">诊室描述</label>
+                            <div class="layui-input-inline " style="width: 465px;">#formTextarea("roomDescription" "#htmlEscape($!{consultingRoom.roomDescription})" " autocomplete='off' id='roomDescription' class='layui-textarea'
+                                maxlength='150' placeholder='请输入内容，字数最多150字'")
+                            </div>
+                        </div>
+                        <div class="tool-bottom-fixed">
+                            <button type="button" id="btn_close"  class="layui-btn layui-btn-sm">关 闭</button>
+                        </div>
+                        <!-- 表单 结束 -->
+                    </form>
+                </div>
+            </div>
+            <div class="layui-card layui-col-md5 layui-col-xs5">
+                <div class="layui-card-header">选择医生（已设置职称诊查费）
+                <div class="layui-card-body">
+                    <table id="consultingRoomDoctorListGrid" lay-filter="consultingRoomDoctorListGrid"></table>
+                    <!--  列表表格 end -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+#parse("./outpatient/consultingRoom/consultingRoomEdit.js.vm")
+<script>
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)')
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)')
+    var currentUser = JSON.parse('$AppTools.toJSONString($!currentUser)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'table', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, table = layui.table, tableSelect = layui.tableSelect
+        common.setFormReadOnly($("#consultingRoomForm"));
+
+        //表格设置
+        table.render({
+            elem: '#consultingRoomDoctorListGrid',
+            data: [],
+            height: 'full-100',
+            cols: [[{
+                type: 'numbers',
+            }, {
+                field: 'officeOrgName',
+                title: '门诊科室'
+            }, {
+                field: 'doctorName',
+                title: '关联医生'
+            }]], done: function () {
+            }
+        });
+
+        //加载关联科室
+        function reloadConsultingRoomDoctor() {
+            var depId = $("#depId").val();
+            var consultingRoomId = $("#consultingRoomId").val();
+            table.reload('consultingRoomDoctorListGrid', {url: consultingRoomId ? contextPath + '/outpatient/consultingRoomDoctorPageData.jo?consultingRoomId=' + consultingRoomId + '&officeId=' + depId : ''});
+        }
+
+        reloadConsultingRoomDoctor()
+
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name)
+            parent.layer.close(index)
+        })
+    })
+</script>
+
+</body>
+</html>

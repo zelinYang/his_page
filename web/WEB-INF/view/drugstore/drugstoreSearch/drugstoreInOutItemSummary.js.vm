@@ -1,0 +1,126 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+
+    layui.use(['table', 'element', 'form'], function () {
+        var table = layui.table, form = layui.form;
+        var $ = layui.jquery, element = layui.element;
+        var techTable = table.render($.extend(basePageTable, {
+            elem: '#mainTable'
+            , id: 'mainTable'
+            , height: getTableHgt()
+            , url: '$contextPath/drugstoreSearch/drugstoreInOutItemSummaryListData.jo' //数据接口
+            , cols: [[ //表头
+                {type:'numbers',fixed:'left'}
+                ,{
+                    field:'medicineName',title:'药品名称', minWidth:200,fixed:'left',templet:function (res) {
+						return  res[2] || '';
+					}
+                },{
+                    field: 'medicineType', title: '类型',templet:function (res) {
+                        return dicMedicineType[res[1]] || '';
+                    }
+                },{
+                    field:'producingAreaName',title:'产地名称',width:200, templet:function (res) {
+						return res[9] || '';
+					}
+                },{
+                    field:'medicineSpec',title:'药品规格',width:100, templet:function (res) {
+						return res[3] || '';
+					}
+                },{
+                    field:'medicineDosage',title:'药品剂量',width:80, templet:function (res) {
+						return res[4] || '';
+					}
+                },{
+					field:'dosageForm',title:'药品剂型',width:300, templet:function (res) {
+						return dicDosageForm[res[6]] || '';
+					}
+				},{
+                    field:'buyPrice',title:'进货价',width:100,align:'right', templet:function (res) {
+						return res[10] || '';
+					}
+                },{
+                    field:'buylPrice',title:'零售价',width:100,align:'right', templet:function (res) {
+						return res[11] || '';
+					}
+                },{
+                    field:'tradePrice',title:'批发价',width:100,align:'right', templet:function (res) {
+						return res[12] || '';
+					}
+                },{
+                    field:'inCount',title:'入库数量',width:100, templet:function (res) {
+						return res[13] || '0';
+					}
+                },{
+                    field:'inCount',title:'出库数量',width:100, templet:function (res) {
+						return res[14] || '0';
+					}
+                },{
+                    field:'medicineUnit',title:'药品单位',width:100, templet:function (res) {
+                        return dicDrugNumUnit[res[7]] || '';
+                    }
+                }, {
+					title: '操作',
+					width: 40,
+					align: 'center',
+					fixed: 'right',
+					toolbar: '#operateTpl'
+				}
+            ]]
+        }));
+
+		//操作栏操作按钮的事件
+		table.on('tool(mainTable)', function (obj) {
+			var row = obj.data;
+			if (obj.event === 'btn_show') {
+				var params = getQueryParams();
+				common.open('$contextPath' + '/drugstoreSearch/drugstoreInOutItemListShow.do?medicineId=' + row[0] + '&drugstoreInOutDateBegin=' + params.drugstoreInOutDateBegin + '&drugstoreInOutDateEnd=' + params.drugstoreInOutDateEnd, '药品出入库详情', {
+					area: ['80%', '80%']
+				});
+			}
+		});
+
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 13);
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('tech', {
+                height: height
+            })
+        })
+        //监听搜索
+        $('#search').on('click', function () {
+            techTable.reload({
+                where: getQueryParams()
+            })
+        });
+
+        function getQueryParams() {
+            var params = $.extend({
+                medicineName:'',
+                medicineType:'',
+                dosageForm:'',
+				drugstoreInOutDateBegin:'',
+				drugstoreInOutDateEnd:''
+            }, common.serializeObject($('#queryForm'), ['drugstoreInOutDate']));
+
+            return params;
+        }
+        //年选择器_起始
+        laydate.render({
+            elem: '#drugstoreInOutDate'
+            , type: 'date'
+			, range: true
+            , trigger: 'click' //采用click弹出
+        });
+     })
+</script>

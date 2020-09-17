@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-临床路径配置-变异类型维护-编辑</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-select dl {
+            max-height: 220px;
+        }
+
+        .input2 {
+            width: 463px !important
+        }
+
+        .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 8px;
+            cursor: pointer;
+        }
+
+        input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<form class="layui-form" lay-filter="" id="clinicVariationReasonForm" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("clinicVariationReasonId" "$!{clinicVariationReason.clinicVariationReasonId}" " ")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()变异因素</label>
+            <div class="layui-input-inline">#formSingleSelectSearchFirstNone("variationFactor" "$!{clinicVariationReason.variationFactor}" $!{dicData.dicVariationFactor} "lay-search lay-verify='required'
+                " "")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()原因内容</label>
+            <div class="layui-input-inline " style="width: 440px;">#formTextarea("variationReasonContent" "#htmlEscape($!{clinicVariationReason.variationReasonContent})" "id='variationReasonContent' class='layui-textarea' maxlength='250' lay-verify='required' placeholder='请输入内容，字数最多250字'")</div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">详细描述</label>
+            <div class="layui-input-inline " style="width: 440px;">#formTextarea("variationDetail" "#htmlEscape($!{clinicVariationReason.variationDetail})" "id='variationDetail' class='layui-textarea' maxlength='1000' placeholder='请输入内容，字数最多1000字'")</div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        #if(${clinicVariationReason})
+        <div class="layui-inline">
+            <label class="layui-form-label">是否有效</label>
+            <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{clinicVariationReason.validFlag}"
+                ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+</form>
+##parse("./bas/clinicVariationReason/clinicVariationReasonEdit.js.vm")
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form)
+
+        //提交表单
+        function saveClinicVariationReason() {
+            var clinicVariationReasonParams = common.serializeObject($('#clinicVariationReasonForm'))
+            common.requestServer(contextPath + '/clinic/saveClinicVariationReason.jo', clinicVariationReasonParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveClinicVariationReason()
+            return false
+        })
+    })
+</script>
+
+
+</body>
+</html>

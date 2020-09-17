@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理</title>
+#parse("./common/pageCss.vm")
+</head>
+<body class="gray-bg">
+    <div class="wrapper wrapper-content">
+        <div class="ibox-content">
+            <div class="row">
+                <form id="queryForm" method="get" class="form-horizontal">
+                    #formHiddenInput("validFlag" "1" "")
+                    <div class="col-sm-4">
+                        <label class="control-label col-sm-4 p-l-none">费用名称</label>
+                        <div class="col-sm-7 p-r-none p-l-none">
+                            #formTextInput("chargeName" "" "class='form-control'")
+                        </div>
+                    </div>
+                    <div class="col-sm-4">
+                        <label class="control-label col-sm-4 p-l-none">费用类别</label>
+                        <div class="col-sm-7 p-r-none p-l-none">
+                            #formSingleSelectFirstNone("chargeGroupId" "" $dicData.dicInhospitalChargeGroupCode "id='chargeGroupId' class='form-control'" "")
+                        </div>
+                    </div>
+
+                    <div class="col-sm-4">
+                        <button type="button" id="btn_query" class="btn btn-sm btn-outline btn-primary">
+                            <i class="layui-icon layui-icon-search"></i> <span>查 询</span>
+                        </button>
+                        &nbsp;&nbsp;
+                        <button type="button" id="btn_clean" class="btn btn-sm btn-outline btn-info">
+                            <i class="iconfont icon-qingchu"></i> <span>清 空</span>
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+        </div>
+
+        <div class="ibox float-e-margins full-height m-b-none">
+            <div class="ibox-content p-b-n">
+                <div class="table-responsive">
+                    <!-- 列表表格 -->
+                    <div class="example">
+                        <table id="dataListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    #parse("./common/pageJs.vm")
+    <script>
+
+    $(document).ready(function () {
+            // 查询按钮
+            $('#btn_query').click(function (){
+                var queryParams = common.serializeObject($('#queryForm'));
+                var options = {url: '../bas/basChargeItemListData.jo', silent: false, query: queryParams};
+                $('#dataListGrid').bootstrapTable('refresh', options);
+            });
+
+            // 清空按钮
+            $('#btn_clean').click(function (){
+                common.cleanForm('queryForm');
+            });
+
+            //查询列表
+            $('#dataListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../bas/basChargeItemListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true},
+                    {
+		  		              field : 'chargeItemId',
+		  		              title : '项目ID',
+		  		              visible: false
+  		         		 	},
+                    {
+                        field : 'chargeName',
+                        title : '项目名称'
+                    },{
+                        field : 'chargeGroupId',
+                        title : '收费类别',
+                        formatter :function (value, row, index){ return $('#chargeGroupId').find('option[value="' + value +'"]').text() }
+                    }, {
+                        field : 'unit',
+                        title : '单位'
+                    }, {
+                        field : 'unitPrice',
+                        title : '单价'
+                    }, {
+                        field : 'stockCount',
+                        title : '库存数量'
+                    }, {
+                        field : 'exeOfficeId',
+                        title : '执行科室',
+                        formatter :function (value, row, index){ return $('#exeOfficeId').find('option[value="' + value +'"]').text() }
+                    }],
+                    onCheck:function(row){
+                        parent.selectMedicalTechChargeCallBack(row);
+                        // 关闭窗口
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#dataListGrid').parents("body").height() - $('#queryForm').height() - 70);
+                        $('#dataListGrid').bootstrapTable('resetView', {height: height});
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+    </script>
+</body>
+</html>

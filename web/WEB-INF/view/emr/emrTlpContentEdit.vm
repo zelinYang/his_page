@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+	<title>${SessionSysPortal.appTitle}</title>
+	#parse("./common/pageJs.vm")
+	#parse("./common/visualizationCss.vm")
+	#parse("./common/visualizationJs.vm")
+    <link rel="stylesheet" href="$!contextPath/resource/editor/mini-editor/plugins/layuiadmin/layui/css/layui.css"/>
+
+    <style>
+        /*.edui-dialog .edui-dialog-body {*/
+            /*height: 400px!important;*/
+        /*}*/
+        .edui-default .edui-for-sdetemplate .edui-dialog-content {
+            width: 600px;
+            height: 400px!important;
+        }
+    </style>
+</head>
+<body>
+<body class="gray-bg">
+<div class="wrapper-content" style="height: calc(100% - 56px);">
+    #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+    <div id="designContainer" class="full-height" type="text/plain" style="margin: 0 auto 0; display: none;">
+        #if($!emrTlp.emrTlpContent)
+            $!emrTlp.emrTlpContent
+        #else
+            <div contenteditable="false" title="页眉" class="header" id="header">
+                <p style="text-align: center;" contenteditable="false"><span style="font-size: 20px;"><strong
+                        id="hospitalName"></strong></span><br></p>
+                <p><br></p>
+                <hr/>
+            </div>
+            <p><br></p>
+            <div  contenteditable="false" title="页脚" class="footer" id="footer">
+                <p><br></p>
+            </div>
+        #end
+    </div>
+</div>
+<div class="layui-row gray-bg text-center p-t-sm p-b-sm" style="position: fixed; bottom: 0; z-index: 19991016; width: 100%;">
+    <div class="layui-form">
+        <div class="layui-form-item" style="margin-bottom: 0;">
+            <div class="layui-btn-group">
+                <button class="layui-btn" id="btn_save">保存</button>
+                <button class="layui-btn" onclick="preview()">打印</button>
+                <button class="layui-btn" onclick="showControls()">显示控件</button>
+            ##            <button class="layui-btn" onclick="test1()">测试</button>
+            </div>
+            <div class="layui-inline">
+                <div class="layui-input-inline">
+                    <select id="model" lay-filter="model">
+                        <option value="design">design</option>
+                        <option value="edit">edit</option>
+                        <option value="strict">strict</option>
+                        <option value="readonly">readonly</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    #parse("./common/layuiJs.vm")
+##    #parse("./common/common.js.vm")
+##<script src="../resource/hplus/js/jquery-3.3.1.min.js"></script>
+<script>
+    // window.miniEditor = new MiniEditor({
+    //     id: 'designContainer',
+    //     modelType: 'design',outpatientEmr.do
+    //     outhtmlWidth: '800px',
+    //     editor: {
+    //         // toolbars: [],
+    //         wordCount: false,//关闭字数统计
+    //         allowDivTransToP: false,
+    //         elementPathEnabled: false,//关闭elementPath
+    //         autoClearinitialContent: false
+    //     }
+    // });
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+        layer.load({
+            offset: ['50%', '50%']
+        });
+    });
+    var minieditorDesign = new window.minieditorDesign('designContainer', {
+        modelType: 'design',
+        printType: '$!{emrTlp.printType}',
+        emrTlpClassifyId: '$!{emrTlp.emrTlpClassifyId}',
+        outhtmlWidth: '$!{emrTlp.emrTlpWidth}' + 'px',
+        saveUrl: '../emrTlp/saveEmrTlpContent.jo',
+        hospitalName: '$session.getAttribute("currentUser").unitOrgName',
+        baseFormParams: {emrTlpId:"$!{emrTlp.emrTlpId}"},
+        initData: {}
+    });
+
+    window.test = function (ctrlId, fieldName) {
+        console.log(ctrlId);
+        console.log(fieldName);
+    }
+
+    function test1() {
+        var ctrl = miniEditor.getControlById('EmrPatientDicData_bart');
+        // var value = ctrl[0].getValue();
+        // console.log(value);
+        var data = [{dicTypeId: "490", dicCode: "1", value: "1"}, {dicTypeId: "490", dicCode: "10", value: "1"}];
+        ctrl[0].setValue(data);
+    }
+
+    function getValues() {
+        if (miniEditor.validateForm()) {
+            var ctrls = window.miniEditor.getControlById();
+            for (var i = 0; i < ctrls.length; i++) {
+                console.log(ctrls[i].getValue());
+            }
+        }
+    }
+
+    function preview() {
+        layer.open({
+            type: 2,
+            area: ['100%', '100%'],
+            maxmin: true,
+            title :'打印预览',
+            content: '$!contextPath/resource/editor/mini-editor/dialogs/preview/preview.html' //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        });
+    }
+
+    function showControls() {
+        layer.open({
+            type: 2,
+            area: ['80%', '80%'],
+            shade : 0,
+            maxmin: true,
+            moveOut: true,
+            title :'控件预览',
+            content: '$!contextPath/resource/editor/mini-editor/dialogs/control/index.html' //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        });
+    }
+
+    layui.use(['form'], function(){
+        var form = layui.form;
+
+        //监听指定开关
+        form.on('select(model)', function(data){
+            console.log(data);
+            miniEditor.model(data.value);
+        });
+
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-card full-height">
+            <div class="layui-card-body p-n full-height-scroll">
+                #formHiddenInput("currentDate" "$!currentDate" "id='currentDate'")
+                #formHiddenInput("surgeryDays" "$!surgeryDays" "id='surgeryDays'")
+                <table class="layui-table abuui-table-zljh">
+                    <colgroup>
+                        <col width="150">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col>
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th colspan="8" style="text-align: left;">
+                            <form class="layui-form" action="../pathway/clinicPlanShow.do">
+                                #formHiddenInput("patientId" "$!inhospital.patientId" "id='patientId'")
+                                #formHiddenInput("inhospitalId" "$!inhospital.inhospitalId" "id='inhospitalId'")
+                                <div class="layui-form-item search-term">
+                                    <div class="layui-inline m-b-xs">
+                                        <label class="layui-form-label">显示起始日期</label>
+                                        <div class="layui-input-inline">
+                                            #formTextInput("showDateBegin" "$!date.format('yyyy-MM-dd', $!showDateBegin)" "id='showDateBegin' class='layui-input' readOnly")
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline m-b-xs">
+                                        <label class="layui-form-label">一屏天数</label>
+                                        <div class="layui-input-inline">
+                                            <select name="showDay" lay-filter="aihao">
+                                                #foreach($num in [7, 5, 3])
+                                                    <option #if("$!num" == "$!showDay")selected #end value="$!num">$!num天</option>
+                                                #end
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline m-b-xs">
+                                        <label class="layui-form-label">周数</label>
+                                        <div class="layui-input-inline">
+                                            <select name="showWeek" lay-filter="showWeek" disabled="disabled">
+                                                #foreach($num in [$!weekNum..1])
+                                                    <option #if("$!num" == "$!showWeek")selected #end value="$!num">第$!num周</option>
+                                                #end
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="layui-inline m-b-xs m-l-sm">
+                                        <button type="submit" id="btn_query" class="layui-btn layui-btn-sm"> 查 询 </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </th>
+                    </tr>
+                    <tr id="inhospitalDateNum">
+                        <th>时间</th>
+                        <th>2018-11-20</th>
+                        <th>2018-11-21</th>
+                        <th>2018-11-22</th>
+                        <th>2018-11-23</th>
+                        <th>2018-11-24</th>
+                        <th>2018-11-25</th>
+                        <th>2018-11-26</th>
+                    </tr>
+                    <tr id="inhospitalDayNum">
+                        <th>住院天数</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                    </tr>
+                    </thead>
+                </table>
+                <table class="layui-table abuui-table-zljh">
+                    <colgroup>
+                        <col width="150">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col>
+                    </colgroup>
+                    <tbody>
+                        <tr id="erm">
+                            <th>病历书写</th>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr id="drugOrder">
+                            <th>医嘱信息</th>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr id="otherOrder">
+                            <th>治疗/手术</th>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr id="lisResult">
+                            <th>检验报告</th>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        <tr id="pacsResult">
+                            <th>检查报告</th>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var examDays = #if("$!examDays" != "")$!examDays;#else{};#end
+var activityJson = #if("$!dayJson" != "")$!dayJson;#else{};#end
+// 医嘱信息背景色
+var orderColor = {2: 'black', 4: 'blue', 5: 'red'}
+var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)');
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+layui.use(['element', 'layer', 'form', 'laydate'], function(){
+    layer = layui.layer;
+    var thIndex = 0, element = layui.element, form = layui.form, laydate = layui.laydate;
+    // 显示日期
+    laydate.render({elem: '#showDateBegin',trigger: 'click'});
+
+    var inhospitalDayNum = $('#inhospitalDayNum');
+    var inhospitalDateNum = $('#inhospitalDateNum');
+
+    // 遍历显示患者当前住院的日期和弟XX天
+    $.each(activityJson, function (k, v){
+        thIndex++;
+        var inhospitalDateNumTh = $(inhospitalDateNum).find('th').eq(thIndex);
+        $(inhospitalDateNumTh).text(k);
+        $(inhospitalDateNumTh).attr('date-value', k.replace(/\-/g, ""));
+        if (parseInt(v) > 0) {
+            $(inhospitalDayNum).find('th').eq(thIndex).find('font').text(v);
+        } else {
+            $(inhospitalDayNum).find('th').eq(thIndex).html('');
+        }
+    });
+
+    // 递归加载每天的诊疗数据
+    function loadEveryDayData(index) {
+        var thDay = $('#inhospitalDayNum').find('th');
+        if (!thDay.eq(index) || !thDay.eq(index).find('font') || thDay.length < index) {
+            return ;
+        }
+
+        var day = thDay.eq(index).find('font').text();
+        var exam = examDays[day];
+        var curDate = $('#inhospitalDateNum').find('th').eq(index).text();
+        var params = {
+                dayNum: day, 
+                curDate: curDate, 
+                inhospitalId:$('#inhospitalId').val(), 
+                patientId: $('#patientId').val(), 
+                surgeryDays: $('#surgeryDays').val(), 
+                hasTech: exam ? exam.doctorOrderType : ''
+        };
+        common.requestServer(contextPath + '/pathway/getEveryDayPlanData.jo', params, function (result){
+            if (result) {
+                var tdIndex = index - 1;
+                $.each(result, function (k, v){
+                    var curTd = $('#' + k).find('td').eq(tdIndex);
+                    $(v).each(function (i, o){
+                        var curDateStr = $('#currentDate').val();
+                        var dateStr = $(inhospitalDateNum).find('th').eq(tdIndex + 1).attr('date-value');
+                        var disabled = dateStr > curDateStr ? 'layui-btn-disabled' : '';
+                        if(k == 'erm') {
+                            //'<fieldset class="layui-elem-field site-demo-button" style="width: 130px;"><legend><i class="fa fa-edit"></i></legend><div class="m-xs">' + o.emrTlpName + '</div></fieldset>'
+                            curTd.append('<button name="btn_emr" emr-id="' + (o.emrTlpId ? o.emrTlpId : '') + '" class="layui-btn layui-btn-sm ' + disabled + ' m-xs" type="button">' + o.emrTlpName + '</button>');
+                        }
+                        if(k == 'drugOrder') {
+                            var html = [(i + 1) + '、' + (o.orderName ? o.orderName : '')];
+                            html.push(o.pharmacyFreqName ? o.pharmacyFreqName : '');
+                            html.push(dicDoseWay[o.doseWayCode]);
+                            html.push((o.dosage ? o.dosage : '') + dicDrugNumUnitDosageUnit[o.dosageUnit]);
+                            html.push(dicOrderClassify[o.orderClassify]);
+                            curTd.append('<p style="color:' + orderColor[o.orderState] + '">' + html.join('&nbsp;') + '</p>');
+                        }
+                        if(k == 'otherOrder') {
+                            curTd.append('<p>' + (i + 1) + '、' + (o.orderName ? o.orderName : '') + '</p>');
+                        }
+                        
+                        if(k == 'pacsResult') {
+                            curTd.append('<button class="layui-btn layui-btn-sm ' + disabled + 'm-xs" type="button">检查报告</button>');
+                        }
+                        if(k == 'lisResult') {
+                            curTd.append('<button class="layui-btn layui-btn-sm ' + disabled + 'm-xs" type="button">化验报告</button>');
+                        }
+                         
+                    });
+                });
+            }
+            index = index + 1;
+            loadEveryDayData(index);
+        });
+
+        // 监听病历按钮，打开病历
+        $('button[name="btn_emr"]').click(function (){
+            if (!$(this).attr('emr-id')) {
+                return ;
+            }
+            var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + $(this).attr('emr-id') + '&patientId=' + $('#patientId').val();;
+            parent.common.open(contextPath + '/inpatient/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, $(this).text(), {area:['1200px','98%']});
+        });
+    }
+    loadEveryDayData(1);
+});
+</script>
+</html>

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>病区管理</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+
+        .deps {
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form m-sm" id="wardForm">
+    <div class="layui-card">
+        <div class="layui-card-header">基本信息</div>
+        <div class="layui-card-body">
+            #formHiddenInput("wardId" "$!{inpatientWard.wardId}" " id='wardId' ")
+            <div class="layui-form-item">
+                <label class="layui-form-label">#requiredTag()病区名称</label>
+                <div class="layui-input-block">#formTextInput("wardName" "#htmlEscape($!{inpatientWard.wardName})" "id='wardName' maxlength='50' autocomplete='off' lay-verify='required' class='layui-input unique'")</div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: auto;">#requiredTag()门诊/住院使用</label>
+                    <!--门诊不需要关联科室-->
+                    <div class="layui-input-inline">#formRadioGroup("wardFlag" "$!{inpatientWard.wardFlag}" ${dicData.dicWardFlag} "lay-filter='wardFlag' lay-verify='reqRedio' check-msg='请选择门诊/住院使用'")</div>
+                </div>
+                #if(${inpatientWard})
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()是否有效</label>
+                    <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{inpatientWard.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+                </div>
+                #end
+            </div>
+        </div>
+    </div>
+    <script type="text/html" id="inpatientWardOfficesTpl">
+        <div class="layui-card inpatientWardOffices">
+            <div class="layui-card-header">#requiredTag()关联科室</div>
+            <div class="layui-card-body deps" id="deps">
+                <div class="layui-row p-xs m-l-md">
+                    #foreach($option in $!orgMap.keySet())
+                    <div class="layui-col-xs3 p-b-xs">#formSimpleCheckbox("officeIds" "$!option" "$!inpatientWard.inpatientWardOfficeIds.contains($option)" " title='$!{orgMap.get($!option)}' lay-skin='primary' check-msg='请选择科室' lay-verify='reqRedio' " "")</div>
+                    #end
+                </div>
+            </div>
+        </div>
+    </script>
+
+
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+    </div>
+</form>
+    <script>
+        var WARDFLAG_INHOSPITAL = "${CONST.AppConstants.WARDFLAG_INHOSPITAL}"
+        var WARDFLAG_OUTPATIENT = "${CONST.AppConstants.WARDFLAG_OUTPATIENT}"
+        layui.config({
+            base : '../resource/layuiadmin/'
+        }).use([ 'form' ], function() {
+            var $ = layui.$, form = layui.form;
+            common.verify(form);
+            common.setFormReadOnly($("#wardForm"));
+
+            $(window).resize(function () {
+                $('#deps').height($('body').height() - 224);
+            })
+            //显示病区关联科室
+            function changeInpatientWardOfficeIds(wardFlag) {
+                switch (wardFlag) {
+                    case WARDFLAG_INHOSPITAL:
+                        $("#inpatientWardOfficesTpl").after(function () {
+                            if($(this).next().hasClass('inpatientWardOffices')){
+                                //已经存在就退出
+                                return ;
+                            }
+                            return $(this).html();
+                        });
+                        form.render();
+                        break;
+                    case WARDFLAG_OUTPATIENT:
+                    default:
+                        $(".inpatientWardOffices").remove();
+                }
+                $('#deps').height($('body').height() - 224);
+            }
+            form.on('radio(wardFlag)', function(data){
+                changeInpatientWardOfficeIds(data.value); //被点击的radio的value值
+            });
+            //初始化 关联科室
+            changeInpatientWardOfficeIds($(':radio[name="wardFlag"]:checked').val());
+        })
+        $(document).ready(function () {
+            $('#deps').height($('body').height() - 224);
+        })
+
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=gbk" />
+  <title>$!_System_Name_</title>
+  <link href="../script/css.css" rel="stylesheet" type="text/css" />
+  <script language="javascript" type="text/javascript" src="../script/common.js"></script>
+  <script language="JavaScript" type="text/javascript" src="../script/validator.js"></script>
+<script type="text/javascript">
+function submitSystemData() {
+    if (validator.checkAll()) {
+        document.editForm.submit();
+    }
+}
+</script>
+</head>
+#set($theTableId = "myTable")
+#set($idPrefix = "cac_")
+
+<script language="JavaScript">
+function addData(systemDataId, keyName, value, valueType, parentId, orderNumber, childNumber){
+    var theForm = document.editForm;
+    var theTable = document.getElementById("${theTableId}");
+
+    mynewrow = theTable.insertRow(theTable.rows.length);
+    mynewrow.id = "$idPrefix" + systemDataId;
+
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = systemDataId;
+    mynewcell.className = "t2";
+
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = keyName;
+    mynewcell.className = "t2";
+
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = value;
+    mynewcell.className = "t2";
+
+    var valueTypeStr;
+    if (valueType == "D") {
+        valueTypeStr = "DATA";
+    } else if (valueType == "M") {
+        valueTypeStr = "MAP";
+    } else if (valueType == "L") {
+        valueTypeStr = "LIST";
+    } else {
+        valueTypeStr = "ErrorType[" + valueType + "]";
+    }
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML =  valueTypeStr;
+    mynewcell.className = "t2";
+
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = parentId;
+    mynewcell.className = "t2";
+
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = orderNumber;
+    mynewcell.className = "t2";
+
+    //删除行的链接
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    if (childNumber > 0) {
+        mynewcell.innerHTML = "<font color=\"red\">" + childNumber + "个数据</font>";
+    } else {
+        mynewcell.innerHTML = "<a href=\"javascript:delData(\'" + systemDataId + "\')\">删除</a>";
+    }
+    mynewcell.className = "t3";
+
+    //查看的链接
+    mynewcell = mynewrow.insertCell(mynewrow.cells.length);
+    mynewcell.align = "center"
+    mynewcell.innerHTML = "<a href=\"javascript:viewData(\'" + systemDataId + "\')\">编辑</a>";
+    mynewcell.className = "t3";
+}
+
+function delData(id) {
+    if (confirm("确认要删除吗？") == true)
+    {
+        document.location = "../systemdata/systemDataDelete.do?parentId=${command.systemDataId}&systemDataId=" + id;
+    }
+}
+
+function viewData(id) {
+    document.location = "#getRequestUri()?systemDataId=" + id;
+}
+
+function viewParentData() {
+    var parentId = "$!{command.parentId}";
+    if ((parentId == "") || (parentId == "0")) {
+        alert('当前数据没有上级数据！');
+        return;
+    }
+    document.location = "#getRequestUri()?systemDataId=" + parentId;
+}
+
+</script>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr valign="top" height="1">
+    <td>
+      <table width="100%" height="26" border="0" cellpadding="0" cellspacing="0" class="table_bg">
+        <tr>
+          <td height="24">
+            <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="pagetitle">
+              <tr>
+                <td>
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="unnamed1">
+                    <tr>
+                      <td width="1%"></td>
+                      <td width="49%" height="24">
+                        <img src="../images/mb_top_zl1.gif" width="16" height="13" align="absmiddle" alt="工具条" />
+                        <span class="text12">系统数据编辑</span>
+                      </td>
+                      <td width="49%" align="right" valign="middle" class="text12">
+                        <input type="button" class="com_btn" value="保存" onclick="javascript:submitSystemData()" />
+                        <input type="button" class="com_btn" value="查看上级节点" onclick="javascript:viewParentData()" />
+                      </td>
+                      <td width="1%"></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr valign="top">
+    <td>
+      <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="table_border">
+<form name="editForm" method="post" action="../systemdata/systemDataEdit.do">
+<input type="hidden" name="id" id="systemDataId" value="$!{command.systemDataId}" />
+#springBind("command.opType")
+<input type="hidden" name="opType" value="${status.value}" />
+        <tr valign="top" height="1">
+          <td>
+            <table width="100%" border="0" cellpadding="3" cellspacing="0" class="t">
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">节点标识</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.systemDataId")
+                  <input type="hidden" name="systemDataId" value="$!{status.value}" />
+                  <span>$!{status.value}</span>
+                </td>
+                <td width="15%" align="right" class="textarea">键值名</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.keyName")
+                  <input type="text" name="keyName" value="$!{status.value}" maxlength="100"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">值内容</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.value")
+                  <input type="text" name="value" value="$!{status.value}" maxlength="200"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+                <td width="15%" align="right" class="textarea">值类型</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.valueType")
+#formSingleSelect("valueType" "$!{status.value}" $command.valueMap "")
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">父节点标识</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.parentId")
+                  <input type="text" name="parentId" value="$!{status.value}" />
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+                <td width="15%" align="right" class="textarea">排列顺序号</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.orderNumber")
+                  <input type="text" name="orderNumber" value="$!{status.value}" />
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+              <tr>
+                <td  class="textarea" align="right" >
+                <span>子类型列表</span>
+                </td>
+                <td colspan="3" class="inputarea"/>
+              </tr>
+              <tr>
+                <td colspan="4" class="inputarea">
+                  <input type="hidden" name="cacId" value=""/>
+                  <table id="${theTableId}" width="100%" border="0" cellspacing="0" cellpadding="1" class="t">
+                    <tr>
+                      <td width="10%" align="center" class="tabletitle">节点标识</td>
+                      <td width="25%" align="center" class="tabletitle">键值名</td>
+                      <td width="25%" align="center" class="tabletitle">值内容</td>
+                      <td width="10%" align="center" class="tabletitle">值类型</td>
+                      <td width="10%" align="center" class="tabletitle">父节点标识</td>
+                      <td width="8%" align="center" class="tabletitle">排列顺序号</td>
+                      <td width="12%" colspan="2" align="center" class="tabletitle">操作</td>
+                    </tr>
+
+#if (${command.valueData})
+#foreach($cac in ${command.valueData})
+              <script language="JavaScript">
+                addData('$!{cac.systemDataId}','$!{cac.keyName}','$!{cac.value}','$!{cac.valueType}','$!{cac.parentId}','$!{cac.orderNumber}', '$!{cac.valueData.size()}');
+              </script>
+#end
+#end
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+</form>
+      </table>
+    </td>
+  </tr>
+</table>
+<script language="JavaScript">
+
+    validator.formName = "editForm";
+    validator.addNormalCheckPoint("systemDataId", "节点标识", "checkInt");
+    validator.addRangeCheckPoint("keyName", "键值名", "checkLength", null, "100");
+    validator.addRangeCheckPoint("value", "值内容", "checkLength", null, "200");
+    validator.addRangeCheckPoint("valueType", "值类型", "checkLength", null, "1");
+    validator.addNormalCheckPoint("parentId", "父节点标识", "checkInt");
+    validator.addNormalCheckPoint("orderNumber", "排列顺序号", "checkInt");
+</script>
+</body>
+</html>

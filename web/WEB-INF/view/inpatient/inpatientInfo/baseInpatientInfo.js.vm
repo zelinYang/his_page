@@ -1,0 +1,56 @@
+<script>
+var users = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var offices = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+
+layui.use(['element','form'],function(){
+    var element = layui.element;
+    var form = layui.form;
+
+    //判断是否是查看模式，查看模式不能修改
+    var optype = "$!optype";
+    if(optype == "show"){
+        $("form input,select,textarea").attr("disabled",true);
+        form.render();
+    }
+
+    lay('.layer-date').each(function(){
+        laydate.render({
+           elem: this,trigger: 'click'
+           ,type: 'date'
+           ,format: 'yyyy-MM-dd'
+           ,max: getSmpFormatNowDate(true)
+        });
+    });
+
+    // 提交表单
+    form.on("submit(btn_save)",function(data){
+        if(optype == "show") { return; }
+        var params = data.field;
+        params['inhospitalOfficeName'] = offices[params['inhospitalOfficeId']];
+        params['managerDoctorName'] = users[params['managerDoctorId']];
+        params['outpatientDoctorName'] = users[params['outpatientDoctorId']];
+        params['bedDoctorName'] = users[params['bedDoctorId']];
+        params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+        params['archiaterDoctorName'] = users[params['archiaterDoctorId']];
+        params['headNurserName'] = users[params['headNurserId']];
+        params['dutyNurserName'] = users[params['dutyNurserId']];
+        params['archiaterDoctorName'] = users[params['archiaterDoctorId']];
+        common.requestServer('../inpatient/saveBaseInpatientInfo.jo', params, function(result){
+            if (result.code == "0") {
+                common.alertCall("保存成功。", 1, function (){
+                    window.location.href = window.location.href;
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+
+    //自定义验证规则
+    form.verify({
+       phoneEmpty:[/^$|^1\d{10}$/,"请输入正确的手机号"]
+      ,identityEmpty:[/^$|(^\d{15}$)|(^\d{17}(x|X|\d)$)/,"请输入正确的身份证号"]
+      ,numberEmpty:function(e){if(isNaN(e))return "只能填写数字"}
+    });
+});
+</script>

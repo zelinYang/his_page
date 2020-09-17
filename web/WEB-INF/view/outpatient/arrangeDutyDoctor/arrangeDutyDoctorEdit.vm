@@ -1,0 +1,92 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}-医生/诊室排班表MS_YSPB管理</title>
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<link href="../resource/hplus/css/plugins/jsTree/style.min.css" rel="stylesheet">
+<!-- jsTree plugin javascript -->
+<script src="../resource/hplus/js/plugins/jsTree/jstree.min.js"></script>
+<style>
+.title-name {
+    margin-left:15px;
+	font-size: 14px;
+	color: #2B8E7A;
+}
+</style>
+</head>
+
+<body class="white-bg">
+	<div class="col-sm-2 full-height p-l-n p-r-n">
+		<div class="ibox-title unline">
+                    <h5 class="title-name"></h5>
+                </div>
+		<div id="jstree" class="full-height-scroll" style="height: calc(100% - 110px)"></div>
+	</div>
+	<div class="col-sm-5 full-height p-r-n">
+		<!--列表 begin-->
+		<div class="table-responsive white-bg">
+			<!-- 列表表格 begin -->
+			<div class="example">
+				<table id="sysUserListGrid" class="table table-hover table-striped" data-mobile-responsive="true">
+				</table>
+			</div>
+			<!--  列表表格 end -->
+		</div>
+		<!--列表end-->
+
+	</div>
+	<div class="col-sm-5 gray-bg full-height p-r-n">
+		<div class="ibox full-height">
+			<div class="ibox-title">已选择医生</div>
+		         <div class="table-responsive"  >
+                  <table id="selectDoctor" class="table table-striped text-center" data-mobile-responsive="true">
+                     <thead>
+                     <tr style="background-color: #eff2f3;">
+                         <th data-index="1" >医生姓名</th>
+                         
+                     </tr>
+                     </thead>
+                     <tbody class="tbody-data">
+                         <!-- 显示行 foreach 循环-->
+                         #foreach($recipeItem in $recipeItemList)
+                         <tr>
+                            <td data-index="1" >
+                                #formHiddenInput("doctorId" "$!recipeItem.doctorId" " readonly")
+                                #formTextInput("doctorName" "$!recipeItem.doctorName" " readonly class='form-control' ")
+                            </td>
+                         </tr>
+                         #end
+                     </tbody>
+                 </table>
+                 
+                 
+                 <table class="hide">
+                    <tbody>
+                       <!-- tpl_row 模板行 数据 -->
+                         <tr class="tpl_row">
+                            <td data-index="1" >
+                                #formHiddenInput("doctorId" "" " readonly")
+                                #formTextInput("doctorName" "" " readonly class='form-control' ")
+                            </td>
+                            <td>
+                            #formIntInput("doctorOfficeId" "" " id='doctorOfficeId' readonly class='form-control'")
+                            </td>
+                            <td style="width: 150px; "><a onclick="delDoctor(this)" href="javascript:void(0)" title="刪除"><i class="fa fa-minus-circle del"></i></a></td>
+                    </tbody>
+                 </table>
+             </div>
+  
+		</div>
+	</div>
+	<div class="tool-bottom-fixed">
+		<button id="btn_save" type="button" class="btn btn-outline btn-primary">
+			<i class="fa fa-clone"></i>
+			保存
+		</button>
+	</div>
+	#parse("./outpatient/onDutyDoctor/onDutyDoctorEdit.js.vm")
+</body>
+</html>

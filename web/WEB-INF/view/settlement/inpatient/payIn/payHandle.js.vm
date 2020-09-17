@@ -1,0 +1,339 @@
+<script>
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+    }).use([ 'index', 'jquery', 'table', 'element', 'form', 'laydate', 'util'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var element = layui.element;
+        var util = layui.util;
+        element.render();
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('reg_patient_queryForm');
+        })
+
+        //查询列表显示
+        query = function () {
+            var queryParams = getQueryParams();
+            regPatientTable.reload({where: queryParams});
+        };
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('body').height() - $('#reg_patient_queryForm').height();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                selfPrepayInWay: '',
+                prepayDateBegin: '',
+                prepayDateEnd: '',
+                refundPrepayFeeFlag: '0',//未退费
+            }, common.serializeObject($('#reg_patient_queryForm')));
+        }
+
+        var regPatientTable = table.render({
+            elem: '#regPatientTable'
+            , toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            , url: '../inpatient/paymentRecordsDataList.jo' //数据接口
+            , limit: 20
+            , method: 'post'
+            , where: getQueryParams()
+            , cols: [[ //表头
+                {type: 'checkbox'}
+                , {field: 'prepayReceiptNo', title: '收据号码', minWidth: 100}
+                , {field: 'inhospitalId', title: '住院流水号', minWidth: 100}
+                , {field: 'patientName', title: '姓名', minWidth: 100}
+
+                , {
+                    field: 'prepayDate', title: '缴款日期', minWidth: 180, templet: function (row) {
+                        return  row.prepayDate ? util.toDateString(row.prepayDate) :'';
+                    }
+                }
+                , {
+                    field: 'selfPrepayInWay', title: '缴款方式', minWidth: 100,
+                    templet: function (row) {
+                        return dicPaymentMethod[row.selfPrepayInWay] || '';
+                    }
+                }
+                , {field: 'prepaySum', title: '缴款金额', minWidth: 100}
+                , {field: 'checkNo', title: '支票号码', minWidth: 100}
+                ,{field : 'operPrepayUserName',title : '收费员', minWidth: 100}
+
+            ]]
+            , page: true //显示分页导航
+            , request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+                tableReHeight(this, getTableHgt);
+            }//回调函数
+        });//table.render
+
+        //监听勾选行信息，对勾选行操作。
+        table.on('toolbar(regPatientTable)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            var data = checkStatus.data;
+            switch (obj.event) {
+                case 'toolbarvalid':
+                    if (data.length == 0) {
+                        layer.msg('请选择一行');
+                    }
+                    if (data.length == 1) {
+                        //判断是否已经退费
+                        if (checkStatus.data[0].refundPrepayFeeFlag == "1") {
+                            common.msg('已经是退费状态', {
+                                time: 6000
+                            });
+                        } else {
+                            $.ajax({
+                                type: "post"
+                                , data: {'inhospitalPayInId': checkStatus.data[0].inhospitalPayInId}
+                                , url: "../inpatient/updatavalidFlag.jo"
+                                , async: false
+                                , success: function (result) {
+                                    if (result.code == '0') {
+                                        //弹窗提示成功
+                                        common.msg('退费成功', {
+                                            time: 6000
+                                        });
+                                        //刷新表单
+                                        query();
+                                    }
+                                    if (result.code == '1') {
+                                        common.msg('退费失败', {
+                                            time: 6000
+                                        });
+                                        //刷新表单
+                                        query();
+                                    }
+                                }
+                            });
+                        }
+                    }
+                    if (data.length >= 2) {
+                        common.msg('请选择一条记录', {
+                            time: 6000
+                        });
+                    }
+                    break;
+                default:
+                    break;
+            }
+        });
+
+
+        /* 挂号缴费方式 */
+        form.on('select(payInWay)', function (data) {
+            //不是现金的查询支付状态
+            if (data.value !== '1') {
+                $('.authCode').show()
+            } else {
+                $('.authCode').hide()
+            }
+        });
+
+        //回车触发
+        $("#getinhospitalNo").keydown(function (event) {
+            if (event.keyCode == 13) {
+                enterorblurinhospitalNo();
+            }
+        });
+
+        //鼠标焦点离开触发
+        $("#getinhospitalNo").blur(function () {
+            enterorblurinhospitalNo();
+        });
+
+//鼠标焦点离开inhospitalNo填写或者回车触发动作获取患者住院信息
+        enterorblurinhospitalNo = function () {
+            var inhospitalNo = $('#getinhospitalNo').val();
+            if (inhospitalNo != "") {
+                $.ajax({
+                    type: "post"
+                    , data: {"keyWord": inhospitalNo}
+                    , url: "../inpatient/inhospitalPayIn.jo"
+                    , async: false
+                    , success: function (result) {
+                        var inhospitalBedNo = document.getElementById("inhospitalBedNo");
+                        var patientName = document.getElementById("patientName");
+                        if (result.inhospitalNo == null) {
+                            //查无此人
+                            common.msg('请输入正确的患者住院号', {
+                                time: 3000
+                            });
+                            $('#inhospitalBedNo').html("");
+                            $('#patientName').html("");
+                            $('#getinhospitalNo').html("");
+                            $('#addprepayInAmount').html("");
+                            $('#feeAmount').html("");
+                            $('#arrearsAmount').html("");
+                            $('#inhospitalId').val("");
+                        } else {
+                            //查询到数据
+                            inhospitalBedNo.innerHTML = result.inhospitalBedNo;
+                            patientName.innerHTML = result.patientName;
+                            $('#inhospitalId').val(result.inhospitalId);
+                            $("#prepayInAmount").focus();
+                        }
+                    }
+                });
+//获取患者费用总额和缴费总额
+                $.ajax({
+                    type: "post"
+                    , data: {"inhospitalNo": inhospitalNo}
+                    , url: "../fee/findAmountInfo.jo"
+                    , async: false
+                    , success: function (result) {
+                        $('#addprepayInAmount').html(result.prepayInAmount);
+                        $('#feeAmount').html(result.feeAmount);
+                        $('#arrearsAmount').html(result.arrearsAmount);
+                    }
+                });
+            } else {
+                $('#inhospitalBedNo').html("");
+                $('#patientName').html("");
+            }
+        }
+
+        //显示经手人
+        function latestUsername() {
+            $('#latestUserName').html("${sysUser.name}");
+            $('#latestUserId').val("${sysUser.userId}");
+        }
+
+        latestUsername();
+
+        //显示缴费日期
+        function date() {
+            var date = document.getElementById("date");
+            var date1 = new Date();  //创建对象
+            var y = date1.getFullYear();     //获取年份
+            var m = date1.getMonth() + 1;   //获取月份  返回0-11
+            if (m < 10) {
+                m = "0" + m;
+            }
+            var d = date1.getDate(); // 获取日
+            if (d < 10) {
+                d = "0" + d;
+            }
+            date.innerHTML = y + "-" + m + "-" + d;
+        }
+
+        date();
+        //点击收费按钮,提交表单
+        $('#btn_settlement').click(function () {
+            if ($('#getinhospitalNo').val() != "" && $('#prepayInAmount').val() != "" && $('#patientName').html() != "") {
+                var index = common.openLoad();
+                $.ajax({
+                    type: "post"
+                    , data: $("#reg_patient_EditForm").serialize()
+                    , url: "../inpatient/saveInhospitalPayIn.jo"
+                    , success: function (result) {
+                        if (result.code === '0') {
+                            common.alertCall(result.msg, 1, function () {
+                                //清空预交金收费表单
+                                document.getElementById("reg_patient_EditForm").reset();
+                                $('#rmblarge').html("");
+                                $('#patientName').html("");
+                                $('#inhospitalBedNo').html("");
+                                $('#addprepayInAmount').html("");
+                                $('#feeAmount').html("");
+                                $('#arrearsAmount').html("");
+                                $('#authCode').html("");
+                                //刷新缴款处理表单
+                                regPatientTable.reload();
+                                //重新加载票据号码
+                                viewBillRecipient();
+                            });
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                        layer.close(index);
+                    }
+                });
+            }
+        })
+        //显示大写缴款金额
+        rmbLarge = function () {
+            if ($("#prepayInAmount").val() != "") {
+                $('#rmblarge').html(common.cmycurd($('#prepayInAmount').val()));
+            } else {
+                $('#rmblarge').html("");
+            }
+        }
+        //缴款金额框数字发生改变时触发
+        $("#prepayInAmount").bind("input propertychange", function (event) {
+            rmbLarge();
+        });
+        //鼠标焦点离开#prepayInAmount时触发
+        $("#prepayInAmount").blur(function () {
+            rmbLarge();
+        });
+
+        //显示发票号码
+        var viewBillRecipient = function () {
+            var url = "../billRecipient/getUseInpatientBillRecipient.jo"
+            var params = {usageMode: "$!{CONST.AppConstants.USAGE_MODE_HOSPITALIZATION_INVOICE}"}
+            common.requestServer(url, params, function (result) {
+                if (result.code === '0') {
+                    $("#billNumber").html(result.data.currentNum);
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+        viewBillRecipient();
+
+        var initLayout;
+        initLayout = function () {
+            $('#container').layout({
+                east__size: 750//pane的大小
+                , togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                , togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。
+                , spacing_open: 8//边框的间隙
+                , maskIframesOnResize: ".resizeiframe"
+            });
+        }
+
+        //页面初始化
+        $(document).ready(function () {
+            initLayout();
+        });
+
+    });
+</script>

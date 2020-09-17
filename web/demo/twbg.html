@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang=cn>
+<head>
+  <meta charset=utf-8>
+  <meta name=viewport content="width=device-width,user-scalable=no,initial-scale=1,maximum-scale=1,minimum-scale=1">
+  <title>医帆康云</title>
+  <link href="style/css.css" rel="stylesheet">
+
+</head>
+<body>
+
+  <div id=app>
+    <div class="container sub">
+      <div class="subHead">
+        <a onclick="goBack()" href="javascript: void(0)">
+          <i class="iconfont icon-jiaoxing-left"></i>
+        </a>
+        <div class="tit">
+          图文报告
+        </div>
+        <i class="iconfont "></i>
+      </div>
+      <div class="main">
+        <iframe id="iframe" width="100%" height="100%"></iframe>
+      </div>
+      <div class="footer">本报告仅供临床参考</div>
+    </div>
+  </div>
+<script>
+  var datas = {
+    '1': 'http://bofan.eicp.net:9004/cloud_his/demo/emr.html?id=1',
+    '2': 'http://bofan.eicp.net:9004/cloud_his/demo/emr.html?id=2',
+    '3': 'http://bofan.eicp.net:9004/cloud_his/demo/emr.html?id=3'
+  };
+  var id = getQueryVariable('id');
+  function getQueryVariable(variable) {
+    var query = window.location.search.substring(1);
+    var vars = query.split("&");
+    for (var i=0;i<vars.length;i++) {
+      var pair = vars[i].split("=");
+      if(pair[0] == variable){return pair[1];}
+    }
+    return(false);
+  }
+
+  function goBack() {
+    location.href = 'index.html?id=' + id;
+  }
+
+  window.onload = function() {
+    var iframeDom = document.getElementById('iframe');
+    iframeDom.setAttribute('src', datas[id]);
+  }
+</script>
+</body>
+</html>

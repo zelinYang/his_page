@@ -1,0 +1,83 @@
+<script>
+
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index: 'lib/index', //主入口模块
+    cascader: 'cascader'
+}).use(['index', 'table', 'form', 'laydate', 'cascader'], function () {
+    var $ = layui.$, form = layui.form, table = layui.table, laydate = layui.laydate;
+    //common.verify(form)
+
+    var tableIns = table.render({
+        elem: '#defectItemGrid'
+        ,defaultToolbar: []
+        //,height: $('body').height()//高度
+        ,height: 'full-0'//高度
+        ,url: '../emrdefect/patientEmrDefectItemAllListData.jo' //数据接口
+        //,limit:20
+        ,page : false
+        ,method:'post'
+        ,where: {patientEmrDefectId : $("input[name='patientEmrDefectId']:first").val(), validFlag : "$!{CONST.AppConstants.YES_FLAG}"}
+        ,cols: [[ //表头
+            {type: 'numbers', title: '序号',width:60}
+            ,{
+                field : 'emrTlpName',
+                event : 'edit',
+                title : '缺陷病历'
+            }
+            ,{
+                field : 'defectName',
+                event : 'edit',
+                title : '缺陷项目'
+            }
+            ,{
+                field : 'emrDefectDesc',
+                event : 'edit',
+                title : '缺陷描述'
+            }
+            ,{
+                field : 'actualLossScore',
+                event : 'edit',
+                width : 80,
+                title : '缺陷扣分'
+            }
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+            if (null == res || null == res.data) {
+                return;
+            }
+            var count = 0;
+            var reformContent = "";
+            for (idx in res.data) {
+                var defectItem = res.data[idx];
+                if (null == defectItem || null == defectItem.patientEmrDefectItemId) {
+                    continue;
+                }
+                count++;
+                if (defectItem.defectMode == "$!{CONST.AppConstants.DEFECT_MODE_AUTO}") {
+                    reformContent += count + ". " + defectItem.defectName + "。" + defectItem.emrDefectDesc + "\r\n";
+                } else {
+                    reformContent += count + ". " + defectItem.emrDefectDesc + "\r\n";
+                }
+            }
+            $("textarea[name='reformContent']:first").val(reformContent);
+        }
+    });//table.render
+
+})
+
+//选择整改接收人
+$("input[name='receiverName']:first").click(function () {
+    common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {area: ['80%', '80%']});
+});
+
+//电子病历选择医生触发方法的回调函数
+function selectSingleUserCall(data) {
+    if (null != data) {
+        $("input[name='receiverId']:first").val(data.userId);
+        $("input[name='receiverName']:first").val(data.name);
+    }
+}
+</script>

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("emrDefectPrjClassifyId" "$!{emrDefectPrjClassify.emrDefectPrjClassifyId}" " id='emrDefectPrjClassifyId'") #formHiddenInput("dicTypeId" "$!{basDic.dicTypeId}$!{dicTypeId}" " id='dicTypeId'") 
+        #formHiddenInput("hospitalId" "$!{emrDefectPrjClassify.hospitalId}" "")
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()规范名称</label>
+            <div class="layui-input-block">#formTextInput("emrDefectPrjClassifyName" "$!{emrDefectPrjClassify.emrDefectPrjClassifyName}" " id='emrDefectPrjClassifyName' maxlength='50' lay-verify='required' autocomplete='off' placeholder='' class='layui-input unique'")</div>
+        </div>
+        #if($!{emrDefectPrjClassify})
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-block" id="validFlag">#formRadioGroup("validFlag" "$!{emrDefectPrjClassify.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+        </div>
+        #else
+            #formHiddenInput("validFlag" "$!{CONST.AppConstants.YES_FLAG}" "")
+        #end
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save_emrDefectPrjClassify" id="btn_save_emrDefectPrjClassify" value="确认">
+        </div>
+    </div>
+    #parse("./emr/emrDefectPrj/emrDefectPrjClassifyEdit.js.vm")
+</body>
+</html>

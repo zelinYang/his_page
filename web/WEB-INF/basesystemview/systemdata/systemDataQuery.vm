@@ -1,0 +1,142 @@
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=gbk" />
+  <title>$!_System_Name_</title>
+  <link href="../script/css.css" rel="stylesheet" type="text/css" />
+  <script language="javascript" type="text/javascript" src="../script/common.js"></script>
+  <script language="javascript" type="text/javascript" src="../script/buyPlanScript.js"></script>
+<script type="text/javascript">
+function statusChange(sourceObj, opObjId, targetObjId) {
+    var opObj     = document.getElementById(opObjId);
+    var targetObj = document.getElementById(targetObjId);
+    if (sourceObj.value == ">" || sourceObj.value == ">=") {
+        opObj.disabled = false;
+        targetObj.disabled = false;
+    } else {
+        opObj.disabled = true;
+        targetObj.disabled = true;
+        targetObj.value = "";
+    }
+}
+
+function disabledNull() {
+    var node;
+    var nodeList = document.getElementsByTagName("input");
+    for (var i = 0; i < nodeList.length; ++i) {
+        node = nodeList.item(i);
+        if (node.type != "text") {
+            continue;
+        }
+        if (node.value == "") {
+            node.disabled = true;
+        }
+    }
+    nodeList = document.getElementsByTagName("select");
+    for (i = 0; i < nodeList.length; ++i) {
+        node = nodeList.item(i);
+//        alert(node.type + "::" + node.name);
+        if (node.value == "") {
+            node.disabled = true;
+        }
+    }
+}
+
+function submitQuery() {
+//    if (!submitCheck()) {
+//        return;
+//    }
+//    disabledNull();
+
+    document.editForm.submit();
+}
+</script>
+</head>
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr valign="top" height="1">
+    <td>
+      <table width="100%" height="26" border="0" cellpadding="0" cellspacing="0" class="table_bg">
+        <tr>
+          <td height="24">
+            <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="pagetitle">
+              <tr>
+                <td>
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="unnamed1">
+                    <tr>
+                      <td width="1%"></td>
+                      <td width="49%" height="24">
+                        <img src="../images/mb_top_zl1.gif" width="16" height="13" align="absmiddle" alt="工具条" />
+                        <span class="text12">系统数据查询</span>
+                      </td>
+                      <td width="49%" align="right" valign="middle" class="text12">
+                        <input type="button" class="com_btn" value="查询" onclick="javascript:submitQuery()" />
+                      </td>
+                      <td width="1%"></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr valign="top">
+    <td>
+      <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="table_border">
+<form name="editForm" method="post" action="../systemdata/systemDataQuery.do">
+<input type="hidden" name="queryResult" value="list" /><input type="hidden" name="finishFlag" value="E" />
+        <tr valign="top" height="1">
+          <td>
+            <table width="100%" border="0" cellpadding="3" cellspacing="0" class="t">
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">节点标识</td>
+                <td width="35%" align="left" class="inputarea">
+                </td>
+                <td width="15%" align="right" class="textarea">键值名</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.keyName")
+                  <input type="text" name="keyName" value="$!{status.value}" maxlength="100"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">值内容</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.value")
+                  <input type="text" name="value" value="$!{status.value}" maxlength="200"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+                <td width="15%" align="right" class="textarea">值类型</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.valueType")
+                  <input type="text" name="valueType" value="$!{status.value}" maxlength="1"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+              <tr align="center">
+                <td width="15%" align="right" class="textarea">父节点标识</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.parentId")
+                  <input type="text" name="parentId" value="$!{status.value}"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+                <td width="15%" align="right" class="textarea">排列顺序号</td>
+                <td width="35%" align="left" class="inputarea">
+#springBind("command.orderNumber")
+                  <input type="text" name="orderNumber" value="$!{status.value}"/>
+                  #showErrorMessage(${status.errorMessage})
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+</form>
+      </table>
+    </td>
+  </tr>
+</table>
+
+</body>
+</html>

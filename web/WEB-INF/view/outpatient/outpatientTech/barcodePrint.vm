@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <script src="$!contextPath/resource/editor/mini-editor/plugins/jquery/jquery.min.js"></script>
+        <script src="$!contextPath/resource/JsBarcode/JsBarcode.all.min.js"></script>
+        ##<script src="../../plugins/jquery/jquery.min.js?_=sfafa"></script>
+        ##<script type="text/javascript" src="../internal.js"></script>
+        ##<script src="../../../ueditor.parse.js"></script>
+        <style>
+            @page{
+                size: auto;
+                margin: 0mm;
+            }
+        </style>
+        <title></title>
+    </head>
+    <body class="view">
+    <div style="position: absolute; left: 0; top: 0; bottom: 5px; right: 0;-webkit-overflow-scrolling:touch; overflow: auto;">
+        <div style="float: left;">
+            <button class="layui-btn layui-btn-sm" onclick="doPrint()">打印</button>
+        </div>
+        <div id="printarea" style=" width:784px;margin: 5px auto 0px;">
+            <div id="preview" style="margin: 30px 40px;">
+                <img id="barcode"/>
+            </div>
+        </div>
+    </div>
+    </body>
+    <script>
+        var barcode = document.getElementById('barcode'),
+        str = "12345678",
+        options = {
+            format:"CODE128",
+            displayValue:true,
+            fontSize:18,
+            height:100
+        };
+        JsBarcode(barcode, str, options);//原生
+        $('#barcode').JsBarcode(string,options);//jQuery
+
+        //设置网页打印的页眉页脚为空 
+        function PageSetup_Null() { 
+            try { 
+                var Wsh=new ActiveXObject("WScript.Shell"); 
+                HKEY_Key="header"; 
+                Wsh.RegWrite(HKEY_Root+HKEY_Path+HKEY_Key,""); 
+                HKEY_Key="footer"; 
+                Wsh.RegWrite(HKEY_Root+HKEY_Path+HKEY_Key,""); 
+            } catch(e){
+                
+            }
+        } 
+
+        //恢复网页打印的页眉页脚
+        function PageSetup_default() { 
+            try { 
+                var Wsh=new ActiveXObject("WScript.Shell"); 
+                HKEY_Key="header"; 
+                Wsh.RegWrite(HKEY_Root+HKEY_Path+HKEY_Key,"&w&b页码,&p/&P"); 
+                HKEY_Key="footer"; 
+                Wsh.RegWrite(HKEY_Root+HKEY_Path+HKEY_Key,"&u&b&d"); 
+            } catch(e){
+                
+            } 
+        } 
+
+        function doPrint() {
+            var bdhtml = window.document.body.innerHTML;
+            var printarea = document.getElementById('preview');
+            var marginTop = printarea.style.marginTop? parseInt(printarea.style.marginTop.replace('px', '')): 0;
+            var marginBottom = printarea.style.marginBottom? parseInt(printarea.style.marginBottom.replace('px', '')): 0;
+            var marginLeft = printarea.style.marginLeft? parseInt(printarea.style.marginLeft.replace('px', '')): 0;
+            var marginRight = printarea.style.marginRight? parseInt(printarea.style.marginRight.replace('px', '')): 0;
+            printarea.style.marginTop = (marginTop - 40) + 'px';
+            printarea.style.marginBottom = (marginBottom - 40) + 'px';
+            printarea.style.marginLeft = (marginLeft - 40) + 'px';
+            printarea.style.marginRight = (marginRight - 40) + 'px';
+
+            PageSetup_Null();
+            window.document.body.innerHTML = printarea.outerHTML; //把需要打印的指定内容赋给body.innerHTML
+            window.print(); //调用浏览器的打印功能打印指定区域
+            window.document.body.innerHTML = bdhtml;//重新给页面内容赋值
+            PageSetup_default();
+        }
+    </script>
+</html>

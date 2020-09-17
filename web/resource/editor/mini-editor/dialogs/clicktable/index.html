@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>单选框</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <link rel="stylesheet" href="../jsoneditor/jsoneditor.min.css">
+    <script src="../jsoneditor/jsoneditor.min.js"></script>
+    <script src="../axios/axios.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th colspan="2"><span>首行标题（用英文,隔开）</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <input type="text" id="rowName" style="width: calc(100% - 16px)" placeholder="请输入首行标题">
+            </td>
+        </tr>
+        <tr>
+            <th colspan="2"><span>首列标题（用英文,隔开）</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <input type="text" id="columnName" style="width: calc(100% - 16px)" placeholder="请输入首列标题">
+            </td>
+        </tr>
+        <tr>
+            <th colspan="2"><span>字段名（用英文,隔开）</span></th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <input type="text" id="fieldName" style="width: calc(100% - 16px)" placeholder="请输入字段名">
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span></th>
+            <th><span>保存模式</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1">编辑模式</option>
+                    <option value="0" selected="selected">只读模式</option>
+                </select>
+            </td>
+            <td>
+                <select id="ctrlType">
+                    <option value="1" selected>表数据</option>
+                    <option value="2">字典数据</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件类型</span></th>
+            <th><span>标准字段名</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="ctrlModel">
+                    <option value="1" selected>类型1</option>
+                    <option value="2">类型2</option>
+                    <option value="3">类型3</option>
+                    <option value="4">类型4</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" id="levelField" style="width: calc(100% - 16px)" placeholder="请输入标准字段名">
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件列数</span></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="columnNum">
+                    <option value="1" selected>1列</option>
+                    <option value="2">2列</option>
+                </select>
+            </td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color: white;">
+                <div class="tabbable">
+                    <ul class="nav nav-tabs" style="margin-bottom: 5px;">
+                        <li class="active"><a href="#tab2" data-toggle="tab">动态数据</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="tab2">
+                            <div id="jsoneditorRequest" style="width:350px;height:300px;float: left;"></div>
+                            <div style="float: left;padding: 100px 5px;">
+                                <input type="button" value="请求" onclick="doRequest()">
+                            </div>
+                            <div id="jsoneditorResponse" style="width:350px;height:300px;float: left;"></div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    var jsoneditorRequest = new JSONEditor(document.getElementById('jsoneditorRequest'), {
+        mode: 'code'
+    });
+    var poweredByRequest = document.createElement('a'),
+        domPoweredByRequest = jsoneditorRequest.container.querySelector('.jsoneditor-poweredBy');
+    poweredByRequest.innerHTML = '提示'
+    poweredByRequest.href = "javascript:void(0);";
+    poweredByRequest.setAttribute('style', 'font-size: 8pt;position: absolute;right: 0;top: 0;padding: 10px;');
+    $(poweredByRequest).popover({
+        placement: 'bottom',
+        trigger: 'click',
+        html: true,
+        title: '提示(<a class="sde-popover-a" target="_blank" href="https://github.com/axios/axios">点击查看axios官网</a>)：',
+        content: '使用axios组件发起请求，格式要求如下：<br/>{"url":"xxx","method":"get","headers":{},"data":{}}<br/>'
+    });
+    domPoweredByRequest.style.display = 'none';
+    domPoweredByRequest.parentElement.insertBefore(poweredByRequest, domPoweredByRequest);
+
+    var jsoneditorResponse = new JSONEditor(document.getElementById('jsoneditorResponse'), {
+        modes: ['code', 'tree']
+    });
+    var poweredByResponse = document.createElement('a'),
+        domPoweredByResponse = jsoneditorResponse.container.querySelector('.jsoneditor-poweredBy');
+    poweredByResponse.innerHTML = '返回格式要求'
+    poweredByResponse.href = "javascript:void(0);";
+    poweredByResponse.setAttribute('style', 'font-size: 8pt;position: absolute;right: 0;top: 0;padding: 10px;');
+    $(poweredByResponse).popover({
+        placement: 'bottom',
+        trigger: 'click',
+        html: true,
+        title: '格式要求：',
+        content: '为兼容iOS设备，对返回格式要求如下：<br/>{"data":[{"label":"男","value":1},{"label":"女","value":2}]}'
+    });
+    domPoweredByResponse.style.display = 'none';
+    domPoweredByResponse.parentElement.insertBefore(poweredByResponse, domPoweredByResponse);
+
+    function doRequest() {
+        axios(jsoneditorRequest.get()).then(function (res) {
+            jsoneditorResponse.set(res.data);
+        }).catch(function (err) {
+            console.error(err);
+            jsoneditorResponse.set({
+                msg: '请求失败，请联系管理员！'
+            });
+        });
+    }
+
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            return rgbStr;
+        }
+
+        var thePlugins = 'miniclicktable',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            $('#ctrlModel').change(function() {
+                if ($(this).val() !== '4') {
+                    $('#columnNum').val('1');
+                    $('#columnNum').find('option:last').attr('disabled', 'disabled').hide();
+                } else {
+                    $('#columnNum').find('option:last').attr('disabled', null).show();
+                }
+            });
+
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id')).attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#rowName').val(opt.rowName);
+                $('#columnName').val(opt.columnName);
+                $('#fieldName').val(opt.fieldName);
+                $('#levelField').val(opt.levelField);
+                $('#editModeFlag').val(opt.mode);
+                $('#ctrlType').val(opt.ctrlType);
+                opt.columnNum? $('#columnNum').val(opt.columnNum):$('#columnNum').val('1');
+                if ($('#ctrlType').val() !== '4') {
+                    $('#columnNum').find('option:last').attr('disabled', 'disabled').hide();
+                }
+                $('#ctrlModel').val(opt.ctrlModel);
+                if (opt.required === 1) {
+                  $G('requiredFlag').checked = true;
+                }
+                if (opt.saveFlag === 1) {
+                  $G('saveFlag').checked = true;
+                }
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+                jsoneditorRequest.set(opt.remotedata || {});
+            } else {
+                $('#ctrlId').val('EmrPatientDicData_bart');
+                $('#ctrlDesc').val('list');
+                $('#rowName').val('');
+                $('#columnName').val('');
+                jsoneditorRequest.set({
+                    "url": "/cloud_his/controlModel/getAssessScoreData.jo?dicTypeIds=489,490",
+                    "method": "get",
+                    "headers": "",
+                    "data": ""
+                });
+
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.rowName = $('#rowName').val();
+            newOpt.columnName = $('#columnName').val();
+            newOpt.fieldName = $('#fieldName').val();
+            newOpt.levelField = $('#levelField').val();
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.ctrlType = $('#ctrlType').val();
+            newOpt.columnNum = $('#columnNum').val();
+            newOpt.ctrlModel = $('#ctrlModel').val();
+            newOpt.remotedata = jsoneditorRequest.get();
+            console.log(newOpt.remotedata);
+            newOpt.type = 'clicktable';
+            if (!!domCtrl) {
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $('#ctrlId').val());
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl' + (newOpt.required? ' ctrl-required': '');
+                domCtrl.setAttribute('contenteditable', false);
+                domValue.setAttribute('contenteditable', false);
+                //修改
+                ctrl.setOpt(newOpt);
+                window.parent.document.getElementById("ueditor_0").contentWindow.refreshListener();
+                delete UE.plugins[thePlugins].editdom;
+                setTimeout(function () {
+                    dialog.close();
+                }, 0);
+                return false;
+            } else {
+                domCtrl = UE.dom.domUtils.createElement(document, 'table', {
+                    class: 'emr-ctrl' + (newOpt.required? ' ctrl-required': ''),
+                    style: 'width: 100%',
+                    contenteditable: false,
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'clicktable',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                var tbodyDom = UE.dom.domUtils.createElement(document, 'tbody', {
+                    class: 'emr-value'
+                });
+                // generateTable(newOpt, domCtrl, tbodyDom);
+                domCtrl.appendChild(tbodyDom);
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt)
+            }
+            UE.plugins[thePlugins].domListener();
+        };
+
+        function generateTable (newOpt, domCtrl, tbodyDom) {
+            if (!pt.remotedata) {
+                return false;
+            }
+            var rowNames = newOpt.rowName.split(',');
+            var columnNames = newOpt.columnName.split(',');
+            var cols = rowNames.length;
+            var rows = columnNames.length + 1;
+            axios(opt.remotedata).then(function (res) {
+                var data = res.data.data;
+                for (var i = 0; i< rows; i++) {
+                    var trDom = UE.dom.domUtils.createElement(document, 'tr', {});
+                    if (i === 0) {
+                        trDom.className = 'firstRow';
+                    }
+                    for (var j = 0; j < cols; j++) {
+                        var tdDom = UE.dom.domUtils.createElement(document, 'td', {});
+                        if (i === 0) {
+                            tdDom.innerHTML = rowNames[j];
+                        } else {
+                            if (j === 0) {
+                                tdDom.innerHTML = columnNames[i - 1];
+                            }
+                            if (i === 1 && j === cols - 1) {
+                                tdDom.setAttribute('rowspan', rows - 2);
+                            }
+                            if (i > 1 && i < rows - 1 && j === cols - 1) {
+                                continue;
+                            }
+
+                            // else if (i !== rows - 1 && j !== cols - 1) {
+                            //     tdDom.setAttribute('score', i + '');
+                            //     tdDom.innerHTML = i + '分';
+                            // }
+                        }
+                        trDom.appendChild(tdDom);
+                    }
+                    tbodyDom.appendChild(trDom)
+                }
+            }).catch(function (err) {
+                console.error(err);
+            });
+        }
+    })(UE);
+</script>
+</body>
+
+</html>

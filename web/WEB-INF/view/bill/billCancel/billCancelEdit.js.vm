@@ -1,0 +1,38 @@
+<script>
+$(document).ready(function () {
+});
+
+
+    // 获取坐标回调函数
+    function selectMapCoordinateBack(lng, lat) {
+        $('#longitude').val(lng);
+        $('#latitude').val(lat);
+    }
+
+    // 提交表单
+    function saveBillCancel() {
+        var billCancelParams = common.serializeObject($('#billCancelForm'));
+
+        common.requestServer(contextPath + '/billCancel/saveBillCancel.jo', billCancelParams, function(result){
+            if (result.code == "0") {
+                common.alertCall("保存成功。", 1, function (){
+                    $('#btn_query', window.parent.document).click();
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+
+    }//save function
+    // 保存按钮
+    $(document).ready(function () {
+        // 初始化要校验的表单
+        validate.init($('#billCancelForm'));
+        // 保存按钮
+        $('#btn_save').click(function (){
+            validate.valid(saveBillCancel, function (m, o){parent.common.alert(m, 0);});
+        });
+    });
+</script>

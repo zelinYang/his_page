@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>病案--收费项目归并</title>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<style type="text/css">
+.layui-form-select dl {
+    max-height: 200px;
+}
+.layui-form-label {
+    width: 90px;
+}
+.layui-input-block {
+    margin-left: 110px;
+}
+</style>
+</head>
+<body>
+    <div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("docChargeGroupId" "$!{docChargeGroup.docChargeGroupId}" " id='docChargeGroupId' ") #formHiddenInput("hospitalId" "$!{docChargeGroup.hospitalId}" " id='hospitalId' ")
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()收费类型名称</label>
+            <div class="layui-input-block">#formTextInput("chargeGroupName" "$!{docChargeGroup.chargeGroupName}" " maxlength='20' lay-verify='required' autocomplete='off' class='layui-input'")</div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()收费项目归并</label>
+            <div class="layui-input-block">#formSingleSelectSearchFirstNone("basChargeGroupId" "$!{docChargeGroup.basChargeGroupId}" ${dicData.dicInhospitalChargeGroupCode} " lay-verify='required' lay-search" "直接选择或搜索选择")</div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">项目类型</label>
+            <div class="layui-input-block">#formRadioGroup("chargeType" "$!{docChargeGroup.chargeType}" $dicData.dicChargeType " ")</div>
+        </div>
+        #if(${docChargeGroup})
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{docChargeGroup.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+        </div>
+        #end
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+        </div>
+    </div>
+    #parse("./doc/docChargeGroup/docChargeGroupEdit.js.vm")
+</body>
+</html>

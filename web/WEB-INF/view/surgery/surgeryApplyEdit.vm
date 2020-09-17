@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>输血申请</title>
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        body{overflow: hidden;}
+        .layui-fluid .layout-left{display: inline-block;width: 400px;float: left;}
+        .layui-fluid .layout-main{width: calc(100% - 410px);float: right}
+        .layui-table td, .layui-table th {padding: 5px;}
+        .layui-form-item .layui-form-checkbox[lay-skin=primary]{margin-top: 0px;}
+        #surgeryItemList > .layui-col-md2.layui-col-xs4 > .layui-unselect.layui-form-checkbox{width: 100%;}
+        #surgeryItemList > .layui-col-md2.layui-col-xs4 > .layui-unselect.layui-form-checkbox > span{
+            text-overflow: ellipsis;
+            width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+        }
+        /* @media screen and (max-width: 1024px){
+             .layui-form.full-height{
+                 overflow-x: hidden;
+                 overflow-y: auto;
+                 -webkit-overflow-scrolling: touch;
+             }
+             #emrTmplate{height: calc(100% - 193px);}
+             .layui-table.abuui-table-zljh{width: 100%}
+
+         }*/
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layout-left white-bg full-height border-r p-t-xs">
+            <form class="layui-form" id="queryForm">
+                <div class="layui-form-item  p-b-xs search-term">
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="width: unset">手术名称</label>
+                        #formTextInput("" "" " id='q_surgeryName' maxlength='100' style='width:170px;' class='layui-input'  ")
+                    </div>
+                </div>
+            </form>
+            <div id="basChargeGroupListGrid" lay-filter="basChargeGroupListGrid"></div>
+        </div>
+
+        <div class="layout-main white-bg full-height p-t-xs">
+            <form class="layui-form full-height" action="">
+                #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                #formHiddenInput("inhospitalId" "$!inhospital.inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("registerId" "$!register.registerId" "id='registerId'")
+                #formHiddenInput("patientHospitalEmrId" "$!surgeryApply.patientHospitalEmrId" "id='patientHospitalEmrId'")
+                #formHiddenInput("orderGroupNo" "$!orderGroupNo" "id='orderGroupNo'")
+                #formHiddenInput("makeOrderFlag" "$!makeOrderFlag" "id='makeOrderFlag'")
+                <!--手术申请 start-->
+                #formHiddenInput("surgeryName" "$!surgeryApply.surgeryName" "id='surgeryName'")
+                #formHiddenInput("surgeryApplyId" "$!surgeryApply.surgeryApplyId" "id='surgeryApplyId'")
+                #formHiddenInput("surgeryCodeId" "$!surgeryApply.surgeryCodeId" "id='surgeryCodeId'")
+                #formHiddenInput("chargeItemIdStr" "" "id='chargeItemIdStr'")
+                #formHiddenInput("chargeGroupId" "" "id='chargeGroupId'")
+                #formHiddenInput("chargeGroupName" "" "id='chargeGroupName'")
+                <!--手术申请 end-->
+                <!--手术费用主项目 主医嘱 start-->
+                #formHiddenInput("orderId" "" "id='orderId'")
+                <!--手术费用主项目 start-->
+                <!--手术费用明细项目 住院子医嘱 start-->
+                <div class="layui-hide" id="surgeryItemList">
+                </div>
+                <!--模板-->
+                <script type="text/html" id="surgeryItemTpl">
+                    <div id="chargeItemId_">
+                        #formHiddenInput("orderId" "" "")
+                        #formHiddenInput("chargeItemId" "" "")
+                        #formHiddenInput("chargeName" "" "")
+                    </div>
+                </script>
+                <!--手术费用明细项目 end-->
+                <div class="layui-form-item search-term" id="rightForm">
+                    <div class="layui-inline" style="width: 265px">
+                        <label class="layui-form-label">开始时间</label>
+                        <div class="layui-input-inline" style="width: 152px">
+                            #formTextInput("exeOrderStartTime" "" "id='exeOrderStartTime' class='layui-input' placeholder='' maxLength='50'")
+                        </div>
+                    </div>
+                    #if($inhospital)
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()执行科室</label>
+                        <div class="layui-input-inline">
+                            #formSelectOrgForList("exeOfficeId" "$!surgeryApply.applyOfficeId" $!deptList "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId'" "执行科室")
+                        </div>
+                    </div>
+                    #end
+                    <div class="layui-inline m-l-sm" style="width: 50px">
+                        <div class="layui-input-inline" style="width: 50px">
+                            #set($urgent = "")
+                            #if("$!surgeryApply.urgentFlag" == "1")
+                            #set($urgent = "checked")
+                            #end
+                            #formSimpleCheckbox("urgentFlag" "1" "" "$!urgent lay-skin='primary' id='urgentFlag' lay-filter='urgentFlag' title='加急'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病历模板</label>
+                        <div class="layui-input-inline">
+                            #if($patientHospitalEmr)
+                            #formSelectEmrForList("emrTlp" "$!patientHospitalEmr.emrTlpId" $!emrTlpList "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")
+                            #else
+                            #if($register)
+                            #formSelectEmrForList("emrTlp" "920" $!emrTlpList "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")##门诊
+                            #else
+                            #formSelectEmrForList("emrTlp" "927" $!emrTlpList "class='layui-input' id='emrTlp' lay-filter='emrTlp'" "请选择病历模板")##住院
+                            #end
+
+                            #end
+
+                        </div>
+                    </div>
+					<div class="layui-inline layui-btn-group">
+						<button type="button" id="btn_add" class="layui-btn layui-btn-sm" lay-tips="新增检查">新增检查</button>
+					</div>
+                </div>
+
+                <!-- 电子病历容器 -->
+                <div class="full-height" id="emrTmplate">
+                    <iframe src="" id="emrIframe" scrolling="no" frameborder="0" class="full-height" style="width: 100%;"></iframe>
+                </div>
+
+                <div class="tool-bottom-fixed layui-hide">
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var ORDER_CLASSIFY_TMP = "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}";
+    var ORDER_STATE_NEW = "$!{CONST.AppConstants.ORDER_STATE_NEW}";
+    //手术医嘱
+    var ORDER_TYPE_SURGERY  = "$!{CONST.AppConstants.ORDER_TYPE_SURGERY}"
+    var YES_FLAG  = "$!{CONST.AppConstants.YES_FLAG}"
+    var dicBodyPartClassifySurgery = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifySurgery)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).use(['form', 'element', 'table'], function(){
+        var  form = layui.form, table =layui.table;
+        //开始时间
+        laydate.render({ elem:'#exeOrderStartTime',trigger: 'click', type:'datetime', value: getFormatDate(),done: function(value, date){
+                var emrIframe = $("#emrIframe")[0].contentWindow;
+                emrIframe.setTemplateContent('SurgeryApply_surgeryDate', value);
+            }});
+        var checkboxed = {};
+        var emrTlpId = $('#emrTlp').val() ? $('#emrTlp').val() : '920';
+        //如果存在电子病历Id 加载
+        if(emrTlpId){
+            loadEmrTlp(emrTlpId);
+            $('#emrTlp').val(emrTlpId);
+        }
+		$("#btn_add").click(function () {
+			common.confirm("新增会清除掉当前页面内容，请先确认是否已保存数据，确认新增手术吗？", function () {
+				window.location.reload();
+			});
+		});
+
+        //获取医嘱表中的同组手术信息
+        function getSurgeryOrder(){
+            var orderResult;
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/inpatient/inpatientOrderJsonList.jo',
+                data: {inhospitalId: $('#inhospitalId').val(), orderGroupNo: $('#orderGroupNo').val(), drugOrderType: '04'},
+                dataType:"json",
+                async:false,//同步 请求
+                success: function(result){
+                    orderResult = result.data;
+                },
+                error: function(res){
+                    jqueryPostError(res);
+                }
+            });
+            return orderResult;
+        }
+
+        //组装手术信息和医嘱信息
+        function assemblySurgeryItem(){
+            var surgeryOrder = getSurgeryOrder();
+            var surgery = {};
+            var surgeryArr = $.map(surgeryOrder, function (item) {
+                //判断主医嘱
+                if(item.orderGroupFlag == YES_FLAG) {
+                    surgery = item;
+                    surgery.surgeryCodeId = $("#surgeryCodeId").val();
+                    surgery.surgeryName = $("#surgeryName").val();
+                } else {
+                    return {
+                        orderId : item.orderId,
+                        chargeItemId : item.chargeItemId,
+                        chargeName : item.orderName,
+                    };
+                }
+            });
+            surgery.chargeItemIdStr = $.map(surgeryArr, function (item) {
+                return item.chargeItemId;
+            }).join();
+            renderSuger(surgery)
+            renderSurgeryItemList(surgeryArr);
+        }
+
+        //加载手术申请单信息
+        if($("#surgeryApplyId").val()) {
+            assemblySurgeryItem();
+        }
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - ($('body').height() - $('.layui-fluid').height()));
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basChargeGroupListGrid', {
+                height: height
+            })
+        })
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                surgeryFlag: YES_FLAG
+            }, common.serializeObject($('#queryForm')));
+        }
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basChargeGroupListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basChargeGroupListData.jo',
+            where: getQueryParams(),
+            cols: [[{type: 'numbers'},
+                {field: 'chargeGroupId',hide:true},
+                {field: 'chargeGroupName', minWidth: 100,title: '项目名称'},
+                {field: 'surgeryCodeId', minWidth: 100,title: '手术CM码'}
+            ]],
+            done: function (res) {
+                var that = this;
+            }
+        }));
+
+        function refreshTable(){
+            table.reload('basChargeGroupListGrid', {
+                where: common.serializeObject($('#queryForm'), ['chargeGroupName'])
+            });
+        }
+
+        //渲染手术信息
+        function renderSuger(surgery) {
+            //如果是主医嘱就设置
+            $('#orderId').val(surgery.orderId || "");
+            $("#surgeryName").val(surgery.surgeryName || "");
+            $("#surgeryCodeId").val(surgery.surgeryCodeId || "");
+            $("#chargeItemIdStr").val(surgery.chargeItemIdStr && surgery.chargeItemIdStr !== '0'? surgery.chargeItemIdStr: '');
+            $('#exeOfficeId').val(surgery.exeOfficeId || "");
+            $('#chargeGroupId').val(surgery.chargeGroupId || "");
+            $('#chargeGroupName').val(surgery.chargeGroupName || "");
+            form.render('select');
+        }
+
+        //渲染手术费用项目明细信息
+        function renderSurgeryItemList(surgeryArr){
+            $('#surgeryItemList').html($.map(surgeryArr, function (surgery) {
+                var surgeryItemTpl = $($('#surgeryItemTpl').html());
+                surgeryItemTpl.attr('id', 'chargeItemId_' + surgery.chargeItemId || "");
+                surgeryItemTpl.find('input[name="orderId"]').val(surgery.orderId || "");
+                surgeryItemTpl.find('input[name="chargeItemId"]').val(surgery.chargeItemId || "");
+                surgeryItemTpl.find('input[name="chargeName"]').val(surgery.chargeName || "");
+                return surgeryItemTpl;
+            }));
+        }
+
+        //查询手术项目
+        $("#q_surgeryName").bind("input propertychange",function(event){
+            var keyWord = $('#q_surgeryName').val();
+            table.reload('basChargeGroupListGrid', {
+                where: {keyWord: keyWord}
+            });
+        });
+
+        var surgeryArr = [];
+        //选择手术项目
+        table.on('row(basChargeGroupListGrid)', function(obj){
+            var data = obj.data;
+            if (!$('#emrTlp').val()) {
+                common.alert('请选择病历模板', 0);
+                refreshTable();
+                return;
+            }
+            renderSuger(data);
+            var params = {
+                doctorOrderType: data.doctorOrderType,
+                chargeItemIds: data.chargeItemIdstr
+            };
+            common.requestServer(contextPath + '/bas/chargeItemJsonList.jo', params, function (result) {
+                console.log(result);
+                if (result.code === "0" && result.count > 0) {
+                    var surgeryArr = result.data;
+                    //手术id
+                    renderSurgeryItemList(surgeryArr);
+                }
+            });
+
+            var emrIframe = $("#emrIframe")[0].contentWindow;
+            var surgeryObj = {surgeryName:data.chargeGroupName, surgeryCodeId: data.surgeryCodeId};
+            emrIframe.setTemplateContent('SurgeryApply_surgeryName', surgeryObj);
+            emrIframe.setTemplateContent('SurgeryApply_orderGroupNo', $('#orderGroupNo').val());
+            emrIframe.setTemplateContent('SurgeryApply_surgeryPart', dicBodyPartClassifySurgery[data.bodyPartClassify] || "");
+        });
+
+        // 监听加急复选框
+        var urgentFlag = '0';
+        form.on('checkbox(urgentFlag)', function (data){
+            urgentFlag = data.elem.checked ? '1' : '0';
+            var emrIframe = $("#emrIframe")[0].contentWindow;
+            emrIframe.setTemplateContent('SurgeryApply_fastFlag', urgentFlag);
+        });
+        //加载电子病历模板
+        function loadEmrTlp(emrTlpId){
+            var params =  "emrTlpId=" + emrTlpId + "&patientId=" + $('#patientId').val() + "&patientHospitalEmrId=" + $('#patientHospitalEmrId').val();
+
+            if ($('#registerId').val()){
+                params += "&registerId=" + $('#registerId').val();
+            }
+            if ($('#inhospitalId').val()) {
+                params += "&inhospitalId=" + $('#inhospitalId').val();
+            }
+            $('#emrIframe').attr('src', contextPath + '/emr/commonEmrTemplate.do?' + params);
+        }
+
+        // 监听病历模板下拉选择事件
+        form.on('select(emrTlp)', function (data){
+            $('#surgeryItemList').html('');
+            surgeryArr = [];
+            if(!data.value) return false;
+            if (!$('#inhospitalId').val() && !$('#registerId').val()) {
+                common.alert('住院号或挂号ID无效', 0);
+                return ;
+            }
+            loadEmrTlp(data.value);
+        });
+
+    });
+
+    //提交表单
+    // orderState 0=新开 1=待复核
+    function submitForm(minieditorDesign, orderState){
+        if (!$('#inhospitalId').val()) {
+            common.msg('参数无效', 0);
+            return ;
+        }
+        if (!$('#exeOfficeId').val()) {
+            common.msg('请选择执行科室', 0);
+            return ;
+        }
+        var exeOrderStartTime = $('#exeOrderStartTime').val();
+        //执行科室
+        var exeOfficeId = $('#exeOfficeId').val();
+        //执行科室名称
+        var exeOfficeName = $('#exeOfficeId').find('option:selected').text();
+        //子医嘱
+        var params = [];
+        var chargeItemIdStr = $('input[name="chargeItemIdStr"]').val();
+        if (chargeItemIdStr) {
+            var chargeItemIds = chargeItemIdStr.split(',');
+            $.each(chargeItemIds, function (index, chargeItemId) {
+                var ids = chargeItemId.split('_');
+                var surgery = $('.chargeItemId_' + ids[0]);
+                var orderId = surgery.find('input[name="orderId"]').val();
+                var chargeName = surgery.find('input[name="chargeName"]').val();
+                if (ids[0] == '0') {
+                	return;
+                }
+                var obj = {
+                    chargeItemId: ids[0],
+                    orderId: orderId,
+                    orderName: chargeName,
+                    lisFlag: '0', // 是否检验
+                    treatFlag: '0', // 是否治疗
+                    injectionFlag: '0',
+                    transfuseFlag: '0',
+                    antibioticFlag: '0',
+                    needSkinTestFlag: '0',
+                    tumorMedicineFlag: '0',
+                    examFlag: '0', // 是否检查
+                    surgeryFlag: '1', // 是否手术
+                    medicineFlag: '0', // 是否药品
+                    orderClassify: '8',
+                    medicalTechFlag: '1', //是否医技
+                    overdueBillFlag: '0', // 是否欠费
+                    exeOrderFlag: '1', //执行人类型 1为医生
+                    orderState: orderState, // 状态
+                    inhospitalId: $('#inhospitalId').val(),
+                    orderGroupNo: $('#orderGroupNo').val(),
+                    chargeGroupId: $('#chargeGroupId').val() ? $('#chargeGroupId').val() : 0,
+                    makeOrderFlag: $('#makeOrderFlag').val(),  //开嘱人类型 1为医生
+                    doctorOrderType: ORDER_TYPE_SURGERY,
+                    exeOfficeId: exeOfficeId,
+                    urgentFlag: urgentFlag == '1' ? urgentFlag : '0',
+                    exeOrderStartTime: exeOrderStartTime,
+                    exeOfficeName: exeOfficeName
+                };
+                params.push(obj);
+            })
+        }
+
+        //InpatientOrderEditInfo 主医嘱
+        var inpatientOrderEditInfo = {
+            orderId: $('#orderId').val(),
+            orderName: $('#surgeryName').val(),
+            orderState: orderState, // 状态
+            inhospitalId: $('#inhospitalId').val(),
+            makeOrderFlag: $('#makeOrderFlag').val(),
+            orderClassify: ORDER_CLASSIFY_TMP, // 医嘱类别 2临时
+            exeOrderStartTime: exeOrderStartTime,
+            exeOfficeName: exeOfficeName,
+            inpatientOrderJson: JSON.stringify(params),
+            chargeGroupId: $('#chargeGroupId').val(),
+            chargeGroupName: $('#chargeGroupName').val()
+        };
+        var p = {
+            patientType: '2', // 申请类型， 2表示住院
+            urgentFlag: $('#urgentFlag').val(),
+            inhospitalId: $('#inhospitalId').val(),
+            orderGroupNo: $('#orderGroupNo').val(),
+            exeOfficeId: exeOfficeId,
+            surgeryApplyId: $('#surgeryApplyId').val(),
+            doctorOrderType: ORDER_TYPE_SURGERY,
+            makeOrderFlag: ORDER_TYPE_SURGERY,
+            chargeGroupId: $('#chargeGroupId').val() ? $('#chargeGroupId').val() : 0,
+            surgeryApplyJson: JSON.stringify(params)
+        };
+        minieditorDesign.addParams({EmrOtherBusinessData: $.extend({}, p, inpatientOrderEditInfo)});
+        minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo?serviceId=surgeryApplyService');
+    }
+
+    //初始化保存，一般用在病历数据对象新增时（修改不用调用），需要调用该方法
+    function saveBeforeCall(minieditorDesign, operateType) {
+        if (operateType == "0") {
+            if ($('#inhospitalId').val()){
+                submitForm(minieditorDesign, '0');
+            }
+            if ($('#registerId').val()){
+                minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo', function(result) {
+                    if (result.code == "0") {
+                        var index = parent.layer.getFrameIndex(window.name);
+                        common.confirm('保存成功, 是否关闭?', function () {
+							var treatApplyIframe = $('div[lay-id=treatApply] iframe', window.parent.document);
+							$('#btn_refresh', treatApplyIframe.contents()).click();//.contents(): 取iframe里面的html内容
+                            parent.layer.close(index);
+                        });
+                    }
+                });
+            }
+        }
+        if (operateType == "1") {
+            submitForm(minieditorDesign, '1');
+        }
+    }
+
+    $(function () {
+        $("#emrTmplate").height($("body").height() - $("#rightForm").height())
+    })
+</script>
+</html>

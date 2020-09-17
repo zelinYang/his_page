@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>药品信息字典表管理</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+	<div class="layui-fluid ">
+		<div class="layui-card">
+			<!--搜索条件 开始-->
+			<form id="medicine_queryForm" class="layui-form">
+				<div class="layui-row-query">
+					<div class="layui-form-item">
+						<div class="layui-inline">
+							<label class="layui-form-label">药品名称</label>
+							<div class="layui-inline wd-120">#formTextInput("keyWord" "" "id='q_keyWord' maxlength='20' autocomplete='off' class='layui-input' ")</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">药品分类</label>
+							<div class="layui-inline wd-120">#formSingleSelectSearchFirstNone("medicineType" "" $!{dicData.dicMedicineTypeFixed} "id='q_medicineType' lay-filter='q_medicineType' lay-search " "")</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">药物剂型</label>
+							<div class="layui-inline wd-120">#formSingleSelectSearchFirstNone("dosageForm" "" $!{dicData.dicDosageForm} "id='q_dosageForm' lay-filter='q_dosageForm' lay-search " "")</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">处方分类</label>
+							<div class="layui-inline wd-120">#formSingleSelectSearchFirstNone("medicineRecipeClassify" "" $!{dicData.dicMedicineRecipeClassify} "id='q_medicineRecipeClassify' lay-filter='q_medicineRecipeClassify' lay-search " "")</div>
+						</div>
+
+						<div class="layui-inline" style="margin-top: -7px;">
+							<button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+								<i class="layui-icon layui-icon-search "></i>
+							</button>
+						</div>
+						<div class="layui-inline" style="margin-top: -7px;">
+							<button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+								<i class="iconfont icon-qingchu"></i>
+							</button>
+						</div>
+					</div>
+				</div>
+			</form>
+			<!--搜索条件 结束-->
+
+			<!--列表 begin-->
+			<!-- 列表表格 begin -->
+			<table id="medicineListGrid" lay-filter="medicineListGrid"></table>
+			<!--  列表表格 end -->
+			<!--列表end-->
+		</div>
+	</div>
+	<script>
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicMedicineRecipeClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineRecipeClassify)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        index : 'lib/index'
+    }).use([ 'index', 'form', 'table', 'laytpl' ], function() {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl;
+
+        //表单实时查询
+        $("#q_keyWord").on("input propertychange", function() {
+            $("#btn_query").click();
+        })
+        form.on('select(q_medicineType)', function(data) {
+            $("#btn_query").click();
+        });
+        form.on('select(q_dosageForm)', function(data) {
+            $("#btn_query").click();
+        });
+        form.on('select(q_medicineRecipeClassify)', function(data) {
+            $("#btn_query").click();
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function() {
+            var queryParams = $.extend({
+                validFlag : "$!{CONST.AppConstants.YES_FLAG}"
+            }, common.serializeObject($('#medicine_queryForm')));
+            //执行重载
+            table.reload('medicineListGrid', {
+                where : queryParams
+            });
+        });
+
+        // 清空按钮
+        $('#btn_clean').click(function() {
+            common.cleanForm('medicine_queryForm');
+        });
+
+        //药品信息字典表列表
+        table.render($.extend(basePageTable, {
+            elem : '#medicineListGrid',
+            height : getTableHgt(),
+            url : contextPath + '/medicine/medicineSimpleListData.jo',
+            where : $.extend({
+                validFlag : "$!{CONST.AppConstants.YES_FLAG}"
+            }, common.serializeObject($('#medicine_queryForm'))),
+            cols : [ [ {
+                type : 'radio',
+                fixed : 'left'
+            }, {
+                field : 'medicineName',
+                title : '药品名称',
+                minWidth : '250',
+                fixed : 'left'
+            }, {
+                field : 'medicineSpec',
+                title : '药品规格',
+                minWidth : '100'
+            }, {
+                field : 'medicineUnit',
+                title : '单位',
+                align : 'center',
+                width : 60,
+                templet : function(d) {
+                    return dicDrugNumUnit[d.medicineUnit] || '';
+                }
+            }, {
+                field : 'dosageForm',
+                title : '药品剂型',
+                minWidth : '110',
+                templet : function(d) {
+                    return dicDosageForm[d.dosageForm] || '';
+                }
+            }, {
+                field : 'medicineCode',
+                title : '药品编码',
+                width : 80
+            }, {
+                field : 'medicineRecipeClassify',
+                title : '特殊药品',
+                width : 80,
+                templet : function(d) {
+                    return dicMedicineRecipeClassify[d.medicineRecipeClassify] || '';
+                }
+            }] ],
+            done : function() {
+            }
+        }));
+
+        //表格单击事件 选中
+        table.on('row(medicineListGrid)', function(obj) {
+            var row = obj.data;
+            parent.selectmedicineCallBack(row);
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+        function getTableHgt() {
+            return ($("body").height() - $('#medicine_queryForm').height() - 20);
+        }
+
+        $(window).resize(function() {
+            var height = getTableHgt();
+            table.reload('medicineListGrid', {
+                height : height
+            });
+        })
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<script>
+    var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicEmrTlpClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrTlpClassify)');
+    var orgMap = JSON.parse('$!orgMap');
+
+    layui.use(['form', 'table'], function(){
+        var table = layui.table;
+        var form = layui.form;
+        var admin = layui.admin;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('.search-term').height() - 30);
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('emrTlp', {
+                height: height
+            })
+        })
+
+        table.render({
+            elem: '#emrTlp'
+            ,url:'../emrTlp/emrTlpPageData.jo'
+            //,toolbar: '#toolbarDemo'
+            ,title: '用户数据表'
+            ,height: getTableHgt()
+            ,limit : 20
+            ,defaultToolbar: []
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,cols: [[
+                {type: 'numbers'}
+                ,{field:'emrTlpName', title:'模板名称', minWidth:340}
+                ,{field:'emrTlpClassifyId', title:'模板分类', width:160, templet: function(res){
+                     return dicEmrTlpClassify[res.emrTlpClassifyId];
+                 }}
+                ,{field:'emrTlpType', title:'属性', width:180, templet: function(res){
+                    switch (res.emrTlpType) {
+                        case '1':
+                            return res.userName;
+                        case '2':
+                            var orgNames = [];
+                            if (res.officeIdStr !== '') {
+                                var orgIds = res.officeIdStr.split(',');
+                                for (var i = 0; i < orgIds.length; i++) {
+                                    orgNames.push(orgMap[orgIds[i]]);
+                                }
+                            }
+                            return orgNames.join(',');
+                        case '3':
+                            return dicBelongSysType[res.emrTlpType];
+                    }
+                }}
+                ,{field:'emrTlpVersion', title:'版本号', width:60}
+                ,{title:'操作', align: 'center', fixed:'right', toolbar: '#barDemo', width:60}
+            ]]
+            ,page: true
+        });
+
+        $('.demoTable .layui-btn').on('click', function(){
+            var type = $(this).data('type');
+            active[type] ? active[type].call(this) : '';
+        });
+        form.on('checkbox(emrTlpType)', function(data){
+            queryData();
+        });
+        //监听搜索
+        form.on('submit(LAY-search)', function (data) {
+            var field = data.field;
+            var arr = new Array();
+            $("input:checkbox[name='emrTlpType']:checked").each(function(i){
+                arr[i] = $(this).val();
+            });
+             data.field.emrTlpType = arr.join(",");
+            //执行重载
+            table.reload('emrTlp', {
+                where: field
+            });
+        });
+        //操作事件
+        table.on('tool(emrTlp)', function(obj){
+            if (obj.event != "edit") {
+                return;
+            }
+            var url = '$contextPath' + '/emr/emrDefectPrjFieldContent.do?emrTlpId=' + obj.data.emrTlpId+'&emrDefectPrjItemId=$!{emrDefectPrjItemId}';
+            var title = obj.data.emrTlpName + "新增/编辑质控规则";
+            createMenuItem(title, url);
+        });
+
+    });
+
+    //查询电子病历列表
+    function queryData() {
+        $('#btn_query').click();
+    }
+    $(function (){
+
+        //将桌面选项卡名称改为 电子病历
+         $("a[data-id='home.html']",parent.document).text('电子病历');
+
+        // 初始化树形分类
+        var zTreeObj, setting = {
+        view : {
+            selectedMulti : false,
+            showIcon: false
+        },
+        async : {
+            enable : true,
+            url : "../emrTlp/getEmrTypeTree.jo",
+            dataType : "json",
+            autoParam : [ "id" ],
+            type : "POST"
+        },
+        callback : {
+            onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+                 if(treeNode == undefined){
+                   treeNode = zTreeObj.getNodeByTId("tree_1");
+                 }
+                 zTreeObj.selectNode(treeNode, false, true);
+                    if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+
+            },
+            onClick: function(event, treeId, treeNode) {
+                if (treeNode) {
+                    if (treeNode.isParent) {
+                        $("#isAdd").val(0);
+                    } else {
+                        $("#isAdd").val(1);
+                    }
+                    $("#emrTlpClassifyId").val(treeNode.emrTlpClassifyId);
+                    $("#emrTreeCode").val(treeNode.emrTreeCode);
+                    queryData();
+                }
+            }
+        }
+    };
+
+    zTreeObj = $.fn.zTree.init($("#emrTypeTree"), setting, []);
+});
+</script>

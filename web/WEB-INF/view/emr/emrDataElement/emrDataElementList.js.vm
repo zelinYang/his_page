@@ -1,0 +1,176 @@
+
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicBillType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillType)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+        autocomplete : 'modules/autocomplete'
+    }).use(
+            [ 'table', 'form', 'layer' ],
+            function() {
+                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table;
+
+                //表列表
+                table.render({
+                    elem : '#emrDataElement',
+                    url : '../emrDataElement/emrDataElementListData.jo',
+                    cellMinWidth: 80,
+                    limit : 20,
+                    cols : [ [
+                            {
+                                type : 'numbers',
+                                fixed : 'left'
+                            },
+                            {
+                                field : 'dataElementName',
+                                title : '数据元名称',
+                                minWidth: 100
+                            },
+                            {
+                                field : 'dataElementId',
+                                title : '数据元标识符',
+                                minWidth: 110
+                            },
+                            {
+                                field : 'dataElementDesc',
+                                title : '定义'
+                            },
+                            {
+                                field : 'dataElementType',
+                                title : '数据类型'
+                            },
+                            {
+                                field : 'dataElementFormat',
+                                title : '表示格式'
+                            },
+                            {
+                                field : 'dataElementValue',
+                                title : '数据元允许值',
+                                minWidth: 110
+                            },
+                            {
+                                field : 'validFlag',
+                                title : '是否有效',
+                                unresize : true,
+                                width : 100,
+                                templet : function(d) {
+                                    return '<input type="checkbox" name="validFlag" value="' + d.dataElementId + '" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" '
+                                            + (d.validFlag == 1 ? 'checked' : '') + '>';
+                                }
+                            }, {
+                                fixed : 'right',
+                                title : '操作',
+                                toolbar : '#colstoolbar',
+                                width : 100
+                            } ] ],
+                    page : true,
+                    height : 'full-55',
+                    request : {
+                        pageName : 'pageNumber' //页码的参数名称，默认：page
+                        ,
+                        limitName : 'pageSize' //每页数据量的参数名，默认：limit
+                    }
+                });
+
+                //重置查询表单并刷新表格
+                $("#btn_reset").click(function() {
+                    setTimeout(function() {
+                        $('#btn_query').click();
+                    }, 50);
+                })
+                //监听数据搜索
+                form.on('submit(btn_query)', function(data) {
+                    var field = data.field;
+                    queryEmrDataElement(field);
+                    return false;
+                });
+                //工具栏事件
+                $('#btn_add').click(function(e) {
+                    editEmrDataElement()
+                });
+
+                //监听有无效操作  // 更新有效标志状态
+                form.on('switch(validFlag)', function(obj) {
+                    var validFlag = (obj.elem.checked ? "1" : "0");
+                    var data = {
+                        ids : this.value,
+                        validFlag : validFlag
+                    }
+                    updateValidFlag(data)
+                });
+                //监听工具条
+                table.on('tool(emrDataElement)', function(obj) {
+                    var data = obj.data;
+                    switch (obj.event) {
+                    case 'edit':
+                        editEmrDataElement(data);
+                        break;
+                    case 'del':
+                        deleteEmrDataElement(obj.data);
+                        break;
+                    }
+                });
+                // 删除国家电子病历标准数据集
+                function deleteEmrDataElement(data) {
+                    common.confirm("您确定要删除吗？", function() {
+                        var url = contextPath + '/emrDataElement/delEmrDataElement.jo', params = {
+                            ids : data.dataElementId
+                        }, msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $('#btn_query').click();
+                        })
+                    });
+                }
+                function queryEmrDataElement(data) {
+                    //执行重载
+                    table.reload('emrDataElement', {
+                        where : data
+                    });
+                }
+                function save(index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                        var url = contextPath + '/emrDataElement/saveEmrDataElement.jo', params = data.field, msg = "保存成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $('#btn_query').click();
+                            layer.close(index); //关闭弹层
+                        })
+                    });
+                    submit.trigger('click');
+                }
+
+                function editEmrDataElement(data) {
+                    var title = '新增病历标准数据集';
+                    var content = contextPath + '/emrDataElement/emrDataElementEdit.do';
+                    if (data) {
+                        title = data.dataElementName;
+                        content += '?dataElementId=' + data.dataElementId;
+                    }
+                    common.open(content, title, {
+                        area : [ '700px', '497px' ],
+                        btn : [ '保存' ],
+                        yes : function(index, layero) {
+                            save(index, layero);
+                        }
+                    });
+                }
+                function updateValidFlag(data) {
+                    common.requestServer('../emrDataElement/emrDataElementValidFlag.jo', data, function(result) {
+                        if (result.code == "0") {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                                icon : 1
+                            });
+                        } else {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                                icon : 2
+                            });
+                            obj.elem.checked = !obj.elem.checked;
+                            form.render('checkbox');
+                        }
+                    });
+                }
+            });
+</script>

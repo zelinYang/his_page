@@ -1,0 +1,384 @@
+<script>
+    var inpatientSettlementId = "$!{inpatientSettlementId}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicMedicineFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineFlag)');
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var dicInsuredType = JSON.parse('$dicTools.changeMapToJson($dicData.dicInsuredType)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    var dicDoctorOrderSubtype = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderSubtype)');
+    var dicInhospitalChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCode)');
+    var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicPayFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeFlag)');
+    var dicMakeOrderFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicMakeOrderFlag)');
+    var dicOperPayFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicOperPayFlag)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        $('#q_settlementTime,#q_inhospitalDate,#q_outhospitalDate').each(function () {
+            var that = this;
+            //按出院日期范围查询
+            laydate.render({
+                elem: that,
+                range: true,
+                trigger: 'click',
+                done: function (value, date, endDate) {
+                    setTimeout(function () {
+                        $('#btn_query').click();
+                    })
+                }
+            });
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#inhospitalFeeItem_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                inpatientSettlementId: inpatientSettlementId,
+                settlementTimeBegin: '',
+                settlementTimeEnd: '',
+                chargeTimeBegin: '',
+                chargeTimeEnd: '',
+                doctorOrderType: '',
+                doctorOrderSubtype: '',
+                inhospitalChargeGroupCode: '',
+                chargeName: '',
+                medicineType: '',
+                medicineFlag: '',
+                operPayFlag: '',
+                operUserName: '',
+                refundChargeDateBegin: '',
+                refundChargeDateEnd: '',
+                refundOperUserName: '',
+                feeBillNo: '',
+                settlementNum: '',
+                payFeeFlag: '',
+                makeOrderDoctorName: '',
+                makeOrderFlag: '',
+                orderOfficeName: '',
+                exeOfficeName: '',
+                validFlag: YES_FLAG
+            }, common.serializeObject($('#inhospitalFeeItem_queryForm'), ['q_settlementTime', 'q_chargeTime', 'q_refundChargeDate']));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('inhospitalFeeItemListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('inhospitalFeeItem_queryForm');
+        })
+
+        //宽度 = (字数: 不好含符号) * (字符宽度: 全角字符宽度 = 15，字符宽度 = 10);
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#inhospitalFeeItemListGrid',
+            url: '../fee/selectInhospitalFeeItemPage.jo',//数据接口 ,
+            where: getQueryParams(),
+            cols: [
+                [
+                    {
+                        title: '序号',
+                        type: 'numbers',
+                        align: 'center',
+                        rowspan: 2
+                    },
+                    {
+                        field: 'settlementTime',
+                        title: '结算日期',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.settlementTime ? util.toDateString(row.settlementTime) : '';
+                        },
+                    },
+                    {
+                        field: 'chargeTime',
+                        title: '计费日期',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.chargeTime ? util.toDateString(row.chargeTime) : '';
+                        },
+                    },
+                    {
+                        field: 'doctorOrderType',
+                        title: '医嘱项目类型',
+                        width: 6 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicDoctorOrderType[d.doctorOrderType] || "";
+                        }
+                    },
+                    {
+                        field: 'doctorOrderSubtype',
+                        title: '医技分类',
+                        width: 6 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicDoctorOrderSubtype[d.doctorOrderSubtype] || "";
+                        }
+                    },
+                    {
+                        field: 'inhospitalChargeGroupCode',
+                        title: '费用归并',
+                        width: 6 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicInhospitalChargeGroupCode[d.inhospitalChargeGroupCode] || "";
+                        }
+                    },
+                    {
+                        field: 'chargeName',
+                        title: '费用名称',
+                        align: 'center',
+                        minWidth: 250
+                    },
+                    {
+                        field: 'orderClassify',
+                        title: '费用项目类型',
+                        width: 6 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicOrderClassify[d.orderClassify] || "";
+                        }
+                    },
+                    {
+                        field: 'medicineFlag',
+                        title: '是否药品',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicMedicineFlag[d.medicineFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'medicineType',
+                        title: '药品类别',
+                        width: 7 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicMedicineType[d.medicineType] || "";
+                        }
+                    },
+                    {
+                        field: 'producingAreaId',
+                        title: '药品产地',
+                        align: 'center'
+                    },
+                    {
+                        field: 'orderDay',
+                        title: '发药天数',
+                        align: 'center'
+                    },
+                    {
+                        field: 'giveTotalQuantity',
+                        title: '发药数量',
+                        align: 'center'
+                    },
+                    {
+                        field: 'unitPrice',
+                        title: '项目单价',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'actualPrice',
+                        title: '实际金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'settlementPrice',
+                        title: '结算金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeBillNo',
+                        title: '发票号码',
+                        width: 16 * 10,
+                        align: 'center'
+                    },
+                    {
+                        field: 'settlementNum',
+                        title: '结算次数',
+                        align: 'center'
+                    },
+                    {
+                        field: 'operPayFlag',
+                        title: '收/退费',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicOperPayFlag[d.operPayFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'operUserName',
+                        title: '收费操作人',
+                        width: 90,
+                        align: 'center'
+                    },
+
+                    {
+                        field: 'refundSettlementPrice',
+                        title: '退费-结算金额',
+                        width: '退费-结算金额'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;',
+                    },
+
+                    {
+                        field: 'refundChargeDate',
+                        title: '退费时间',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.refundChargeDate ? util.toDateString(row.refundChargeDate) : '';
+                        },
+                    },
+                    {
+                        field: 'refundOperUserName',
+                        title: '退费操作人',
+                        width: 90,
+                        align: 'center'
+                    },
+                    {
+                        field: 'mbfSelfPay',
+                        title: '自付合计',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfUpLimitAmout',
+                        title: '定价上限金额',
+                        width: '定价上限金额'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfOverLimitAmount',
+                        title: '超限价自付金额',
+                        width: '超限价自付金额'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfFitRangetAmount',
+                        title: '医保符合范围',
+                        width: '医保符合范围'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfLinkedSelfPay',
+                        title: '医保挂钩自付',
+                        width: '医保挂钩自付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfChargeItemLevel',
+                        title: '医保收费项目等级',
+                        width: '医保收费项目等级'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfSelfPayRation',
+                        title: '自付比例',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'paymentRation',
+                        title: '支付比例',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeBillNo',
+                        title: '发票号码',
+                        width: 8 * 10,
+                        align: 'center'
+                    },
+                    {
+                        field: 'settlementNum',
+                        title: '结算次数',
+                        align: 'center'
+                    },
+                    {
+                        field: 'payFeeFlag',
+                        title: '结算状态',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicPayFeeFlag[d.payFeeFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'makeOrderDoctorName',
+                        title: '开嘱医护',
+                        width: 5 * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'makeOrderFlag',
+                        title: '开嘱人类型',
+                        width: 5 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicMakeOrderFlag[d.dicMakeOrderFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'orderOfficeName',
+                        title: '费用科室',
+                        width: 6 * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'exeOfficeName',
+                        title: '执行科室',
+                        width: 8 * 15,
+                        align: 'center'
+                    }
+                ]
+            ],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

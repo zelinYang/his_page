@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>发票领用</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!--列表 begin-->
+            <table id="basSurgeryCodeListGrid" lay-filter="basSurgeryCodeListGrid"></table>
+            <script type="text/html" id="colstoolbar">
+                 <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="edit"><i class="layui-icon"></i></a>
+                 <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+            </script>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicSurgeryLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryLevel)');
+    var dicSurgerySourceFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgerySourceFlag)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+    }).use(
+            [ 'index', 'table', 'form', 'layer' ],
+            function() {
+                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table;
+
+                //表列表
+                table.render({
+                    elem : '#basSurgeryCodeListGrid',
+                    //url : '../bas/basSurgeryCodeListData.jo',
+                    data:[{"f1":"一级手术审批","f2":"科主任手术审批"},{"f1":"二三四级手术审批","f2":"科主任手术审批>医务处手术审批>院领导审批"},{"f1":"特殊手术审批","f2":"科主任手术审批>医务处手术审批"}],
+                    limit : 20,
+                    height: 'full-5',
+                    cols : [ [
+                            {
+                                field : 'f1',
+                                title : '流程名'
+                            },
+                            {
+                                field : 'f2',
+                                title : '详细内容 '
+                            }] ],
+                    request : {
+                        pageName : 'pageNumber' //页码的参数名称，默认：page
+                        ,
+                        limitName : 'pageSize' //每页数据量的参数名，默认：limit
+                    }
+                });
+
+                //重置查询表单并刷新表格
+                $("#btn_reset").click(function() {
+                    setTimeout(function() {
+                        $('#btn_query').click();
+                    }, 50);
+                })
+                //监听数据搜索
+                form.on('submit(btn_query)', function(data) {
+                    var field = data.field;
+                    //执行重载
+                    table.reload('basSurgeryCodeListGrid', {
+                        where : field
+                    });
+                    return false;
+                });
+                //保存
+                function save(index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                        var url = contextPath + '/bas/saveBasSurgeryCode.jo', params = data.field, msg = "保存成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $('#btn_query').click();
+                            layer.close(index); //关闭弹层
+                        })
+
+                    });
+                    submit.trigger('click');
+                }
+                //编辑
+                function editBasSurgeryCode(data) {
+                    var title = '新增手术名称代码'
+                    var content = '$contextPath' + '/bas/BasSurgeryCodeEdit.do';
+                    if (data) {
+                        title = data.surgeryName;
+                        content += '?surgeryCodeId=' + data.surgeryCodeId;
+                    }
+                    common.open(content, title, {
+                        area : [ '700px', '497px' ],
+                        btn : [ '保存' ],
+                        yes : function(index, layero) {
+                            save(index, layero);
+                        }
+                    });
+                }
+                //显示
+                function showBasSurgeryCode(data) {
+                    var title = '表详情'
+                    var content = '$contextPath' + '/bas/basSurgeryCodeShow.do?surgeryCodeId=' + data.basSurgeryCodeId
+                    common.open(content, title, {
+                        area : [ '700px', '497px' ],
+                        btn : [ '关闭' ]
+                    });
+                }
+                // 删除
+                function deleteBasSurgeryCode(data) {
+                    common.confirm("您确定要删除吗？", function() {
+                        var url = contextPath + 'bas/delBasSurgeryCode.jo', params = {
+                            ids : data.basSurgeryCodeId
+                        }, msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function(result) {
+                            $('#btn_query').click();
+                        })
+                    });
+                }
+                //监听 更新有无效标志状态
+                form.on('switch(validFlag)', function(obj) {
+                    var validFlag = (obj.elem.checked);
+                    console.log(parseInt(validFlag));
+                   /*  common.requestServer('$contextPath/bas/updateBasSurgeryCodeValidFlag.jo', {
+                        ids : this.value,
+                        validFlag : validFlag
+                    }, function(result) {
+                        if (result.code == "0") {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                                icon : 1
+                            });
+                        } else {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                                icon : 2
+                            });
+                            obj.elem.checked = !obj.elem.checked;
+                            form.render('checkbox');
+                        }
+                    }); */
+                });
+
+                //新增事件
+                $('#btn_add').click(function() {
+                    editBasSurgeryCode();
+                });
+
+                //监听工具条
+                table.on('tool(basSurgeryCodeListGrid)', function(obj) {
+                    var data = obj.data;
+                    switch (obj.event) {
+                    case 'edit':
+                        editBasSurgeryCode(data);
+                        break;
+                    case 'del':
+                        deleteBasSurgeryCode(data)
+                        break;
+                    }
+                });
+
+                //监听行单击事件
+                table.on('row(basSurgeryCodeListGrid)', function(obj) {
+                    showBasSurgeryCode(obj.data);
+                });
+
+            });
+</script>
+
+</body>
+</html>

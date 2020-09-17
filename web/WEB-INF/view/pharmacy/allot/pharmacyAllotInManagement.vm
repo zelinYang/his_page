@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>调拨申请管理</title>
+    #parse("./common/pageCss.vm")
+    #set($path = $!contextPath)
+	<style type="text/css">
+		.inSettNav{ height: calc(100% - 3px);margin-top: 0;}
+		.layui-tab-content{padding: 0;}
+	</style>
+
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<!-- 中间导航nav -->
+		<div class="outTab layui-bg-white full-height" id="component-tabs">
+			<div class="layui-tab blod inSettNav" lay-filter="inSettNav" lay-allowclose="">
+				<!-- 主页导航名称 -->
+				<ul class="layui-tab-title highlight">
+					<li lay-id="pharmacyAllotApply" href="$path/pharmacy/pharmacyAllotApply.do" class="layui-this">调拨申请</li>
+					<li lay-id="pharmacyAllotApplyList" href="$path/pharmacy/pharmacyAllotApplyList.do">未提交</li>
+					<li lay-id="pharmacyAllotInList" href="$path/pharmacy/pharmacyAllotInList.do">未入库</li>
+				</ul>
+				<!-- 导航内容 根据index对应li -->
+                #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+                #set($layclass = 'class="layui-tab-item full-height"')
+				<div class="layui-tab-content" style="height: calc(100% - 30px);">
+					<div lay-id="pharmacyAllotApply" class="layui-tab-item layui-show full-height">
+						<iframe $attr src="$path/pharmacy/pharmacyAllotApply.do"></iframe>
+					</div>
+					<div lay-id="pharmacyAllotApplyList" $layclass><iframe $attr></iframe></div>
+					<div lay-id="pharmacyAllotInList" $layclass><iframe $attr></iframe></div>
+				</div>
+			</div>
+		</div>
+		<!-- 中间导航nav end -->
+	</div>
+</div>
+    #parse("./common/pageJs.vm")
+<script>
+	/************************ 导航 ********************************/
+	var layer;
+	var tabChange;//切换菜单方法
+	var changeToInWarehousing;
+
+	layui.use(['element', 'layer'], function(){
+		var element = layui.element;
+		$ = layui.$;
+		layer = layui.layer;
+		element.render();
+
+		/* 切换到指定Tab项 */
+		tabChange = function (filter, layid) {
+			element.tabChange(filter, layid);
+		};
+
+		changeToInWarehousing = function(drugstoreInId) {
+			element.tabChange('inSettNav', 'inWarehousing');
+			var destIframe = $('div[lay-id="inWarehousing"] iframe');
+			destIframe.attr('src', destIframe.attr('src') + '?drugstoreInId=' + drugstoreInId);
+		};
+
+		//监听导航菜单点击事件
+		element.on('tab(inSettNav)', function(elem){
+			var layId = $(this).attr('lay-id');
+			var href = $(this).attr('href');
+			var patient = $(this).attr('patient');
+
+			if (href) {
+				url = href; //使用已有的url
+			} else {
+				if (patient) {//必须带当前患者的参数
+					//需要判断患者是否存在，不存在则返回
+					url = mainTab.menu[layId].url   + common.objToParamStr(grobalModel)
+				} else {
+					url = mainTab.menu[layId].url
+				}
+			}
+
+			reqIframe(layId,url);
+		});
+
+		//iframe请求页
+		function reqIframe(layId,url,force) {
+			var destIframe = $('div[lay-id="'+layId+'"] iframe');
+			if(!destIframe.attr('src') || force) {
+				destIframe.attr('src',url);
+			}
+		}
+	});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>历史处方</title>
+	<link href="$contextPath/resource/hplus/css/plugins/laydate/laydateMini.css" rel="stylesheet" >
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+	#parse("./outpatient/recipe/recipe.css.vm")
+</head>
+
+<body class="full-height white-bg">
+
+  <div class="layui-row full-height">
+	  <!-- 查询表单 -->
+	  <form id="historyRecipe_queryForm" class="layui-form">
+		  #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+		  <div class="layui-row-query search-term layui-form-item">
+			  <label class="layui-form-label layui-form-label-s">诊断日期</label>
+			  <div class="layui-inline wd-200">
+				  #formTextInput("" "" "id='makeOrderTime'  tag='makeOrderTimeBegin,makeOrderTimeEnd'  class='layui-input layui-input-s'")
+			  </div>
+			  <div class="layui-inline">
+				  <input type="checkbox" name="outpatientId" value="1" id="outpatientId" title="本次" lay-skin="primary" >
+			  </div>
+			  <button id="btn_query_recipe" class="layui-btn layui-btn-sm" type="button"><i class="layui-icon layui-icon-search"></i></button>
+			  <button id="btn_import_recipeItem" class="layui-btn layui-btn-sm" type="button">导入</button>
+		  </div>
+	  </form>
+     <!-- 历史处方主信息 -->
+     <div class="main-left full-height">
+
+
+		 <table id="historyRecipeTable" lay-filter="historyRecipeTable"></table> <!-- 数据表格 -->
+     </div>
+
+     <!-- 历史处方明细 -->
+     <div class="main-right layui-hide">
+          <!-- 查询表单 -->
+		  <form id="historyRecipeItem_queryForm">
+		     #formHiddenInput("registerId" "" "id='registerId'")
+		  </form>
+		  <table id="historyRecipeItemTable" lay-filter="historyRecipeItemTable"></table> <!-- 数据表格 -->
+     </div>
+
+  </div><!-- layui-row -->
+
+   #parse("./outpatient/recipe/recipeHistory.js.vm")<!-- 页面js -->
+</body>
+</html>

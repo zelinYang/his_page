@@ -1,0 +1,429 @@
+
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+var baseParam;//基础查询条件
+var officeParam;//
+var index;
+var loadArrangeDutyDoctorData;
+layui.config({
+      base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+      index: 'lib/index' //主入口模块
+    }).use(['index', 'tree', 'table', 'form','layer'], function(){
+      var $ = layui.$
+      ,form = layui.form
+      ,table = layui.table
+      ,layer = layui.layer;
+
+      //同步加载
+      loadArrangeDutyDoctorData = function (){
+    	 var queryParams = common.serializeObject($('#arrangeDutyDoctorQueryForm'));
+    	 $("#arrangeDutyDoctorQueryForm").submit();
+      }
+
+      // 无用
+      $('#Refresh').on('click',function(){
+          var param = {};
+    	  loadArrangeDutyDoctorDataAjax(param);
+      });
+
+    //刷新
+    $('#refresh').on('click',function(){
+        location.reload();
+    });
+
+      //医生列表
+      $('.ys-list').on('click','.ys-card',function(){
+          $(this).addClass('activate').siblings().removeClass('activate');
+          var onclickRecord = $('#onclickRecord').val();
+          var doctorId = $(this).data('doctor-id')
+          var param = {
+              onclickRecord: onclickRecord,
+              doctorId: doctorId
+          }
+          $.extend(param, baseParam);
+    	  loadArrangeDutyDoctorDataAjax(param);
+      });
+      //根据科室获取 医生列表
+      function loadArrangeDoctor(param) {
+          $('.ys-list').empty();
+          var onclickRecord = $('#onclickRecord').val();
+          param.onclickRecord =onclickRecord
+          $.ajax({
+              type: "POST",
+              url: '$contextPath/outpatient/getArrangeDoctorData.jo',
+              data: param,
+              dataType:"json",
+              async:false,//
+              success: function(result){
+                  if(result.code == 0 ) {
+                      var data = result.data;
+                      var ysCards = $.map(data, function (item) {
+                          return '<dl class="ys-card" data-doctor-id="'+ item.doctorId +'">\n' +
+                              '              <dt class="arrangeDutyDoctorCard">'+ item.doctorName +'<small>值班</small></dt>\n' +
+                              '          <dd>'+ item.chargeName +'</dd>\n' +
+                              '          <dd>'+ (item.phone || "") +'</dd>\n' +
+                              '      </dl>';
+                      }).join('');
+                      $('.ys-list').html(ysCards);
+                  }
+              }
+          })
+      }
+    //局部加载数据(条件查询)
+    function loadArrangeDutyDoctorDataAjax(param){
+    	 //查询条件参数
+    	  //清空原始数据
+    	 $('.zzb-list').empty();
+    	  //数据加载开始
+    	 $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/getArrangeDutyDoctorLoadData.jo',
+            data: param,
+            dataType:"json",
+            async:false,//
+            success: function(result){
+                if (result.code == '0') {
+                	var sundayMorningdata = result.data.sundayMorning;//周日上午
+                	var sundayAfternoondata = result.data.sundayAfternoon;//周日下午
+                	var mondayMorningdata = result.data.mondayMorning;//周一早上
+                	var mondayAfternoondata = result.data.mondayAfternoon;//周一下午
+                	var tuesdayMorningdata = result.data.tuesdayMorning;//周二上午
+                	var tuesdayAfternoondata = result.data.tuesdayAfternoon;//周二下午
+                	var wednesdayMorningdata = result.data.wednesdayMorning;//周三上午
+                	var wednesdayAfternoondata = result.data.wednesdayAfternoon;//周三下午
+                	var thursdayMorningdata = result.data.thursdayMorning;//周四上午
+                	var thursdayAfternoondata = result.data.thursdayAfternoon;//周四下午
+                	var fridayMorningdata = result.data.fridayMorning;//周五上午
+                	var fridayAfternoondata = result.data.fridayAfternoon;//周五下午
+                	var saturdayMorningdata = result.data.saturdayMorning;//周六上午
+                	var saturdayAfternoondata = result.data.saturdayAfternoon;//周六下午
+                	var sundayMorningdata = result.data.sundayMorning;//周日上午
+                	var sundayAfternoondata = result.data.sundayAfternoon;//周日下午
+                	//周日上午
+                	$.each(sundayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#sundayMorning').append(e);
+                	});
+                	//周日下午
+                	$.each(sundayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#sundayAfternoon').append(e);
+                	});
+                	//周一上午
+                	$.each(mondayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#mondayMorning').append(e);
+                	});
+                	//周一下午
+                	$.each(mondayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#mondayAfternoon').append(e);
+                	});
+                	//周二上午
+                	$.each(tuesdayMorningdata,function(index, obj){
+                		var e = $('<a style="background-color: #00B4FF;"><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#tuesdayMorning').append(e);
+                	});
+                	//周二下午
+                	$.each(tuesdayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#tuesdayAfternoon').append(e);
+                	});
+                	//周三上午
+                	$.each(wednesdayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#wednesdayMorning').append(e);
+                	});
+                	//周三下午
+                	$.each(wednesdayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span> <span hidden="" id="a">'+obj.arrangeDutyDoctorId+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#wednesdayAfternoon').append(e);
+                	});
+                	//周四上午
+                	$.each(thursdayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#thursdayMorning').append(e);
+                	});
+                	//周四下午
+                	$.each(thursdayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#thursdayAfternoon').append(e);
+                	});
+                	//周五上午
+                	$.each(fridayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#fridayMorning').append(e);
+                	});
+                	//周五下午
+                	$.each(fridayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#fridayAfternoon').append(e);
+                	});
+                	//周六上午
+                	$.each(saturdayMorningdata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#saturdayMorning').append(e);
+                	});
+                	//周六下午
+                	$.each(saturdayAfternoondata,function(index, obj){
+                		var e = $('<a><small>'+obj.doctorName+'<span>'+obj.consultingRoomName+'</span></small><button type="button" class="close" lay-tips="单击停诊" lay-direction="2">×</button></a>');
+                		e.find('small').on('click',function(){
+                			dja(obj.doctorName,obj.arrangeDutyDoctorId)
+                			});
+                		$('#saturdayAfternoon').append(e);
+                	});
+                }else {
+
+                }
+
+                },
+        });//ajax end
+
+      };
+      //本周值班
+      $('#thisWeek').on('click',function(){
+    	  loadArrangeDutyDoctorData();
+      });
+
+      //下周值班数据
+      $('#nextWeek').on('click',function(){
+    	  $('#days').val(7);
+    	  loadArrangeDutyDoctorData();
+      });
+
+      //上周值班情况
+      $('#lastWeek').on('click',function(){
+    	  $('#days').val(-7);
+    	  loadArrangeDutyDoctorData();
+      });
+      $('#arrangeRecords').on('click', function () {
+    	  arrangeRecords();
+      });
+
+      //添加值班人员
+      $('button.zbry').on('click', function () {
+    	var a =$(this).val();
+    	var arr=a.split(",");
+    	var url = '$contextPath/outpatient/arrangeDutyDoctorAdd.do?arrangeDutyType='+arr[1]+'&arrangeDutyDate='+arr[0] +'&doctorOfficeId=' + (baseParam && baseParam.doctorOfficeId || "");
+    	 index = layer.open({
+          type: 2,
+          title: '添加排班人员',
+          shade: 0.6,
+          move: false,
+          area: ['80%', '80%'],
+          content: [url,'no'] //iframe的url
+        });
+      });
+
+    //医师个人预约情况
+      $('.zbb-table td a small').on('click', function () {
+    	  var doctorName = $(this).text();
+    	  var arrangeDutyDoctorId = $(this).attr("arrangeDutyDoctorId");
+    	  dja(doctorName,arrangeDutyDoctorId)
+      });
+
+    //function
+    function dja(name,data){
+    	var url = '$contextPath/outpatient/arrangeDutyDoctorInfo.do?arrangeDutyDoctorId='+data;
+    	layer.open({
+            type: 2,
+            title: name+'--医师排班详情',
+            shadeClose: true,
+            shade: 0.6,
+            move: false,
+            area: ['800px', '50%'],
+            content: [url,'no'] //iframe的url
+    	 });
+    }
+
+    //Records
+    function arrangeRecords(){
+    	var url = '$contextPath/outpatient/arrangeRecords.do';
+    	layer.open({
+            type: 2,
+            title: '历史排班记录',
+            shadeClose: true,
+            shade: 0.6,
+            move: false,
+            area: ['800px', '50%'],
+            content: [url,'no'] //iframe的url
+    	 });
+
+    }
+
+      //医师个人预约情况
+      $('button.close').on('click', function () {
+          var arrangeDutyDoctorId = $(this).parent().find("small").attr("arrangedutydoctorid");
+          common.confirm("是否临时停诊！", function () {
+              common.requestServerHandler('$contextPath' + '/outpatient/updateArrangeDutyDoctorValidFlag.jo', {validFlag: "${CONST.AppConstants.NO_FLAG}",arrangeDutyDoctorIds:arrangeDutyDoctorId}, "操作成功", function (result) {
+                  loadArrangeDutyDoctorData();
+              })
+          });
+      });
+    //医师个人预约情况
+    $('button.enabled').on('click', function () {
+        var arrangeDutyDoctorId = $(this).parent().find("small").attr("arrangedutydoctorid");
+        common.confirm("是否取消临时停诊！", function () {
+            common.requestServerHandler('$contextPath' + '/outpatient/updateArrangeDutyDoctorValidFlag.jo', {validFlag: "${CONST.AppConstants.YES_FLAG}",arrangeDutyDoctorIds:arrangeDutyDoctorId}, "操作成功", function (result) {
+                loadArrangeDutyDoctorData();
+            })
+        });
+    });
+
+
+      $(function (){
+          var IDMark_A = "_a";
+          function addDiyDom(treeId, treeNode) {
+              if (treeNode.parentNode && treeNode.parentNode.id!=2) return;
+              var aObj = $("#" + treeNode.tId + IDMark_A);
+              if (treeNode.object.emergencyRegisterFlag == 1) {
+                  if ($("#diyBtn_"+treeNode.id).length>0) return;
+                  var editStr = '<span style="color: red">急诊</span>';
+                  aObj.after(editStr);
+              }
+          }
+
+          // 初始化树形分类
+          var zTreeObj, setting = {
+              view : {
+                  selectedMulti : false,
+                  showIcon: false,
+                  addDiyDom: addDiyDom
+              },
+              async : {
+                  enable : true,
+                  url : "../outpatient/getArrangeDutyOfficeTree.jo",
+                  dataType : "json",
+                  autoParam : [ "id" ],
+                  type : "POST"
+              },
+              callback : {
+                  onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+                  ## if(treeNode == undefined){
+                  ##     treeNode = zTreeObj.getNodeByTId("tree_1");
+                  ## }
+                  ## zTreeObj.selectNode(treeNode, false, true);
+                      if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                          zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                      }
+
+                      //only first time load tree includeRoot = true ,after set false
+                      zTreeObj.setting.async.otherParam["includeRoot"] = false;
+
+                  },
+                  onClick: function(event, treeId, treeNode) {
+                      if (treeNode.isParent) {
+                          layer.msg('不可以选择父节点', {icon: 2});
+                          zTreeObj.cancelSelectedNode();
+                      } else {
+						  console.log(treeNode);
+                          var param = {};
+                          var title = treeNode.object.arrangeDutyOfficeName
+                          param.doctorOfficeId = treeNode.object.arrangeDutyOfficeId
+                          param = $.extend(baseParam, param);
+                    	  $(".title-name").text(title);
+                          baseParam = param;
+                          // loadArrangeDoctor(param);
+                    	  loadArrangeDutyDoctorDataAjax(param);
+                      }
+                  },
+				  onAsyncSuccess: function () {
+					  var nodes = zTreeObj.getNodes();
+					  if (nodes.length > 0) {
+						  zTreeObj.selectNode(nodes[0]);
+						  var param = {
+							  doctorOfficeId: nodes[0].object.arrangeDutyOfficeId,
+							  title: nodes[0].object.arrangeDutyOfficeName
+						  };
+						  // loadArrangeDoctor(param);
+						  loadArrangeDutyDoctorDataAjax(param);
+                      }
+				  }
+              }
+          };
+
+          zTreeObj = $.fn.zTree.init($("#emrTypeTree"), setting, []);
+    });
+      //生成下一周
+    $("#btn_GenerateNextWeek").click(function () {
+        common.confirm("将会覆盖下周的排班记录，确定要生成下一周吗？", function() {
+            common.requestServerHandler('$contextPath' + '/outpatient/saveNextArrangeDutyDoctor.jo', {date: $("#onclickRecord").val()}, "生成下一周成功", function (result) {
+                loadArrangeDutyDoctorData()
+            })
+        });
+    })
+
+    /**
+     * 触发门诊挂号页面刷新事件 web\WEB-INF\view\outpatient\register\registerEdit.js.vm
+     * modName 模块名 刷新页面 "refreshPage"
+     * events 事件名 触发监听 "refreshPage" 模块的 "register" 事件
+     * params 参数  一个参数 "table"; 多个参数  ["table"]
+     *
+     * 配合 top.layui.onevent("refreshPage", "register", function (types) {}) 使用
+     */
+    top.layui.event("refreshPage", "register", "table");
+
+});
+	## function onWindowSizeChange(){
+	## 	if( /iPad|iPad Pro/i.test(navigator.userAgent) ) {
+	## 		$('#zbbThead').css('marginRight',0);
+	## 	}else{
+	## 		$('#zbbThead').css('marginRight','17px');
+	## 	}
+	## }
+	## $(document).ready(function(){
+	## 	onWindowSizeChange();
+	## })
+	## $(window).resize(function () {
+	## 	onWindowSizeChange()
+	## })
+function closeAddview() {
+	 common.msg('添加成功！', iconType.success);
+ 	 layer.close(index);
+ 	 loadArrangeDutyDoctorData();
+	}
+</script>
+

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>住院退费</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #set($path = $!contextPath)
+    <style>
+        .layui-tab-item { height: 100%;}
+        .layui-tab-card { height: 100%; border-width: 0; margin: 0; border-radius: 0; box-shadow: initial; background: #fff;}
+        .layui-tab-content {height: calc(100% - 60px); padding: 10px 0 0}
+        .layui-tab-title.btn { padding: 10px; margin-left: 0}
+		.layui-row-query.search-term label.layui-form-label {
+			width: 100px;
+			padding: 5px 5px 5px 10px;
+		}
+		.layui-row-query {
+			padding: 10px 0;
+		}
+
+		.layui-form-item.mbf .layui-input-inline {
+			width: 120px;
+		}
+		.layui-form-item.mbf .layui-form-label {
+			width: 120px;
+		}
+    </style>
+</head>
+
+<body style="background-color: #cccccc;">
+<div class="layui-content-wrapper layui-bg-white">
+	<div style="width: 600px; float: left; height: 100%;">
+		<form class="layui-form" style="height: 100%;">
+			<div class="layui-card" style="height: 50%; overflow: auto;">
+				<div class="layui-card-body">
+					<div class="layui-form-item mbf">
+						<div class="layui-inline">
+							<label class="layui-form-label">应收款</label>
+							<div class="layui-input-inline">
+								#formTextInput("actualChargeAmount" "" "class='layui-input' id='actualChargeAmount' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">医疗费总额</label>
+							<div class="layui-input-inline">
+								#formTextInput("akc264" "" "class='layui-input' id='akc264' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">全自费金额</label>
+							<div class="layui-input-inline">
+								#formTextInput("akc228" "" "class='layui-input' id='akc228' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">超限价自付金额</label>
+							<div class="layui-input-inline">
+								#formTextInput("akc268" "" "class='layui-input' id='akc268' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">先行自付金额</label>
+							<div class="layui-input-inline">
+								#formTextInput("yka318" "" "class='layui-input' id='yka318' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">符合范围部分</label>
+							<div class="layui-input-inline">
+								#formTextInput("yka319" "" "class='layui-input' id='yka319' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">基本医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake039" "" "class='layui-input' id='ake039' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">大额救助医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake029" "" "class='layui-input' id='ake029' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">大病医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake030" "" "class='layui-input' id='ake030' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">公补统筹基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake035" "" "class='layui-input' id='ake035' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">企业补充医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake026" "" "class='layui-input' id='ake026' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">优抚基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake105" "" "class='layui-input' id='ake105' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">二乙医疗专项医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake032" "" "class='layui-input' id='ake032' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">老红军专项医疗基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake042" "" "class='layui-input' id='ake042' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">离休专项医疗基金</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake043" "" "class='layui-input' id='ake043' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">其他医疗支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake031" "" "class='layui-input' id='ake031' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">生育基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ame001" "" "class='layui-input' id='ame001' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">工伤基金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("yle001" "" "class='layui-input' id='yle001' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">基金支付金额总计</label>
+							<div class="layui-input-inline">
+								#formTextInput("akb081" "" "class='layui-input' id='akb081' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">个人现金支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("grxjzf" "" "class='layui-input' id='grxjzf' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">备注</label>
+							<div class="layui-input-inline">
+								#formTextInput("aae013" "" "class='layui-input' id='aae013' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">医保费用总额</label>
+							<div class="layui-input-inline">
+								#formTextInput("akc263" "" "class='layui-input' id='akc263' readonly ")
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="layui-card" style="height: calc(50% - 15px);">
+				<div class="layui-card-body">
+					<div class="layui-form-item mbf">
+						<div class="layui-inline">
+							<label class="layui-form-label">个人账户支出</label>
+							<div class="layui-input-inline">
+								#formTextInput("ake034" "" "class='layui-input' id='ake034' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">实收金额</label>
+							<div class="layui-input-inline">
+								#formTextInput("actualCharge" "" "class='layui-input' id='actualCharge'  ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">找零金额</label>
+							<div class="layui-input-inline">
+								#formTextInput("changeCharge" "" "class='layui-input' id='changeCharge'  ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">当前发票号</label>
+							<div class="layui-input-inline">
+								#formTextInput("feeBillNo" "" "class='layui-input' id='feeBillNo' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">缴费方式</label>
+							<div class="layui-input-block">
+								#formRadioGroup("payMode" "$!{CONST.AppConstants.PAY_IN_WAY_CASH}" ${dicData.dicOutPayInWay} "lay-filter='payMode'")
+							</div>
+						</div>
+						<div class="layui-inline payCode">
+							<label class="layui-form-label">付款码</label>
+							<div class="layui-input-inline" style="width: 200px;">
+								#formTextInput("authCode" "" "class='layui-input' id='authCode' autocomplete='off'")
+							</div>
+						</div>
+						<div class="layui-card">
+							<div class="layui-card-body">
+								<div class="layui-btn-group">
+									<button id="readCard" type="button" class="layui-btn">读卡</button>
+									<button id="preSettlement" type="button" class="layui-btn">预结算</button>
+									<button id="settlement" type="button" class="layui-btn">结算</button>
+									<button type="button" class="layui-btn">打印结算单</button>
+									<button id="refund" type="button" class="layui-btn">取消结算</button>
+									<button type="button" class="layui-btn">取消</button>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</form>
+	</div>
+	<div style="width: calc(100% - 600px); float: left; height: 100%;">
+		<div class="layui-form-item" id="patientInfo">
+			#formHiddenInput("outpatientFeeId" "$!{outpatientFee.outpatientFeeId}" "id='outpatientFeeId'")
+			#formHiddenInput("patientId" "$!{patientIndex.patientId}" "id='patientId'")
+			#formHiddenInput("registerId" "$!{registerId}" "id='registerId'")
+			<div class="layui-inline">
+				<label class="layui-form-label">患者姓名</label>
+				<div class="layui-input-inline">
+					#formTextInput("patientName" "$!{patientIndex.patientName}" "class='layui-input' id='patientName' readonly ")
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label">就诊卡号</label>
+				<div class="layui-input-inline">
+					#formTextInput("visitCardNo" "$!{patientIndex.visitCardNo}" "class='layui-input' id='visitCardNo' readonly ")
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label">性别</label>
+				<div class="layui-input-inline">
+					#formTextInput("refundAmount" "#lookUpDict(${dicData.dicSex} $!{patientIndex.patientSex})" "class='layui-input' id='refundAmount' readonly ")
+				</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label">疾病编码</label>
+				<div class="layui-input-inline">
+					#formHiddenInput("diseaseCode" "" "id='diseaseCode'")
+                        #formTextInput("diseaseName" "" "class='layui-input' id='diseaseName'  ")
+				</div>
+			</div>
+		</div>
+		<fieldset class="layui-elem-field" id="mbfInfo">
+			<legend>医保信息</legend>
+			<div class="layui-field-box">
+				<form class="layui-form layui-bg-white p-t-sm m-b-sm">
+					<div class="layui-form-item layui-row-query search-term">
+						<div class="layui-inline">
+							<label class="layui-form-label">患者姓名</label>
+							<div class="layui-input-inline">
+								#formTextInput("aac003" "" "class='layui-input' id='aac003' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">性别</label>
+							<div class="layui-input-inline">
+								#formTextInput("aac004" "" "class='layui-input' id='aac004' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">民族</label>
+							<div class="layui-input-inline">
+								#formTextInput("aac005" "" "class='layui-input' id='aac005' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">单位名称</label>
+							<div class="layui-input-inline">
+								#formTextInput("aab004" "" "class='layui-input' id='aab004' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">险种类型</label>
+							<div class="layui-input-inline">
+								#formTextInput("aae140" "" "class='layui-input' id='aae140' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">参保所属机构</label>
+							<div class="layui-input-inline">
+								#formTextInput("yab139" "" "class='layui-input' id='yab139' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">执行社会保险办法</label>
+							<div class="layui-input-inline">
+								#formTextInput("ykb065" "" "class='layui-input' id='ykb065' readonly ")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">账户余额</label>
+							<div class="layui-input-inline">
+								#formTextInput("aae240" "" "class='layui-input' id='aae240' readonly ")
+							</div>
+						</div>
+					</div>
+				</form>
+			</div>
+		</fieldset>
+		<div class="layui-bg-white">
+			<table id="mainTable" lay-filter="mainTable"></table>
+		</div>
+		<!--  列表表格 end -->
+	</div>
+</div>
+    #parse("./outpatient/outpatientFee/cityMedicalInsurance.js.vm")<!-- 页面js -->
+</body>
+</html>

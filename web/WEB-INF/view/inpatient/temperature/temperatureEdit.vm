@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm") 
+
+<style type="text/css">
+.layui-table td{
+    padding: 3px;
+    height:20px;
+}
+.layui-table .layui-input{
+    border-width: 0px;
+    height:20px;
+}
+
+.layui-table  .td-title{
+    text-align:center;
+    font-weight: 500;
+    color: #000;
+}
+
+</style>
+</head>
+
+<body class="white-bg">
+<div class="layui-fluid layui-content-wrapper">
+	<form class="layui-form " id="queryForm">
+		#formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "id='inhospitalId'")
+		#formHiddenInput("showFlag" "$!{showFlag}" "id='showFlag'")
+		<div class="layui-form-item search-term">
+			<div class="layui-inline">
+				<label class="layui-form-label">填写日期</label>
+				<div class="layui-input-inline">
+					<input type="text" id="temperatureDate" name="temperatureDate"  autocomplete="off" placeholder="请输入开始时间" class="layui-input" readonly/>
+				</div>
+			</div>
+		</div>
+	</form>
+	<table class="layui-table">
+		<colgroup>
+			<col width="60">
+			<col>
+			<col>
+		</colgroup>
+		<thead id="theadDom">
+
+		</thead>
+		<tbody id="tbodyDom">
+
+		</tbody>
+	</table>
+</div>
+#if("$!{showFlag}" == "1")
+<div class="tool-bottom-fixed">
+	<button class="layui-btn layui-btn-sm" id="btn_set_item" type="button"> 增加项目  </button>
+	<button class="layui-btn layui-btn-sm" id="btn_set_time" type="button"> 时间间隔设置  </button>
+	<button class="layui-btn layui-btn-sm" id="btn_save" type="button"> 保 存  </button>
+</div>
+#end
+    <!-- 全局js -->
+#parse("./inpatient/temperature/temperatureEdit.js.vm")
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诊室表管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-fluid ">
+    <div class="layui-card">
+        <!--搜索条件 开始-->
+        <form id="consultingRoom_queryForm" class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">科室</label>
+                        <div class="layui-inline ">
+                            #formSingleSelectSearchFirstNone("depId" "$!consultingRoom.depId" $arrangeDutyOfficeMap " lay-verify='required' lay-search" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室名称</label>
+                        <div class="layui-inline wd-120">
+                            #formNotInChineseInput("roomName" "" "id='q_roomName' maxlength='20' autocomplete='off'
+                            class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室电话</label>
+                        <div class="layui-inline wd-120">
+                            #formNotInChineseInput("roomTel" "" " autocomplete='off' maxlength='40' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊室地址</label>
+                        <div class="layui-inline ">
+                            #formTextInput("roomLocation" "" " autocomplete='off' maxlength='50' class='layui-input'")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                            <i class="layui-icon layui-icon-search "></i>
+                        </button>
+                    </div>
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                            <i class="iconfont icon-qingchu"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+
+        <!--列表 begin-->
+        <!-- 列表表格 begin -->
+        <table id="consultingRoomListGrid" lay-filter="consultingRoomListGrid"></table>
+        <!--  列表表格 end -->
+        <!--列表end-->
+    </div>
+</div>
+<script>
+  var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)')
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'table', 'laytpl'], function () {
+    var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+      var queryParams = getQueryParams()
+      //执行重载
+      table.reload('consultingRoomListGrid', {
+        where: queryParams
+      })
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+      common.cleanForm('consultingRoom_queryForm')
+    })
+
+    //诊室表列表
+    table.render($.extend(basePageTable, {
+      elem: '#consultingRoomListGrid',
+      height: getTableHgt(),
+      url: contextPath + '/outpatient/consultingRoomListData.jo',
+      where: getQueryParams(),
+      cols: [[{
+        type: 'radio'
+      }, {
+        field: 'depId', title: '科室', templet: function (d) {
+          return dicSysOrgName[d.depId]
+        }
+      }, {
+        field: 'roomName',
+        title: '诊室名称'
+      }
+        , {
+          field: 'roomTel',
+          title: '诊室电话'
+        }
+        , {
+          field: 'roomLocation',
+          title: '诊室地址'
+        }
+        , {
+          field: 'roomDescription',
+          title: '诊室描述'
+        }
+        , {
+          field: 'roomDeviceCode',
+          title: '设备绑定码'
+        }]]
+    }))
+
+    //表格单击事件 选中
+    table.on('row(consultingRoomListGrid)', function (obj) {
+      var row = obj.data
+      parent.selectconsultingRoomCallBack(row)
+      // 关闭窗口
+      var index = parent.layer.getFrameIndex(window.name)
+      parent.layer.close(index)
+    })
+
+    // 获取查询表单参数对象
+    function getQueryParams () {
+      return $.extend({
+        roomName: '',
+        roomTel: '',
+        roomLocation: ''
+      }, common.serializeObject($('#consultingRoom_queryForm')))
+    }
+
+    function getTableHgt () {
+      return ($('body').height() - $('#consultingRoom_queryForm').height() - 20)
+    }
+
+    $(window).resize(function () {
+      var height = getTableHgt()
+      table.reload('consultingRoomListGrid', {
+        height: height
+      })
+    })
+  })
+</script>
+</body>
+</html>

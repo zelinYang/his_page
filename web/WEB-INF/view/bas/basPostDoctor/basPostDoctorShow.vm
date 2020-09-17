@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生权限设置-医生职称-设置</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.min.js?v=2"></script>
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style type="text/css">
+        .layui-card-body {
+            height: calc(100vh - 100px);
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-card layui-col-md7 layui-col-xs7">
+                <div class="layui-card-header">医生信息</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" lay-filter="basPostDoctorForm" id="basPostDoctorForm"
+                          style="padding: 20px 30px 0 0;">
+                        #formHiddenInput("chargeName" "$!{basPostDoctor.chargeName}" " id='chargeName' ")
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()医生</label>
+                                <div class="layui-input-inline ">
+                                    #formHiddenInput("doctorId" "$!{basPostDoctor.doctorId}" " id='doctorId' ")
+                                    #if($!{basPostDoctor})
+                                    #formTextInput("doctorName" "$!{basPostDoctor.doctorName}" " readonly
+                                    lay-verify='required' class='layui-input'")
+                                    #else
+                                    #formTextInput("doctorName" "$!{basPostDoctor.doctorName}" " readonly
+                                    id='doctorName' lay-verify='required' class='layui-input'")
+                                    <i class="layui-icon layui-icon-more choose" title="选择医生"></i>
+                                    #end
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">#requiredTag()职称</label>
+                            <div class="layui-input-block">
+                                #formSingleSelectSearchFirstNone("doctorPost" "$!{basPostDoctor.doctorPost}"
+                                $dicData.dicDoctorPost " id='doctorPost' lay-filter='doctorPost' lay-verify='required'
+                                lay-search"
+                                "直接选择或搜索选择")
+                            </div>
+                        </div>
+
+                        <div class="layui-form-item">
+                            <label class="layui-form-label" style="overflow: visible;">职称病历签名</label>
+                            <div class="layui-input-block">
+                                #formHiddenInput("doctorSign" "$!{basPostDoctor.doctorSign}" " id='doctorSign' ")
+                                #formTextInput("" "#lookUpDict(${dicData.dicDoctorSignType}
+                                $!{basPostDoctor.doctorSign})" " class='layui-input' readonly='readonly'
+                                id='doctorSignName'")
+                            </div>
+                        </div>
+                        <div class="layui-form-item ">
+                            <label class="layui-form-label">职称诊查费</label>
+                            <div class="layui-input-block">
+                                <table id="basPostFeeListGrid" class="layui-table-tabs"
+                                       lay-filter="basPostFeeListGrid" lay-verify='chargeItem'></table>
+                            </div>
+                        </div>
+                        #if($!{basPostDoctor})
+                        #set($validFlag = $!{basPostDoctor.validFlag})
+                        #else
+                        #set($validFlag = $!{CONST.AppConstants.YES_FLAG})
+                        #end
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()是否有效</label>
+                                <div class="layui-input-block" id="validFlag">#formRadioGroup("validFlag"
+                                    "$!{validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-bottom-fixed">
+                            <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="layui-card layui-col-md5 layui-col-xs5">
+                <div class="layui-card-header">诊室
+                </div>
+                <div class="layui-card-body">
+                    <table id="consultingRoomDoctorListGrid" lay-filter="consultingRoomDoctorListGrid"></table>
+                    <!--  列表表格 end -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE = "$!{CONST.AppConstants.OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+    var currentUser = JSON.parse('$AppTools.toJSONString($!currentUser)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'element', 'element', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, element = layui.element,
+            tableSelect = layui.tableSelect;
+
+        common.verify(form);
+
+        //职称诊查费设置表列表
+        table.render({
+            elem: '#basPostFeeListGrid',
+            where: {'validFlag': YES_FLAG},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'chargeName',
+                    title: '诊查费用名称'
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    totalRow: true,
+                    width: 60,
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    field: 'emergencyFeeFlag',
+                    title: '急诊收费',
+                    width: 80,
+                    templet: function (d) {
+                        return dicYesNo[d.emergencyFeeFlag] || '';
+                    }
+                }, {
+                    field: 'ageFeeFlag',
+                    title: '收费年龄段',
+                    width: 80,
+                    templet: function (d) {
+                        return dicAgeFeeFlag[d.ageFeeFlag] || '';
+                    }
+                }]], done: function (res) {
+            }
+        });
+
+        //加载职称费
+        function reloadBasPostFee() {
+            var doctorPost = $("#doctorPost").val();
+            table.reload('basPostFeeListGrid', {
+                url: contextPath + '/bas/basPostFeeListData.jo?doctorPostCode=' + doctorPost, //接口
+            });
+        }
+
+        reloadBasPostFee();
+
+        //表格设置
+        table.render({
+            elem: '#consultingRoomDoctorListGrid',
+            data: [],
+            height: 'full-100',
+            cols: [[{
+                type: 'numbers',
+            }, {
+                field: 'officeOrgName',
+                title: '科室'
+            }, {
+                field: 'roomName',
+                title: '关联诊室'
+            }]], done: function () {
+            }
+        });
+
+        //加载关联科室
+        function reloadConsultingRoomDoctor() {
+            var doctorId = $("#doctorId").val();
+            table.reload('consultingRoomDoctorListGrid', {url: doctorId ? contextPath + '/outpatient/consultingRoomDoctorPageData.jo?doctorId=' + doctorId : ''});
+        }
+
+        reloadConsultingRoomDoctor()
+
+        common.setFormReadOnly($("#basPostDoctorForm"));
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+</body>
+</html>

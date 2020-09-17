@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-content-wrapper.layui-bg-white .layui-fluid{overflow-y: auto;height: calc(100% - 10px)}
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper layui-bg-white">
+        <div class="layui-fluid p-b-n">
+            <!-- 医嘱查询条件 -->
+            <form class="layui-form p-t-sm p-b-xs" id="queryForm">
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                #formHiddenInput("makeOrderDate" "$!makeOrderDate" "id='makeOrderDate'")
+                <div class="layui-form-item search-term">
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">医嘱项目</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("orderName" "" "id='orderName' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">医嘱状态</label>
+                        <div class="layui-input-inline" style="width: 100px">
+                            #formSingleSelectFirstNone("orderState" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">医嘱分类</label>
+                        <div class="layui-input-inline" style="width: 100px">
+                            #formSingleSelectFirstNone("orderClassify" "" $!dicData.dicOrderClassify "id='orderClassify' lay-filter='orderClassify'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">医嘱类型</label>
+                        <div class="layui-input-inline" style="width: 100px">
+                            #formSingleSelectFirstNone("doctorOrderType" "" $!dicData.dicDoctorOrderType "id='doctorOrderType' lay-filter='doctorOrderType'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">开始日期</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "" "id='exeOrderStartTime' tag='exeOrderStartTimeBegin,exeOrderStartTimeEnd' class='layui-input' readOnly")
+
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button class="layui-btn layui-btn-sm" id="btn_insert" type="button" title="导 入"> <i class="iconfont icon-daoru3"></i></button>
+                    </div>
+                </div>
+            </form>
+            <!-- 医嘱列表 -->
+            <table class="layui-hide full-height" id="orderList" lay-filter="orderList"></table>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var mergeTd = {};// 存放计算医嘱表格数据需要合并的组号（子医嘱）
+var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+//住院医嘱颜色
+var dicInhospitalStateColor = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalStateColor)');
+layui.use(['form', 'laydate', 'element', 'table'], function(){
+    var laydate = layui.laydate, form = layui.form, table = layui.table;
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            inhospitalId: '',
+            patientId: '',
+            makeOrderDate: '',
+            orderName: '',
+            orderState: '',
+            orderClassify : '',
+            doctorOrderType : ''
+        }, common.serializeObject($('#queryForm'), ['exeOrderStartTime']))
+    }
+
+	// 获取表格高度
+	function getTableHgt() {
+		return ($('body').height() - $('#queryForm').height() )
+	};
+	// 重置表格高度
+	$(window).resize(function () {
+	    console.log($('#orderList'))
+		var height = getTableHgt()
+		table.reload('orderList', {
+			height: height
+		})
+	});
+
+    // 初始化医嘱表格列表数据
+    var tableIns = table.render($.extend(basePageTable, {
+        id: 'orderList',
+        elem: '#orderList',
+        height: getTableHgt(),
+        where: getQueryParams(),
+        url: '../inpatient/inpatientOrderJsonPageList.jo',
+        done: function (){
+            // 遍历计算同组号的合并单元个
+            $.each(mergeTd, function (key, val){
+
+                var trOrderState = $('div.layui-table-body').find('span[group="' + key +'"]').attr('orderState');
+                var mainTr = $('div.layui-table-body span[tr-group="' + key + '"]');
+                var tableRow = $(mainTr).parent().parent().parent();
+                // if (trOrderState == '0'){
+                //     $(tableRow).css('color', '#FF0000');
+                // }
+               /* if(trOrderState == '1'){
+                    $(tableRow).css('color', '#FF0000');
+                }
+                if(trOrderState == '2'){
+                    $(tableRow).css('color', '#0000FF');
+                }
+                if(trOrderState == '3'){
+                    $(tableRow).css('color', '#32CD32');
+                }
+                if(trOrderState == '9'){
+                    $(tableRow).css('color', '#FF00FF');
+
+                }*/
+                $(tableRow).css('color', dicInhospitalStateColor[trOrderState]);
+                var trGroup = $('div.layui-table-fixed span[tr-group="' + key + '"]');
+                var trGroupLen = $(trGroup).length - 1;
+                $(trGroup).each(function (i, ele){
+                    var allTd = $(ele).parent().parent().siblings();
+                    if (i < trGroupLen) {
+                        $(allTd[1]).css("border-bottom", "0");
+                        $(allTd[2]).css("border-bottom", "0");
+                        $(allTd[3]).css("border-bottom", "0");
+                        //$(allTd[4]).css("border-bottom", "0");
+                        //$(allTd[5]).css("border-bottom", "0");
+                    }
+                    if (i > 0){
+                        $(allTd[1]).html('');
+                        $(allTd[2]).html('');
+                        $(allTd[3]).html('');
+                        //$(allTd[4]).html('');
+                        //$(allTd[5]).html('');
+                    }
+                });
+            });
+        },
+        cols : [ [
+            {field: 'orderId', fixed: 'left', type: 'checkbox', width: 50},
+            {
+                field : 'exeOrderStartTime',
+                fixed: 'left',
+                width : 130,
+                title : '开始时间',
+                templet :function (row) {
+                    if (row.exeOrderStartTime) return getFormatDateByLong(row.exeOrderStartTime, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            }, {
+                field : 'orderName',
+                fixed: 'left',
+                width : 160,
+                title : '医嘱项目'
+            }, {
+                field : 'orderState',
+                width : 60,
+                title : '状态',
+                templet :function (row) {
+                    if (row.orderState) return $('select#orderState > option[value="' + row.orderState + '"]').text() + '<span class="layui-hide" group=' + row.orderGroupNo + ' orderState=' + row.orderState + '></span>';
+                    return "";
+                }
+            }, {
+                field : 'orderClassify',
+                width : 50,
+                title : '分类',
+                templet :function (row) {
+                    if (row.orderClassify) return $('select#orderClassify > option[value="' + row.orderClassify + '"]').text();
+                    return "";
+                }
+            }, {
+                field : 'doctorOrderType',
+                width : 60,
+                title : '类型',
+                templet:function(row){return dicDoctorOrderType[row.doctorOrderType]|| ""}
+            }, {
+                field : 'dosage',
+                width : 180,
+                title : '每次剂量/用量',
+                templet :function (row) {
+                    var unit = dicDrugNumUnitDosageUnit[row.dosageUnit] || "";
+
+                    if (row.dosage) return row.dosage + (unit ? '&nbsp;' + unit : '');
+                    return "";
+                }
+            }, {
+                field : 'usageQuantity',
+                title : '数量',
+                width : 60,
+                templet :function (row) {
+                    var unit = dicDrugNumUnitDosageUnit[row.dosageUnit] || "";
+                    if (row.usageQuantity) return row.usageQuantity + (unit ? '&nbsp;' + unit : '');
+                    return "";
+                }
+            }, {
+                field : 'doseWayCode',
+                title : '用法',
+                width : 80,
+                templet : function (row) {
+                    if (row.doseWayCode) return $('#editOrderList > tr:last').find('select[name="doseWayCode"]').find('option[value="' + row.doseWayCode + '"]').text();
+                    return "";
+                }
+            }, {
+                field : 'pharmacyFreqId',
+                title : '频次',
+                width : 80,
+                templet : function (row) {
+                    if (row.doseWayCode) return $('#editOrderList > tr:last').find('select[name="pharmacyFreqId"]').find('option[value="' + row.pharmacyFreqId + '"]').text();
+                    return "";
+                }
+            }, {
+                field : 'patientMedicalNo',
+                title : '天数',
+                width : 50
+            }, {
+                field : 'firstDayDosage',
+                title : '首',
+                width : 40
+            }, {
+                field : 'endDayDosage',
+                title : '末',
+                width : 40
+            }, {
+                field : 'lisSpecimenId',
+                title : '化验标本',
+                width : 80,
+                templet : function (row) {
+                    if (row.doseWayCode) return $('#editOrderList > tr:last').find('select[name="lisSpecimenId"]').find('option[value="' + row.lisSpecimenId + '"]').text();
+                    return "";
+                }
+            }, {
+                field : 'exeOfficeId',
+                title : '执行科室',
+                width : 80,
+                templet : function (row) {
+                    if (row.doseWayCode) return $('#editOrderList > tr:last').find('select[name="exeOfficeId"]').find('option[value="' + row.exeOfficeId + '"]').text();
+                    return "";
+                }
+            }, {
+                field : 'remark',
+                title : '单条说明',
+                width : 130
+            }, {
+                field : 'makeOrderDoctorName',
+                title : '开嘱人',
+                width : 80
+            }, {
+                field : 'recheckNurseName',
+                title : '复核人',
+                width : 80
+            }, {
+                field : 'recheckTime',
+                title : '复合时间',
+                width : 130,
+                templet :function (row) {
+                    if (row.recheckTime) return getFormatDateByLong(row.recheckTime, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            }, {
+                field : 'recheckNurseId',
+                title : '停嘱人',
+                width : 80
+            }, {
+                field : 'exeOrderEndTime',
+                title : '停嘱时间',
+                width : 130,
+                templet :function (row) {
+                    if (row.exeOrderEndTime) return getFormatDateByLong(row.exeOrderEndTime, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            }, {
+                field : 'orderGroupNo',
+                fixed: 'left',
+                hide : true,
+                templet : function (row) {
+                    if (row.orderGroupNo) {
+                        mergeTd[row.orderGroupNo] = row.orderGroupNo;
+                        return '<span group-id="' + row.orderId + '" tr-group="' + row.orderGroupNo + '"></span>';
+                    }
+                    return "";
+                }
+            }
+        ] ]
+    }));
+
+    // 重载刷新医嘱列表
+    function reloadOrderList() {
+        mergeTd = {};
+        var params = getQueryParams();
+        tableIns.reload({url: '../inpatient/inpatientOrderJsonPageList.jo', where: params});
+        initOrderButton("layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled");
+    }
+
+
+
+    // 按医嘱状态查询
+    form.on('select(orderState)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱类别查询
+    form.on('select(orderClassify)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱项目和医嘱开始日期查询
+    $('#orderName').bind('input propertychange', function (){
+        reloadOrderList();
+    });
+    //按日期范围查询
+    laydate.render({elem: '#exeOrderStartTime',trigger: 'click', range: true, done: function (value, date, endDate){ reloadOrderList() }});
+
+
+    // 刷新按钮
+    $('#btn_refresh').click(function (){
+        reloadOrderList();
+    });
+    //导入
+    $('#btn_insert').click(function () {
+        var checkStatus = table.checkStatus('orderList'); //idTest 即为基础参数 id 对应的值
+        if (checkStatus.data.length === 0) {
+            common.alert('请选择要导入的检查数据', 0);
+            return;
+        }
+        var value = [];
+        for (var i = 0, len = checkStatus.data.length; i < len; i++) {
+            value.push(getFormatDateByLong(checkStatus.data[i].exeOrderStartTime, 'yyyy-MM-dd hh:mm'));
+            value.push(checkStatus.data[i].orderName);
+            // value.push(dicDoctorOrderType[checkStatus.data[i].doctorOrderType] || "");
+            // var dosageUnit = dicDrugNumUnitDosageUnit[checkStatus.data[i].dosageUnit] || "";
+            // value.push(checkStatus.data[i].dosage? (checkStatus.data[i].dosage + (dosageUnit ? '&nbsp;' + dosageUnit : '')): '');
+            // value.push(checkStatus.data[i].usageQuantity? (checkStatus.data[i].usageQuantity + (dosageUnit ? '&nbsp;' + dosageUnit : '')): '');
+            // var doseWayCode = $('#editOrderList > tr:last').find('select[name="doseWayCode"]').find('option[value="' + checkStatus.data[i].doseWayCode + '"]').text();
+            // value.push(doseWayCode);
+            // var pharmacyFreqId = checkStatus.data[i].pharmacyFreqId? $('#editOrderList > tr:last').find('select[name="pharmacyFreqId"]').find('option[value="' + checkStatus.data[i].pharmacyFreqId + '"]').text(): '';
+            // value.push(pharmacyFreqId);
+            // value.push(checkStatus.data[i].patientMedicalNo);
+        }
+        parent.parent.inserthtml(value.join(','));
+    });
+    $('button[name="leadingIn"]').click(function (){
+        if (parent.leadingIn && typeof(parent.leadingIn) == 'function') {
+            console.log($(this).next().text());
+            parent.leadingIn($(this).next().text());
+        }
+    });
+    table.on('row(orderList)', function(obj){
+        var data = obj.data;
+        if (parent.leadingIn && typeof(parent.leadingIn) == 'function') {
+            console.log($(this).next().text());
+            parent.leadingIn(data);
+        }
+    });
+});
+</script>
+</html>

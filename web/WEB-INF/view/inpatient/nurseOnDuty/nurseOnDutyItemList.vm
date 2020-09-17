@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+#parse("./inpatient/nurseOnDuty/nurseOnDutyItemList.js.vm")
+<style type="text/css">
+    .layui-input-sm{
+        max-width:60px;
+    }
+
+    .layui-form-label{
+        padding:5px;
+    }
+    .label-sm{
+        max-width:60px;
+    }
+    .layui-form-selectup dl{
+        top:auto;
+        bottom:42px;
+    } 
+</style>
+</head>
+<body class="full-height">
+    <div class=" p-n b-b-n" style="height:37px;overflow:hidden;background:#f9f9f9">
+        <table class="layui-table m-n" id="dutyItem"  lay-filter="dutyItem" style="width:100%;" >
+            <colgroup>
+                <col width="60px">
+                <col width="130px">
+                <col width="130px">
+                <col width="130px">
+                <col width="200px">
+                <col width="120px">
+                <col width="" >
+            </colgroup>
+            <thead> 
+                <tr>
+                    <th>
+                       <i class="layui-center layui-icon layui-icon-add-1 btn_add_tr" title="新增行"  
+                          style="font-size: 24px;color:#009587;" ></i>
+                    </th>
+                    <th>床号</th>
+                    <th>姓名</th>
+                    <th>状态</th>
+                    <th>诊断</th>
+                    <th>值班类型</th>
+                    <th style="min-width:30px;">标识</th>
+                </tr>
+            </thead>
+            <tbody class="rowTpl layui-hide">
+                <tr class="trRow layui-form">
+                    <td class="text-center">
+                        <i class="layui-icon layui-icon-delete icon-btn red btn_del_tr" title="删除"   style="font-size: 24px;color:red;"></i>
+                    </td>  
+                    <td>
+                         #formSingleSelectFirstNone("currentBedNo" "" $!wardBedMap 
+                         "class='layui-input table-input' lay-search " "")
+                    </td>
+                    <td>
+                         ##formTextInput("patientName" "" " class='layui-input table-input'")
+                         #formSingleSelectFirstNone("patientId" "" $!dicData.dicPatientName
+                         " class='layui-input table-input' lay-search" "")
+                    </td>
+                    <td>
+                         #formSingleSelectFirstNone("" "" ""
+                         " class='layui-input table-input'" "")
+                    </td>
+                    <td>
+                         #formTextInput("" "" " class='layui-input table-input ' id='' ")
+                    </td>
+                    <td>
+                        #formSingleSelectFirstNone("onDutyType" "" $!dicData.dicOnDutyType
+                        "class='layui-input '" "")
+                    </td>
+                    <td>
+                        0
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="layui-card-body layui-bg-white p-n"  style="height:calc(100% - 40px); overflow-y:scroll; ">
+        <table class="layui-table m-n"  data-mobile-responsive="true" style="width:100%;" >
+            <colgroup>
+                <col width="60px">
+                <col width="130px">
+                <col width="130px">
+                <col width="130px">
+                <col width="200px">
+                <col width="120px">
+                <col width="">
+            </colgroup>
+            <tbody id="editTbody" class="">
+               #foreach($item in $!dutyItemList)
+               <tr class="layui-form">
+                    <td class="text-center">
+                        <i class="layui-icon layui-icon-delete icon-btn red btn_del_tr" title="删除"  style="font-size: 24px;color:red;"></i>
+                    </td>  
+                    <td>
+                         #formSingleSelectFirstNone("currentBedNo" "$!item.currentBedNo" $!wardBedMap 
+                         "class='layui-input table-input' lay-search " "")
+                    </td>
+                    <td class="">
+                         ##formTextInput("patientName" "$!item.patientName" " class='layui-input table-input'")
+                         #formSingleSelectFirstNone("patientId" "$!item.patientId" $!dicData.dicPatientName
+                         " class='layui-input table-input' lay-search" "")
+                    </td>
+                    <td>
+                         #formSingleSelectFirstNone("" "" ""
+                         " class='layui-input table-input'" "")
+                    </td>
+                    <td>
+                         #formTextInput("" "" " class='layui-input table-input ' id='' ")
+                    </td>
+                    <td>
+                        #formSingleSelectFirstNone("onDutyType" "$!item.onDutyType" $!dicData.dicOnDutyType
+                        "class='layui-input '" "")
+                   </td>
+                   <td>
+                        0
+                   </td>
+               </tr>
+               #end
+            </tbody>
+        </table>
+    </div>    
+    
+</body>
+</html>

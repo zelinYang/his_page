@@ -1,0 +1,132 @@
+<script>
+    var PUBLIC_PROJECT = "$!{CONST.AppConstants.PUBLIC_PROJECT}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                producingAreaType: $("#producingAreaType").val()
+            }, common.serializeObject($('#medicineProducingArea_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            medicineProducingAreaListGrid.reload({
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('medicineProducingArea_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/medicine/medicineProducingAreaEdit.do?producingAreaType='+$("#producingAreaType").val(), '新增产地', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        var medicineProducingAreaListGrid = table.render($.extend(basePageTable, {
+            elem: '#medicineProducingAreaListGrid',
+            url: contextPath + '/medicine/medicineProducingAreaPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'producingAreaName',
+                title: '产地名称'
+            }, {
+                field: 'producingArea',
+                title: '产地简称'
+            },{
+                field: 'hospitalId',
+                title: '使用限制',
+                width: 80,
+                templet: function (d) {
+                    return d.hospitalId == PUBLIC_PROJECT ? '公用' : '本单位';
+                }
+            }, {
+                field: 'validFlag',
+                title: '是否有效',
+                unresize: true,
+                width: 100,
+                templet: '#validFlagTpl'
+            }, {
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+                autoSetHeigt()
+            }
+        }));
+
+    //处理行高问题
+    function autoSetHeigt(){
+    $(".layui-table-main tr").each(function (index, val) {
+    $($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+    $($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+});
+}
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../medicine/updateMedicineProducingAreaValidFlag.jo', {
+                producingAreaId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                if (result.code === '0') {
+                    common.responseAtcion(result);
+                } else {
+                    common.alert(result.msg, 0);
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool('+ medicineProducingAreaListGrid.config.id +')', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open('$contextPath' + '/medicine/medicineProducingAreaEdit.do?producingAreaId=' + row.producingAreaId + '&producingAreaType=' + $("#producingAreaType").val(), row.producingAreaName, {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+            }
+        });
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+        function getTableHgt(){
+            return $('body').height() - $('#medicineProducingArea_queryForm').height() - ($('body').height() - $('.layui-fluid').height())
+        }
+    })
+</script>

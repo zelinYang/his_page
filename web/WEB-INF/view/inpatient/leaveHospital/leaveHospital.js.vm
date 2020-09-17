@@ -1,0 +1,209 @@
+<script>
+    var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}'
+    var NO_FLAG = '$!{CONST.AppConstants.NO_FLAG}'
+    var ORDER_STATE_COMPLETED = '$!{CONST.AppConstants.ORDER_STATE_COMPLETED}'
+    var ORDER_CLASSIFY_LONG = '$!{CONST.AppConstants.ORDER_CLASSIFY_LONG}'
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    /*医嘱类别*/
+    var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)')
+    /**/
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)')
+
+    /**/
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)')
+    /**/
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)')
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');//给药途径
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'laydate'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util, laydate = layui.laydate;
+
+        function  setInhospitalDay(value) {
+            var outhospitalDate = value;
+            var inhospitalDate = $('#inhospitalDate').val();
+            var stamp = new Date(outhospitalDate).getTime() - new Date(inhospitalDate).getTime();
+            $("#inhospitalDay").val((stamp/1000/60/60/24)|0);
+        }
+
+        $('#outhospitalDate').on('input propertychange',function () {
+            setInhospitalDay(this.value)
+        })
+
+        laydate.render({
+            elem: '#outhospitalDate',trigger: 'click',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm',
+            value:$('#outhospitalDate').val()?'' :new Date()
+            ,done:function (value) {
+                setInhospitalDay(value)
+            }
+        });
+        //自定义验证规则
+        form.verify({
+            dateTime: function(value, item){
+                //转化格式完整日期时间格式
+                $(item).val(util.toDateString(new Date(value)))
+            }
+        });
+
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                validFlag: YES_FLAG,
+                orderStateNotIn: '4,6',//执行完成和停嘱的
+                nistoryFlag :NO_FLAG
+            }, common.serializeObject($('#inpatientOrder_queryForm')));
+        }
+
+        //表格设置
+        table.render($.extend(singlePageTable, {
+            elem: '#inpatientOrderListGrid',
+            height: getTableHgt(),
+            cellMinWidth: 80,
+            page:true,
+            limit: 20,
+            url: contextPath + '/inpatient/inpatientOrderManageJsonList.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'orderClassify',
+                title: '医嘱长期',
+                templet: function (d) {
+                    return dicOrderClassify[d.orderClassify] || '';
+                }
+            }, {
+                field: 'dispensingStopFlag',
+                title: '发药停止',
+                templet: function (d) {
+                    return dicYesNo[d.orderClassify] || '';
+                }
+            }, {
+                field: '',
+                title: '提交'
+            }, {
+                field: 'exeFinishFlag',
+                title: '未执行',
+                templet: function (d) {
+                    var dicExeFinish = {
+                        0: "未执行",
+                        1: "已执行"
+                    }
+                    return dicExeFinish[d.exeFinishFlag] || "";
+                }
+            }, {
+                field: 'orderName',
+                minWidth: 200,
+                title: '医嘱名称'
+            }, {
+                field: 'doctorOrderType',
+                width: 110,
+                title: '医嘱项目类型', templet:function (d) {
+                    return dicDoctorOrderType[d.doctorOrderType] || '';
+                }
+            }, {
+                field: 'makeOrderDate',
+                title: '开始时间',
+                width: 130,
+                templet:function(d){
+                    return util.toDateString(d.makeOrderDate,'yyyy-MM-dd HH:mm');
+                }
+            }, {
+                field: '',
+                title: '停止时间',
+                width: 110,
+                templet:function(d){
+                    return ''//util.toDateString(d.makeOrderDate,'yyyy-MM-dd HH:mm');
+                }
+            }, {
+                field: 'exeOfficeName',
+                minWidth: 150,
+                title: '科室'
+            }, {
+                field: 'giveTotalQuantity',
+                title: '发药数量'
+            }, {
+                field: 'doseWayCode',
+                minWidth: 110,
+                title: '药物使用途径',
+                templet :function (d) {
+                    return dicDoseWay[d.doseWayCode] || "";
+                }
+            }, {
+                field: 'herbUsageWay',
+                title: '草药用法',
+                templet :function (d) {
+                    return dicHerbUsage[d.herbUsageWay] || "";
+                }
+            },  {
+                field: 'makeOrderDoctorName',
+                title: '医生'
+            }, {
+                field: 'pharmacyId',
+                title: '发药药房',
+                templet :function (d) {
+                    return dicPharmacy[d.pharmacyId] || "";
+                }
+            }, {
+                field: 'remark',
+                title: '备注'
+            }]],done :function (res) {
+                if (res.data.length == 0) {
+                    $("#btn_save").removeClass('layui-disabled');
+                }
+            }
+        }));
+
+        //提交表单
+        function saveInpatientOrder (data) {
+            var inpatientOrderParams = common.serializeObject($('#inpatientOrder_queryForm'))
+            inpatientOrderParams.outhospitalDate = data.outhospitalDate
+            common.requestServer(contextPath + '/inpatient/saveLeaveHospital.jo', inpatientOrderParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            if($(this).hasClass('layui-disabled')) {
+                common.alert("患者有医嘱未复核，请先复核再办理出院！<br>医生未开出院医嘱，请医生开出院医嘱再办理出院！<br>有医嘱未停或是未发药<br>床位费大于住院天数，请核实后在办理出院？");
+            } else {
+                common.confirm("是否办理出院证明？", function () {
+                    saveInpatientOrder(data.field);
+                });
+            }
+            return false
+        })
+        $('#btn_close').click(function () {
+            var index = parent.layer.getFrameIndex(window.name)
+            parent.layer.close(index)
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - $('.layui-card-header').height() - $(".tool-bottom-fixed").height()-50);
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('inpatientOrderListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>
+

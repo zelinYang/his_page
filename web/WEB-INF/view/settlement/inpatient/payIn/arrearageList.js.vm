@@ -1,0 +1,146 @@
+ <script>
+   var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+   var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+   var dicInhospitalChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCode)');
+
+   layui.config({
+       base : '../resource/layuiadmin/' //静态资源所在路径
+   }).extend({
+       index : 'lib/index', //主入口模块
+   }).use([ 'index', 'jquery','table', 'element', 'form', 'laydate'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate;
+      var form = layui.form;
+      var element = layui.element;
+      element.render();
+
+
+// 清空按钮
+       $('#btn_clean').click(function () {
+           common.cleanForm('reg_patient_queryForm');
+       })
+// 获取查询表单参数对象
+       function getQueryParams() {
+           return $.extend({
+               inhospitalId: '',
+           }, common.serializeObject($('#reg_patient_queryForm')));
+       }
+
+      var colsList = [] ;
+      //患者住院信息以及费用返回的是两个List
+      colsList.push({
+          field: 'currentOfficeName',
+          title: '患者科室',
+          templet: '<div>{{d.InpatientInhospital.currentOfficeName}}</div>',
+          width: 100
+          });
+      colsList.push({
+          field: 'inhospitalId',
+          title: '住院流水号',
+          templet: '<div>{{d.InpatientInhospital.inhospitalId}}</div>',
+          width: 100
+      });
+      colsList.push({
+          field: 'patientName',
+          title: '患者姓名',
+          templet: '<div>{{d.InpatientInhospital.patientName}}</div>',
+          width: 100
+      });
+      colsList.push({
+          field: 'inhospitalBedNo',
+          title: '床号',
+          //templet: '<div>{{d.InpatientInhospital.inhospitalBedNo}}</div>',
+          templet: function(row){
+              if(!row.InpatientInhospital || !row.InpatientInhospital.inhospitalBedNo){
+                  return '';
+              }else{
+                  return row.InpatientInhospital.inhospitalBedNo;
+              }
+          },
+          width: 100
+      });
+      colsList.push({
+          field: 'feeAmount',
+          title: '总金额',
+          templet: '<div>{{d.InhospitalFeeCurrent.feeAmount || ""}}</div>',
+          width: 100
+
+      });
+      colsList.push({
+          field: 'prepayInAmount',
+          title: '缴款金额',
+          templet: '<div>{{d.InhospitalFeeCurrent.prepayInAmount}}</div>',
+          width: 100
+      });
+      colsList.push({
+          field: 'arrearsAmount',
+          title: '欠费金额',
+          templet: '<div>{{d.InhospitalFeeCurrent.arrearsAmount  || ""}}</div>',
+          width: 100
+      });
+     //费用项返回的是一个Map集合
+      for (var inKey in dicInhospitalChargeGroupCode){
+          var settlementPrice = '结算:';
+          var space = ' / ';
+          var selfPayAmount = '自付:';
+          colsList.push({
+                field: 'selfPayAmount',
+                title: dicInhospitalChargeGroupCode[inKey],
+                templet: '<div><span style="color:#FFB800">{{d.InhospitalFeeItem ? (d.InhospitalFeeItem["' +inKey+ '"] ? (d.InhospitalFeeItem["' +inKey+ '"].settlementPrice || "") :"") :""}}</span>'+space+'<span style="color:#FF5722">{{d.InhospitalFeeItem ? (d.InhospitalFeeItem["' +inKey+ '"] ? (d.InhospitalFeeItem["' +inKey+ '"].selfPayAmount || "") :"") :""}}</span></div>',
+                align: 'center',
+                width: 150
+              });
+      }
+
+    //第一个实例
+      var tableIns = table.render({
+         elem: '#regPatientTable'
+        //,toolbar: '#toolbarDemo'
+        ,defaultToolbar: []
+        ,height: getTableHgt()//高度
+         ,url: '../inpatient/selectArrearsList.jo' //数据接口
+          ,data: []
+        ,limit:20
+        ,page:true
+        ,method:'post'
+        ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+        ,where: getQueryParams()
+        ,cols: [ //表头
+               colsList
+        ]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+              tableReHeight(this, getTableHgt);
+          }
+      });//table.render
+
+     function getTableHgt(){
+         return ($('body').height() - $('#reg_patient_queryForm').height() - 36)
+     }
+       /**
+        * 动态重置表格高度
+        * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+        * 注意： table.height 不需要添加
+        * @param that 表格实例 this
+        * @param heightCallback 高度回调方法 返回数值,需要动态获取
+        */
+       function tableReHeight(that, heightCallback) {
+           // 动态重置表格高度
+           $(window).resize(function () {
+               that.elem.next('.layui-table-view').attr('style', ' ')
+               that.height = heightCallback();
+               table.resize(that.id);
+           }).resize();
+       }
+      // 查询按钮
+      $('#btn_query').click(function (){
+        query();
+      });
+
+      //查询列表
+      query = function() {
+        var queryParams = getQueryParams();
+        tableIns.reload({ where: queryParams });
+      }
+  });
+</script>

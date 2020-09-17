@@ -1,0 +1,29 @@
+<script type="text/javascript">
+    var tabChange;
+    layui.config({
+        base : '$contextPath/resource/layuiadmin/' //静态资源所在路径
+    }).use([ 'element' ], function() {
+        var element = layui.element; //元素操作
+        /* 切换到指定Tab项 */
+        tabChange = function(filter, layid) {
+            element.tabChange(filter, layid);
+        }
+        var tabId = 'registerMainTab';
+        //监听导航菜单点击事件
+        element.on('tab(' + tabId + ')', function(data) {
+            var layId = $(this).attr('lay-id');
+            reqIframePage(layId);
+        });
+
+        //iframe请求页
+        function reqIframePage(layId) {
+            var destDiv = $('div[lay-id="' + layId + '"]');
+            var destIframe = $('div[lay-id="' + layId + '"] iframe');
+            if (!destIframe.attr('src')) {
+                destIframe.attr('src', destDiv.attr('lay-data'));
+            }
+        }
+        //主页面
+        element.tabChange(tabId, 'registerEdit');
+    });
+</script>

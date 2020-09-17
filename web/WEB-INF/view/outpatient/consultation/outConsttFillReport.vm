@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>会诊报告填写</title> 
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css?v=221" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head> 
+
+<body>
+	<div id="container" class="show" style="height: calc(100% - 40px)">
+		<div class="ui-layout-center full-height" >
+		     <div class="content full-height-scroll">
+		
+		      <div class="layui-card n-shadow">
+		          <div class="layui-card-header t-line">患者信息#cardDisplayHover</div>
+		          <div class="layui-card-body">
+                        <div class="layui-form-item" style="margin-bottom: 0px;">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">就诊卡号：</label>
+                                <div class="layui-input-inline">
+                                     <label class="layui-form-label text-left">$!patientIndex.visitCardNo</label>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">姓名：</label>
+                                <div class="layui-input-inline">
+                                     <label class="layui-form-label text-left">$!consttApply.patientName</label>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">性别：</label>
+                                <div class="layui-input-inline">
+                                     <label class="layui-form-label text-left">#lookUpDict($!dicData.dicSex $!consttApply.patientSex)</label>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">出生日期：</label>
+                                <div class="layui-input-inline">
+                                  <label class="layui-form-label text-left">  $!date.format('yyyy-MM-dd', $!patientIndex.patientBirth)</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">年龄：</label>
+                                <div class="layui-input-inline">
+                                  <label class="layui-form-label text-left">$!patientIndex.patientAge</label>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">家庭地址：</label>
+                                <div class="layui-input-inline">
+                                  <label class="layui-form-label text-left wd-220">$!patientIndex.patientAddr</label>
+                                </div>
+                            </div>
+                        </div>
+		          </div>
+		      </div>
+		      <hr class="layui-bg-gray space"></hr>
+		      
+		      <div class="layui-card n-shadow">
+		          <div class="layui-card-header t-line">申请信息#cardDisplayHover</div>
+		          <div class="layui-card-body">
+                        <div class="layui-form-item" style="margin-bottom: 0px;">
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">申请科室：</label>
+                                 <div class="layui-input-inline">
+                                      <label class="layui-form-label text-left">$!patientIndex.applyOfficeName</label>
+                                 </div>
+                             </div>
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">申请医生：</label>
+                                 <div class="layui-input-inline">
+                                      <label class="layui-form-label text-left">$!consttApply.applyDoctorName</label>
+                                 </div>
+                             </div>
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">上级医生：</label>
+                                 <div class="layui-input-inline lable-padding">
+                                      $!consttApply.manageDoctorName
+                                 </div>
+                             </div>
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">申请时间：</label>
+                                 <div class="layui-input-inline">
+                                      <label class="layui-form-label text-left">$!date.format('yyyy-MM-dd', $!consttApply.applyTime)</label>
+                                 </div>
+                             </div>
+                         </div>
+                         <div class="layui-form-item" style="margin-bottom: 0px;">
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">性质：</label>
+                                 <div class="layui-input-inline">
+                                      <label class="layui-form-label text-left">#lookUpDict($!dicData.dicConsttLevel $!consttApply.consultationLevelFlag)</label>
+                                 </div>
+                             </div>
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">会诊时间：</label>
+                                 <div class="layui-input-inline ">
+                                      <label class="layui-form-label text-left wd-full">$!date.format('yyyy-MM-dd HH:mm', $!consttApply.consultationTime)</label>
+                                 </div>
+                             </div>
+                         </div>
+              
+                        <div class="layui-form-item" style="margin-bottom: 0px;">
+                            <div class="layui-inline wd-full">
+                                <label class="layui-form-label">邀请医生：</label>
+                                <div class="lable-padding">
+                                     $!consttApply.consultationDoctor  (4人)
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item" style="margin-bottom: 0px;">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">初步诊断：</label>
+                                <div class="layui-input-inline lable-padding">
+                                     $!consttApply.diseaseName
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">会诊目的：</label>
+                                <div class="layui-input-inline">
+                                  <label class="layui-form-label text-left">$!consttApply.consultationAim</label>
+                                </div>
+                            </div>
+                            
+                         </div>
+                         <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">病情简介：</label>
+                                <div class="layui-input-inline">
+                                  <label class="layui-form-label text-left wd-220">$!consttApply.medicalSummary</label>
+                                </div>
+                            </div>
+                        </div>
+                          
+		          </div>
+		      </div>
+		      <hr class="layui-bg-gray space"></hr>
+		      <div class="layui-card n-shadow">
+		          <div class="layui-card-header t-line">会诊报告#cardDisplayHover</div>
+		          <div class="layui-card-body">
+		               <form class="layui-form" id="consultForm">
+		                     #formHiddenInput("consultationApplyId" "$!consttApply.consultationApplyId" "id='consultationApplyId'") 
+		                     
+		                     #if( $!consttApply.consultationStateFlag == "${CONST.AppConstants.CONSTT_STATE_FINISH}")
+                             <div class="layui-form-item">
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">会诊状态：</label>
+                                     <div class="layui-input-inline">
+                                           <div class="alert alert-success smart wd-50">已结诊</div>  
+                                     </div>
+                                 </div>
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">结诊医生：</label>
+                                     <div class="layui-input-inline">
+                                          <label class="layui-form-label text-left">$!consttApply.applyDoctorName</label>
+                                     </div>
+                                 </div>
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">结诊时间：</label>
+                                     <div class="layui-input-inline">
+                                          <label class="layui-form-label text-left wd-full">$!date.format('yyyy-MM-dd HH:mm', $!{consttApply.consultationEndTime})</label>
+                                          
+                                     </div>
+                                 </div>
+                             </div>
+                             #else
+                             <div class="layui-form-item">
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">会诊状态：</label>
+                                     <div class="layui-input-inline">
+                                          <div class="alert alert-success smart wd-50">进行中</div>  
+                                     </div>
+                                 </div>
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">发起医生：</label>
+                                     <div class="layui-input-inline">
+                                          <label class="layui-form-label text-left">$!consttApply.applyDoctorName</label>
+                                     </div>
+                                 </div>
+                             </div>
+                             #end
+		                     
+                             <div class="layui-form-item">
+                                 <div class="layui-inline wd-full">
+                                     <label class="layui-form-label">医生意见：</label>
+                                     <div class="lable-padding " style="margin-left: 93px;">
+                                          <div class="layui-collapse " layui-collapse>
+                                          #foreach($doctorItem in $consultDoctorItemList)
+                                              #if($doctorItem.consultationResult)
+                                              <div class="layui-colla-item">
+                                                <h2 class="layui-colla-title xs">
+                                                   <span>#lookUpDict($!dicData.dicSysOrgDeptName $!doctorItem.consultationOfficeId) — #lookUpDict($!dicData.dicSysUser $!doctorItem.consultationDoctorId)
+                                                   </span>
+                                                   <div class="fr">$!date.format('MM-dd HH:mm', $!doctorItem.consultationTime)</div>
+                                                </h2>
+                                                <div class="layui-colla-content layui-show">
+                                                     <p>
+                                                         $!doctorItem.consultationResult
+                                                     </p>
+                                                </div>
+                                              </div>
+                                              #end
+                                          #end
+                                         </div>
+                                     </div>
+                                 </div>
+                              </div>
+                              
+                              <div class="layui-form-item">
+                                  <div class="layui-inline wd-full">
+                                     <label class="layui-form-label">患者诊断：</label>
+                                     <div class="lable-padding"  style="margin-left: 93px;">
+                                          #formTextarea("consultationDiagnose" "$!consttApply.consultationDiagnose"  "class='layui-textarea'")
+                                     </div>
+	                              </div>
+                              </div>
+                              
+                              <div class="layui-form-item">
+                                 <div class="layui-inline wd-full">
+                                     <label class="layui-form-label">处理意见：</label>
+                                     <div class="lable-padding"  style="margin-left: 93px;">
+                                         #formTextarea("consultationResult" "$!consttApply.consultationResult"  "class='layui-textarea'")
+                                     </div>
+                                 </div>
+                             </div>
+                             
+                             <div class="layui-form-item">
+                                 <div class="layui-inline wd-full">
+                                     <label class="layui-form-label">备注：</label>
+                                     <div class="lable-padding"  style="margin-left: 93px;">
+                                          #formTextarea("remark" "$!consttApply.remark"  "class='layui-textarea'")
+                                     </div>
+                                 </div>
+                              </div>
+                              
+                              <div class="layui-form-item">
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">到场时间：</label>
+                                     <div class="layui-input-inline">
+                                          #formDateTimeInput("consultationStartTime" $!{consttApply.consultationStartTime} " maxlength='20' class='layui-input layer-date' ")
+                                     </div>
+                                 </div>
+                                 <div class="layui-inline">
+                                     <label class="layui-form-label">结束时间：</label>
+                                     <div class="layui-input-inline">
+                                          #formDateTimeInput("consultationEndTime" $!{consttApply.consultationEndTime} " maxlength='20' class='layui-input layer-date' ")
+                                     </div>
+                                 </div>
+                              </div>
+                         </form>
+		             </div> 
+		             
+		        </div>
+		       
+		          <!-- 底部按钮栏  -->
+			   <div class="tool-bottom-fixed btn_gorup">
+			       <button lay-filter="btn_save" lay-submit class="layui-btn layui-btn-sm layui-btn-danger" type="button">保存</button>
+			   </div>
+		
+		     </div>
+		</div><!-- center -->
+		<div class="ui-layout-west" >
+		     <!-- 会诊申请病历 -->
+		     <div class="content" style="height: calc(100% - 2px);">
+			     <div class="layui-card n-shadow full-height">
+	                  <div class="layui-card-header t-line">就诊信息</div>
+	                  <div class="layui-card-body" style="height: calc(100% - 41px);">
+	                      <div class="layui-tab layui-tab-card blod m-n full-height">
+			                  <ul class="layui-tab-title">
+			                    <li class="layui-this">申请单</li>
+			                    <li>历史病历</li>
+			                    <li>检验检查报告</li>
+			                  </ul>
+			                  <div class="layui-tab-content" style="height:calc(100% - 50px) ">
+			                    <div class="layui-tab-item full-height layui-show">
+			                         #set($emrShowParam = "view=patient/emr/commonEmrShow&showBtn=0")
+			                         #set($emrParam = "&emrTlpId=$!emrTlpId&patientHospitalEmrId=$!consttApply.patientHospitalEmrId")
+			                         #set($consultParam = "&patientId=$!consttApply.patientId&registerId=$!{consttApply.registerId}")
+			                         <iframe #iframeAttr id="emrIframe" style="height: calc(100% - 3px);" 
+			                         src="$!contextPath/emr/commonEmrTemplate.do?$!emrShowParam$!emrParam$!consultParam"> </iframe>
+			                    </div>
+			                    <div class="layui-tab-item full-height"> 
+			                         #set($outpatientParam = "&patientId=$!consttApply.patientId&registerId=$!{consttApply.registerId}")
+			                         <iframe #iframeAttr id="techIframe" style="height: calc(100% - 3px);" 
+			                         src="$!contextPath/outpatient/outpatientEmrHistoryMaster.do?$!outpatientParam"> </iframe>
+			                    </div> 
+			                    <div class="layui-tab-item full-height"> 
+			                         #set($techParam = "&patientId=$!consttApply.patientId&registerId=$!{consttApply.registerId}")
+			                         <iframe #iframeAttr id="techIframe" style="height: calc(100% - 3px);" 
+			                         src="$!contextPath/outpatient/techReport.do?$!techParam"> </iframe>
+			                    </div> 
+			                  </div>
+			                </div>
+	                  </div>
+	              </div>
+		     </div>
+		</div><!--east  -->
+	</div>
+          
+    #parse("./outpatient/consultation/outConsttFillReport.js.vm")     
+</body>
+</html>

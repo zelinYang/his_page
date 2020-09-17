@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>整改情况审核</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="layui-content-wrapper">
+      <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!--搜索条件 开始-->
+            <form id="queryForm" class="layui-form">
+                <div class="layui-row-query">
+                    <div class="layui-form-item search-term">
+                        <div class="layui-inline ">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline  wd-120">#formTextInput("patientName" "" "id='patientName' maxlength='40' autocomplete='off' class='layui-input' ")</div>
+                        </div>
+                        <div class="layui-inline ">
+                            <label class="layui-form-label">发送人姓名</label>
+                            <div class="layui-input-inline  wd-120">#formTextInput("senderName" "" "id='senderName' maxlength='40' autocomplete='off' class='layui-input' ")</div>
+                        </div>
+
+                        <div class="layui-inline ">
+                            <button id="btn_query" class="layui-btn layui-btn-sm " type="button" lay-tips="查询">
+                                <i class="layui-icon layui-icon-search "></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+            <!-- 列表表格 工具栏-->
+            <!-- 性别 -->
+            <script type="text/html" id="sexTpl">
+                <span class="layui-badge {{d.patientSex == 1 ? 'layui-bg-blue' : (d.patientSex == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{ dicSex[d.patientSex] || '' }}</span>
+            </script>
+            <!-- 列表表格 工具栏 结束-->
+            <!-- 列表表格 begin -->
+            <table id="reformListGrid" lay-filter="reformListGrid"></table>
+            <!--  列表表格 end -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 本页面js -->
+    #parse("./emrDefect/patientEmrReformApproveList.js.vm")
+</body>
+</html>

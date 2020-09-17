@@ -1,0 +1,62 @@
+ <script>
+var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+var dicMedicineFirstType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineFirstType)');
+var queryPharmacyStock;//查询药品库存
+
+layui.use(['jquery','table','element'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    element.render();
+
+    var accountBookType = $('select[name=accountBookType]', window.parent.document).next().find('dl').find('dd.layui-this').attr('lay-value');
+
+    //第一个实例
+    var tableIns = table.render({
+         elem: '#medicineTable'
+        ,defaultToolbar: []
+        ,height: '370'//高度
+        ,url: '../pharmacy/pharmacyStockTcmListData.jo' //数据接口
+        ,where: {accountBookType: accountBookType, gtCurrentUsageCount: 0}
+        ,limit:200
+        ,request: {
+           pageName: 'pageNumber' //页码的参数名称，默认：page
+          ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,cols: [[ //表头
+          ## {width:60,align: 'center',fixed: 'left',toolbar: '#colstoolbar',event: 'select'},
+          {field : 'healthInsuranceType',title : '医保类型', width:100,templet:function (d) {
+              return dicMedicineFirstType[d.medicine.healthInsuranceType] || d.medicine.healthInsuranceType || ""
+              }}
+         ,{field : 'medicineName',title : '名称', minWidth:200}
+         ,{field : 'currentUsageCount',title : '可用数量', minWidth:70}
+         ,{field : 'medicineSpec', title : '规格', width:150}
+         ,{field : 'retailPrice', title : '价格', width:70,templet:function (d) {
+             return Number(d.retailPrice / d.minMedicinePack).toFixed(4);
+                }}
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){ }
+   });
+
+    //查询列表
+    queryPharmacyStock = function() {
+        var queryParams = common.serializeObject($('#medicine_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+
+    //监听行单击事件
+    table.on('row(medicineTable)', function(obj){
+        var pharmacyStockRow = obj.data;
+        parent.medicineRowSelect(pharmacyStockRow);
+    });
+     //监听行工具栏事件
+     table.on('tool(medicineTable)', function(obj){
+         var layEvent = obj.event; //获得 lay-event 对应的值
+         if (layEvent === "select") {
+             var pharmacyStockRow = obj.data;
+             parent.medicineRowSelect(pharmacyStockRow);
+         }
+     });
+ });//layui.use
+</script>

@@ -1,0 +1,83 @@
+<html>
+<head>
+    <title>电子病历模板编辑</title>
+    #parse("./common/layuiCss.vm")
+##    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .col-xs-8 label {
+            margin-top: 8px;
+        }
+        .layui-unselect.layui-form-checkbox span {
+            color: #555;
+        }
+        .layui-unselect.layui-form-checkbox.layui-form-checked span {
+            color: #fff;
+        }
+        #editForm{padding-top: 10px}
+    </style>
+</head>
+
+<body>
+<form class="layui-form" action="" id="editForm">
+    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "id='inhospitalId'")
+    #formHiddenInput("surgeryFlag" "0" "id='surgeryFlag'")
+    #formHiddenInput("inpatientSymptomPrjId" "$!{inpatientSymptomPrj.inpatientSymptomPrjId}" "id='inpatientSymptomPrjId'")
+    <div class="layui-row">
+        <input type="hidden" value="$!inpatientSymptomPrj.paramEnColumn" name="paramEnColumn" id="paramEnColumn"/>
+        #set($paramEnColumnStr = ',' + $!inpatientSymptomPrj.paramEnColumn + ',')
+        #foreach($entry in $dicInpatientSymptomPrj.entrySet())
+            #set($codeMatch = ',' + $entry.key + ',')
+            <div class="layui-col-xs4" style="padding-bottom: 5px; text-align: center;">
+                <input type="checkbox" lay-filter="paramEnColumn" value="${entry.key}" id="paramEnColumn_${entry.key}"  title="${entry.value}"
+                    #if($paramEnColumnStr.indexOf($codeMatch) > -1)
+                       checked="checked"
+                    #end
+                />
+            </div>
+        #end
+    </div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    layui.use(['form', 'element'], function() {
+        var form = layui.form;
+        var element = layui.element;
+        var $ = layui.$;
+
+        form.on('checkbox(paramEnColumn)', function(data){
+            var paramEnColumn = $('#paramEnColumn').val();
+            var paramEnColumns = [];
+            var index = 0;
+            if (paramEnColumn) {
+                paramEnColumns = paramEnColumn.split(',');
+            }
+            console.log(paramEnColumns);
+            console.log(data.elem.checked);
+            for (i = 0; i < paramEnColumns.length; i++) {
+                if (data.value === paramEnColumns[i]) {
+                    index = i;
+                    break;
+                }
+            }
+            if (data.elem.checked) {
+                paramEnColumns.push(data.value);
+            } else {
+                paramEnColumns.splice(index, 1);
+            }
+            $('#paramEnColumn').val(paramEnColumns.join(','));
+        });
+    });
+
+    function selectLength(length) {
+        $('#emrTlpWidth').val(length);
+    }
+</script>
+</body>
+</html>

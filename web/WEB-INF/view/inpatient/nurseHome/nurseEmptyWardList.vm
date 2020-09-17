@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-护士住院已分配床位列表</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        /*工具栏图标大小*/
+        td[lay-event="open"] i.fa {
+            font-size: 18px;
+        }
+        td[lay-event="open"] i.fa {
+            font-size: 18px;
+        }
+        .layui-table { margin: 0;}
+    </style>
+</head>
+<body class="white-bg">
+<div class="layui-fluid ">
+    <!--列表 begin-->
+    <!-- 是否有效开关 -->
+    <script type="text/html" id="validFlagTpl">
+        <input type="checkbox" lay-filter="validFlag" name="validFlag" value="{{d.inpatientInhospitalId}}" lay-skin="switch"
+               lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+    </script>
+    <!-- 性别限制 -->
+    <script type="text/html" id="sexFlagTpl">
+        <span class="layui-badge {{d.sexFlag == 1 ? 'layui-bg-blue' : (d.sexFlag == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{dicSexLimit[d.sexFlag]}}</span>
+    </script>
+
+    <!-- 列表表格 工具栏 结束-->
+    <!-- 列表表格 begin -->
+    <table id="inpatientInhospitalGrid" lay-filter="inpatientInhospitalGrid"></table>
+    <!--  列表表格 end -->
+    <!--列表end-->
+</div>
+<!-- 本页面js -->
+#parse("./inpatient/nurseHome/nurseEmptyWardList.js.vm")
+</body>
+</html>

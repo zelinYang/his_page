@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/visualizationCss.vm")
+<style type="text/css">
+.layui-table td, .layui-table th{padding: 9px 5px}
+</style>
+</head>
+<body>
+    <div class="pane ui-layout-center">
+        <!-- 电子病历 -->
+        <div class="layui-row white-bg full-scroll m-n" style="height: calc(100% - 50px);">
+             #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+
+             #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+             #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+             #formHiddenInput("patientHospitalEmrId" "$!patientHospitalEmrId" "id='patientHospitalEmrId'")
+             <div class="full-height p-r-n p-l-n" id="designContent" style="width:100%; margin:0 auto;">$!emrTlp.emrTlpContent</div>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="layui-row gray-bg text-center p-t-sm p-b-sm">
+            #formHiddenInput("" "$!inhospitalId" "id='inhospitalId'")
+            #if("$!emrFuncList" != "" && $!emrFuncList.size() > 0)
+                #set($emrFunctionHtml = $!dicData.dicEmrFunctionHtml)
+                #foreach($item in $!emrFuncList)
+                    $!{emrFunctionHtml.get($!item)}
+                #end
+            #end
+
+            <!--
+            <button class="layui-btn layui-btn-sm" id="btn_save" type="button"> 保 存  </button>
+            ##<button class="layui-btn layui-btn-sm" id="btn_submit" type="button"> 提 交  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_inhospitalDiagnosis" defDiagnosis="2" type="button"> 入院诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_modifyDiagnosis" defDiagnosis="6" type="button"> 修正诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_addDiagnosis" defDiagnosis="8" type="button"> 补充诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_deathDiagnosis" defDiagnosis="11" type="button"> 死亡诊断  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_importArchives" type="button"> 导入患者档案  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_medicalRecord" type="button"> 病历资料  </button>
+            ##<button class="layui-btn layui-btn-sm" id="btn_import" type="button"> 导入路径  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_template" type="button"> 模 板  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_saveTemplate" type="button"> 存为模板  </button>
+             -->
+        </div>
+    </div>
+
+    <!-- 选择操作区域 -->
+    <div id="material" class="ui-layout-south">
+        <iframe src="" id="materialIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+    </div>
+
+</body>
+#parse("./common/pageJs.vm")
+#parse("./common/visualizationJs.vm")
+<link rel="stylesheet" href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css">
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+<script>
+var minieditorDesign = new window.minieditorDesign('designContent', {
+    initData: #if("$!ermData" != "") $!ermData #else '' #end,
+    modelType: 'strict',
+    printType: '$!{emrTlp.printType}',
+    outhtmlWidth: '$!{emrTlp.printType}' == '1'? '794px': '1070px',
+    hospitalName:'$!{info.hospitalName}',
+    dicEmrClassNameKeyField: JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrClassNameKeyField)'),
+    baseFormParams: {PatientHospitalEmr: {patientHospitalEmrId: $('#patientHospitalEmrId').val(), patientId: $('#patientId').val(), inhospitalId: $('#inhospitalId').val(), emrTlpId: $('#emrTlpId').val()}}
+});
+// 根据控件ID设置值（提供父窗口调用的方法）
+function setTemplateContent(contrId, value) {
+    var count = 0;
+    var intervalId = setInterval(function (){
+        count++;
+        // 当编辑器已经在完成或2两分钟还未加载完时，就不再执行该方法
+        if ((minieditorDesign && minieditorDesign.miniEditor && minieditorDesign.miniEditor.getControlById(contrId)[0].dom) || count > 600) {
+            clearInterval(intervalId);
+            if (minieditorDesign.miniEditor.getControlById(contrId)[0].dom) {
+                minieditorDesign.miniEditor.getControlById(contrId)[0].setValue(value);
+            }
+        }
+    }, 200);
+}
+
+/*********////////////单选用户////////////*********/
+//电子病历选择医生出发的方法
+var control;
+var fieldParamsArrays;
+function selectSingleUser(ctrl, fieldParams) {
+    control = ctrl;
+    fieldParamsArrays = fieldParams.split(',');
+    common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {area:['750px','450px']});
+}
+//电子病历选择医生触发方法的回调函数
+function selectSingleUserCall(data) {
+    if (control && fieldParamsArrays) {
+        var obj = {};
+        obj[fieldParamsArrays[0]] = data.name;
+        if (fieldParamsArrays[1]) {
+            obj[fieldParamsArrays[1]] = data.userId;
+        }
+        minieditorDesign.miniEditor.getControlByDom(control).setValue(obj);
+    }
+}
+
+/*********///////////单选病种////////////*********/
+//电子病历选择病种触发的方法
+var controlsDisease;
+var diseaseFieldParamsArrays;
+function selectSingleDisease(control, fieldParams) {
+    controlsDisease = control;
+	diseaseFieldParamsArrays = fieldParams.split(',');
+  common.open(contextPath + "/basDisease/selectSingleDisease.do", "选择病种（单击选择）", {area:['900px','550px']});
+}
+//电子病历选择病种触发的方法的回调函数
+function selectSingleDiseaseCall(data) {
+  if (controlsDisease && diseaseFieldParamsArrays) {
+      var obj = {};
+      obj[diseaseFieldParamsArrays[0]] = data.diseaseName;
+      if (diseaseFieldParamsArrays[1]) {
+          obj[diseaseFieldParamsArrays[1]] = data.diseaseId;
+      }
+      if (diseaseFieldParamsArrays[2]) {
+          obj[diseaseFieldParamsArrays[2]] = data.diseaseIcdTcd;
+      }
+      minieditorDesign.miniEditor.getControlByDom(controlsDisease).setValue(obj);
+  }
+}
+
+/*********///////////单选病种文本////////////*********/
+//电子病历选择病种文本触发的方法
+var controlsDiseaseTex;
+function selectSingleDiseaseText(control, fieldParams) {
+    controlsDiseaseTex = control;
+  diseaseFieldParamsArrays = fieldParams.split(',');
+common.open(contextPath + "/basDisease/selectMultiDisease.do", "选择病种（单击选择）", {area:['900px','550px']});
+}
+//电子病历选择病种文本触发的方法的回调函数
+function selectSingleDiseaseTextCall(data) {
+if (controlsDiseaseTex && data && data.length > 0) {
+    var text = [];
+    $.each(data, function (i, v){
+        text.push(data.diseaseName);
+    });
+    minieditorDesign.miniEditor.getControlById(text.join('，'));
+}
+}
+
+// 导入模板
+function leadingIn(text) {
+    minieditorDesign.miniEditor.editor.focus();
+    minieditorDesign.miniEditor.editor.execCommand('inserthtml', text);
+}
+//导入诊断
+function importDiagnosis(data) {
+    if (data.addDiagnosis && data.addDiagnosis.length > 0) {
+        if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_addDiagnosis')[0].dom) {
+            minieditorDesign.miniEditor.getControlById('InpatientInhospital_addDiagnosis')[0].setValue(data.addDiagnosis);
+        }
+    }
+    if (data.modifyDiagnosis && data.modifyDiagnosis.length > 0) {
+        if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_modifyDiagnosis')[0].dom) {
+            minieditorDesign.miniEditor.getControlById('InpatientInhospital_modifyDiagnosis')[0].setValue(data.modifyDiagnosis);
+        }
+    }
+    if (data.inhospitalDiagnosis && data.inhospitalDiagnosis.length > 0) {
+        if (minieditorDesign.miniEditor.getControlById('InpatientInhospital_inhospitalDiagnosis')[0].dom) {
+            minieditorDesign.miniEditor.getControlById('InpatientInhospital_inhospitalDiagnosis')[0].setValue(data.inhospitalDiagnosis);
+        }
+        if (minieditorDesign.miniEditor.getControlById('OuthospitalReport_inhospitalDiagnosis')[0].dom) {
+            minieditorDesign.miniEditor.getControlById('OuthospitalReport_inhospitalDiagnosis')[0].setValue(data.inhospitalDiagnosis);
+        }
+    }
+    if (data.outhospitalDiagnosis && data.outhospitalDiagnosis.length > 0) {
+        if (minieditorDesign.miniEditor.getControlById('OuthospitalReport_outhospitalDiagnosis')[0].dom) {
+            minieditorDesign.miniEditor.getControlById('OuthospitalReport_outhospitalDiagnosis')[0].setValue(data.outhospitalDiagnosis);
+        }
+    }
+    return true;
+}
+//诊断记录区域方法
+function inhospitalDiagnosisArea(){
+    $("#btn_diagnosis").click();
+}
+
+</script>
+<script type="text/javascript">
+layui.use(['element', 'layer'], function(){
+    var winLayout = $('body').layout({resizerDragOpacity:0.5, maskIframesOnResize:"#material", initClosed:true});
+    // 保存按钮
+    $('#btn_save').click(function (){
+        if (parent.initBaseParams && typeof(parent.initBaseParams) == 'function') {
+            // 第一个参数为病历对象（必须），第二个参数为操作类型（保存、提交）可选
+            parent.initBaseParams(minieditorDesign, $(this).attr('operate-type'));
+        }
+        if (parent.saveBeforeCall && typeof(parent.saveBeforeCall) == 'function') {
+            // 第一个参数为病历对象（必须），第二个参数为操作类型（保存、提交）可选， 注意病历数据保存也在该方法保存
+            parent.saveBeforeCall(minieditorDesign, $(this).attr('operate-type'));
+        } else {
+            if(minieditorDesign.miniEditor.validateForm()){
+                minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo');
+            }
+        }
+    });
+
+    //诊断导入弹框
+    $("button[defDiagnosis]").click(function(){
+        if (!$('#inhospitalId').val()) {
+            common.alert('参数无效，请检查住院编号是否存在', 0);
+            return ;
+        }
+        var defDiagnosis = $(this).attr("defDiagnosis");
+        common.open(contextPath + '/inpatient/diagnosisEnter.do?saveBtn=1&defDiagnosis=' + defDiagnosis + '&inhospitalId=' + $('#inhospitalId').val(), $(this).text(), {area:['1000px','350px']})
+        //openSouthLayout('/inpatient/diagnosisEnter.do?saveBtn=1&defDiagnosis=' + defDiagnosis + '&inhospitalId=' + $('#inhospitalId').val());
+    });
+
+    // 病历资料
+    $('#btn_medicalRecord').click(function (){
+        openSouthLayout('/patient/patientMedicalInformation.do?patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val());
+    });
+    // 模板按钮
+    $('#btn_template').click(function (){
+        openSouthLayout('/emr/emrTreeTemplate.do');
+    });
+
+    // 打开底部模板区域
+    function openSouthLayout(url) {
+        //pane是否关闭中
+        var isClosed = $("#material").css("display") == "none";
+        if(isClosed){
+            winLayout.sizePane("south", 200);
+            winLayout.toggle("south");
+        }
+        var materialIframe = $('#materialIframe');
+        if ($(materialIframe).attr('src') == contextPath + url) {//url未改变
+            if(!isClosed){//url未改变且pane打开中
+                winLayout.toggle("south");
+            }
+            return ;
+        }
+        $(materialIframe).attr('src', contextPath + url);
+    }
+});
+</script>
+</html>

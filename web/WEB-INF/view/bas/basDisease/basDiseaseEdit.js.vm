@@ -1,0 +1,150 @@
+
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var TCM_DIAGNOSIS_TYPE_ID = "$!{CONST.AppConstants.TCM_DIAGNOSIS_TYPE_ID}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect','table'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect,table =layui.table;
+        common.verify(form)
+
+        //打开选择疾病分类页面
+        $("#diseaseClassifyName,#diseaseClassifyName~.choose").click(function () {
+            top.common.open('$contextPath' + '/basDisease/diseaseClassifySelectTree.do', '选择疾病分类', {
+                area: ['50%', '70%'],
+                success: function (layero, index) {
+                    var iframeWindow = top.window['layui-layer-iframe'+ index];
+                    //重点2 jsonpCallback 公用子页面回调方法；如果在这里定义了这个方法，那么子页面就会调用这个方法
+                    iframeWindow.jsonpCallback(function (data) {
+                            $("#diseaseClassifyName").val(data ? (data.dicName || '') : '');
+                            $("#diseaseClassify").val(data ? (data.dicCode || '') : '');
+                    })
+                }
+            })
+        });
+
+        //清空 疾病分类
+        $('#diseaseClassifyName+.caller-icon').click(function () {
+            $("#diseaseClassifyName").val("");
+            $("#diseaseClassify").val("");
+        })
+
+        //中医证候
+        var tcmSymptomElem = $("#tcmSymptom");
+        var tcmSymptomUrl = contextPath + '/basDic/basDicListData.jo?dicTypeId=' + TCM_DIAGNOSIS_TYPE_ID + '&dicCodes=';
+        //列表
+        table.render({
+            elem: '#tcmSymptomListGrid',
+            url: tcmSymptomElem.val() ? tcmSymptomUrl + tcmSymptomElem.val() : '', //接口
+            data: [],
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            height: '150',
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_tcmSymptom" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'dicName',
+                    title: '中医-主要症状名称',
+                    minWidth: 100
+                },
+                {
+                    field: 'dicCode',
+                    title: '中医-主要症状代码',
+                    minWidth: 100
+                },
+                {
+                    title: '操作',
+                    width: 50,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+                //新增证候项目
+                renderAdd();
+            }
+        });
+
+
+        //新增证候按钮
+        function renderAdd() {
+            tableSelect.render({
+                elem: '#btn_add_tcmSymptom',	//定义输入框input对象 必填
+                checkedKey: 'dicCode', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: ' ',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: tcmSymptomUrl,
+                    cols: [[{type: 'checkbox'},
+                        {
+                            field: 'dicName',
+                            title: '中医-主要症状名称',
+                            minWidth: 100
+                        },
+                        {
+                            field: 'dicCode',
+                            title: '中医-主要症状代码',
+                            minWidth: 100
+                        }]]
+                }),
+                done: function (elem, result) {
+                    var tcmSymptom = $.grep($.map(result.data, function (item) {
+                        return item.dicCode;
+                    }).concat($.map(table.cache['tcmSymptomListGrid'], function (item) {
+                        return item.dicCode;
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).join();
+                    table.reload('tcmSymptomListGrid', {
+                        url: tcmSymptom ? tcmSymptomUrl + tcmSymptom : '', //接口
+                    });
+                }
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(tcmSymptomListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    break;
+            }
+        });
+        //自定义验证规则
+        form.verify({
+            tcmSymptom: function (value) {
+                //同步
+                tcmSymptomElem.val($.map(table.cache['tcmSymptomListGrid'], function (item) {
+                    if (item.dicCode) return item.dicCode;
+                }).join());
+            }
+        });
+
+        //提交表单
+        function saveBasDisease() {
+            var basDiseaseParams = common.serializeObject($('#basDiseaseForm'))
+            common.requestServer(contextPath + '/basDisease/saveBasDisease.jo', basDiseaseParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasDisease()
+            return false
+        })
+    })
+</script>

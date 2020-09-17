@@ -1,0 +1,52 @@
+<script>
+var dicTemperatureTimeSort = JSON.parse('$dicTools.changeMapToJson($!dicData.dicTemperatureTimeSort)');
+
+layui.use(['element','form','table'], function(){
+    var table = layui.table;
+    var form = layui.form;
+
+	$("input[name='temperatureTimeSort']").click(function(){
+	    refreshIframe();
+	});
+
+
+    //初始化iframe
+    refreshIframe();
+
+    //radio被选中事件
+    form.on('radio(temperatureTimeSort)', function(data){
+        refreshIframe();
+    });
+
+	//日期控件初始化
+	laydate.render({elem: '#temperatureDate', type: 'date', value:new Date(), istime: true, max: getSmpFormatNowDate(true)
+	    //日期被选中事件
+	    ,done: function (value, date, endDate){
+                if(date.year){
+                    var temperatureDate = date.year+"-"+date.month+"-"+date.date;
+                    $("#temperatureDate").val(temperatureDate);
+                }else{
+                    $("#temperatureDate").val("");
+                }
+                refreshIframe();
+            }
+    });
+
+
+	//刷新iframe，模拟刷新表格
+	function refreshIframe(){
+		var temperatureDateStr = $("#temperatureDate").val();
+		var checkedRadio = $("input[name='temperatureTimeSort']:checked");
+		var sortTime = checkedRadio[0].title;
+		var temperatureTimeSort = checkedRadio.val();
+		$("#temperatureEditIframe").attr("src","../inpatient/temperatureBatchEdit.do?temperatureDateStr=" + temperatureDateStr + "&temperatureTimeSort=" + temperatureTimeSort);
+	}
+
+});
+window.onload = function(){
+  $('#tableHgt').height($('body').height() - $('#editForm').height() - 9)
+}
+$(window).resize(function(){
+    $('#tableHgt').height($('body').height() - $('#editForm').height() - 9)
+})
+</script>

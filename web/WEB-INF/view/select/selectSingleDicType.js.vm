@@ -1,0 +1,65 @@
+<script>
+  $(document).ready(function () {
+	    // 查询按钮
+	    $('#btn_query').click(function (){
+	        var queryParams = common.serializeObject($('#basDicType_queryForm'));
+	        var options = {url: '../basDicType/basDicTypeListData.jo', silent: false, query: queryParams};
+	        $('#basDicTypeListGrid').bootstrapTable('refresh', options); 
+	    });
+	
+	    // 清空按钮
+	    $('#btn_clean').click(function (){
+	        common.cleanForm('basDicType_queryForm');
+	
+	    });
+
+
+          //字典域表表列表
+          $('#basDicTypeListGrid').bootstrapTable(
+              $.extend(baseTable, {
+                  url : "../basDicType/basDicTypeListData.jo",
+                  queryParams : function (params){
+                      var requestParams = common.serializeObject($('#basDicType_queryForm'));
+                      requestParams.pageSize = params.pageSize;
+                      requestParams.pageNumber = params.pageNumber;
+                      return requestParams;
+                  },
+                  columns : [
+                  {checkbox : true} ,
+                  {
+                      field : 'dicTypeCode',
+                      title : '字典域编码'
+                  },
+                  {
+                      field : 'dicTypeName',
+                      title : '字典分类'
+                  },
+                  {
+                      field : 'standardCode',
+                      title : '国际/国家/行业标准编码'
+                  }
+              
+                  ],
+                  onClickRow : function (row, element){
+                      if (parent.selectSingleEventBack && typeof(parent.selectSingleEventBack) == "function") {
+                          parent.selectSingleEventBack(row);
+                          // 关闭窗口
+                          var index = parent.layer.getFrameIndex(window.name);
+                          parent.layer.close(index); 
+                      }
+                  },
+                  onLoadSuccess : function(){
+                      var height = ($('#basDicTypeListGrid').parents("body").height() - $('#basDicType_queryForm').parents(".ibox").first().height()  - 130);
+                      $('#basDicTypeListGrid').bootstrapTable('resetView', {height: height}); 
+                  }
+              }
+              )//extends
+            );//bootstapTable
+    });//document.ready() event function
+
+ 
+    $(window).resize(function() { 
+        var height = ($('#basDicTypeListGrid').parents("body").height() - $('#basDicType_queryForm').parents(".ibox").first().height() - 130);
+        $('#basDicTypeListGrid').bootstrapTable('resetView', {height: height}); 
+    })
+</script>

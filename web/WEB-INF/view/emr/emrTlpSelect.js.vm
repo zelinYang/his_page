@@ -1,0 +1,51 @@
+ <script>
+  var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+
+  var dicEmrTlpClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrTlpClassify)');
+   var queryEmrTlp;
+  layui.use(['jquery','table', 'laypage','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var laypage = layui.laypage; 
+    var $ = layui.$;
+    
+    element.render();
+    //第一个实例
+    var tableIns = table.render({
+       elem: '#emrTlpTable'
+      //,toolbar: '#toolbarDemo'
+      ,defaultToolbar: []
+      //,height: '230'//高度
+      ,height: '320'//高度
+      ,url: '../emrTlp/emrTlpListData.jo' //数据接口
+      //,page: true //开启分页
+      ,limit:200
+      ,request: { 
+         pageName: 'pageNumber' //页码的参数名称，默认：page
+        ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+      }
+      ,cols: [[ //表头
+      {field : 'emrTlpClassifyId', title : '电子病历模板分类', width:200, templet :function (row) {return dicEmrTlpClassify[row.emrTlpClassifyId];}}
+      ,{field : 'emrTlpName',title : '电子病历模板名称', width:300}
+      ,{field : 'emrTlpVersion', title : '版本号', width:100}
+      ,{field : 'userName', title : '模板创建人', width:100}
+      ]]
+      //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+      ,done: function(res, curr, count){
+      }
+    });
+
+    //查询列表
+    queryEmrTlp = function() { 
+        var queryParams = common.serializeObject($('#emrTlp_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+		  
+    //监听行单击事件
+    table.on('row(emrTlpTable)', function(obj){
+      var emrTlpRow = obj.data;
+      parent.emrTlpRowSelect(emrTlpRow);
+    });
+  });//layui.use
+</script> 

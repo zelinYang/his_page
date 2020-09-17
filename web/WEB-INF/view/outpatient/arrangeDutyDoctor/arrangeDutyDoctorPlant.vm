@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}-医生排班</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+      #parse("./common/pageCss.vm")
+      #parse("./common/pageJs.vm")
+      <script src="../resource/layuiadmin/modules/tableSelect.js?v=4" ></script>
+</head>
+<style>
+    .fontGreen{ color:#00ff00;}
+    .fontRed{ color:#ff0000;}
+    .fontGray{ color:#c0c0c0;}
+</style>
+<body>
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space2">
+            <div class="layui-card">
+                <div class="layui-row layui-col-space1">
+                    <div class="layui-col-md3">
+                         <div class="layui-form-item" style="margin-bottom: 0px;">
+                             <div class="layui-inline">
+                                 <label class="layui-form-label">排班科室</label>
+                                 <div class="layui-input-block">
+                                     <form class="layui-form" id="queryForm" action="../outpatient/arrangeDutyDoctorMain.do">
+                                         #formHiddenInput("arrangeDutyDate" "$!date.format('yyyy-MM-dd', $!{arrangeDutyDoctorQueryInfo.arrangeDutyDate})" " id='arrangeDutyDate' ") 
+                                         #formHiddenInput("userAttributeId" "D" " id='userAttributeId' ") 
+                                         #formSingleSelectSearchFirstNone("doctorOfficeId" "$!{arrangeDutyDoctorQueryInfo.doctorOfficeId}" ${dicData.dicOffice} " lay-verify='required' id='doctorOfficeId' lay-filter='doctorOfficeId' lay-search" "直接选择或搜索选择")
+                                     </form>
+                                 </div>
+                             </div>
+                         </div>
+                    </div>
+                    <div class="layui-col-md5">
+                        <div class="layui-card">
+                        </div>
+                    </div>
+                    <div class="layui-col-md4">今天日期：$!date.format('yyyy-MM-dd', ${curDate})&nbsp;&nbsp; 年度第${weekObject.yearWeekNum}周 </div>
+               </div>
+            <div class="layui-row layui-col-space10 layui-card-header layuiadmin-card-header-auto" >
+                <div class="layui-col-md3">
+                  <div class="layui-card">
+                      <button class="changeDateBtn layui-btn layui-btn-sm layuiadmin-btn-tags" changeDate="$!date.format('yyyy-MM-dd', ${weekObject.weekMonday})">当前周</button>
+                      <button class="changeDateBtn layui-btn layui-btn-sm layuiadmin-btn-tags" changeDate="$!date.format('yyyy-MM-dd', ${weekObject.preWeekMonday})">上一周</button>
+                      <button class="changeDateBtn layui-btn layui-btn-sm layuiadmin-btn-tags" changeDate="$!date.format('yyyy-MM-dd', ${weekObject.nextWeekMonday})">下一周</button>
+                  </div>
+                </div>
+                <div class="layui-col-md7">
+                    <div class="layui-card">
+                    #foreach($weekDay in ${weekObject.weekDayList})
+                        #set($dayFont="")
+                        #set($curDateBtnClass = "")
+                        #if($weekDay.weekDayNum == 6)#set($dayFont = "fontGreen")#end
+                        #if($weekDay.weekDayNum == 7)#set($dayFont = "fontRed")#end
+                        #if($weekDay.overDateFlag == "1")#set($dayFont = "fontGray")#end
+                        #if(${weekObject.curDate} == ${weekDay.weekDayDate})#set($curDateBtnClass = "layui-btn-warm")#end
+                        <button class="changeDateBtn layui-btn layui-btn-sm layui-btn-primary $curDateBtnClass layuiadmin-btn-tags $!{dayFont}" changeDate="$!date.format('yyyy-MM-dd', ${weekDay.weekDayDate})">${weekDay.weekDayStr}</button>
+                    #end
+                    </div>
+                </div>
+                <div class="layui-col-md2">
+                    <div class="layui-card">
+                        ##<button class="layui-btn layuiadmin-btn-tags">生成下周</button>
+                        <button class="layui-btn layui-btn-sm layuiadmin-btn-tags" id="btn_save">保&nbsp;存</button>
+                    </div>
+                </div>
+            </div>
+                <!--  上午 -->
+                <div class="layui-row layui-col-space10 layui-card-header layuiadmin-card-header-auto" >
+                    <div class="layui-row">
+                        <div class="layui-col-sm2 layui-col-md1">$!date.format('yyyy-MM-dd', $!{arrangeDutyDoctorQueryInfo.arrangeDutyDate}) <span class="layui-badge">上午</span></div> 
+                        <div class="layui-col-sm10 layui-col-md11">
+                            <form class="layui-form" id="amSelectDoctor_queryForm">
+                                #formHiddenInput("userAttributeId" "D" "userAttributeId")
+                                #formHiddenInput("selectedDoctorIds" "" " id='selectedDoctorIds' ")
+                                #formHiddenInput("orgId" "$!{arrangeDutyDoctorQueryInfo.doctorOfficeId}" " id='orgId' ")
+                                ##<button class="layui-btn layui-btn-sm layuiadmin-btn-tags" id="btn_select_doctor">选择医生</button>
+                                <input type="text" name="amDoctorNames" placeholder="请选择医生" autocomplete="off" ts-selected="" class="layui-input" style="width:95%; margin-left:10px;" id="amDoctorNames" value="" readonly>
+                            </form>
+                       </div>
+                    </div>
+                    <div class="layui-row">
+                        ################################### 上午表格开始 ######################################
+                         <div class="main-content full-height table-width-full" style="overflow-x: scroll;">
+                         <form id="amOndutyDoctorForm" class="layui-form full-height" >
+                         <table class="layui-table recipe" id="amOndutyDoctorTable" border="1" style="width: 100%;">
+                           <colgroup>
+                             <col width="20">
+                             ##<col width="70">
+                             <col data-index="1" width="100">
+                             <col data-index="2" width="100">
+                             <col data-index="3" width="200">
+                             <col data-index="4" width="100">
+                             <col>
+                           </colgroup>
+                           <thead>
+                             <tr>
+                               ##<th><!-- <input type="checkbox" name="checkAll" id='checkAll' lay-filter='checkAll' lay-skin="primary" > --></th>
+                               <th><i id="btn_add" class="layui-icon icon-btn"  ></i></th>
+                               <th data-index="1">医生代码</th>
+                               <th data-index="2">医生姓名</th>
+                               <th data-index="3">#requiredTag()诊室</th>
+                               <th data-index="4">挂号限额</th>
+                             </tr> 
+                           </thead>
+                           <tbody class="tbody-data" >
+                                <!-- 显示行 foreach 循环-->
+                                  #foreach($arrangeDutyDoctor in $arrangeDutyDoctorAmList)
+                                  <tr>
+                                     ##<td><input type="checkbox" name="isCheck" lay-skin="primary" > </td>
+                                      <td style="padding-left: 15px;">
+                                          <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeBtnTableRow(this)" ></i>
+                                      </td>
+                                     <td data-index="1" style="width: 200px; ">
+                                         #formHiddenInput("arrangeDutyDoctorId" "$!{arrangeDutyDoctor.arrangeDutyDoctorId}" "")
+                                         #formHiddenInput("doctorOfficeId" "$!{arrangeDutyDoctor.doctorOfficeId}" "")
+                                         #formHiddenInput("doctorId" "$!{arrangeDutyDoctor.doctorId}" "")
+                                         #formHiddenInput("arrangeDutyType" "$!{arrangeDutyDoctor.arrangeDutyType}" "")
+                                         #formTextInput("doctorCode" "$!{arrangeDutyDoctor.doctorCode}" "class='layui-input' eadonly")
+                                     </td>
+                                      <td data-index="2">#formTextInput("doctorName" "$!{arrangeDutyDoctor.doctorName}" "class='layui-input' readonly")</td>
+                                      <td data-index="3">
+                                         #formSingleSelectSearchFirstNone("consultingRoomId" "$!{arrangeDutyDoctor.consultingRoomId}" ${consultingRoomMap} " class='form-control' lay-verify='required' style='border:0;'  " "")
+                                      </td>
+                                      <td data-index="4">#formIntInput("limitCount" "$!{arrangeDutyDoctor.limitCount}" "maxlength='3' class='layui-input'")</td>
+                                  </tr>
+                                  #end    
+                           </tbody>
+                         </table>
+                        <input type="button" class="layui-hide" lay-submit lay-filter="btn_save_amOndutyDoctorForm" value="确认">
+                         </form>
+                         </div>
+                         ################################### 上午表格结束 ######################################
+                    </div>
+                </div><!--  上午 end -->
+
+                <div class="layui-card-body layui-bg-blue" style="max-height:2px;"></div><!-- 分隔条 -->
+    
+                <!--  下午 -->
+                <div class="layui-row layui-col-space10 layui-card-header layuiadmin-card-header-auto" >
+                    <div class="layui-row">
+                        <div class="layui-col-sm2 layui-col-md1">$!date.format('yyyy-MM-dd', $!{arrangeDutyDoctorQueryInfo.arrangeDutyDate}) <span class="layui-badge">下午</span></div> 
+                        <div class="layui-col-sm10 layui-col-md11">
+                            <form class="layui-form" id="pmSelectDoctor_queryForm">
+                                #formHiddenInput("userAttributeId" "D" "userAttributeId")
+                                #formHiddenInput("selectedDoctorIds" "" " id='selectedDoctorIds' ")
+                                #formHiddenInput("orgId" "$!{arrangeDutyDoctorQueryInfo.doctorOfficeId}" " id='orgId' ")
+                                <input type="text" name="pmDoctorNames" placeholder="请选择医生" autocomplete="off" class="layui-input" style="width:95%; margin-left:10px;" id="pmDoctorNames" value="" >
+                            </form>
+                       </div>
+                    </div>
+                    <div class="layui-row">
+                        ################################### 下午表格开始 ######################################
+                        <div class="main-content full-height table-width-full" style="overflow-x: scroll;">
+                         <form id="pmOndutyDoctorForm" class="layui-form full-height" >
+                         <table class="layui-table recipe" id="pmOndutyDoctorTable" style="width: 100%;">
+                           <colgroup>
+                             <col width="20">
+                             ##<col width="70">
+                             <col data-index="1" width="100">
+                             <col data-index="2" width="100">
+                             <col data-index="3" width="200">
+                             <col data-index="4" width="100">
+                             <col>
+                           </colgroup>
+                           <thead>
+                             <tr>
+                               ##<th><input type="checkbox" name="checkAll" id='checkAll' lay-filter='checkAll' lay-skin="primary" >
+                               <th><i id="btn_add" class="layui-icon icon-btn #*btn_add_tr*# "  ></i></th>
+                               <th data-index="1">医生代码</th>
+                               <th data-index="2">医生姓名</th>
+                               <th data-index="3">#requiredTag()诊室</th>
+                               <th data-index="4">挂号限额</th>
+                             </tr> 
+                           </thead>
+                           <tbody class="tbody-data" >
+                                <!-- 显示行 foreach 循环-->
+                                  #foreach($arrangeDutyDoctor in $arrangeDutyDoctorPmList)
+                                  <tr>
+                                     ##<td>##<input type="checkbox" name="isCheck" lay-skin="primary" >   </td>
+                                      <td style="padding-left: 15px;">
+                                          <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeBtnTableRow(this)" ></i>
+                                      </td>
+                                     <td data-index="1" style="width: 200px; ">
+                                         #formHiddenInput("arrangeDutyDoctorId" "$!{arrangeDutyDoctor.arrangeDutyDoctorId}" "")
+                                         #formHiddenInput("doctorOfficeId" "$!{arrangeDutyDoctor.doctorOfficeId}" "")
+                                         #formHiddenInput("doctorId" "$!{arrangeDutyDoctor.doctorId}" "")
+                                         #formHiddenInput("arrangeDutyType" "$!{arrangeDutyDoctor.arrangeDutyType}" "")
+                                         #formTextInput("doctorCode" "$!{arrangeDutyDoctor.doctorCode}" "class='layui-input' eadonly")
+                                     </td>
+                                      <td data-index="2">#formTextInput("doctorName" "$!{arrangeDutyDoctor.doctorName}" "class='layui-input' readonly")</td>
+                                      <td data-index="3">
+                                         #formSingleSelectSearchFirstNone("consultingRoomId" "$!{arrangeDutyDoctor.consultingRoomId}" ${consultingRoomMap} " class='form-control' lay-verify='required' style='border:0;'  " "")
+                                      </td>
+                                      <td data-index="4">#formIntInput("limitCount" "$!{arrangeDutyDoctor.limitCount}" "maxlength='3' class='layui-input'")</td>
+                                  </tr>
+                                  #end    
+                           </tbody>
+                         </table>
+                         <input type="button" class="layui-hide" lay-submit lay-filter="btn_save_pmOndutyDoctorForm" value="确认">
+                         </form>
+                    </div>
+                        ###################################  下午表格结束 ######################################
+                    </div>
+                </div><!--  下午 end -->
+
+                <div class="layui-hide"><!-- 表格模板 -->
+                   <table class="rowTpl">
+                     <tbody>
+                         <!-- tpl_row 模板行 数据 -->
+                         <tr class="tplRow trRow">
+                             ##<td><input type="checkbox" name="isCheck" lay-skin="primary" ></td>
+                              <td style="padding-left: 15px;">
+                                  <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeBtnTableRow(this)" ></i>
+                              </td>
+                              <td data-index="1" style="width: 200px; ">
+                                  #formHiddenInput("arrangeDutyDoctorId" "" "")
+                                  #formHiddenInput("doctorOfficeId" "" "")
+                                  #formHiddenInput("doctorId" "" "")
+                                  #formHiddenInput("arrangeDutyType" "" "")
+                                  #formTextInput("doctorCode" "" "class='layui-input' eadonly")
+                              </td>
+                              <td data-index="2">#formTextInput("doctorName" "" "class='layui-input' readonly")</td>
+                              <td data-index="3">
+                                  #formSingleSelectSearchFirstNone("consultingRoomId" "" ${consultingRoomMap} " class='form-control' lay-verify='required' style='border:1;'  " "")
+                              </td>
+                              <td data-index="4">#formIntInput("limitCount" "30" "maxlength='3' class='layui-input'")</td>
+                         </tr>
+                    </tbody>
+                   </table><!--table 模板  -->
+                </div><!-- 表格模板 -->
+    
+            </div><!-- outer layui card -->
+        </div>
+    </div>
+
+
+    <!--  列表表格 end -->
+    <!-- 本页面js -->
+    #parse("./outpatient/arrangeDutyDoctor/arrangeDutyDoctorPlant.js.vm")
+</body>
+</html>

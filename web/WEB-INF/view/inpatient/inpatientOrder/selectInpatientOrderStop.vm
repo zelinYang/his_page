@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-病区床位设置表管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="queryForm" class="layui-form">
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("orderGroupNos" "$!orderGroupNos" "id='orderGroupNos'")
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 末日次数 -->
+        <script type="text/html" id="endDayDosageTpl">
+            <input type="text" name="endDayDosage" value="{{d.pharmacyFreqId || ''}}" autocomplete="off" maxlength="2" class="layui-input" style="height: 28px;">
+            <div class="layui-slider-input-btn" style="display:block;right: 5px;"><i class="layui-icon layui-icon-up"></i><i class="layui-icon layui-icon-down"></i></div>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="inpatientOrderListGrid" lay-filter="inpatientOrderListGrid"></table>
+        <!--  列表表格 end -->
+        <div class="tool-bottom-fixed">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()停止时间</label>
+                <div class="layui-input-inline">
+                    <input type="text" class="layui-input" id="exeOrderEndTime" autocomplete="off" placeholder="yyyy-MM-dd HH:mm:ss">
+                </div>
+            </div>
+            <button class="layui-btn layui-btn-sm" id="btn_updatePharmacyFreqToEndDayDosage" type="button" >末日次数与频次相同</button>
+            <button class="layui-btn layui-btn-sm" id="btn_updateZeroToEndDayDosage" type="button" >末日次数全部为0</button>
+            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+            <button type="button" id="btn_close" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">取 消</button>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./inpatient/inpatientOrder/selectInpatientOrderStop.js.vm")
+</body>
+</html>

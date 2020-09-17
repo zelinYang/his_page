@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd"
+         default-lazy-init="true"
+         >
+
+    <bean id="toolboxViewParamSet" abstract="true"><property name="toolboxConfigLocation"><value>/WEB-INF/velocitytoolbox.xml</value></property></bean>
+    <bean id="excelViewResolver" lazy-init="false" parent="toolboxViewParamSet" class="cn.com.base.spring.mvc.OrderedVelocityViewResolver">
+        <property name="contentType"><value>application/vnd.ms-excel</value></property>
+        <property name="cache"><value>true</value></property>
+        <property name="prefix"><value></value></property>
+        <property name="suffix"><value>.xls</value></property><!--处理excel文件，后缀必须是.xls-->
+        <property name="viewClass"><value>cn.com.base.spring.mvc.view.ExcelToolboxView</value></property>
+        <property name="validViewPrefix"><value>xo:</value></property><!--view名有该前缀的，都属于本resolver处理。真正的view名是去除前缀后的名字-->
+        <property name="order"><value>10</value></property>
+    </bean>
+
+    <bean id="velocityViewResolver" lazy-init="false" parent="toolboxViewParamSet" class="cn.com.base.spring.mvc.OrderedVelocityViewResolver">
+        <property name="contentType"><value>text/html;charset=UTF-8</value></property>
+        <property name="cache"><value>true</value></property>
+        <property name="prefix"><value></value></property>
+        <property name="suffix"><value>.vm</value></property>
+        <property name="viewClass"><value>org.springframework.web.servlet.view.velocity.VelocityToolboxView</value></property>
+        <property name="order"><value>20</value></property>
+    </bean>
+
+    <bean id="jxlResolver" lazy-init="false" class="cn.com.base.basesystem.jxl.JxlViewResolver">
+        <property name="contentType"><value>application/vnd.ms-excel</value></property>
+        <property name="cache"><value>true</value></property>
+        <property name="prefix"><value>com.bofan.jxlview.</value></property>
+        <property name="suffix"><value></value></property>
+        <property name="viewClass"><value>cn.com.base.basesystem.jxl.JxlToolView</value></property>
+        <property name="validViewPrefix"><value>jxl:</value></property><!--view名有该前缀的，都属于本resolver处理。真正的view名是去除前缀后的名字-->
+        <property name="templatePath"><value>/WEB-INF/excelview/</value></property>
+        <property name="order"><value>15</value></property>
+    </bean>
+
+    <bean id="velocityConfigurer" lazy-init="false" class="org.springframework.web.servlet.view.velocity.VelocityConfigurer">
+        <property name="velocityProperties">
+            <props>
+                <prop key="runtime.log">velocity.log</prop>
+                <prop key="runtime.log.invalid.references">true</prop>
+                <prop key="resource.manager.logwhenfound">false</prop>
+                <prop key="velocimacro.library.autoreload">true</prop>
+                <prop key="velocimacro.permissions.allow.inline.to.replace.global">true</prop>
+                <prop key="velocimacro.library">sysmacroLib.vm, macroLib.vm,appmacroLib.vm</prop>
+                <prop key="input.encoding">UTF-8</prop>
+                <prop key="output.encoding">UTF-8</prop>
+                <prop key="resource.manager.class">cn.com.excel.engine.ExcelResourceManager</prop>
+                <prop key="userdirective">cn.com.base.utils.DictTreeDirective</prop>
+            </props>
+        </property>
+        <property name="resourceLoaderPath"><value>/WEB-INF/basesystemview/,/WEB-INF/view/,/WEB-INF/view/baseview,/WEB-INF/basesystemview/common/,/WEB-INF/excelview/</value></property>
+    </bean>
+</beans>
+

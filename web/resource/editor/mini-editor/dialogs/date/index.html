@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>日期控件</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4//jscolor.min.js"></script>
+    <link rel="stylesheet" href="../flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="../flatpickr/themes/material_blue.css">
+    <link rel="stylesheet" href="../flatpickr/plugins/confirmDate/confirmDate.css">
+    <script src="../flatpickr/flatpickr.min.js"></script>
+    <script src="../flatpickr/plugins/confirmDate/confirmDate.js"></script>
+    <script src="../flatpickr/l10n/zh.js"></script>
+    <script src="../../plugins/layuiadmin/layui/layui.all.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+    <style>
+        .inputSetting {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+
+        <tr>
+            <th><span>最小值</span></th>
+            <th><span>最大值</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="minValue" placeholder="请输入最小值"></td>
+            <td><input type="text" id="maxValue" placeholder="请输入最大值"></td>
+        </tr>
+        <tr>
+            <th><span>输入格式</span><span class="label label-important">*</span></th>
+            <th><span>默认值</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="dateFormat">
+                    <option value="yyyy-MM-dd" selected="selected">yyyy-MM-dd</option>
+                    <option value="yyyy年MM月dd日">yyyy年MM月dd日</option>
+                    <option value="yyyy-MM-dd HH:mm">yyyy-MM-dd HH:mm</option>
+                    <option value="yyyy年MM月dd日HH时mm分">yyyy年MM月dd日HH时mm分</option>
+                    <option value="yyyy-MM-dd HH:mm:ss">yyyy-MM-dd HH:mm:ss</option>
+                    <option value="yyyy年MM月dd日HH时mm分ss秒">yyyy年MM月dd日HH时mm分ss秒</option>
+                    <option value="HH:mm">HH:mm</option>
+                    <option value="HH时mm分">HH时mm分</option>
+                    <option value="HH:mm:ss">HH:mm:ss</option>
+                    <option value="HH时mm分ss秒">HH时mm分ss秒</option>
+                </select>
+            </td>
+            <td><input type="text" id="defaultValue" placeholder="请输入默认值"></td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1">编辑模式</option>
+                    <option value="0" selected="selected">只读模式</option>
+                    <option value="2">隐藏模式</option>
+                </select>
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="inputFlag" type="checkbox"/> 是否input框 </label>
+            </td>
+            <td>
+                <label class="checkbox inline"><input id="rangeFlag" type="checkbox"/> 是否范围选择 </label>
+            </td>
+        </tr>
+        <tr class="inputSetting">
+            <th><span>宽度</span></th>
+            <th></th>
+        </tr>
+        <tr class="inputSetting">
+            <td><input type="text" id="width" placeholder="请输入默认值"></td>
+            <td><label class="checkbox inline"><input id="underlineFlag" type="checkbox"/> 是否有下划线 </label></td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    Date.prototype.Format = function (fmt) { //author: meizz
+        var o = {
+            "M+": this.getMonth() + 1,                 //月份
+            "d+": this.getDate(),                    //日
+            "H+": this.getHours(),                   //小时
+            "m+": this.getMinutes(),                 //分
+            "s+": this.getSeconds(),                 //秒
+            "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+            "S": this.getMilliseconds()             //毫秒
+        };
+        if (/(y+)/.test(fmt))
+            fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+        for (var k in o)
+            if (new RegExp("(" + k + ")").test(fmt))
+                fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+        return fmt;
+    };
+
+    function initFlatpickr() {
+        new Flatpickr(document.getElementById('minValue'), {
+            enableTime: true,
+            enableSeconds: true,
+            time_24hr: true,
+            allowInput: true,
+            static: true,
+            "locale": "zh" // locale for this instance only
+        });
+        var max = new Flatpickr(document.getElementById('maxValue'), {
+            enableTime: true,
+            enableSeconds: true,
+            time_24hr: true,
+            allowInput: true,
+            static: true,
+            "locale": "zh" // locale for this instance only
+        });
+        new Flatpickr(document.getElementById('defaultValue'), {
+            enableTime: true,
+            enableSeconds: true,
+            time_24hr: true,
+            allowInput: true,
+            static: true,
+            "locale": "zh" // locale for this instance only
+        });
+    }
+
+
+    (function (UE) {
+        var thePlugins = 'minidate',
+            ctrl, opt, domCtrl;
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            // rgbStr[1] = hex(rgbStr[1]);
+            // rgbStr[2] = hex(rgbStr[2]);
+            // rgbStr[3] = hex(rgbStr[3]);
+            console.log(rgbStr);
+            return rgbStr;
+        }
+        function hex(x) {
+            return ("0" + parseInt(x).toString(16)).slice(-2);
+        }
+        $('#inputFlag').change( function( e ) {
+            if ( this.checked ) {
+                $( '.inputSetting' ).show();
+            } else {
+                $( '.inputSetting' ).hide();
+            }
+        } );
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id')).attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#minValue').val(opt.min);
+                $('#maxValue').val(opt.max);
+                $('#defaultValue').val(opt.defvalue);
+                $('#dateFormat').val(opt.format);
+                if (opt.required === 1) {
+                    $G('requiredFlag').checked = true;
+                }
+                if (opt.saveFlag === 1) {
+                    $G('saveFlag').checked = true;
+                }
+                if (opt.rangeFlag === 1) {
+                    $G('rangeFlag').checked = true;
+                }
+                $('#editModeFlag').val(opt.mode);
+                if ( opt.inputFlag === 1 ) {
+                    $G( 'inputFlag' ).checked = true;
+                    $( '.inputSetting' ).show();
+                    $( '#width' ).val( opt.width );
+                    if ( opt.underlineFlag === 1 ) {
+                        $G( 'underlineFlag' ).checked = true;
+                    }
+                }
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+            }
+            initFlatpickr()
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.min = $('#minValue').val();
+            newOpt.max = $('#maxValue').val();
+            newOpt.format = $('#dateFormat').val();
+            newOpt.defvalue = $('#defaultValue').val();
+            newOpt.inputFlag = $G( 'inputFlag' ).checked ? 1 : 0;
+            newOpt.rangeFlag = $G( 'rangeFlag' ).checked ? 1 : 0;
+            if (newOpt.inputFlag === 1) {
+                newOpt.width = $( '#width' ).val();
+                newOpt.underlineFlag = $G( 'underlineFlag' ).checked ? 1 : 0;;
+            }
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.type = 'date';
+            var widthStyle, defaultValue;
+            if ( newOpt.rangeFlag === 1 ) {
+                defaultValue = new Date().Format( newOpt.format ) + ' - ' + new Date().Format( newOpt.format );
+            } else {
+                defaultValue = new Date().Format(newOpt.format);
+            }
+            if (!!domCtrl) {
+                //修改
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $G('ctrlId').value);
+                $(domValue).remove();
+                domCtrl.className = 'emr-ctrl' + (newOpt.required? ' ctrl-required': '') + (newOpt.mode === '2'? ' ctrl-hide': '');
+                //修改
+                ctrl.setOpt(newOpt);
+                domValue = UE.dom.domUtils.createElement(document, 'span', {
+                    class: 'emr-value',
+                    contenteditable: false,
+                    'emr-left': '[',
+                    'emr-right': ']',
+                });
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                if (newOpt.inputFlag === 1) {
+                    widthStyle = 'style="width:' + (newOpt.width? newOpt.width + 'px': '100px') + '"';
+                    domValue.innerHTML = '<input type="text" ' + widthStyle +
+                        ( newOpt.underlineFlag === 1? ' class="underline"': '' ) +
+                        ( newOpt.mode === "0"? 'readonly': '' ) +
+                        ' placeholder="' + newOpt.desc + '" />';
+                } else {
+                    domValue.innerHTML = defaultValue;
+                }
+                domValue.setAttribute('contenteditable', false);
+                domCtrl.appendChild(domValue);
+                window.parent.document.getElementById("ueditor_0").contentWindow.refreshListener('design');
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                //新增
+                domCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                    class: 'emr-ctrl' + (newOpt.required? ' ctrl-required': '') + (newOpt.mode === '2'? ' ctrl-hide': ''),
+                    contenteditable: false,
+                    id: $G('ctrlId').value,
+                    'emr-type': 'date',
+                    'emr-right': '.',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                var domValue = UE.dom.domUtils.createElement(document, 'span', {
+                    class: 'emr-value',
+                    contenteditable: false,
+                    'emr-left': '[',
+                    'emr-right': ']',
+                });
+                if (newOpt.inputFlag === 1) {
+                    widthStyle = 'style="width:' + (newOpt.width? newOpt.width + 'px': '100px') + '"';
+                    domValue.innerHTML = '<input type="text" ' + widthStyle +
+                        ( newOpt.underlineFlag === 1? ' class="underline"': '' ) +
+                        ( newOpt.mode === "0"? 'readonly': '' ) +
+                        '" placeholder="' + newOpt.desc + '" />';
+                } else {
+                    domValue.innerHTML = defaultValue;
+                }
+                domCtrl.appendChild(domValue);
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                editor.execCommand('insertControl', domCtrl, newOpt);
+                UE.plugins[thePlugins].domListener();
+                console.log(JSON.stringify(newOpt));
+            }
+        };
+    })(UE)
+</script>
+</body>
+
+</html>

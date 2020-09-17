@@ -1,0 +1,137 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+var dicMedicineGrade = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineGrade)');
+var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+var dicDrugTherapyTypeWestern = $.makeArray($('select[name="drugTherapyType"] option').map(function (value, elem) {
+    return {[$(elem).val()]: $(elem).text()}
+}));
+var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+var dicSysOrgHospital = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgHospital)');
+
+layui.use(['table', 'element', 'form'], function () {
+    var table = layui.table, form = layui.form;
+    var $ = layui.jquery, element = layui.element;
+    var calculativeHeight = Math.round($('#queryForm').height() + 13);
+    var techTable = table.render($.extend(basePageTable, {
+        elem: '#tech'
+        , id: 'tech'
+        , height: "full-" + calculativeHeight
+        , url: '$contextPath/report/syncOutpatientRecipeTechListData.jo' //数据接口
+        , cols: [[ //表头
+            {field: '' ,type: 'numbers'}
+            ,{
+                field: 'makeOrderDoctorName', title: '开方医生'
+            }, {field: 'makeOrderTime',title: '开方时间',width: 140, templet: function (res) {
+                    return layui.util.toDateString(res.makeOrderTime, 'yyyy-MM-dd HH:mm');
+                }
+            },{
+                field: 'orderName', title: '药品名称',width:180
+            },{
+                field:'medicineType',title:'药品类型',templet:function (res) {
+                    return  dicMedicineType[res.medicineType] == undefined ? '' : dicMedicineType[res.medicineType];
+                }
+            },{
+                field:'drugTherapyType',title:'用药类型',templet:function (res) {
+                    return dicDrugTherapyTypeWestern[res.drugTherapyType] == undefined ? '' : dicDrugTherapyTypeWestern[res.drugTherapyType];
+                }
+            },{
+                field:'dosageForm',title:'药品剂型',templet:function (res) {
+                    return dicDosageForm[res.dosageForm] == undefined ? '' : dicDosageForm[res.dosageForm];
+                }
+            },{
+                field:'doseWayCode',title:'药物使用',templet:function (res) {
+                    return  dicDoseWay[res.doseWayCode] == undefined ? '' : dicDoseWay[res.doseWayCode];
+                }
+            },{
+                field:'herbCookingName',title:'中草药煎煮法 ',minWidth:90
+            },{
+                field:'herbUsageWay',title:'中草药用药方法',minWidth:100,templet:function (res) {
+                    return dicHerbUsage[res.herbUsageWay] == undefined ? '' : dicHerbUsage[res.herbUsageWay];
+                }
+            },{field:'producingAreaId',title:'产地',minWidth:150,templet:function (res) {
+                    return dicProducingArea[res.producingAreaId] == undefined ? '' : dicProducingArea[res.producingAreaId];
+                }
+            },{
+                field:'medicineGrade',title:'档次',templet:function (res) {
+                    return dicMedicineGrade[res.medicineGrade] == undefined ? '' : dicMedicineGrade[res.medicineGrade];
+                }
+            },{
+                field:'medicineSpec',title:'规格',width:100
+            },{
+                field: 'giveTotalQuantity', title: '处方总量'
+            },{
+                field:'giveTotalQuantityUnit',title:'单位',width:50,templet:function (res) {
+                    return dicDrugNumUnit[res.minMedicineUnit] == undefined ? '' : dicDrugNumUnit[res.minMedicineUnit];
+                }
+            },{
+                field: 'actualPrice', title: '项目金额',align:'right'
+            },{
+                field: 'hospitalName', title: '医疗机构名称',minWidth:100,templet:function (res) {
+                	var hospitalName = dicSysOrgHospital[res.hospitalId] == undefined ? '' : dicSysOrgHospital[res.hospitalId];
+                	return res.hospitalName ? res.hospitalName : hospitalName;
+                }
+            }
+        ]]
+    }));
+
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 13);
+    }
+
+    //监听搜索
+    form.on('submit(btn_query)', function(data){
+        techTable.reload({
+            where: getQueryParams()
+        })
+    });
+
+    function getQueryParams() {
+        var params = $.extend({
+            visitCardNo: '',
+            makeOrderDoctorId: '',
+            doctorOrderType: '',
+            outpatientOfficeId: '',
+            patientName: '',
+            orderGroupNo: '',
+            orderName:'',
+            payFeeFlag:'',
+            makeOrderTimeBegin: '',
+            makeOrderTimeEnd: '',
+            drugTherapyType: '',
+            dosageForm: ''
+        }, common.serializeObject($('#queryForm'), ['makeOrderTimeRange']));
+        return params;
+    }
+    //日期时间范围
+    laydate.render({
+        elem: '#makeOrderTimeRange',trigger: 'click'
+        , range: true
+    });
+
+    //新增事件
+    $('#btn_add').click(function() {
+        editBasDisease();
+    });
+    //编辑
+    function editBasDisease(data) {
+        var title = '导出数据'
+        var iframeEnvironment = 'I4028804601699abb9abbf0080169bd1596c93925';
+        var content = diResource + iframeEnvironment
+        //true 执行
+        if (data) {
+            title = data.diseaseName;
+            content += '?regionPopuId=' + data.regionPopuId;
+        }
+        common.open(content, title, {
+            area : [ '1532px', '80%' ],
+            scroll:'yes'
+        });
+    }
+
+})
+</script>

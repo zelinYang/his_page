@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-药品/耗材-药品-药品信息管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        body {
+            overflow: hidden
+        }
+
+        .full-scroll {
+            height: calc(100% - 60px)
+        }
+
+        .tool-bottom-fixed {
+            bottom: 5px;
+        }
+
+        @media screen and (max-width: 675px) {
+            .layui-card-body {
+                padding: 10px 0px;
+            }
+
+            .layui-form-label {
+                padding-left: 0;
+            }
+
+            .layui-form-item .layui-input-inline {
+                width: 160px;
+            }
+
+            .layui-form-item .layui-input-inline.width-full {
+                width: calc(100% - 106px);
+            }
+        }
+
+        label.layui-form-label {
+            width: 120px;
+            text-overflow: inherit!important;
+        }
+
+        .input2 {
+            width: calc(2px * 2 + (140px + 180px) * 2 - 140px) !important;
+        }
+
+        .layui-elem-field legend {
+            font-size: 14px;
+            color: #05a59c;
+            font-weight: bold;
+        }
+
+        .label-red {
+            color: #ff4500 !important;
+        }
+
+        /*新增表单加入点击按钮*/
+        .layui-form-item .layui-input-inline > button.layui-btn {
+            position: absolute;
+            right: 0;
+            top: 0;
+            border: #e6e6e6 1px solid;
+            cursor: pointer;
+            color: #000;
+            font-weight: bold;
+            background: #f1f1f1;
+            padding: 0 6px;
+            height: 30px;
+            line-height: 1;
+        }
+        .tableSelect {
+            width: 500px;
+        }
+        /* 表格警告框 */
+        .table-danger {border-color:#FF5722 !important;}
+
+        .medicineInstructions {
+            height: 150px;
+        }
+
+        .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 3px;
+            cursor: pointer;
+        }
+
+        input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 3px;
+            right: 6px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid full-scroll">
+    <form class="layui-form" id="medicineForm">
+        #formHiddenInput("medicineId" "$!medicine.medicineId")
+        #formHiddenInput("specialMedicineFlag" "$!medicine.specialMedicineFlag" "id='specialMedicineFlag'")
+        <div class="layui-card">
+            <!--<div class="layui-card-header">信息</div>-->
+            <div class="layui-card-body">
+                <fieldset class="layui-elem-field">
+                    <legend>基本属性</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            #if(${medicine})
+                            <div class="layui-inline">
+                                <label class="layui-form-label">院内收费编码</label>
+                                <div class="layui-input-inline">
+                                    #formTextInput("" "M$!medicine.medicineId" "readonly class='layui-input'")
+                                </div>
+                            </div>
+                            #end
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品名称</label>
+                                <div class="layui-input-inline input2">#formTextInput("medicineName" "#htmlEscape($!{medicine.medicineName})" "class='layui-input' id='medicineName' lay-verify='required' maxlength='50' autocomplete='off' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品药物分类</label>
+                                <div class="layui-input-inline ">
+                                    #formSingleSelectSearchFirstNone("medicineType" "$!{medicine.medicineType}" $!{dicData.dicMedicineTypeMedicine} "lay-filter='medicineType' id='medicineType' lay-verify='required' lay-search " "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品处方分类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("medicineRecipeClassify" "$!{medicine.medicineRecipeClassify}" ${dicData.dicMedicineRecipeClassify} "lay-filter='medicineRecipeClassify' id='medicineRecipeClassify' lay-verify='required' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()医嘱项目类型</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("doctorOrderType" "$!{medicine.doctorOrderType}" ${dicData.dicDoctorOrderTypeMedicine} "lay-filter='doctorOrderType' id='doctorOrderType' lay-verify='required' lay-search" "")
+                                </div>
+                            </div>
+                            <script type="text/html" id="specialMedicineLevelTpl">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">毒麻级别</label>
+                                    <div class="layui-input-inline">#formSingleSelectSearchFirstNone("specialMedicineLevel" "$!{medicine.specialMedicineLevel}" ${dicData.dicSpecialMedicineLevel} "  lay-search" "")</div>
+                                </div>
+                            </script>
+                            <script type="text/html" id="antibioticTpl">
+                                <div class="layui-inline" >
+                                    <label class="layui-form-label">#requiredTag()抗菌药物级别</label>
+                                    <div class="layui-input-inline">#formSingleSelectSearchFirstNone("antibioticLevel" "$!{medicine.antibioticLevel}" ${dicData.dicAntibioticLevel} " lay-search lay-verify='required'" "")</div>
+                                </div>
+                                <div class="layui-inline" >
+                                    <label class="layui-form-label">抗菌药物类型</label>
+                                    <div class="layui-input-inline">#formSingleSelectSearchFirstNone("antibioticType" "$!{medicine.antibioticType}" ${dicData.dicAntibioticType} " lay-search " "")</div>
+                                </div>
+                                <div class="layui-inline" >
+                                    <label class="layui-form-label">抗菌药物DDDS值</label>
+                                    <div class="layui-input-inline">#formTextInput("antibioticDdds" "#htmlEscape($!{medicine.antibioticDdds})" " class='layui-input' id='antibioticDdds' maxlength='30' autocomplete='off' ")</div>
+                                </div>
+                                <div class="layui-inline" >
+                                    <label class="layui-form-label">抗菌药物DDDD值</label>
+                                    <div class="layui-input-inline">#formTextInput("antibioticDddd" "#htmlEscape($!{medicine.antibioticDddd})" "class='layui-input' id='antibioticDddd' autocomplete='off'  maxlength='30' ")</div>
+                                </div>
+                            </script>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()账簿类别</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("accountBookType" "$!{medicine.accountBookType}" ${dicData.dicAccountBookTypeMedicine} "lay-search lay-verify='required'" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()门诊费用分类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("outpatientFeeCode" "$!{medicine.outpatientFeeCode}" $!{dicData.dicOutpatientFeeCodeMedicine} "lay-search lay-verify='required' " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()住院费用分类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("inhospitalChargeGroupCode" "$!{medicine.inhospitalChargeGroupCode}" $!{dicData.dicInhospitalChargeGroupCodeMedicine} "lay-search lay-verify='required'
+                                    " "")
+                                </div>
+                            </div>
+
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()病案首页费用分类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("docChargeGroupCode" "$!{medicine.docChargeGroupCode}" ${dicData.dicDocChargeGroupCodeMedicine} "lay-search lay-verify='required' " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">化学名</label>
+                                <div class="layui-input-inline">#formTextInput("chemicalName" "#htmlEscape($!{medicine.chemicalName})" "class='layui-input' id='chemicalName' autocomplete='off' maxlength='64' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">商品名</label>
+                                <div class="layui-input-inline">#formTextInput("tradeName" "#htmlEscape($!{medicine.tradeName})" "class='layui-input' id='tradeName' maxlength='64' autocomplete='off' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药物使用途径</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("doseWayCode" "$!{medicine.doseWayCode}" ${dicData.dicDoseWay} " maxlength='10' lay-search" "")</div>
+                            </div>
+                            <script type="text/html" id="drugTherapyTypeWesternTpl">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()药物用药分类</label>
+                                    <div class="layui-input-inline">
+                                        #formSingleSelectSearchFirstNone("drugTherapyType" "$!{medicine.drugTherapyType}" ${dicData.dicDrugTherapyTypeWestern} " lay-search lay-verify='required' " "")
+                                    </div>
+                                </div>
+                            </script>
+                            <script type="text/html" id="drugTherapyTypeChineseTpl">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()药物用药分类</label>
+                                    <div class="layui-input-inline">
+                                        #formSingleSelectSearchFirstNone("drugTherapyType" "$!{medicine.drugTherapyType}" ${dicData.dicDrugTherapyTypeChinese} " lay-search lay-verify='required' " "")
+                                    </div>
+                                </div>
+                            </script>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">发药方式</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("doseMode" "$!{medicine.doseMode}" ${dicData.dicDispensingWay} " maxlength='10' lay-search" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品性质（监管类型）</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("medicineAttribute" "$!{medicine.medicineAttribute}" $!{dicData.dicMedicineAttribute} "lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label" lay-tips="国家药品编码本位码">国家药品编码本位码</label>
+                                <div class="layui-input-inline" >#formTextInput("medicineCode" "#htmlEscape($!{medicine.medicineCode})" "class='layui-input' id='medicineCode' maxlength='20' autocomplete='off' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品国标码</label>
+                                <div class="layui-input-inline">#formTextInput("internationalCode" "#htmlEscape($!{medicine.internationalCode})" " class='layui-input' id='internationalCode' maxlength='64' autocomplete='off' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品甲乙丙类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("medicineFirstType" "$!{medicine.medicineFirstType}" ${dicData.dicMedicineFirstType} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label label-red">#requiredTag()使用限制</label>
+                                <div class="layui-input-inline">
+                                    <!--默认为公用-->
+                                    #if(!$!{medicine.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} == $!{medicine.hospitalId})
+                                    #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                                    #else
+                                    #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                                    #end
+                                    #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary' class='layui-input' check-msg='请选择使用限制' lay-verify='reqRedio'")
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="layui-elem-field" style="background: #FFFFCC;">
+                    <legend>包装规格</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品规格</label>
+                                <div class="layui-input-inline">#formTextInput("medicineSpec" "#htmlEscape($!{medicine.medicineSpec})" " autocomplete='off' id='medicineSpec' maxlength='10' class='layui-input' lay-verify='required' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品剂型</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("dosageForm" "$!{medicine.dosageForm}" ${dicData.dicDosageForm} " lay-verify='required' maxlength='10' lay-search" "")</div>
+                            </div>
+
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品剂量</label>
+                                <div class="layui-input-inline">#formFloInput("medicineDosage" "$!{medicine.medicineDosage}" " id='medicineDosage' autocomplete='off' maxlength='10' class='layui-input' lay-verify='required' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()剂量单位</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("dosageUnit" "$!{medicine.dosageUnit}" ${dicData.dicDrugNumUnitDosageUnit} " lay-search lay-verify='required'" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()包装单位</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("medicineUnit" "$!{medicine.medicineUnit}" ${dicData.dicDrugNumUnit} " lay-search lay-verify='required'" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()最小单位</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("minMedicineUnit" "$!{medicine.minMedicineUnit}" ${dicData.dicDrugNumUnit} " lay-search lay-verify='required'" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()最小包装数量</label>
+                                <div class="layui-input-inline">#formTextInput("minMedicinePack" "$!{medicine.minMedicinePack}" " id='minMedicinePack' autocomplete='off' maxlength='4' class='layui-input' lay-verify='required' ")</div>
+                            </div>
+
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品档次</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("medicineGrade" "$!{medicine.medicineGrade}" ${dicData.dicMedicineGrade} " lay-search" "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()是否可拆包</label>
+                                <div class="layui-input-inline">#formRadioGroup("outpatientUnpackFlag" "$!{medicine.outpatientUnpackFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否可拆包'")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()高危药品</label>
+                                <div class="layui-input-inline">#formRadioGroup("riskMedicineFlag" "$!{medicine.riskMedicineFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择高危药品'")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()注射药品</label>
+                                <div class="layui-input-inline">#formRadioGroup("injectionFlag" "$!{medicine.injectionFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择注射药品'")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">大型输液标志</label>
+                                <div class="layui-input-inline">#formRadioGroup("transfuseFlag" "$!{medicine.transfuseFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">肿瘤化疗用药</label>
+                                <div class="layui-input-inline">#formRadioGroup("tumorMedicineFlag" "$!{medicine.tumorMedicineFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">急诊用药</label>
+                                <div class="layui-input-inline">#formRadioGroup("urgentUsageFlag" "$!{medicine.urgentUsageFlag}" ${dicData.dicYesNo} " ")</div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">制剂标志</label>
+                                <div class="layui-input-inline">#formRadioGroup("preparationFlag" "$!{medicine.preparationFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">标准文号(制剂)</label>
+                                <div class="layui-input-inline">#formTextInput("preparationFileNo" "$!{medicine.preparationFileNo}" " id='preparationFileNo' autocomplete='off' maxlength='40' class='layui-input' ")</div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="layui-elem-field">
+                    <legend>其他</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label" lay-tips="国家基本用药目录分类">国家基本用药目录分类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("nationMedicineDirClassify" "$!{medicine.nationMedicineDirClassify}" ${dicData.dicNationMedicineDirClassify} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">国家基本用药目录</label>
+                                <div class="layui-input-inline">#formTextInput("nationMedicineDir" "$!{medicine.nationMedicineDir}" "class='layui-input' autocomplete='off' maxlength='10' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">标准零售价</label>
+                                <div class="layui-input-inline">#formFloInput("standardRetailPrice" "$!{medicine.standardRetailPrice}" "class='layui-input' autocomplete='off' maxlength='18'")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">批发价</label>
+                                <div class="layui-input-inline">#formTextInput("tradePrice" "$!{medicine.tradePrice}" "class='layui-input' id='tradePrice' autocomplete='off' maxlength='18' ")</div>
+                            </div>
+                            #if(${medicine})
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()是否有效</label>
+                                <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{medicine.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")</div>
+                            </div>
+                            #end
+                            <div class="layui-inline">
+                                <label class="layui-form-label">报告用药</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("reportDrugUseFlag" "$!{medicine.reportDrugUseFlag}" ${dicData.dicReportDrugUseFlag} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">报告科室</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("reportOfficeId" "$!{medicine.reportOfficeId}" ${reportOfficesMap} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">长期备案</label>
+                                <div class="layui-input-inline">#formRadioGroup("longTermFilingFlag" "$!{medicine.longTermFilingFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">紧急备案</label>
+                                <div class="layui-input-inline">#formRadioGroup("urgentFilingFlag" "$!{medicine.urgentFilingFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">是否招标药品</label>
+                                <div class="layui-input-inline">#formRadioGroup("bidFlag" "$!{medicine.bidFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">招标文号</label>
+                                <div class="layui-input-inline">#formTextInput("bidFileNo" "$!{medicine.bidFileNo}" "class='layui-input' id='bidFileNo' autocomplete='off' maxlength='100' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">限制级起始日期</label>
+                                <div class="layui-input-inline">#formTextInput("limitStartDate" "$!{medicine.limitStartDate}" "class='layui-input' id='limitStartDate' autocomplete='off' maxlength='20' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">限制级终止日期</label>
+                                <div class="layui-input-inline">#formTextInput("limitEndDate" "$!{medicine.limitEndDate}" "class='layui-input' id='limitEndDate' autocomplete='off' maxlength='20' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">备注</label>
+                                <div class="layui-input-inline">#formTextInput("remark" "$!{medicine.remark}" "class='layui-input' id='remark' autocomplete='off' maxlength='20' ")</div>
+                            </div>
+                            <!-- 药品手册图片-->
+                            #formHiddenInput("manualPic" "#htmlEscape($!{medicine.manualPic})" " autocomplete='off' id='manualPic' lay-verify='picLength' maxlength='1000' class='layui-input' ")
+                            <div class="layui-upload layui-hide">
+                                <button type="button" class="layui-btn" id="test1">药品手册图片</button>
+                                <div class="layui-upload-list">
+                                    <img class="layui-upload-img" #if($!{medicine.manualPic}) src="$!{medicine.manualPic}" #end id="demo1">
+                                    <p id="demoText">最大不能超过1KB</p>
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药品产地</label>
+                                <div class="layui-input-inline input2" >
+                                    #formHiddenInput("producingAreaId" "$!{medicine.producingAreaId}" "id='producingAreaId' ")
+                                    #formTextInput("producingAreaName" "$!{medicine.producingAreaName}" " id='producingAreaName' ts-selected='$!{medicine.producingAreaId}' lay-verify='required' class='layui-input '
+                                    maxlength='100' autocomplete='off' style='background-color: #fff;' required")
+                                    <i class="layui-icon layui-icon-close caller-dump-icon caller-icon " lay-tips="清空"></i>
+                                    <i class="layui-icon layui-icon-more choose" lay-tips="选择药品产地"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品别称</label>
+                                <div class="layui-input-inline input2">
+                                    #formHiddenInput("medicineOtherName" "#htmlEscape($!{medicine.medicineOtherName})" "id='medicineOtherName' lay-verify='medicineOtherName' class='layui-textarea' maxlength='200' autocomplete='off'
+                                    placeholder='请输入内容，字数最多200字；多个别名用逗号分隔'")
+                                    <table id="medicineOtherNameListGrid" class="layui-table-tabs" lay-filter="medicineOtherNameListGrid"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="layui-elem-field">
+                    <legend>医保</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">省医保项目编码</label>
+                                <div class="layui-input-inline">#formTextInput("provinceInsuranceCode" "$!{medicine.provinceInsuranceCode}" "class='layui-input' id='provinceInsuranceCode' autocomplete='off' maxlength='30' ")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">市医保项目编码</label>
+                                <div class="layui-input-inline">#formTextInput("cityInsuranceCode" "#htmlEscape($!{medicine.cityInsuranceCode})" "class='layui-input' id='cityInsuranceCode' autocomplete='off' maxlength='30' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">新农合项目编码</label>
+                                <div class="layui-input-inline">#formTextInput("countyInsuranceCode" "$!{medicine.countyInsuranceCode}" "class='layui-input' id='countyInsuranceCode' autocomplete='off' maxlength='30' ")</div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">省医保甲乙丙类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("provinceInsuranceType" "$!{medicine.provinceInsuranceType}" ${dicData.dicProvinceInsuranceType} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">市医保甲乙丙类</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("cityInsuranceType" "$!{medicine.cityInsuranceType}" ${dicData.dicCityInsuranceType} " lay-search " "")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">物价局项目编码</label>
+                                <div class="layui-input-inline">#formTextInput("priceBureauCode" "$!{medicine.priceBureauCode}" "class='layui-input' id='priceBureauCode' autocomplete='off' maxlength='30' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药监局项目编码</label>
+                                <div class="layui-input-inline">#formTextInput("fdaCode" "$!{medicine.fdaCode}" "class='layui-input' id='fdaCode' autocomplete='off' maxlength='30' ")</div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="layui-elem-field">
+                    <legend>皮试</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label label-red">是否需要皮试</label>
+                                <div class="layui-input-inline ">
+
+                                    #formRadioGroup("needSkinTestFlag" "$!{medicine.needSkinTestFlag}" ${dicData.dicYesNo} "lay-filter='needSkinTestFlag'")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item needSkinTestInfo">
+                            <div class="layui-inline">
+                                <label class="layui-form-label label-red" >#requiredTag()皮试关联药品</label>
+                                <div class="layui-input-inline input2">
+                                    #formHiddenInput("skinTestMedicineId" "$!{medicine.skinTestMedicineId}" " id='skinTestMedicineId' lay-verify='skinTestMedicine'")
+                                    #formHiddenInput("skinTestMedicineName" "$!{medicine.skinTestMedicineName}" " id='skinTestMedicineName' ")
+                                    <table id="skinTestMedicineListGrid" class="layui-table-tabs" lay-filter="skinTestMedicineListGrid"></table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+                <fieldset class="layui-elem-field">
+                    <legend>高、低存储</legend>
+                    <div class="layui-field-box">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药库高存储数量</label>
+                                <div class="layui-input-inline">#formTextInput("highStockCount" "$!{medicine.highStockCount}" " id='highStockCount' autocomplete='off' maxlength='10' class='layui-input' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药库低存储数量</label>
+                                <div class="layui-input-inline">#formTextInput("lowStockCount" "$!{medicine.lowStockCount}" " id='lowStockCount' autocomplete='off' maxlength='10' class='layui-input' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药房低存储数量</label>
+                                <div class="layui-input-inline">#formTextInput("pharmacyLowCount" "$!{medicine.pharmacyLowCount}" "class='layui-input' id='pharmacyLowCount' autocomplete='off' maxlength='10' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药房高存储数量</label>
+                                <div class="layui-input-inline">#formTextInput("pharmacyHighCount" "$!{medicine.pharmacyHighCount}" "class='layui-input' id='pharmacyHighCount' autocomplete='off' maxlength='10' ")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()病房发药取整方式</label>
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("wardDispensingWay" "$!{medicine.wardDispensingWay}" $!{dicData.dicWardDispensingWay} "lay-search lay-verify='required' " "")</div>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">用药嘱咐(说明)</label>
+                    <div class="layui-input-inline width-full">#formTextarea("medicineUsage" "#htmlEscape($!{medicine.medicineUsage})" "id='medicineUsage' class='layui-textarea' maxlength='500' autocomplete='off'
+                        placeholder='请输入内容，字数最多500字'")
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <label class="layui-form-label">药品使用说明</label>
+                    <div class="layui-input-inline width-full">#formTextarea("medicineInstructions" "#htmlEscape($!{medicine.medicineInstructions})" "id='medicineInstructions' class='layui-textarea medicineInstructions' maxlength='4000' autocomplete='off'
+                        placeholder='请输入内容，字数最多40000字'")
+                    </div>
+                </div>
+                <div class="tool-bottom-fixed">
+                    <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs " lay-tips="上移" lay-event="btn_up" style="transform: rotate(180deg);"> <i class="layui-icon layui-icon-triangle-d" style="margin: 0;"></i></a>
+    <a class="layui-btn layui-btn-xs " lay-tips="下移" lay-event="btn_down"><i class="layui-icon layui-icon-triangle-d" style="margin: 0;"></i></a>
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete"><i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./medicine/medicineEdit.js.vm")
+</body>
+</html>

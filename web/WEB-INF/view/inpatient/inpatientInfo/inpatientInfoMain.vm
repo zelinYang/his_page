@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style>
+    .member-left{
+        width:130px;
+        text-align: left;
+        background: initial;
+        background-color: #eaedf1;
+    }
+    div#leftMenu {
+        padding-top: 0;
+    }
+    .member-content{
+        width:calc(100% - 130px);
+        overflow: hidden;
+    }
+    .member-left .icon-mune-list a {padding: 12px 5px 12px 5px;margin:0}
+    .mune-this {
+        background-color:#fff;
+    }
+    .member-left .icon-mune-list a i {
+        margin-right: 5px;
+        width: 16px;
+        height: 16px;
+        display: inline-block;
+        font-size: 12px;
+     }
+    .member-left .icon-mune-list a i:before { top: -2px; left: 2px; position: relative;}
+
+</style>
+</head>
+<body class="white-bg " style="overflow:hidden;">
+    <div class="member-left icon-mune-list">
+        <div id="leftMenu" class="icon-mune-list">
+	       <a target="info-body" href="../patient/patientEditMain.do?optype=$!optype&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+	            <i class="iconfont icon-ziliao"></i>基本信息
+	        </a>
+	       <a target="info-body" href="../inpatient/baseInpatientInfo.do?optype=$!optype&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+	            <i class="iconfont icon-ziliao"></i>住院信息
+	        </a>
+           <a target="info-body" id="babyRecord" href="../inpatient/babyDeliveryRecordList.do?optype=$!optype&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+                <i class="iconfont icon-ziliao"></i>分娩记录信息
+                #formHiddenInput("currentOfficeName" "$!{inpatientInhospital.currentOfficeName}" " id='currentOfficeName' ")
+            </a>
+	       <a target="info-body" href="../patient/patientFile.do?optype=$!optype&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+	            <i class="iconfont icon-ziliao"></i>患者档案
+	        </a>
+##           <a target="info-body" href="../emr/0000/getPatientEmrByDateGroup.do?&view=patient/emr/commonEmrShowList&emrProperty=3&patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId&registerId=$!inpatientInhospital.registerId">
+##                <i class="iconfont icon-ziliao"></i>医疗文书
+##            </a>
+<!--
+	       <a target="info-body" href="../emr/getPatientEmrByDateGroupPage.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+	            <i class="iconfont icon-ziliao"></i>医疗文书
+	        </a>
+-->
+	       <a target="info-body" href="../emr/commonEmrTreeView.do?patientId=$!{inpatientInhospital.patientId}&inhospitalId=$!{inpatientInhospital.inhospitalId}&emrProperty=$!{CONST.AppConstants.EMR_PROPERTY_CURRENT}&view=patient/emr/commonEmrView">
+	            <i class="iconfont icon-ziliao"></i>医疗文书
+	        </a>
+	       <a target="info-body" href="../inpatient/inpatientOrderList.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+                <i class="iconfont icon-ziliao"></i>医嘱查看
+            </a>
+              <a target="info-body" href="$!contextPath/inpatient/diagnosisShow.do?saveBtn=0&inhospitalId=$!inpatientInhospital.inhospitalId">
+                <i class="iconfont icon-ziliao"></i>诊断信息
+            </a>
+            <a target="info-body" href="../inpatient/inpatientFeeItemMain.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+                <i class="iconfont icon-ziliao"></i>帐卡
+            </a>
+                    <a target="info-body" href="../register/showTimeAxis.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId">
+                <i class="iconfont icon-ziliao"></i>患者360
+            </a>
+
+        </div>
+    </div>
+    <div class="member-content ">
+        <iframe name="info-body" width="100%" height="100%" scrolling="auto" frameborder="0" ></iframe>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./inpatient/inpatientInfo/inpatientInfoMain.js.vm")
+</html>

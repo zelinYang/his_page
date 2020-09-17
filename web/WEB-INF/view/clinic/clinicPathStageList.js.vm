@@ -1,0 +1,363 @@
+<script>
+	var generateStageTable, generateActivityTable;
+	var dicPathStageType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathStageType)');
+	var dicPathActivityType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathActivityType)');
+	var dicTechClinicLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicTechClinicLevel)');
+	var dicActivityNode = JSON.parse('$dicTools.changeMapToJson($dicData.dicActivityNode)');
+	var dicDoctorNurseFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorNurseFlag)');
+	var dicActivityClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicActivityClassify)');
+	var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+	var dicClinicEarlyWarningFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicClinicEarlyWarningFlag)');
+	var dicActivityGenWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicActivityGenWay)');
+	var clinicPathId = '$!{clinicPathId}';
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'table', 'autocomplete'], function () {
+		var form = layui.form, element = layui.element, table = layui.table;
+		var $ = layui.$;
+		var stageTable, activityTable;
+		var clinicPathStageId;
+		form.render('select');
+
+		$(function () {
+			generateStageTable(clinicPathId);
+		})
+
+		function getTableHeight() {
+			return ($('body').height() - 10)
+		}
+
+		function generateStageTable(clinicPathId) {
+			var stageTableUrl = contextPath + '/clinic/pathStagePageData.jo?clinicPathId=' + (clinicPathId? clinicPathId: '');
+			stageTable = table.render({
+				url: stageTableUrl,
+				toolbar: '#toolbarDemo', //开启头部工具栏，并为其绑定左侧模板
+				defaultToolbar: [],
+				id: 'stageTable',
+				elem: '#stageTable',
+				height: getTableHeight(),
+				page: true,
+				limit : 20,
+				request: {pageName: 'pageNumber', limitName: 'pageSize'},
+				done: function (res, curr, count) {
+					// 去掉表格头部的全选及取消全选功能
+					common.removeHeadCheckbox('clinicPathStageId');
+					$(".layui-table-view[lay-id='mainTable'] .layui-table-body tr[data-index='0'] .layui-form-radio").click();
+				},
+				cols: [[
+					{type: 'radio', field: 'clinicPathStageId', fixed:'left'},
+					{
+						field: 'pathStageContent'
+						, title: '名称'
+						, minWidth: 120
+						, fixed:'left'
+					}, {
+						field: 'pathStageType'
+						, title: '标志'
+						, width: 60
+						, templet: function (res) {
+							if (res.pathStageType) {
+								return dicPathStageType[res.pathStageType];
+							}
+							return '';
+						}
+					}, {
+						field: 'exeStandard'
+						, title: '执行标准'
+						, width: 60
+					}, {
+						field: 'validPeriod'
+						, title: '有效期限'
+						, width: 60
+					},
+					{fixed: 'right', title:'操作', align: 'center', toolbar: '#stageBarDemo', width: 200}
+				]]
+			});
+			//点击选择
+			table.on('row(stageTable)', function (obj) {
+				selectedOrg = obj.tr;
+				obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+				obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+				var index = obj.tr.data('index');
+				var thisData = table.cache.stageTable;//tableName 表名
+				//重置数据单选属性
+				layui.each(thisData, function(i, item){
+					if(index === i){
+						item.LAY_CHECKED = true;
+					} else {
+						delete item.LAY_CHECKED;
+					}
+				});
+				form.render('radio');
+
+				clinicPathStageId = obj.data.clinicPathStageId;
+				generateActivityTable(obj.data.clinicPathStageId);
+			});
+			//头工具栏事件
+			table.on('toolbar(stageTable)', function(obj){
+				var checkStatus = table.checkStatus(obj.config.id);
+				switch(obj.event){
+					case 'add':
+						addClinicPathStage();
+						break;
+					case 'refresh':
+						stageTable.reload();
+						break;
+				}
+			});
+			table.on('tool(stageTable)', function(obj){
+				if (obj.event === 'del'){
+					layer.confirm('删除阶段会把阶段的所有活动一起删除，确定删除吗？', function(index){
+						common.post(contextPath + '/clinic/deleteClinicPath.jo', {clinicPathId: obj.data.clinicPathId}, function (result){
+							table.reload('mainTable'); //数据刷新
+							layer.close(index);
+						});
+					});
+				}
+				if (obj.event === 'edit') {
+					addClinicPathStage(obj.data.clinicPathStageId);
+				}
+				if (obj.event === 'read') {
+					layer.open({
+						type: 2
+						,title: '阶段详情'
+						,content: contextPath + '/clinic/clinicPathStageShow.do?clinicPathStageId=' + obj.data.clinicPathStageId
+						,area: ['600px', '500px']
+					});
+				}
+				if (obj.event === 'up') {
+					var params = {
+						clinicPathStageId: obj.data.clinicPathStageId,
+						clinicPathId: obj.data.clinicPathId,
+						sortFlag: 'up'
+					}
+					common.requestServer(contextPath + '/clinic/updateClinicPathStageSort.jo', params, function (result) {
+						if (result.code === "0") {
+							table.reload('stageTable');
+						} else {
+							common.alertError(result.msg);
+						}
+					});
+				}
+				if (obj.event === 'down') {
+					var params = {
+						clinicPathStageId: obj.data.clinicPathStageId,
+						clinicPathId: obj.data.clinicPathId,
+						sortFlag: 'down'
+					}
+					common.requestServer(contextPath + '/clinic/updateClinicPathStageSort.jo', params, function (result) {
+						if (result.code === "0") {
+							table.reload('stageTable');
+						} else {
+							common.alertError(result.msg);
+						}
+					});
+				}
+			});
+		};
+
+		// 新增临床路径阶段
+		function addClinicPathStage(clinicPathStageId) {
+			var clinicPathId = $("#clinicPathId").val();
+			var titleStr = clinicPathStageId ? '修改临床路径阶段' : '新增临床路径阶段';
+			layer.open({
+				type: 2
+				, title: titleStr
+				, content: contextPath + '/clinic/clinicPathStageEdit.do?clinicPathId=' + clinicPathId + '&clinicPathStageId=' + (clinicPathStageId? clinicPathStageId: '')
+				, area: ['600px', '500px']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						console.log(field);
+						// var arr = [];
+						// layero.find('iframe').contents().find("input:checkbox[name='pathStageType']:checked").each(function (i) {
+						//     arr.push($(this).val());
+						// });
+						// if (arr.length === 0) {
+						//     common.msg('请选择阶段类型', '2');
+						//     return;
+						// }
+						// field['pathStageType'] = arr.join(',')
+						$.post(contextPath + "/clinic/saveClinicPathStage.jo", field, function (result) {
+							if (result.code === "0") {
+								common.msg("保存成功!", 1, function () {
+									layer.close(index);
+									table.reload('stageTable'); //数据刷新
+								});
+							} else {
+								common.alert(result.msg, 0);
+							}
+						}, "json");
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		}
+
+		generateActivityTable = function(clinicPathStageId) {
+			var activityTableUrl = contextPath + '/clinic/pathActivityPageData.jo?clinicPathStageId=' + (clinicPathStageId? clinicPathStageId: '');
+			activityTable = table.render({
+				url: activityTableUrl,
+				toolbar: '#toolbarDemo', //开启头部工具栏，并为其绑定左侧模板
+				defaultToolbar: [],
+				id: 'activityTable',
+				elem: '#activityTable',
+				height: getTableHeight() - 34,
+				page: true,
+				limit : 20,
+				request: {pageName: 'pageNumber', limitName: 'pageSize'},
+				done: function (res, curr, count) {
+					// 去掉表格头部的全选及取消全选功能
+					common.removeHeadCheckbox('clinicPathActivityId');
+					// if (firstClick) {
+					//     $(".layui-table-view[lay-id='mainTable'] .layui-table-body tr[data-index='0'] .layui-form-radio").click();
+					//     firstClick = false;
+					// }
+				},
+				cols: [[
+					{type: 'radio', field: 'clinicPathActivityId'},
+					{
+						field: 'activityContent'
+						, title: '活动名称'
+					}, {
+						field: 'activityType'
+						, title: '项目分类'
+						, width: 80
+						, templet: function (res) {
+							if (res.activityType) {
+								return dicPathActivityType[res.activityType];
+							}
+							return '';
+						}
+					}, {
+						field: 'activityGenWay'
+						, title: '生成方式'
+						, width: 80
+						, templet: function (res) {
+							if (res.activityGenWay) {
+								return dicActivityGenWay[res.activityGenWay];
+							}
+							return '';
+						}
+					}, {
+						field: 'activityProperty'
+						, title: '项目类别'
+						, width: 80
+						, templet: function (res) {
+							if (res.activityProperty) {
+								return dicDoctorNurseFlag[res.activityProperty];
+							}
+							return '';
+						}
+					},
+					{fixed: 'right', align: 'center', title:'操作', toolbar: '#activityBarDemo', width: 120}
+				]]
+			});
+			//头工具栏事件
+			table.on('toolbar(activityTable)', function(obj){
+				var checkStatus = table.checkStatus(obj.config.id);
+				switch(obj.event){
+					case 'add':
+						addClinicPathActivity(clinicPathStageId, '');
+						break;
+					case 'refresh':
+						stageTable.reload();
+						break;
+				}
+			});
+
+			table.on('row(activityTable)', function (obj) {
+				obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+				obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+				form.render('radio');
+			});
+
+			table.on('tool(activityTable)', function(obj){
+				if (obj.event === 'del'){
+					layer.confirm('确定删除这条数据吗？', function(index){
+						common.post(contextPath + '/clinic/deleteClinicPath.jo', {clinicPathId: obj.data.clinicPathId}, function (result){
+							table.reload('mainTable'); //数据刷新
+							layer.close(index);
+						});
+					});
+				} else if (obj.event === 'edit') {
+					addClinicPathActivity(clinicPathStageId, obj.data.clinicPathActivityId);
+				} else if (obj.event === 'read') {
+					layer.open({
+						type: 2
+						,title: '活动详情'
+						,content: contextPath + '/clinic/clinicPathActivityShow.do?clinicPathActivityId=' + obj.data.clinicPathActivityId
+						,area: ['98%', '98%']
+					});
+				}
+			});
+		};
+
+		// 新增活动
+		function addClinicPathActivity(clinicPathStageId, clinicPathActivityId) {
+			var titleStr = clinicPathActivityId ? '修改临床路径活动' : '新增临床路径活动';
+			layer.open({
+				type: 2
+				, title: titleStr
+				, content: contextPath + '/clinic/clinicPathActivityEdit.do?clinicPathStageId=' + clinicPathStageId + '&clinicPathActivityId=' + (clinicPathActivityId? clinicPathActivityId: '')
+				, area: ['98%', '98%']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, maxmin: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						if (field.activityType === '2') {
+							field.orderJsonData = JSON.stringify(iframeWindow.getOrderList());
+						}
+						if (field.activityType === '4') {
+							var emrArr = iframeWindow.getEmrTlpTableData();
+							var tlpIds = "";
+							if (emrArr && emrArr.length > 0) {
+								for (var i=0; i < emrArr.length; i++) {
+									var data = emrArr[i];
+									tlpIds = tlpIds + "," + data["emrTlpId"];
+								}
+								if (tlpIds.indexOf(",") > -1) {
+									tlpIds = tlpIds.substring(1);
+								}
+							}
+							field.emrTlpIds = tlpIds;
+						}
+						$.post(contextPath + "/clinic/saveClinicPathActivity.jo", field, function (result) {
+							if (result.code === "0") {
+								common.msg("保存成功!", 1, function () {
+									layer.close(index);
+									table.reload('activityTable'); //数据刷新
+								});
+							} else {
+								common.alert(result.msg, 0);
+							}
+						}, "json");
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		}
+	});
+</script>

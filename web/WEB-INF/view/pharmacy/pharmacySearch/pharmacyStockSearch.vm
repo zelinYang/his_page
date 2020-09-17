@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>药房库存查询</title>
+	<meta name="renderer" content="webkit">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+	<meta name="viewport"
+		  content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+	<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+
+</head>
+<body>
+    #parse("./common/layuiJs.vm")
+    #parse("./common/common.js.vm")
+<!-- 药库/耗材库库存查询 -->
+<div class="layui-fluid">
+	<div class="layui-card">
+		<form class="layui-form layui-bg-white" id="queryForm">
+			<div class="layui-row-query layui-form-item search-term">
+				<div class="layui-inline m-b-xs">
+					<label class="layui-form-label" style="width: 70px;font-weight: bold">药名查找</label>
+					<div class="layui-input-inline input-inline-long">
+						<input type="text" name="medicineName" class="layui-input" id="medicineName" placeholder="">
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">生产厂家</label>
+					<div class="layui-input-inline">
+                        #formSingleSelectFirstNone(
+                            "producingAreaId" "$!{command.producingAreaId}" ${dicData.dicProducingArea} "" "")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">药房名称</label>
+					<div class="layui-input-inline">
+						<select id="pharmacyId" name="pharmacyId" lay-filter="pharmacyId" class="layui-input">
+							<option value="">全部药房</option>
+                            #foreach($pharmacy in $pharmacyList)
+								<option value='${pharmacy.pharmacyId}'>${pharmacy.pharmacyName}</option>
+                            #end
+						</select>
+					</div>
+				</div>
+				<!-- <button id="search" class="layui-btn layui-btn-sm" title="搜索"> <i class="layui-icon layui-icon-search "></i></button> -->
+
+				<button type="button" class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query"
+						id="btn_query">
+					<i class="layui-icon layui-icon-search "></i>
+				</button>
+
+			</div>
+		</form>
+		<div class="layui-tab blod" style="height: calc(100% - 57px);">
+			<ul class="layui-tab-title btn m-sm">
+				<li tab="SYKC" class="layui-this">剩余库存</li>
+				<li tab="YWKC" class="visitOffice">已用完的库存</li>
+				<li tab="WXKC" class="visitOffice">无效/过期库存</li>
+			</ul>
+
+			<div class="layui-tab-content" style="height:100%;padding: 0;">
+				<div tab="SYKC" class="layui-tab-item full-height layui-show">
+					<table id="SYKC" class="layui-table m-n" lay-filter="SYKC"></table>
+				</div>
+				<div tab="YWKC" class="layui-tab-item full-height ">
+					<table id="YWKC" class="layui-table m-n" lay-filter="YWKC"></table>
+				</div>
+				<div tab="WXKC" class="layui-tab-item full-height ">
+					<table id="WXKC" class="layui-table m-n" lay-filter="WXKC"></table>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+</body>
+<!--主表监听器-->
+<script>
+	var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+	var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+	var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+	var dicPharmacyDispensingFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyDispensingFlag)');
+
+	layui.use(['table', 'element'], function () {
+		var table = layui.table;
+
+		var cols = [[ //表头 序号、药品名称、规格、单位、生产厂家、供货单位、库存数量、药品批号、药品效期、批准文号、库存性质、报告用药、基本药物、报告科室、批发价格、批发金额、零售价格、零售金额、库位码、作废标志
+			{field: 'pharmacyStockId', title: '序号', width: 80, sort: true, fixed: 'left'}
+			, {field: 'medicineName', title: '药品通用名称', width: 200, fixed: 'left'}
+			, {field: 'medicineSpec', title: '药品规格', width: 150, fixed: 'left'}
+			, {
+				field: 'medicineUnit', title: '药品单位', width: 80, fixed: 'left', templet: function (res) {
+					return dicDrugNumUnit[res.medicineUnit] || '';
+				}
+			}
+			, {field: 'pharmacyName', title: '药库/耗材库名', width: 110}
+			, {
+				field: 'pharmacyDispensingFlag',
+				title: '库房类别',
+				minWidth: 100,
+				templet: function (d) {
+					return dicPharmacyDispensingFlag[d.pharmacyDispensingFlag] || '';
+				}
+			}
+			, {
+				field: 'producingAreaName', title: '生产厂商', width: 110
+			}
+
+			, {field: 'medicineVendorName', title: '供货单位', width: 180, sort: true}
+			, {field: 'stockCount', title: '库存数量', width: 180, sort: true}
+			, {field: 'currentUsageCount', title: '可用库存数量', width: 180, sort: true}
+			, {field: 'batchNum', title: '药品批号', width: 80}
+			, {
+				field: 'expireDate',
+				title: '药品效期',
+				width: 180,
+				templet: function (res) {
+					return layui.util.toDateString(res.expireDate, 'yyyy-MM-dd');
+				}
+			}
+			, {field: 'medicineDosage', title: '药品剂量', width: 80}
+			, {
+				field: 'dosageUnit'
+				, title: '剂量单位'
+				, width: 80
+				, templet: function (res) {
+					return dicDrugNumUnitDosageUnit[res.dosageUnit] || '';
+				}
+			}
+			, {
+				field: 'dosageForm'
+				, title: '药品剂型'
+				, width: 200
+				, templet: function (res) {
+					return dicDosageForm[res.dosageForm] || '';
+				}
+			}
+			, {field: 'buyPrice', title: '进货价格', width: 80}
+			, {field: 'tradePrice', title: '批发价格', width: 80}
+			, {field: 'retailPrice', title: '零售价格', width: 80}
+			, {field: 'retailTotalSum', title: '零售价格', width: 80}
+			, {field: 'drugstoreStorageCode', title: '库位编号', width: 80}
+			, {
+				field: 'riskMedicineFlag', title: '高危药品', width: 80, templet: function (res) {
+					if (res.riskMedicineFlag === '1') {
+						return '是';
+					}
+					return '否';
+				}
+			}
+		]];
+
+		var $ = layui.jquery, element = layui.element;
+		var SYKCTable = table.render($.extend(basePageTable, {
+			elem: '#SYKC'
+			, height: 'full-114'
+			// ,width:860
+			, url: '../pharmacy/pharmacyStockPageData.jo' //数据接口
+			, where: {
+				gtStockCount: 0,
+				expireDateBegin: layui.util.toDateString(new Date(), 'yyyy-MM-dd'),
+				validFlag: 1
+			}
+			, cols: cols
+		}));
+		var YWKCTable = table.render($.extend(basePageTable, {
+			elem: '#YWKC'
+			, height: 'full-114'
+			// ,width:860
+			, url: '../pharmacy/pharmacyStockPageData.jo' //数据接口
+			, id: 'testReload2'
+			, where: {
+				StockCount: 0,
+				validFlag: 1
+			}
+			, cols: cols
+		}));
+		var WXKCTable = table.render($.extend(basePageTable, {
+			elem: '#WXKC'
+			, height: 'full-114'
+			// ,width:860
+			, url: '../pharmacy/pharmacyStockPageData.jo' //数据接口
+			, id: 'testReload3'
+			, where: {
+				expireDateEnd: layui.util.toDateString(new Date(), 'yyyy-MM-dd'),
+				validFlag: 1
+			}
+			, cols: cols
+		}));
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			SYKCTable.reload({
+				where: getQueryParams()
+			})
+			YWKCTable.reload({
+				where: getQueryParams()
+			})
+			WXKCTable.reload({
+				where: getQueryParams()
+			})
+		});
+
+		function getQueryParams() {
+			return $.extend({
+				medicineName: '',
+				producingAreaId: '',
+				pharmacyId: '',
+				selfPayInWay: '',
+			}, common.serializeObject($('#queryForm')));
+		}
+
+	});
+</script>
+
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>发票补填</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .payInFeeTab tr td{ height: 40px;line-height: 40px;padding: 0px;}
+        .payInFeeTab tr td input{ height: 100%;border: none;}
+        .payInFeeTab tr td input:hover,.payInFeeTab tr td input:focus{ border:1px solid medium ; background-color: #f5f6f7;}
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">采购人姓名</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("buyUserName" "" " lay-verify='required' id='buyUserName' autocomplete='off' class='layui-input' placeholder='请输入'")
+                        </div>
+                    </div>
+                    <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_freshen"><i class="layui-icon layui-icon-refresh"></i></button>
+                </div>
+            </div>
+        </form>
+        <table id="drugstoreInList" lay-filter="drugstoreInList" class=""></table>
+    </div>
+</div>
+</body>
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete', 'layer', 'laypage'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete,
+                layer = layui.layer, laypage = layui.laypage;
+
+        var invoice = table.render($.extend(basePageTable, {
+            url: '../drugstore/drugstoreInJsonList.jo',
+            id: 'drugstoreInList',
+            elem: '#drugstoreInList',
+            height: 'full-65',
+            where: {
+                billFlag: 1
+            },
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                // common.removeHeadCheckbox('recipeId');
+            },
+            cols: [[
+                {type: 'radio'},
+                {
+                    field: 'buyUserName',
+                    title: '采购人姓名',
+                    width: 100
+                },
+                {
+                    field: 'drugstoreName',
+                    title: '药库/耗材库名称',
+                    width: 100
+                },{
+                    field: 'medicineVendorName',
+                    title: '供货商名称',
+                    width: 100
+                },{
+                    field: 'goodsBillNo',
+                    title: '单据号',
+                    width: 100
+                },{
+                    field: 'invoiceNum',
+                    title: '发票号',
+                    width: 100,
+                    edit: 'text'
+                },{
+                    field: 'drugstoreInDate',
+                    title: '入库日期',
+                    templet: function (res) {
+                        return layui.util.toDateString(res.drugstoreInDate, 'yyyy-MM-dd')
+                    }
+                },{
+                    field: 'operUserName',
+                    title: '编制人'
+                }
+            ]]
+        }));
+        //监听回车（Enter）键自动根据查询事件
+        $('#buyUserName').on('keydown', function (event) {//给输入框绑定按键事件
+            if (event.key == 'Enter') {
+                findElement()
+                return false
+            }
+        })
+        //根据姓名获取信息
+        function findElement() {
+            var buyUserName = $("#buyUserName").val();
+            if (!buyUserName) {
+                return
+            }
+            var params = {
+                buyUserName: buyUserName
+            }
+            common.requestServer('$contextPath/drugstore/drugstoreInJsonList.jo', params, function (result) {
+                console.log(JSON.stringify(result)+"result")
+                if (result.code == '0') {
+                    //执行重载
+                    invoice.reload({where:{
+                            buyUserName: buyUserName
+                    }})
+                } else {
+                    common.msg('采购人 <span class="layui-badge layui-bg-gray">' + buyUserName + '</span> 不存在', iconType.warn);
+                   setTimeout(function () {
+                       location.reload()
+                   },700)
+                }
+            })
+        }
+        $("#btn_freshen").on('click',function () {
+            location.reload()
+        })
+    })
+</script>
+</html>

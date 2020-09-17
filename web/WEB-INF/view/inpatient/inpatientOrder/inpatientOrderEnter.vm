@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    #parse("./common/pageJs.vm")
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <style type="text/css">
+        .text-inline{
+            display:inline;
+        }
+        .layui-form .layui-input-inline{width: 180px;}
+        /*.order-list{height: calc(60% - 120px);}*/
+        /*.edit-list{height: 40%;  z-index: 999999}*/
+        /*.the-list{height: 100%}*/
+        /*@media screen and (max-width: 1024px){*/
+        /*    .order-list{height: calc(60% - 148px);}*/
+        /*}*/
+        /*@media screen and (max-width: 768px){*/
+        /*    .order-list{height: calc(60% - 50px);}*/
+        /*    .edit-list{height: calc(40% - 160px);}*/
+        /*}*/
+        .layui-table.layui-table-input tr td {
+            /*padding: 0px 0px !important;*/
+            text-align: center !important;
+        }
+        .layui-table td input {
+               height: 100%;
+            border: none;
+        }
+        .layui-table td input[readonly] {
+            background-color: #f4f5f6;
+            color: #000!important;
+        }
+        .layui-table.custom-table{min-width: 1300px}
+        .layui-btn + .layui-btn-group {
+            margin-left: 10px;
+        }
+        .layui-btn-group + .layui-btn {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body class="gray-bg">
+    <div class=" layui-fluid layui-content-wrapper">
+        <!-- 医嘱查询条件 -->
+            <form class="layui-form" id="queryForm">
+                <div class="layui-row-query layui-form-item search-term">
+                    #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                    #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+    ##                #formHiddenInput("orderGroupFlag" "0" "id='orderGroupFlag'")
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱状态</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("orderState" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱类别</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("orderClassify" "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}" $!dicData.dicOrderClassify "id='orderClassify' lay-filter='orderClassify'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱类型</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("doctorOrderType" "" $!dicData.dicDoctorOrderType "id='doctorOrderType' lay-filter='doctorOrderType'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱项目</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("orderName" "" "id='orderName' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" style="width: 80px;">开始日期</label>
+                            <div class="layui-input-inline" style="width: 180px;">
+                                #formTextInput("" "" "id='exeOrderStartTime' tag='exeOrderStartTimeBegin,exeOrderStartTimeEnd' class='layui-input' readOnly")
+
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="button" id="btn_refresh" class="layui-btn layui-btn-sm" lay-tips="刷新">
+                                <i class="layui-icon layui-icon-refresh"></i>
+                            </button>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="button" id="btn_full_screen" class="layui-btn layui-btn-sm" lay-tips="全屏">
+                                                                                 全屏
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+        <!-- 医嘱列表 -->
+        <div class="layui-row white-bg order-list">
+            <form class="layui-form full-height" action="">
+            <table class="layui-hide full-height" id="orderList" lay-filter="orderList"></table>
+            </form>
+        </div>
+
+        <!-- 按钮 -->
+        <div class="layui-row p-xs text-center" id="centerBar">
+            <button class="layui-btn layui-btn-sm" id="btn_add" type="button"> 新 增  </button>
+            <button class="layui-btn layui-btn-sm layui-btn-disabled" id="btn_edit" type="button" order-type="0" op-type="0"> 编 辑  </button>
+            <button class="layui-btn layui-btn-sm layui-btn-disabled" btn-type="edit" type="button" order-type="0" op-type="1"> 提 交  </button>
+            <button class="layui-btn layui-btn-sm layui-btn-disabled" btn-type="submit" type="button" order-type="0" op-type="4"> 撤 销  </button>
+            <button class="layui-btn layui-btn-sm" btn-type="check" type="button"> 加 急  </button>
+            <button class="layui-btn layui-btn-sm" btn-type="check" type="button"> 取消加急  </button>
+            <button class="layui-btn layui-btn-sm layui-btn-disabled" btn-type="submit" type="button" order-type="2,3" op-type="2"> 停 嘱  </button>
+            <button class="layui-btn layui-btn-sm layui-btn-disabled" btn-type="submit" type="button" order-type="7" op-type="3"> 取消停嘱  </button>
+##            <button class="layui-btn layui-btn-sm layui-btn-disabled" btn-type="submit" type="button" op-type="4"> 作 废  </button>
+            <button class="layui-btn layui-btn-sm" id="btn_saveOrderGroup"> 存组套</button>
+##            <button class="layui-btn layui-btn-sm layui-bg-red layui-btn-disabled" btn-type="edit" type="button" op-type="5"> 删 除  </button>
+
+        </div>
+
+        <!-- 医嘱编辑列表 -->
+        <div class="layui-row white-bg edit-list" id="orderListDiv1">
+            <div id="table1_theadDiv" class=" p-n" style="overflow:hidden;">
+                <table class="layui-table custom-table layui-table-input m-t-n" lay-skin="sm" id="tablecheck">
+                    <colgroup>
+                        <col width="60px">
+                        <col width="90px">
+                        <col width="70px">
+                        <col width="170px">
+                        <col width="105px">
+                        <col width="120px">
+                        <col width="120px">
+                        <col width="110px">
+                        <col width="60px">
+                        <col width="120px">
+                        <col width="120px">
+                        <col width="40px">
+                        <col width="">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th>
+                            #formHiddenInput("groupNo" "$!groupNo" "id='groupNo'")
+                            <i name="btn_add_tr" target-id="editOrderList" class="layui-icon layui-icon-add-1 btn-img-green" title="新增医嘱"></i>
+                        </th>
+                        <th>医嘱类别</th>
+                        <th>类型</th>
+                        <th>医嘱项目</th>
+                        <th>规格</th>
+                        <th>每次数量</th>
+                        <th>每次剂量/用量</th>
+                        <th>用法</th>
+                        <th>频次</th>
+                        <th>每日剂量</th>
+                        <th>每日总量</th>
+                        <th>首</th>
+                        <th style="min-width:111px;">单条说明</th>
+
+                    </tr>
+                    </thead>
+                </table>
+            </div>
+            <div id="table1_tbodyDiv" style="height:calc(100% - 36px); overflow-y:scroll;">
+                <table class="layui-table custom-table layui-table-input m-t-n m-b-n" lay-size="md">
+                    <colgroup>
+                        <col width="60px">
+                        <col width="90px">
+                        <col width="70px">
+                        <col width="170px">
+                        <col width="105px">
+                        <col width="120px">
+                        <col width="120px">
+                        <col width="110px">
+                        <col width="60px">
+                        <col width="120px">
+                        <col width="120px">
+                        <col width="40px">
+                        <col width="">
+                    </colgroup>
+                    <tbody id="editOrderList">
+                    <tr class="orderTr" onclick="currentTr = this;">
+                        <td>
+                            <i onclick="deleteTr(this)" name="deleteChild" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+                            <i onclick="addChildTr(this)" id="addChild" class="layui-icon layui-icon-add-1 btn-img-green" title="新增子医嘱"></i>
+                            #formHiddenInput("urgentFlag" "0" "")   ##<!-- 是否加急-->
+                            #formHiddenInput("medicineFlag" "1" "")   ##<!-- 是否药品 -->
+                            #formHiddenInput("makeOrderFlag" "1" "")   ##<!-- 开嘱人类型 -->
+                            #formHiddenInput("exeOrderFlag" "1" "")   ##<!-- 执行类型 -->
+                            #formHiddenInput("medicalTechFlag" "0" "") ##<!-- 是否医技主项 -->
+                            #formHiddenInput("dispensingStopFlag" "0" "") ##<!-- 是否停药 -->
+                            #formHiddenInput("dispensingFlag" "0" "") ##<!-- 发药标识。 -->
+                            #formHiddenInput("doctorOrderType" "01" "") ##<!-- 医嘱类型，01：药品。 -->
+                            #formHiddenInput("pharmacyId" "" "") ##<!-- 药房/科室二级库ID -->
+                            #formHiddenInput("highRiskFlag" "" "") ##<!-- 高危药品标识 -->
+                            #formHiddenInput("productBatch" "" "") ##<!-- 药品生产批次号。 -->
+                            #formHiddenInput("producingAreaId" "" "") ##<!-- 药品生产地。 -->
+                            #formHiddenInput("validUntil" "" "") ##<!-- 药品有效期。 -->
+                            #formHiddenInput("medicineSpec" "" "") ##<!-- 药品规格。 -->
+                            #formHiddenInput("medicineId" "" "") ##<!-- 药品ID。 -->
+                            #formHiddenInput("chargeItemId" "" "") ##<!-- 诊疗项目ID。 -->
+                            #formHiddenInput("drugTherapyType" "" "") ##<!-- 药品类型。 -->
+                            #formHiddenInput("orderGroupNo" "$!sysGuid" "") ##<!-- 组号。 -->
+                            #formHiddenInput("chargeGroupId" "1" "")
+                            #formHiddenInput("orderName" "" "")
+                            #formHiddenInput("orderId" "" "")
+                            #formHiddenInput("lisFlag" "0" "")   ##<!-- 是否检验-->
+                            #formHiddenInput("examFlag" "0" "")   ##<!-- 是否检查 -->
+                            #formHiddenInput("surgeryFlag" "0" "")   ##<!-- 是否手术 -->
+                            #formHiddenInput("overdueBillFlag" "0" "")   ##<!-- 是否欠费 -->
+                            #formHiddenInput("unitPrice" "0" "")   ##<!-- 单价 -->
+                            #formHiddenInput("inhospitalChargeGroupCode" "" "")
+                            #formHiddenInput("docChargeGroupCode" "" "")
+                        </td>
+                        <td>
+                            <!-- 长/临 -->
+                            #formSingleSelectFirstNone("orderClassify" "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}" $!dicData.dicOrderClassify "class='layui-input layui-form-select' id='orderClassifyNew' lay-filter='orderClassifyNew' " "")
+                        </td>
+                        <td>
+                            <!-- 类别 -->
+                            #formSingleSelectFirstNone("medicineType" "$!{CONST.AppConstants.MEDICINE_TYPE_W_MEDICINE}" $!dicData.dicMedicineTypeInOrder "class='layui-input layui-form-select' id='medicineType' lay-filter='medicineType' " "")
+                        </td>
+                        <td>
+                            <!-- 项目 -->
+                            #formTextInput("orderName" "" "search='orderName' call-back='selectDrugOrder' server-url='../pharmacy/pharmacyStockListData.jo' class='layui-input' autocomplete='off' ")
+                        </td>
+                        <td>
+                            <!-- 规格 -->
+                            #formTextInput("medicineSpec" "" "class='layui-input' readonly ")
+                        </td>
+                        <td>
+                            <!-- 每次数量 -->
+                            #formTextInput("perOrderCount" "1" "class='wd-50 p-l-xs' border:'none' maxlength='5' ")
+                            #formHiddenInput("minMedicineUnit" "$!recipeItem.minMedicineUnit" "placeholder='单位' readonly")
+                            #formTextInput("minMedicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!recipeItem.minMedicineUnit)" "class='wd-50' readonly")
+                        </td>
+                        <td>
+                            <!-- 每次剂量/用量单位 -->
+                            #formFloInput("dosage" "$!recipeItem.dosage" "class='wd-50 p-l-xs' border:'none' maxlength='5' readonly")
+                            #formHiddenInput("dosageUnit" "$!recipeItem.dosageUnit" "placeholder='单位' class='wd-30' readonly")
+                            #formHiddenInput("medicineDosage" "$!recipeItem.medicineDosage" "")
+                            #formTextInput("dosageUnitText" "#lookUpDict($!dicData.dicDrugNumUnitDosageUnit $!recipeItem.dosageUnit)" "class='wd-50' readonly")
+
+                        </td>
+                        <td>
+                            <!-- 给药途径 -->
+                            #formSingleSelectFirstNone("doseWayCode" "" $dicData.dicDoseWay "class='layui-input' " "")
+                        </td>
+                        <td>
+                            <!-- 频次 -->
+                            #formSingleSelectFirstNone("pharmacyFreqId" "${CONST.AppConstants.PHARMACY_FREQ_ID_QD}" $!dicData.dicPharmacyFreqId "class='layui-input' " "")
+                        </td>
+                        <td>
+                            <!-- 每日剂量 -->
+                            #formIntInput("usageQuantity" "$!recipeItem.usageQuantity" "class='wd-50 p-l-xs' maxlength='5' readonly")
+                            #formTextInput("dosageUnitText" "#lookUpDict($!dicData.dicDrugNumUnitDosageUnit $!recipeItem.dosageUnit)" "class='wd-50' readonly")
+                        </td>
+                        <td>
+                            <!-- 每日总量 -->
+                            #formIntInput("giveTotalQuantity" "$!recipeItem.giveTotalQuantity" "class='wd-50 p-l-xs' maxlength='5' readonly")
+                            #formHiddenInput("giveTotalQuantityUnit" "$!recipeItem.giveTotalQuantityUnit" "class='wd-50 p-l-xs' maxlength='5' ")
+                            #formTextInput("minMedicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!recipeItem.minMedicineUnit)" "class='wd-50' readonly")
+                        </td>
+                        <td>
+                            <!-- 首 -->
+                            #formIntInput("firstDayDosage" "" "class='layui-input' maxlength='2' ")
+                        </td>
+                        <td>
+                            <!-- 单条说明 -->
+                            #formTextInput("orderDesc" "" "class='layui-input' maxlength='250'")
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            ##</form>
+        </div>
+        <!-- 按钮 -->
+        <div class=" p-l-xs p-r-xs p-t-xs text-center" id="footerBar">
+            <button class="layui-btn layui-btn-sm layui-bg-blue" id="btn_getGroup" type="button">取组套 </button>
+            <button class="layui-btn layui-btn-sm" id="btn_save" type="button" operate-type="0"> 暂存医嘱  </button>
+            <button class="layui-btn layui-btn-sm layui-bg-red" id="btn_submit" type="button" operate-type="1"> 提交医嘱  </button>
+            <button class="layui-btn layui-btn-sm " id="btn_tcm" type="button"> 草 药 </button>
+            <button class="layui-btn layui-btn-sm " id="btn_tcmGroup" type="button">草药组套</button>
+            <div class="layui-btn-group">
+                <button class="layui-btn layui-btn-sm" id="btn_lis" type="button"> 检验检查申请 </button>
+                <button class="layui-btn layui-btn-sm" id="btn_pacs" type="button"> 检验检查报告  </button>
+                <button class="layui-btn layui-btn-sm" id="btn_surgery" type="button"> 手术申请  </button>
+                <button class="layui-btn layui-btn-sm" id="btn_treat" type="button"> 治疗申请  </button>
+##                <button class="layui-btn layui-btn-sm" id="btn_plan" type="button"> 诊疗计划  </button>
+                <button class="layui-btn layui-btn-sm" id="btn_blood" type="button"> 输血申请  </button>
+            </div>
+
+            <!--            <button class="layui-btn layui-btn-sm" id="btn_pacs" type="button"> 检 查  </button>-->
+
+
+            <button class="layui-btn layui-btn-sm" id="btn_reset" type="button"> 重 置 </button>
+            <button class="layui-btn layui-btn-sm layui-bg-blue" id="btn_consultation" type="button">会诊申请</button>
+        </div>
+
+    </div>
+    <!--停嘱 单条停嘱 末次模板-->
+<script type="text/html" id="endDayDosageTpl">
+    <div class="layui-inline" style="position: absolute;left: 0px;bottom: 12px;">
+        <label class="layui-form-label" style="width: auto;">#requiredTag()末次</label>
+        <div class="layui-input-inline" style="display: flex;">
+            <input type="text" name="endDayDosage" value="" autocomplete="off" maxlength="2" class="layui-input" style="width: 70px;">
+            <div class="layui-slider-input-btn" style="display:block;right: 5px;"><i class="layui-icon layui-icon-up"></i><i class="layui-icon layui-icon-down"></i></div>
+        </div>
+    </div>
+</script>
+</body>
+#parse("./inpatient/inpatientOrder/inpatientOrderEnter.js.vm")
+</html>

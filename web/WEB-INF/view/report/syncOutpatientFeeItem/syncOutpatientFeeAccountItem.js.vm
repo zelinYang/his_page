@@ -1,0 +1,285 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+var dicBasDiseaseClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicBasDiseaseClassify)');
+var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)'); 
+var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)'); 
+var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicDrugTherapyTypeWestern = $dicTools.changeMapToJson($dicData.dicDrugTherapyTypeWestern);
+layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index : 'lib/index', //主入口模块
+    autocomplete : 'autocomplete'
+}).use(
+    [ 'index', 'table', 'form', 'layer', 'laydate','util' ],
+    function() {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, laydate = layui.laydate,util = layui.util;
+        //年选择器
+        laydate.render({
+            elem: '#q_yearPopu'
+            ,type: 'year'
+            ,trigger: 'click' //采用click弹出
+        });
+        var registerId ="$!{registerId}"
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('.layui-form').height() - 10)
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basDiseaseListGrid', {
+                height: height
+            })
+        })
+        //列表
+        table.render({
+            elem : '#basDiseaseListGrid' ,
+            url : '../report/syncOutpatientFeeItemList.jo',//数据接口 ,
+            limit : 20,
+            method:'post',
+         where:{registerId:registerId},
+            cellMinWidth: 130,
+            totalRow: true,
+            cols : [ [
+                {  title : '序号',
+                    type : 'numbers',
+                    width: 70,
+                    fixed:'true'
+                },
+              /*{
+                    field : 'patientName',
+                    title : '患者姓名',
+                    width: 90
+                }, */
+                {
+                    field : 'exeOfficeName',
+                    title : '执行科室',
+                    fixed:'left',
+                    width: 90
+                },
+                {
+                    field : 'payFeeFlag',
+                    title : '缴费状态',
+                	templet:'#payFeeTpl',
+                    fixed:'left',
+                    width: 110
+                },
+                {
+                    field : 'doctorOrderType',
+                    width : 90,
+                    title : '医嘱类型',
+                    templet: function (row) {
+                        return dicDoctorOrderType[row.doctorOrderType] || '';
+                    }
+                },
+                {
+                    field : 'medicineType',
+                    width : 90,
+                    title : '药品类型',
+                    templet: function (row) {
+                        return dicMedicineType[row.medicineType] || '';
+                    }
+                },
+                {
+                    field : 'dosageForm',
+                    title : '药品剂型',
+                    width: 300,
+                    templet: function (row) {
+                        return dicDosageForm[row.dosageForm] || '';
+                    }
+                },
+                {
+                    field : 'dosageUnit',
+                    title : '剂量单位',
+                    width: 65,
+                    templet: function (row) {
+                        return dicDrugNumUnitDosageUnit[row.dosageUnit] || '';
+                    }
+                },
+                {
+                    field : 'drugTherapyType',
+                    title : '用药类型',
+                    width: 80,
+                    templet: function (row) {
+                        return dicDrugTherapyTypeWestern[row.drugTherapyType] || '';
+                    }
+                },
+                {
+                    field : 'chargeName',
+                    title : '费用名称',
+                    width: 260
+                },
+                {
+                    field : 'insuredPayInWay',
+                    title : '付款方式',
+                    width: 130,
+                    templet: function (row) {
+                        return dicPatientKind[row.insuredPayInWay] || '';
+                    }
+                },
+                {
+                    field : 'checkChemistUserName',
+                    title : '药剂师',
+                    totalRowText: '<b>总金额：</b>',
+                    width: 101
+                },
+                {
+                    field : 'actualPrice',
+                    title : '项目金额', 
+                    align: 'right',
+                    width: 100,
+                    totalRow: true,
+                    style:'text-align: right;font-weight: bold;'
+                },
+                {
+                    field : 'refundSettlementPrice',
+                    title : '实际金额', 
+                    align: 'right',
+                    width: 100,
+                    totalRow: true,
+                    style:'text-align: right;font-weight: bold;'
+                },
+                {
+                    field : 'settlementPrice',
+                    title : '总金额', 
+                    align: 'right',
+                    width: 100,
+                    totalRow: true,
+                    style:'text-align: right;font-weight: bold;'
+                },
+                {
+                    field : 'settlementTime',
+                    title : '收费时间',
+                    width: 128,
+                    templet: function (row) {
+                        return row.settlementTime ? util.toDateString(row.settlementTime,'yyyy-MM-dd') : '';
+                    }
+                },
+            ] ],
+            page : true,
+            height : getTableHgt(),
+            request : {
+                pageName : 'pageNumber' //页码的参数名称，默认：page
+                ,
+                limitName : 'pageSize' //每页数据量的参数名，默认：limit
+            },
+            done : function() {
+                /*    this.elem.next().find('[lay-event="LAYTABLE_COLS"]').click(function(e) {
+                       setTimeout(function() {
+                           layui.$(e.currentTarget).find('.layui-form-checkbox').click(function() {
+                               console.log(this)
+                           })
+                       }, 50);
+                   }) */
+            }
+        });
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function(data) {
+
+            var field = data.field;
+            //执行重载
+            table.reload('basDiseaseListGrid', {
+                where : field
+            });
+
+            return false;
+        });
+
+        //重置查询表单并刷新表格
+        $("#btn_reset").click(function() {
+            setTimeout(function() {
+                $('#btn_query').click();
+            }, 50);
+        })
+
+        //新增事件
+        $('#btn_add').click(function() {
+            editBasDisease();
+        });
+
+        //监听工具条
+        table.on('tool(basDiseaseListGrid)', function(obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'edit':
+                    editBasDisease(data);
+                    break;
+                case 'del':
+                    delBasDisease(data);
+                    break;
+                case 'btn_show':
+                    showBasDisease(obj.data);
+                    break;
+            }
+        });
+
+        //编辑
+        function editBasDisease(data) {
+            var title = '导出数据'
+            var iframeEnvironment = 'I402880460168db4bdb4bec6b0168dcd649c523f8';
+            var content = diResource + iframeEnvironment
+            //true 执行
+            if (data) {
+                title = data.diseaseName;
+                content += '?regionPopuId=' + data.regionPopuId;
+            }
+            common.open(content, title, {
+                area : [ '1660px', '80%' ],
+                scroll:'yes'
+            });
+        };
+        //监听搜索
+        $('#btn_query').on('click', function () {
+            table.reload('basDiseaseListGrid',{
+                where: getQueryParams()
+            })
+        });
+
+        function getQueryParams() {
+            var params = $.extend({
+                feeBillNo:'',
+                visitCardNo:'',
+                regStatus:'',
+                patientName:'',
+                operUserId:'',
+                settlementTime:''
+            }, common.serializeObject($('#patient_queryForm')));
+            var chargeDate = $('#chargeDate').val();
+            if (chargeDate) {
+                var chargeDates = chargeDate.split(' - ');
+                params.settlementTimeBegin = chargeDates[0];
+                params.settlementTimeEnd = chargeDates[1];
+            }
+            return params;
+        }
+        //日期时间范围
+        laydate.render({
+            elem: '#chargeDate',trigger: 'click'
+            , range: true
+        });
+
+    		//监听行双击事件
+    		/* table.on('rowDouble(basDiseaseListGrid)', function(obj){
+                 var data = obj.data;
+                top.common.open('$contextPath' + '/report/syncOutpatientFeeItem.do?outpatientFeeId=' + data.outpatientFeeId, '门诊费用详情（' + data.patientName + '）', {
+                    area: ['90%', '90%'],
+                    scroll: true
+                }) 
+    		}); */
+    })
+    
+  
+		
+
+    
+
+</script>

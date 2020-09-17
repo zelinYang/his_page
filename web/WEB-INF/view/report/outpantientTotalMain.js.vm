@@ -1,0 +1,69 @@
+<script>
+    /************************ 导航 ********************************/
+    //获取当前选中子菜单数据
+    var menuData;
+    layui.use(['element', 'layer', 'util'], function () {
+    var element = layui.element,$ = layui.$, util = layui.util
+
+    //新增导航
+    function addMenu(menuData) {
+    //遍历页签选项卡
+    var isExistMenu = Boolean($('.layui-tab[lay-filter="childrenMenu"] > ul.layui-tab-title > li[lay-id="' + menuData.id + '"]').length);
+    //已经存在就退出了
+    if (isExistMenu) return;
+    //新增一个Tab项
+    element.tabAdd('childrenMenu', {
+    id: menuData.id,
+    title: menuData.text,
+    attr: util.escape(JSON.stringify(menuData))
+})
+}
+
+    //监听导航菜单点击事件
+    element.on('tab(childrenMenu)', function (data) {
+    var menu = JSON.parse($(this).attr("lay-attr"));
+    menuData = menu.children;//子菜单数据
+    data.elem.find('.layui-tab-content > .layui-tab-item.layui-show').html(function () {
+    //已经存在就不重复加载了
+    if ($(this).children('iframe').prop('src')) return;
+    common.openLoad();
+    return $('<iframe/>').prop('src', contextPath + '/' + menu.href).load(function () {
+    common.closeLoad();
+})
+});
+})
+
+    //加载导航
+    /**
+     *
+     * @param menuData  [
+     {
+            'id': '',
+            'text': '',
+            'href': ''
+        },'' ]
+     */
+    function initMenu(menuData) {
+    $.each(menuData, function (index, item) {
+    addMenu(item)
+})
+    $('.layui-tab[lay-filter="childrenMenu"]').find('.layui-tab-title li').first().click()
+}
+
+    /**
+     * 打开一个新的选项卡窗口，一般在子窗口调用
+     * @param href
+     * @param text
+     * @param iframeId
+     */
+    window.openMenu = function (menuData) {
+    addMenu(menuData)
+    element.tabChange('childrenMenu', menuData.id) //切换到导航
+}
+
+    //初始化菜单
+    initMenu(parent.menuData)
+})
+
+</script>
+

@@ -1,0 +1,83 @@
+<script>
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'laytpl', 'tableSelect'], function () {
+    var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect;
+
+      var consDicType = "$!{consDicType}";//true 禁止修改字典类型
+      var dicDicType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDicType)');
+
+      if(consDicType){
+          $('.dicType-search').hide();
+      }
+       common.verify(form)
+      //选择字典分类
+      tableSelect.render({
+          elem: '#dicTypeName',
+          checkedKey: 'dicTypeId', //表格的唯一建值，非常重要，影响到选中状态 必填
+          searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+          searchPlaceholder: '字典类型',	//搜索输入框的提示文字 默认关键词搜索
+          table: $.extend({}, basePageTable,{	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+              url: contextPath + '/basDicType/basDicTypeListData.jo',
+              cols: [[{type:'radio'},
+                  {
+                      field : 'dicTypeName',
+                      title : '字典分类'
+                  },
+                  {
+                      field : 'dicTypeCode',
+                      title : '字典分类编码'
+                  }]]
+          }),
+          done: function (elem, result) {
+              $("#dicTypeName").val(result.data[0].dicTypeName);
+              $("#dicTypeId").val(result.data[0].dicTypeId);
+              var dicType = dicDicType[result.data[0].dicType] || "";
+              $("#dicType").val(dicDicType[result.data[0].dicType]);
+              if ("$!{CONST.AppConstants.DIC_TYPE_SCORE}" == result.data[0].dicType) {
+                  $("#dicScore").attr("lay-verify", "required");
+              } else {
+                  $("#dicScore").removeAttr("lay-verify");
+              }
+          }
+      });
+
+       $(".dicType-search").click(function () {
+           $('#dicTypeName').click();
+       })
+
+    // 获取坐标回调函数
+    function selectMapCoordinateBack (lng, lat) {
+      //$('#longitude').val(lng);
+      //$('#latitude').val(lat);
+    }
+
+    //提交表单
+    function saveBasDic () {
+      var BasDicParams = common.serializeObject($('#basDicForm'))
+      common.requestServer(contextPath + '/basDic/saveBasDic.jo', BasDicParams, function (result) {
+        if (result.code == '0') {
+          common.msg('保存成功。', 1, function () {
+              if ($.isFunction(parent.editBasDicCallBack)) {
+                  parent.editBasDicCallBack(result.data);
+              } else {
+                  $('#btn_query', window.parent.document).click()
+              }
+            var index = parent.layer.getFrameIndex(window.name)
+            parent.layer.close(index)
+          })
+        } else {
+          common.alert(result.msg, 2)
+        }
+      })
+    }//save function
+
+     // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveBasDic()
+      return false
+    })
+  })
+</script>

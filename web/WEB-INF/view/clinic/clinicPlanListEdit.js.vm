@@ -1,0 +1,267 @@
+<script>
+var deletedOnDutyIdArray = [];
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index', //主入口模块
+  }).use([ 'index','table', 'form','element','layer'], function(){
+      var $ = layui.$
+      ,form = layui.form
+      ,layer=layui.layer
+      ,table = layui.table
+      ,dataTable = layui.dataTable
+      ,tableSelect = layui.tableSelect
+      ,element = layui.element; //Tab的切换功能，切换事件监听等，需要依赖element模块
+#*
+###################################################selectEmrTlpRender
+    function selectEmrTlpRender() {
+        tableSelect.render({
+          elem: '.emrTlp-input',
+          checkedKey: 'emrTlpId', //表格的唯一建值，非常重要，影响到选中状态 必填
+          searchKey: 'keyWord',//搜索关键字的参数名称
+          searchShow: true, //显示搜索框内容 true=显示，false=隐藏(默认)，用于输入框的内容存在多行叠加时使用
+          sureBtn: true,  //显示确定按钮true=显示，false=隐藏(默认),用于存在多行选中时使用
+          table: $.extend({}, basePageTable,{
+                 url: '../emrTlp/emrTlpPageData.jo' //数据接口
+                ,where: common.serializeObject($('#queryForm'))
+                ,cols: [[ //表头
+                   {type: 'radiobutton'}
+                  ,{field : 'emrTlpClassifyId', title : '电子病历模板分类', width:250}
+                  ,{field : 'emrTlpName',title : '电子病历模板名称 *', width:100}
+                  ,{field : 'emrTlpVersion', title : '版本号', width:250}
+                  ,{field : 'userName', title : '模板创建人', width:250}
+                ]]
+          }),
+          done: function (inputElem, data) {
+                inputElem.parent().parent().find('input[name="emrTlpId"]').val(data.data[0].emrTlpId);
+                $(this).parent().parent().find('input[name="emrTlpName"]').val(data.data[0].emrTlpName);
+                alert(inputElem.attr("class"));
+                alert(inputElem.parent().attr("class"));
+    
+                //动态添加完表单对象后，需要重新render,否则新的东西看不见。
+                form.render();
+          }
+        });
+    }
+    selectEmrTlpRender();
+*#
+
+    //重置查询表单并刷新表格
+      $("btn_query").click(function(){
+          $('#queryForm').submit();
+      });
+
+    form.render();
+
+
+
+        
+        //监听有无效操作  // 更新是否入院首日填写标志状态
+        // form.on('switch(firstDayFlag)', function(obj){
+        //     this.value  = (obj.elem.checked ? "1" : "0");
+        //     //alert(this.value)
+        // });
+
+        //监听有无效操作  // 更新手术填写标志状态
+        form.on('switch(surgeryDay)', function(obj){
+            this.value  = (obj.elem.checked ? "1" : "0");
+            //alert(this.value)
+        });
+        
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(everydayRecordFlag)', function(obj){
+            this.value  = (obj.elem.checked ? "1" : "0");
+        });
+        
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(lisDay)', function(obj){
+            this.value  = (obj.elem.checked ? "1" : "0");
+        });
+
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(pacsDay)', function(obj){
+            this.value  = (obj.elem.checked ? "1" : "0");
+        });
+
+        //新增行
+        $('#btn_add').click(function() {
+            cloneNewTr("clinicPlanTable");
+            randerPlugins();
+        });
+
+        //重新渲染插件
+        function randerPlugins() {
+            form.render();
+            selectEmrTlpRender();
+            activeTrFun();//绑定激活行事件
+      }
+
+    }); ##layui end ####################################################################################
+
+    //查询提交
+    function querySubmit() {
+        $('#queryForm').submit();
+    }
+
+##############################################其他JS
+  //新增数据行
+  function cloneNewTr(tableID){
+    //判断有没有在列表中，如果在列表中，则不再新增。
+    var newTr = $('.tplRow').clone(); 
+    newTr.removeClass('tplRow');
+//    setTrData(sysUserItem, newTr, onDutyType);//1为上午
+##     alert(newTr.find('select[name="consultingRoomId"]').val())
+//    bindShowMedicineNamePopover(newTr.find('input[name=emrTlpName]'));
+//    bindSearchMedicineNamePopover(newTr.find('input[name=emrTlpName]'));
+//    bindAddTr(newTr);
+    bindShowEmrTlpNamePopover(newTr.find('input[name=emrTlpName]'));
+    bindSearchEmrTlpNamePopover(newTr.find('input[name=emrTlpName]'));
+    bindActive(newTr.find('input[name=emrTlpName]'));
+    $('#' + tableID).append(newTr);
+  }
+
+    //删除按钮所在级行
+    function removeBtnTableRow(btn) {
+        var delTableRow =  $(btn).parent().parent();
+        var emrTlpId = delTableRow.find('input[name="emrTlpId"]').val();
+        //alert("emrTlpId:" + emrTlpId);
+        if (emrTlpId != "") {
+            //向服务器请求删除
+            //deletedOnDutyIdArray.push(onDutyId);
+        }
+        delTableRow.remove();
+    }
+
+    $("#btn_save").on("click",function(){
+        submitForm();
+    });
+
+
+
+    // 提交表单
+    function submitForm() {
+        var clinicPlanParams = common.buildTrInputJSON($('.tbody-data'));
+
+        //console.log("clinicPlanParams", clinicPlanParams);
+        
+        var postParames = {};
+        postParames.clinicPlanListParams = JSON.stringify(clinicPlanParams);
+        if (!clinicPlanListValid($.parseJSON(postParames.clinicPlanListParams))) {
+            return false;
+        }
+        common.requestServer('../pathway/saveClinicPlanList.jo', postParames, function(result){
+            if (result.code == '0') {
+                //将提交按钮设置不可点击
+                $('#btn_save').addClass('layui-btn-disabled');
+                common.msg("保存成功。", 1, function(){
+                    $('#btn_reset', window.parent.document).click();
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }
+
+
+    //验证保存内容
+    function clinicPlanListValid(clinicPlanListArray) { 
+      var pass = true;
+        if (clinicPlanListArray) {
+        $(clinicPlanListArray).each(function(index) {
+          if (!this.emrTlpId) {
+            common.alert('第'+(index+1) +'行需要选择病历模板!', 0);
+            pass =  false;
+            $('.tbody-data tr:eq('+index+')').click();
+            return false
+          }
+          // if (!this.recordDay) {
+          //   common.alert('第'+(index+1) +'行入院填写日不能为空!', 0);
+          //   pass =  false;
+          //   $('.tbody-data tr:eq('+index+')').click();
+          //   return false
+          // }
+        });
+      } 
+        return pass;
+    }
+
+
+
+// #********************** Popover 输入选择  ***************************#
+var iframeSettings = {  width:700,//病历模板propover 弹框参数
+    height:350,
+    closeable:false,
+    padding:false,
+    type:'iframe',
+    url:'../emrTlp/emrTlpSelect.do'
+};
+
+//显示Popover
+  function initShowEmrTlpNamePopover() {
+     var inputBoxList = $(".tbody-data tr td input[name=emrTlpName]");
+     inputBoxList.each(function(index) {
+       var elem = $(this);
+       elem.webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+     });
+  }
+      
+ //绑定显示Popover
+  function bindShowEmrTlpNamePopover(elem) {
+     elem.webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+  }
+  //初始化搜索Popover
+  function initSearchEmrTlpNamePopover() {
+      $('input[name=emrTlpName]').on('input propertychange', function (){
+       var popoverId = $(this).attr('data-target');
+       $('#'+popoverId+' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+       $('#'+popoverId+' iframe')[0].contentWindow.queryPharmacyStock(); //调用iframe的方法 
+    });
+  }
+
+  //bind搜索Popover
+  function bindSearchEmrTlpNamePopover(elem) {
+      elem.on('input propertychange', function (){  
+           var popoverId = $(this).attr('data-target');
+        $('#'+popoverId+' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+        $('#'+popoverId+' iframe')[0].contentWindow.queryEmrTlp(); //调用iframe的方法 
+      });
+  }
+
+  //绑定新增行的激活事件
+  function bindActive(elem) {
+      elem.on('click', function (){  
+          elem.parents('tr').addClass('active').siblings().removeClass('active');
+      });
+  }
+
+
+#********************** Popover 输入选择  ***************************#
+
+$(document).ready(function () {
+    //randerPlugins();//渲染插件
+    initSearchEmrTlpNamePopover();
+    initShowEmrTlpNamePopover();
+    activeTrFun();
+
+});
+
+//绑定激活选中行的方法：单击激活控件所在行，并取消其他兄弟行的激活
+function activeTrFun() {
+  $('.tbody-data tr td input[name=emrTlpName]').click(function() {
+     $(this).parents('tr').addClass('active').siblings().removeClass('active');
+  });
+}
+
+
+ //病历模板名称 row选择回调
+emrTlpRowSelect = function (emrTlpRow) {
+    WebuiPopovers.hideAll(); 
+    var trActive = $('tr.active');
+    trActive.find('input[name="emrTlpName"]').val(emrTlpRow.emrTlpName);
+    trActive.find('input[name="emrTlpId"]').val(emrTlpRow.emrTlpId);
+    //addTrData(basDiseaseRow);//$('.tbody-data tr.active ') 
+}
+</script>
+  

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>我的参与会诊</title> 
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+</head>  
+
+<body class="full-height white-bg table-width-full">
+  
+  <!-- 查询表单 -->
+  <form id="consttApply_queryForm" class="layui-form"> 
+     
+    <div class="layui-form-item p-t-xs"> 
+		<div class="layui-inline">
+		  <label class="layui-form-label wd-50">卡号</label>
+		  <div class="layui-input-inline">
+		      #formTextInput("visitCardNo" "" "id='visitCardNo' class='layui-input'")
+		  </div>
+		</div>
+		<div class="layui-inline">
+		    <label class="layui-form-label">患者姓名</label>
+		    <div class="layui-input-inline ">
+		        #formTextInput("patientName" "" "id='patientName' class='layui-input ' placeholder='患者姓名'")
+		    </div>
+		</div>
+		<div class="layui-inline">
+           <label class="layui-form-label">申请日期</label>
+           <div class="layui-input-inline">
+             #formTextInput("applyTime" "" "id='applyTime'  tag='applyTimeBegin,applyTimeEnd'  class='layui-input layui-input-s'")
+           </div>
+        </div>
+		<div class="layui-inline" style="margin-right: 20px;">
+	         <button id="btn_query" class="layui-btn layui-btn-sm" type="button"><i class="layui-icon layui-icon-search"></i></button>
+		</div>
+		#set($consttStateAll = '2,3,4')
+		#formRadioGroup("consultationStateFlagIn" "$consttStateAll" $dicData.dicConsttJoinState "lay-filter='consttAutditingState'")
+    </div>
+  </form>
+ 
+  <div class="data-table">
+	  <!-- 数据表格 -->
+	  <table id="consttApplyTable" lay-filter="consttApplyTable"></table>
+	  <script type="text/html" id="toolbarDemo">
+	      <div class="layui-btn-container">
+              <button class="layui-btn layui-btn-sm" lay-event="feedback">回馈</button>
+              <button class="layui-btn layui-btn-sm" lay-event="issue">发布意见</button> 
+		  </div>
+      </script>
+  </div>
+
+  #parse("./outpatient/consultation/outMyConsttJoinList.js.vm")
+</body>
+</html>

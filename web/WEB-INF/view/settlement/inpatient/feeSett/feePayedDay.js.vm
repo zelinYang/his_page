@@ -1,0 +1,289 @@
+ <script>
+   var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)'); 
+   var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)'); 
+   var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+   var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+   var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+   
+   var layer;
+   var tabChange;//切换菜单方法
+   var tabAdd;
+   var editDrugAllergy;
+   var refreshOutRigTab;
+   var tabAddinSettNav;//主导航添加导航项
+   var randerTopNav;//渲染顶部导航栏
+   var buildLeftMenu;
+   var workNavClickEvent;
+   var inhospitalForm;
+   var inhospitalFormDo;
+   
+   layui.use(['jquery','table', 'element', 'form', 'laydate','util'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate; 
+      var form = layui.form; 
+      var element = layui.element;
+      var util = layui.util;
+      element.render(); 
+     
+//第一个实例
+      var tableIns = table.render({
+         elem: '#feePayedDayTab'
+        ,url: '../inpatient/feePayedDay.jo' //数据接口
+        ,limit:20
+        ,method:'post'
+        ,where: common.serializeObject($('#fee_queryForm'))
+        ,cols: [[ //表头
+           {field : 'receiptNo',title : '票据号码'}
+          ,{field : 'inhospitalId',title : '住院号'}
+          ,{field : 'patientName',title : '姓名'}
+          ,{field : 'payInWay',title : '缴款方式' ,
+              templet:function(row){
+                  return dicPaymentMethod[row.payInWay] || '' ;
+              }
+          }
+          ,{field : 'payInDate',title : '缴款日期'}
+          ,{field : 'currentOfficeName',title : '科室',
+              templet :function (row) {
+                  if(row.currentOfficeId == null || row.currentOfficeId == "" ){
+                      return "";
+                  }else{
+                      return dicOffice[row.currentOfficeId];  
+                  }
+                }
+          }
+          ,{field : 'prepayInAmount',title : '缴款'}
+          //,{field : 'checkNo',title : '票(卡)号码'}
+          ,{field : 'validFlag',title : '备注',
+                 templet:function(row){
+                     if(row.validFlag == "0"){
+                         return "已作废";
+                     }else{
+                         return "" ;
+                    };
+                }
+            }
+          /* ,{field : 'cancelTime',title : '作废日期',templet : function(row) {
+              if(row.cancelTime != null ){
+                  return util.toDateString(row.cancelTime);
+              }else{
+                  return "";
+              }
+          }
+          } */
+        ]]
+        ,page: true //显示分页导航
+        ,height: 'full-55'
+        ,request: {
+            pageName: 'pageNumber' //页码的参数名称，默认：page
+           ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){ }//回调函数
+      });//table.render
+      
+    //点击刷新
+      $('#btn_freshen').click(function(){
+          tableIns.reload({where: null});
+      });
+      
+    //点击查询
+      $('#btn_query').click(function(){
+          var queryParams = common.serializeObject($('#fee_queryForm'));
+          tableIns.reload({where: queryParams});
+      });
+      var initLayout;
+       initLayout = function() {
+           $('#container').layout({
+               east__size: 750//pane的大小 
+              ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content   
+              ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。  
+              ,spacing_open:8//边框的间隙 
+              ,maskIframesOnResize:".resizeiframe"
+           });
+       }
+      //页面初始化
+    $(document).ready(function() {
+       initLayout();
+    });
+  });
+   //获取结算页面单击行传值
+   inhospitalFormDo = function (inhospitalId){
+       $('#inhospitalIdjo').val(inhospitalId);
+       $('#FeeItemTal').empty();
+       dayDetailed();
+       selectInhospitalFee();
+   }
+   //获取到点击行的住院流水Id,执行获取详细信息
+       inhospitalForm = function (inhospitalId){
+           $('#FeeItemTal').empty();
+           $('#inhospitalIdjo').val(inhospitalId);
+           dayDetailed();
+       }
+    
+    //获取日结详细信息
+  var dayDetailed = function(){
+       $.ajax({
+           type:"post"
+            ,data:$("#reg_patient_EditForm").serialize()
+            ,url:"../inpatient/dayInformation.jo" 
+            ,async:false
+            ,success: function(result){
+                $('#number').html(result["number"]);
+                $('#unValidLength').html(result["unValidLength"]);
+                $('#validLength').html(result["validLength"]);
+                $('#prepayInAmounts').html(result["prepayInAmounts"]);
+                $('#unCashPayInAmounts').html(result["unCashPayInAmounts"]);
+                $('#cashPayInAmounts').html(result["cashPayInAmounts"]);
+               $('#rmblarge').html(common.cmycurd($('#prepayInAmounts').html()));
+             }
+       }); 
+   }
+    
+    function selectInhospitalFee(){
+        $.ajax({
+            type:"post"
+             ,data:$("#reg_patient_EditForm").serialize()
+             ,url:"../inpatient/selectInhospitalFee.jo" 
+             ,async:false
+                 ,success: function(data){
+                   for(var i=0;i<data.length;i++){
+                  　　var tr = $("<tr/>");
+                     　    var td1 = $("<td>"+data[i].chargeName+"</td>");
+                     　    var td2 = $("<td>"+data[i].settlementPrice+"</td>");
+                     　    var td3 = $("<td>"+data[i].selfPayAmount+"</td>");
+                     　    td1.appendTo(tr);
+                     　    td2.appendTo(tr);
+                     　    td3.appendTo(tr);
+                     　    $('#FeeItemTal').append(tr);
+                   }
+                   if(data.length == 0){
+                      var tr = $("<tr/>");
+                   　    var td1 = $("<td><h5>无收费项目</h5></td>");
+                   　    td1.appendTo(tr);
+                   　    $('#FeeItemTal').append(tr);
+                   }
+              }
+        }); 
+    }
+   dayDetailed();
+   //标题加日期
+   function daytitle(){
+         var date1=new Date();  //创建对象  
+         var y=date1.getFullYear();     //获取年份  
+         var m=date1.getMonth()+1;   //获取月份  返回0-11
+         var d=date1.getDate(); // 获取日 
+         if(m<10 ){
+             m="0" + m;
+         }
+         if(d<10 ){
+             d="0" + d;
+         }
+         $('#dayTitle').html("("+y+"-"+m+"-"+d+")");
+   }
+   daytitle();
+   
+
+    
+    
+   //主页导航栏菜单[患者列表、门诊日志、处方、检查、检验、手术...]
+   var mainTab = {
+       layFilter:'inSettNav',
+       menu:{
+           outAppoint:{
+                layId:'outAppoint'
+               ,url:'../register/outAppointEdit.do'}
+           ,medicalDoc:{
+                layId:'medicalDoc'
+               ,url:'../outpatient/medicalDoc.do'}
+       }
+   }
+   layui.use(['element', 'layer'], function(){
+       var element = layui.element; 
+       $ = layui.$;
+       layer = layui.layer;
+       element.render();
+       
+       
+       /* 切换到指定Tab项 */
+       tabChange = function (filter, layid) {
+           element.tabChange(filter, layid);
+       }
+       
+       //监听导航菜单点击事件
+       element.on('tab(inSettNav)', function(elem){ 
+           var layId = $(this).attr('lay-id');
+           var href = $(this).attr('href');
+           var patient = $(this).attr('patient');
+           
+           if (href) {
+               url = href; //使用已有的url
+           } else {
+               if (patient) {//必须带当前患者的参数
+                   //需要判断患者是否存在，不存在则返回
+                   url = mainTab.menu[layId].url   + common.objToParamStr(grobalModel)
+               } else {
+                   url = mainTab.menu[layId].url 
+               }
+           }
+           
+           reqIframe(layId,url);
+       });
+       
+       //iframe请求页
+       function reqIframe(layId,url,force) {
+         var destIframe = $('div[lay-id="'+layId+'"] iframe');
+         if(!destIframe.attr('src') || force) {
+             destIframe.attr('src',url);
+         }
+       }
+       
+       //动态添加tab
+       tabAdd = function(layId,tabTitle,url,force,layFilter, curPatientId){
+          if (!layId) { //layId必填
+              console.log('layId必填');
+              return false;
+          } 
+          if (!tabTitle) { //tab的标题必填
+              console.log('tab的url必填');
+              return false;
+          } 
+          if (!url) { //tab的url必填
+              console.log('tab的url必填');
+              return false;
+          } 
+           
+          //去UL > LI 的对应 href 
+          var href = $('.layui-tab-title>li[lay-id='+layId+']').attr('href');
+          if (href) {
+              if (href != url) { //url不相同，删除后新建
+                  element.tabDelete(layFilter, layId);
+              } else {
+                  if (force) {//强制新建
+                      element.tabDelete(layFilter, layId);
+                  }else {
+                      element.tabChange(layFilter,layId);  
+                      return; //返回
+                  }
+              }
+          }  
+          
+          var content = '<iframe src="' + url +'" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+          if (curPatientId) { //必须包含当前所选的患者ID
+              content = '<iframe src="' + url +'" patientId=" ' + curPatientId + ' " width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+          }
+          element.tabAdd(layFilter, { id: layId ,title: tabTitle ,content: content});
+          
+          var layFilterNav = $('.' + layFilter); 
+          layFilterNav.find('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href',url);
+          layFilterNav.find('.layui-tab-title>li:last').trigger('click');
+          layFilterNav.find('.layui-tab-content>div:last').attr('lay-id',layId);
+          //element.tabChange(mainTab.layFilter,layId);  
+       } 
+       
+       //动态添加inSettNav的tab选项卡
+       tabAddinSettNav = function(layId,tabTitle,url,force){
+           tabAdd(layId, tabTitle, url, force, mainTab.layFilter);  
+       }
+   });
+   
+</script> 

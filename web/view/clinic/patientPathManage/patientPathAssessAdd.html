@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>路径评价添加</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../../resource/layuiadmin/style/admin.css" media="all">
+    <script src="../../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+
+    <!---->
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style type="text/css">
+        /* 防止下拉框的下拉列表被隐藏---必须设置--- */
+        .layui-table-cell {            overflow: visible !important;        }
+        /* 使得下拉框与单元格刚好合适 */
+        td .layui-form-select{
+            margin-top: -10px;
+            margin-left: -15px;
+            margin-right: -15px;
+        }
+        /*解决下拉框被表格覆盖样式问题*/
+        .layui-form-select dl {
+            z-index: 9999;
+        }
+        .layui-table-box {
+            overflow: visible
+        }
+        .layui-table-body{
+            overflow:visible;
+        }
+        .layui-card.left-box {
+            height: calc(100vh - 10px);
+        }
+
+        .layui-card.right-box {
+            height: calc(100vh - 50px);
+            overflow-y: auto;
+        }
+
+        .layui-card-header .caller-seach {
+            display: inline-block;
+            width: calc(100% - 85px);
+        }
+
+        .layui-card-header .caller-seach > .caller-icon {
+            right: 110px;
+        }
+
+        .layui-card-header .caller-seach > input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-card-header .layui-btn-group {
+            height: 35px;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+
+        .layui-input-inline .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 3px;
+            cursor: pointer;
+        }
+
+        .layui-input-inline input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-input-inline .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 3px;
+            right: 6px;
+            cursor: pointer;
+        }
+
+        /* 防止下拉框的下拉列表被隐藏---必须设置--- */
+        .layui-table-col-special > .layui-table-cell {
+            overflow: visible;
+        }
+
+        td .layui-form-select {
+            margin-left: -5px;
+            margin-right: -5px;
+            margin-top: -2px;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #ff5722 !important;
+        }
+
+        /*单元格 必填红框*/
+        .layui-table-cell-danger {
+            border: 1px solid rgb(255, 87, 34) !important;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space12">
+            <div class="layui-col-md3 layui-col-xs3">
+                <div class="layui-card left-box">
+                    <div class="layui-card-body">
+                        <div class="diseaseTable">
+                            <div class="layui-inline">
+                                <input class="layui-input" name="id" id="disease" autocomplete="off">
+                            </div>
+                            <button class="layui-btn layui-btn-sm" data-type="reload" style="margin-top: -6px" id="diseaseBtn">搜索</button>
+                        </div>
+                        <table id="clinicDiseaseGrid" lay-filter="clinicDiseaseGrid"></table>
+                        <!--  列表表格 end -->
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md3 layui-col-xs3">
+                <div class="layui-card left-box">
+                    <div class="layui-card-body">
+                        <div class="pathTable">
+                            <div class="layui-inline">
+                                <input class="layui-input" name="id" id="path" autocomplete="off">
+                            </div>
+                            <button class="layui-btn layui-btn-sm" data-type="reload" style="margin-top: -6px" id="pathBtn">搜索</button>
+                        </div>
+                        <table id="clinicPathGrid" lay-filter="clinicPathGrid"></table>
+                        <!--  列表表格 end -->
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6 layui-col-xs6">
+                <form class="layui-form" lay-filter="inpatientWardBedForm" id="inpatientWardBedForm">
+                    <div class="layui-card right-box">
+                        <div class="layui-card-header">路径评价设置</div>
+                        <div class="layui-card-body"  style="text-align: center;">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">病种</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" readonly id="diseaseShow" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">路径</label>
+                                <div class="layui-input-inline">
+                                    <input type="text" readonly id="pathShow" class="layui-input">
+                                </div>
+                            </div>
+                        </div>
+                        <table id="patientPathAssessGrid" lay-filter="patientPathAssessGrid" ></table>
+                    </div>
+                    <div class="tool-bottom-fixed " style="position: sticky;">
+                        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                class="layui-btn layui-btn-sm">保 存
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" data-id="{{d.id}}" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i>
+    </a>
+</script>
+<!--下拉列表-->
+<script type="text/html" id="selectTpl">
+    <select name="{{d.name}}" lay-filter="clinicAssessType" data-key="clinicAssessType"  data-index="{{ d.index }}" lay-search>
+        <option value=""></option>
+        {{# layui.each(d.data, function(val, key){ }}
+        <option value="{{val}}" {{val== d.value ?
+        'selected' : ''}}>{{key}}</option>
+        {{# }) }}
+    </select>
+</script>
+
+<script>
+    var dicClinicAssessType ={
+        1:'诊断依据',
+        2:'出院标准',
+        3:'进入标准'
+    }
+    var keyword ="";
+    var pathName = window.document.location.pathname;
+    //获取带"/"的项目名，如：/cloud_his
+    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+    var needSave = 0;
+    var getParams = {}
+    layui.use(['table', 'layedit', 'laydate','laytpl'], function() {
+        var that = this
+        var table = layui.table;
+        var form = layui.form
+            , layer = layui.layer
+            , layedit = layui.layedit
+            , laytpl = layui.laytpl
+            , laydate = layui.laydate;
+
+        table.render({
+            id: 'patientPathAssessGrid'
+            ,elem: '#patientPathAssessGrid'
+            ,url: projectName+'/pathway/patientPathManage.jo'
+            ,cellMinWidth: 80
+            ,cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_wardBed" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                }
+                // {field:'clinicAssessId', title: '临床路径评估ID'}
+
+                ,{field:'sort', title: '排列顺序', width:70, edit: true}
+                ,{field:'clinicAssessContent', title: '内容',  edit: true,required:true}
+                ,{field:'clinicAssessType', title: '类别', width:170,
+                    templet: function (d) {
+                        return laytpl($('#selectTpl').html()).render({
+                            name: 'clinicAssessType' + d.LAY_TABLE_INDEX,
+                            filter: 'clinicAssessType',
+                            value: d.clinicAssessType,
+                            data: dicClinicAssessType,
+                            index:d.LAY_TABLE_INDEX,
+                        });
+                    }
+                }
+                ,{field:'needFlag', title: '是否必填', width:70,
+                    templet: function (d) {
+                        if (d.needFlag == 1) {
+                            return laytpl('<input type="checkbox" data-key="needFlag" data-index="'+d.LAY_TABLE_INDEX+'"  name="needFlag'+d.LAY_TABLE_INDEX+'" value="1" checked="" lay-skin="switch" lay-text="是|否" lay-filter="checkboxTpl">').render({
+                                value: d.needFlag
+                            })
+                        }
+                        else {
+                            return laytpl('<input type="checkbox" data-key="needFlag" data-index="'+d.LAY_TABLE_INDEX+'" name="needFlag'+d.LAY_TABLE_INDEX+'" value="0" lay-skin="switch" lay-text="是|否" lay-filter="checkboxTpl">').render({
+                                value: d.needFlag
+                            })
+                        }
+
+                    }}
+                ,{field:'clinicDiseaseId', title: '病种编号',hide:true}
+                ,{field:'clinicPathId', title: '路径编号',hide:true}
+                ,{field: 'clinicPathName', title: '路径',hide:true}
+                ,{field: 'clinicDiseaseName', title: '病种',hide:true}
+                ,{width:60, title:'操作', toolbar: '#delTpl'}
+            ]]
+            ,height : getTableHgt()
+            ,limit: 9999
+            ,where:getParams
+            ,done:function () {
+                reloadTable()
+            }
+        });
+
+
+        function reloadTable(){
+            var oBtn = document.getElementById('btn_add_wardBed')
+            oBtn.onclick = function(){
+                needSave = 1;
+                if (disease == null || path == null) {
+                    common.msg('请先选择病种和路径', 0);
+                    return;
+                }
+                var dataBak = [];   //定义一个空数组,用来存储之前编辑过的数据已经存放新数据
+                var tableBak = table.cache["patientPathAssessGrid"];
+                for (var i = 0; i < tableBak.length; i++) {
+                    dataBak.push(tableBak[i]);      //将之前的数组备份
+                }
+                //在尾部新增一行空数据，实现增行效果
+                dataBak.push({
+                    "clinicDiseaseId": disease.diseaseId
+                    ,"clinicDiseaseName": disease.diseaseName
+                    ,"clinicPathId": path.clinicPathId
+                    ,"clinicPathName": path.clinicPathName
+                    ,"clinicAssessContent": ""
+                    ,"clinicAssessType": ""
+                    ,"needFlag": "0"
+                    ,"sort": tableBak.length == 0 ? 1 : (tableBak[tableBak.length-1].diseaseId ? tableBak[tableBak.length-1].sort : tableBak.length) + 1
+                });
+                table.reload("patientPathAssessGrid",{
+                    url: '', //接口
+                    data:dataBak,   // 将新数据重新载入表格
+                })
+            }
+        }
+
+        var t1 = table.render($.extend({}, basePageTable, {
+            id: 'clinicPathGridTable'
+            , elem: '#clinicPathGrid'
+            , url: projectName + '/pathway/clinicPathList.jo'
+            , cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [[
+                {
+                    type: 'radio',
+                    hide: true
+                },
+                {field: 'clinicPathName', title: '路径'},
+                {field: 'clinicPathId', title: '路径编号', hide: true}
+            ]]
+            ,where:{
+                keyWord:keyword
+            }
+            ,page: {
+                groups: 1 //只显示 1 个连续页码
+            }
+        }));
+        $("#pathBtn").click(function () {
+            keyword = $("#path").val()
+            table.reload('clinicPathGridTable',{
+                where:{keyWord:keyword}
+            })
+        })
+        var t2 = table.render($.extend({}, basePageTable, {
+            id: 'clinicDiseaseGridTable'
+            , elem: '#clinicDiseaseGrid'
+            , url: projectName + '/pathway/clinicDiseaseList.jo'
+            , cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            , cols: [[
+                {
+                    type: 'radio',
+                    hide: true
+                },
+                {field: 'diseaseName', title: '病种'},
+                {field: 'diseaseId', title: '病种编号', hide: true}
+            ]]
+            ,where:{
+                keyWord:keyword
+            }
+            ,page: {
+                groups: 1 //只显示 1 个连续页码
+            }
+        }));
+        $("#diseaseBtn").click(function () {
+           keyword = $("#disease").val()
+            table.reload('clinicDiseaseGridTable',{
+               where:{keyWord:keyword}
+           })
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - 170)
+        }
+
+        var disease = null;
+        var path = null;
+        table.on('row(clinicDiseaseGrid)', function (data) {
+            if (disease != null && disease != data.data && needSave==1) {
+                common.confirm('修改未保存，确认更换吗',function (msg) {
+                    needSave = 0;
+                    disease = data.data;
+                    data.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                    data.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+                    $("#diseaseShow").val(data.data.diseaseName);
+                    form.render();
+                })
+            }
+            else {
+                disease = data.data;
+                data.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                data.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+                $("#diseaseShow").val(data.data.diseaseName);
+                form.render();
+            }
+            if (path != null) {
+                getParams.clinicDiseaseId = disease.diseaseId;
+                table.reload('patientPathAssessGrid', {
+                    url: projectName+'/pathway/patientPathManage.jo'
+                    ,where:getParams
+                });
+            }
+        });
+        table.on('row(clinicPathGrid)', function (data) {
+            if (path != null && path != data.data && needSave==1) {
+                common.confirm('修改未保存，确认更换吗',function (msg) {
+                    needSave = 0;
+                    path = data.data;
+                    data.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                    data.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+                    $("#pathShow").val(data.data.clinicPathName);
+                    form.render();
+                })
+            }
+            else {
+                path = data.data;
+                data.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                data.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+                $("#pathShow").val(data.data.clinicPathName);
+                form.render();
+            }
+            if (disease != null) {
+                getParams.clinicPathId = path.clinicPathId;
+                table.reload('patientPathAssessGrid', {
+                    url: projectName+'/pathway/patientPathManage.jo'
+                    ,where:getParams
+                });
+            }
+        });
+        //监听单元格编辑
+        table.on('edit(patientPathAssessGrid)', function(obj){
+            needSave = 1;
+        });
+        //监听下拉框
+        form.on('select(clinicAssessType)', function(data){
+            needSave = 1;
+            change.call(this, data.elem, 'value');
+            form.render();
+        });
+        //监听指定开关
+        form.on('switch(checkboxTpl)', function(data){
+            needSave = 1;
+            change.call(this, data.elem, 'checked');
+            form.render();
+        });
+        //保存表格中外部组件的值
+        function change(event, property) {
+            const index = event.dataset.index;
+            const key = event.dataset.key;
+            var Data= table.cache["patientPathAssessGrid"];
+            if (true == event[property]) {
+                Data[index][key] = "1";
+            }
+            else if(false == event[property]) {
+                Data[index][key] = "0"
+            }
+            else {
+                Data[index][key] = event[property];
+            }
+            table.cache["patientPathAssessGrid"] = Data;
+        }
+        //监听删除事件
+        table.on('tool(patientPathAssessGrid)', function(obj){
+            switch(obj.event){
+                case 'btn_delete':
+                    common.confirm('是否删除',function () {
+                        if (obj.data.clinicAssessId) {
+                            $.ajax({
+                                type: "post",
+                                async: true,
+                                url: projectName + '/pathway/deleteClinicAssess.jo?clinicAssessIds='+obj.data.clinicAssessId,
+                                dataType: "json",        //返回数据形式为json
+                                success: function (result) {
+                                    table.reload('patientPathAssessGrid', {
+                                        url: projectName+'/pathway/patientPathManage.jo'
+                                        ,where:getParams
+                                    });
+                                }
+                            })
+                        }
+                        else {
+                            obj.del();
+                        }
+
+                        return false;
+                    });
+                    break;
+            };
+        });
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            if (needSave == 0) {
+                layer.msg('改点什么吧')
+                return false;
+            }
+            saveCilicAssess()
+            return false
+        })
+        function saveCilicAssess() {
+            var data = table.cache["patientPathAssessGrid"]
+            for (var i=0;i<data.length;i++) {
+                d = data[i]
+                if (!d.clinicAssessId && d.clinicAssessContent == "") {
+                    layer.msg('内容不能为空')
+                    return;
+                }
+            }
+
+            var params = JSON.stringify(data)
+            var json = JSON.stringify({infoList:params})
+            $.ajax({
+                type: "post",
+                async: true,
+                url: projectName + '/pathway/saveAssessList.jo',
+                data: {infoList:json},
+                dataType: "json",        //返回数据形式为json
+                success: function (result) {
+                    common.alert('添加成功')
+                    table.reload('patientPathAssessGrid', {
+                        url: projectName+'/pathway/patientPathManage.jo'
+                        ,where:getParams
+                    });
+                }
+            })
+        }
+    })
+
+</script>

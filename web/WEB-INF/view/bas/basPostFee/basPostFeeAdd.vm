@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生职称设置-设置职称诊查费-新增</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-card.left-box {
+            height: calc(100vh - 10px);
+        }
+
+        .layui-card.right-box {
+            height: calc(100vh - 50px);
+            overflow-y: auto;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #FF5722 !important;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+
+        .layui-card-header .caller-seach {
+            display: inline-block;
+            width: calc(100% - 45px);
+        }
+
+        .layui-card-header .caller-seach > .caller-icon {
+            right: 70px;
+        }
+
+        .layui-card-header .caller-seach > input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-card-header .layui-btn-group {
+            height: 35px;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4 layui-col-xs4">
+                <div class="layui-card left-box">
+                    <div class="layui-card-header">
+                        <div class="layui-form caller-seach" action="">
+                            <input type="text" id="q_keyWord"
+                                   autocomplete="off" class="layui-input caller-pl32" required title="">
+                            <i class="layui-icon layui-icon-close caller-dump-icon caller-icon" lay-tips="清空"></i>
+                        </div>
+                        <div class="layui-btn-group">
+                            <button id="btn_query" class="layui-btn layui-btn-primary layui-btn-sm" type="button"
+                                    lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                        </div>
+                    </div>
+                    <div class="layui-card-body">
+                        <table id="basChargeItemListGrid" lay-filter="basChargeItemListGrid"></table>
+                        <!--  列表表格 end -->
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md8 layui-col-xs8">
+                <form class="layui-form" lay-filter="basPostFeeForm" id="basPostFeeForm">
+                    <input type="hidden" id="submitFlag">
+                    <div class="layui-card right-box">
+                        <div class="layui-card-body" style="padding: 20px 0px 0 0;">
+                            <div class="layui-form-item">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()职称</label>
+                                    <div class="layui-input-block">
+                                        <input type="hidden" name="doctorPostName" id="doctorPostName">
+                                        #formRadioGroup("doctorPostCode" "$!{doctorPostCode}"
+                                        ${dicData.dicDoctorPost} " lay-filter='doctorPostCode' lay-verify='reqRedio'
+                                        check-msg='请选择职称' ")
+                                    </div>
+                                </div>
+                                #if($!{basPostFee})
+                                #set($validFlag = $!{basPostFee.validFlag})
+                                #else
+                                #set($validFlag = $!{CONST.AppConstants.YES_FLAG})
+                                #end
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()是否有效</label>
+                                    <div class="layui-input-block">
+                                        #formRadioGroup("validFlag" "$!{validFlag}"
+                                        ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <table id="basPostFeeListGrid" class="layui-table-tabs"
+                               lay-filter="basPostFeeListGrid" lay-verify="basPostFee"></table>
+                    </div>
+                    <div class="tool-bottom-fixed " style="position: sticky;">
+                        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                class="layui-btn layui-btn-sm">保 存
+                        </button>
+                        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bas/basPostFee/basPostFeeAdd.js.vm")
+</body>
+</html>

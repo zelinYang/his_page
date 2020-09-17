@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>今日已开处方</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/recipe/recipe.css.vm")
+
+</head>
+
+<body class="full-height white-bg">
+
+<div class="layui-row full-height">
+    #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+    #formHiddenInput("outpatientOfficeId" "$!outpatientOfficeId" "id='outpatientOfficeId'")
+    <table id="alreadyRecipeTable" lay-filter="alreadyRecipeTable"></table> <!-- 数据表格 -->
+
+</div><!-- layui-row -->
+
+</body>
+<script>
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+    var dicSkinTestFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicSkinTestFlag)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)'); //药品类型dicPharmacy
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    layui.use(['jquery', 'table', 'form'], function () {
+        var table = layui.table, $ = layui.$, form = layui.form;
+
+        var alreadyRecipeTable = table.render({
+            elem: '#alreadyRecipeTable'
+            , defaultToolbar: []
+            , height: 'full-1'//高度
+            ,cellMinWidth: 80
+            , url: '../outpatient/recipeItemListData.jo' //数据接口
+            , page: true //开启分页
+            , where: {
+                patientId: $('#patientId').val(),
+                latestDate: layui.util.toDateString(new Date(),'yyyy-MM-dd'),
+                outpatientOfficeIdNotEqu: $('#outpatientOfficeId').val()
+            }
+            , request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            , cols: [[ //表头
+                {field: 'orderName', title: '药品名称'}
+                , {field: 'medicineSpec', title: '规格'}
+
+                , {field: 'dosage', title: '每次剂量/用量'}
+                , {
+                    field: 'dosageUnit', title: '', templet: function (row) {
+                        if (row.dosageUnit) {
+                            return row.dosageUnit ? dicDrugNumUnitDosageUnit[row.dosageUnit] : ''
+                        }
+                        return ''
+                    }
+                }
+                , {
+                    field: 'doseWayCode', title: '用法', templet: function (row) {
+                        if (row.doseWayCode) {
+                            return row.doseWayCode ? dicDoseWay[row.doseWayCode] : ''
+                        }
+                        return ''
+                    }
+                }
+                , {
+                    field: 'pharmacyFreqId', title: '频率', templet: function (row) {
+                        if (row.pharmacyFreqId) {
+                            return row.pharmacyFreqId ? dicPharmacyFreq[row.pharmacyFreqId] : ''
+                        }
+                        return ''
+                    }
+                }
+                , {field: 'usageQuantity', title: '每日剂量'}
+                , {
+                    field: 'dosageUnit', title: '', templet: function (row) {
+                        if (row.dosageUnit) {
+                            return row.dosageUnit ? dicDrugNumUnitDosageUnit[row.dosageUnit] : ''
+                        }
+                        return ''
+                    }
+                }
+                , {field: 'orderDay', title: '天数'}
+                , {field: 'giveTotalQuantity', title: '总量'}
+                , {
+                    field: 'skinTestFlag', title: '皮试', templet: function (row) {
+                        if (row.skinTestFlag) {
+                            return row.skinTestFlag ? dicSkinTestFlag[row.skinTestFlag] : ''
+                        }
+                        return '不需要皮试';
+                    }
+                }
+                , {
+                    field: 'medicineType', title: '类别', templet: function (row) {
+                        if (row.medicineType) {
+                            return row.medicineType ? dicMedicineType[row.medicineType] : ''
+                        }
+                        return ''
+                    }
+                }
+                , {field: 'specialTreatment', title: '医生说明'}
+                , {field: 'unitPrice', title: '单价'}
+                , {field: 'actualPrice', title: '总价'}
+                , {field: 'exeOfficeName', title: '执行科室'}
+            ]]
+        });
+
+    })
+    ;
+</script>
+</html>

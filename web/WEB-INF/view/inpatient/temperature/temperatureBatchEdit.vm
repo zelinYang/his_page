@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <style type="text/css">
+        .layui-table-cell .layui-input{ border: 0px;outline:none; padding-left: 0px; padding:5px 10px;}
+        .layui-table-cell .layui-input:focus{background: #bbffff;}
+        .layui-table-main .layui-table-cell{padding:0px;}
+        .layui-table-view .layui-table td { padding:0px; }
+        .layui-table th {text-align: center;}
+    </style>
+</head>
+
+<body>
+<!-- 列表 -->
+<table class="layui-table layui-hide" lay-filter="inpatientList">
+    <thead>
+    <tr>
+        <th lay-data="{field:'inhospitalId', width:0, hide:true}"></th>
+        <th lay-data="{field:'inhospitalNo', width:0, hide:true}"></th>
+        <th lay-data="{field:'patientId', width:0, hide:true}"></th>
+        <th lay-data="{field:'currentOfficeId', width:0, hide:true}"></th>
+        <th lay-data="{field:'currentOfficeName', width:0, hide:true}"></th>
+        <th lay-data="{field:'inpatientSymptomId', width:0, hide:true}"></th>
+        <th lay-data="{field:'currentBedNo', width:105, fixed:'left'}">床号</th>
+        <th lay-data="{field:'patientName', width:105, fixed:'left'}">姓名</th>
+        <th lay-data="{field:'patientAgeShow', width:90, fixed:'left'}">年龄</th>
+        <th lay-data="{field:'inhospitalDayNum', width:90, fixed:'left'}">住院天数</th>
+        <th lay-data="{field:'temperature', width:90}">体温</th>
+        <th lay-data="{field:'breathing', width:90}">呼吸</th>
+        <th lay-data="{field:'pulseRate', width:90}">脉搏</th>
+        <th lay-data="{field:'heartRate', width:90}">心率</th>
+        <th lay-data="{field:'diastolicNbp', width:90}">收缩压</th>
+        <th lay-data="{field:'systolicNbp', width:90}">舒张压</th>
+        <th lay-data="{field:'temperatureLoc', width:90}">体温位置</th>
+        <th lay-data="{field:'exeUserId', width:90}">执行护士</th>
+    </tr>
+    </thead>
+    <tbody id="temperatureTbody">
+    #foreach($item in $!temperatureBatchList)
+    <tr>
+        <td>#formHiddenInput("inhospitalId" "$!item.inhospitalId")</td>
+        <td>#formHiddenInput("inhospitalNo" "$!item.inhospitalNo")</td>
+        <td>#formHiddenInput("patientId" "$!item.patientId")</td>
+        <td>#formHiddenInput("currentOfficeId" "$!item.currentOfficeId")</td>
+        <td>#formHiddenInput("currentOfficeName" "$!item.currentOfficeName")</td>
+        <td>#formHiddenInput("inpatientSymptomId" "$!item.inpatientSymptom.inpatientSymptomId")</td>
+        <td>$!item.currentBedNo</td>
+        <td>$!item.patientName</td>
+        <td>$!item.patientAgeShow</td>
+        <td>$!item.inhospitalDayNum</td>
+        <td>#formFloInput("temperature" "$!item.inpatientSymptom.temperature" "class='layui-input' maxlength='4'")</td>
+        <td>#formIntZeroInput("breathing" "$!item.inpatientSymptom.breathing" "class='layui-input' maxlength='3'")</td>
+        <td>#formIntZeroInput("pulseRate" "$!item.inpatientSymptom.pulseRate" "class='layui-input' maxlength='3'")</td>
+        <td>#formIntZeroInput("heartRate" "$!item.inpatientSymptom.heartRate" "class='layui-input' maxlength='3'")</td>
+        <td>#formTextInput("diastolicNbp" "$!item.inpatientSymptom.diastolicNbp" "class='layui-input' maxlength='3'")</td>
+        <td>#formTextInput("systolicNbp" "$!item.inpatientSymptom.systolicNbp" "class='layui-input' maxlength='3'")</td>
+        <td>#formSingleSelect("temperatureLoc" "$!item.inpatientSymptom.temperatureLoc" $!dicData.dicTemperatureLoc) </td>
+        <td>#formSingleSelectSearch("exeUserId" "$!item.inpatientSymptom.exeUserId" $!dicData.dicNurse "class=''" "use-pin='first'" "")</td>
+    </tr>
+    #end
+    </tbody>
+</table>
+<div class="tool-bottom-fixed">
+    <button type="button" id="btn_save" class="layui-btn layui-btn-sm" ><i class=""></i> 保 存 </button>
+</div>
+
+<!-- 全局js -->
+
+#parse("./inpatient/temperature/temperatureBatchEdit.js.vm")
+</body>
+
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-收费系统-查询统计-住院结算-住院结算归并明细</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="inhospitalFeeItem_queryForm" class="layui-form">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">结算日期</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("" "" "class='layui-input layer-date '
+                            tag='settlementTimeBegin,settlementTimeEnd' id='q_settlementTime' autocomplete='off' ")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">计费日期</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("" "" "class='layui-input layer-date '
+                            tag='chargeTimeBegin,chargeTimeEnd' id='q_chargeTime' autocomplete='off' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">医嘱项目类型</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("doctorOrderType" ""
+                            $!{dicData.dicDoctorOrderType} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">医技分类</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("doctorOrderSubtype" ""
+                            $!{dicData.dicDoctorOrderSubtype} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">费用归并</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("inhospitalChargeGroupCode" ""
+                            $!{dicData.dicInhospitalChargeGroupCode} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">费用名称</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("chargeName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">费用项目类型</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("orderClassify" ""
+                            $!{dicData.dicOrderClassify} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">是否药品</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("medicineFlag" ""
+                            $!{dicData.dicMedicineFlag} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">药品类别</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("medicineType" ""
+                            $!{dicData.dicMedicineType} "lay-search")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">收费/退费</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("operPayFlag" ""
+                            $!{dicData.dicOperPayFlag} "lay-search")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">收费操作人</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("operUserName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">退费时间</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("" "" "class='layui-input layer-date '
+                            tag='refundChargeDateBegin,refundChargeDateEnd' id='q_refundChargeDate' autocomplete='off'
+                            ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">退费操作人</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("refundOperUserName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">发票号码</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("feeBillNo" "" "class='layui-input' ")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">结算次数</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("settlementNum" "" "class='layui-input' ")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">结算状态</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("payFeeFlag" ""
+                            $!{dicData.dicPayFeeFlag} "lay-search")
+                        </div>
+                    </div>
+
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">开嘱医护</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("makeOrderDoctorName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">开嘱人类型</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("makeOrderFlag" ""
+                            $!{dicData.dicMakeOrderFlag} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">费用科室</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("orderOfficeName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">执行科室</label>
+                        <div class="layui-input-inline wd-80">
+                            #formTextInput("exeOfficeName" "" "class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i
+                                class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 begin -->
+        <table id="inhospitalFeeItemListGrid" lay-filter="inhospitalFeeItemListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./fee/inhospitalFeeItem/inhospitalFeeItemList.js.vm")
+</body>
+</html>

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style type="text/css">
+
+    .layui-input-sm{
+        max-width:60px;
+    }
+
+    .layui-form-label{
+        padding:5px;
+    }
+
+    .label-sm{
+        mix-width:30px;
+        width:30%;
+        max-width:50px;
+    }
+    .content-left{
+    }
+    .content-right{
+        border-left:1px solid #c9c9c9;
+        border-top: 1px solid #cccccc;
+    }
+    .layui-card{
+        border-top: 1px solid #cccccc;
+        border-left: 1px solid #cccccc;
+        border-bottom: 1px solid #cccccc;
+    }
+    .layui-form-item .layui-form-checkbox[lay-skin=primary]{
+        margin-top:5px;
+    }
+    #inpatientTable{ margin-top:0px; }
+    #doseWayTable th{
+        height:28px;
+    }
+</style>
+</head>
+<body >
+    <div class=" layui-fluid layui-content-wrapper">
+        <div class="layui-col-xs3 full-height layui-bg-white">
+            <form class="layui-form layui-bg-white" id="queryForm">
+                #formHiddenInput("inhospitalStates" "$!{CONST.AppConstants.INHOSPITAL_STATE_IN},$!{CONST.AppConstants.INHOSPITAL_STATE_PASS_OUT},$!{CONST.AppConstants.INHOSPITAL_STATE_CONFIRM_OUT},$!{CONST.AppConstants.INHOSPITAL_STATE_EXPECT_BALANCE},$!{CONST.AppConstants.INHOSPITAL_STATE_UNBALANCEED}" "id='q_inhospitalStates'")
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">姓名：</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("patientName" "" "id='patientName' lay-filter='orderState' placeholder='姓名' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group m-l-sm">
+                            <button type="button" class="layui-btn layui-btn-sm search" id="btn-query"><i class="layui-icon layui-icon-search" style="font-size:20px"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="layui-row layui-bg-white">
+                <table class="layui-table m-n" id="inpatientTable" lay-filter="inpatientTable"></table>
+            </div>
+        </div>
+        <div class="layui-col-xs9 full-height content-right" style="" >
+            <form class="layui-form autoWidth" id="orderQueryForm">
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱状态</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("orderState" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState' placeholder='医嘱状态' class='layui-input'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱类型</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("orderClassify" "" $!dicData.dicOrderClassify "id='orderClassify' lay-filter='orderClassify'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱项目</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("orderName" "" "id='orderName' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label" >开始日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" "" "id='exeOrderStartTime' tag='exeOrderStartTimeBegin,exeOrderStartTimeEnd' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group m-l-sm">
+                            <button type="button" class="layui-btn layui-btn-sm search" id="btn-order-query"><i class="layui-icon layui-icon-search" style="font-size:20px"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!-- 医嘱列表 -->
+            <div class="layui-row layui-bg-white">
+                <table class="layui-table m-n" id="orderList" lay-filter="orderList"></table>
+            </div>
+            <div class="layui-row layui-bg-white">
+                <table class="layui-table m-n" id="orderExeList" lay-filter="orderExeList"></table>
+            </div>
+            <div class=" p-l-xs p-r-xs p-t-xs text-center" id="footerBar">
+                <button class="layui-btn layui-btn-sm layui-bg-blue" id="btn_cancel" type="button">取消执行</button>
+                <button class="layui-btn layui-btn-sm layui-bg-blue" id="btn_restore" type="button">恢复执行</button>
+            </div>
+        </div>
+    </div>
+
+#parse("./inpatient/inpatientOrder/orderExecuteListEntry.js.vm")
+
+</body>
+</html>

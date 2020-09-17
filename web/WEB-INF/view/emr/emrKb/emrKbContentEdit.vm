@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/visualizationCss.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+
+    <style>
+        #patientForm{height: calc(100% - 105px);}
+        @media screen and (max-width: 768px){
+            #patientForm{height: calc(100% - 50px);}
+            .layadmin-maillist-fluid.full-height.p-t-sm{overflow: auto;-webkit-overflow-scrolling: touch;}
+        }
+    </style>
+</head>
+<body style="background-color: #FFF">
+<form class="layui-form full-height" lay-filter="patientForm" id="patientForm">
+    #formHiddenInput("kbTypeId" "$!kbTypeId" "id='kbTypeId'")
+    #formHiddenInput("kbContentId" "$!emrKbContent.kbContentId" "")
+    <div class="layadmin-maillist-fluid full-height p-t-sm">
+        <div class="layui-row p-xs text-center">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()模板分类</label>
+                <div class="layui-input-inline p-r-sm full-height-scroll">
+                    #formHiddenInput("kbTypeName" "" "id='kbTypeName'")
+                    <input type="text" id="emrKbClassifyName" name="emrKbClassifyName"
+                           value="" lay-verify="required" placeholder="请选择模板分类" autocomplete="off" class="layui-input" >
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()模板名称</label>
+                <div class="layui-input-inline p-r-sm">
+                    #formTextInput("kbName" "#htmlEscape($!emrKbContent.kbName)" "class='layui-input' maxlength='20' lay-verify='required' placeholder='请输入模板名称'")
+                </div>
+            </div>
+        </div>
+
+        <!-- 编辑容器 -->
+        <div class="layui-row full-height-scroll p-xs" id="emrTmplate">
+            $!emrKbContent.kbContent
+        </div>
+    </div>
+
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit lay-filter="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+    </div>
+</form>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./common/visualizationJs.vm")
+<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js"></script>
+<script type="text/javascript">
+
+    var minieditorDesign = new window.minieditorDesign('emrTmplate', {modelType: 'design', baseFormParams: {}});
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        dtree: 'modules/dtree/dtree'
+    }).use(['form', 'element', 'dtree','table'], function(){
+        var form = layui.form,dtree = layui.dtree;
+        var kbTypeId = '$!{kbTypeId}';
+        var kbTypeName = '$!{kbTypeName}';
+        $("#kbTypeId").val(kbTypeId);
+        $("#emrKbClassifyName").val(kbTypeName);
+        // $('#kbTypeName').val($('#kbTypeName', window.parent.document).val());
+        //  var selected = 'dd[lay-value=${kbTypeId}]';
+        // $('#kbTypeName').siblings("div.layui-form-select").find('dl').find(selected).click();
+        //监听提交
+        form.on('submit(btn_save)', function(data){
+            if (!$('#kbTypeId').val()) {
+                common.msg("模板类型编号不存", 0, function (){});
+                return;
+            }
+            data.field.kbContent = minieditorDesign.getContent();
+            common.requestServer(contextPath + '/emr/saveEmrKbContent.jo', data.field, function (result){
+                if (result.code == "0") {
+                    common.msg("保存成功。", 1, function (){
+                        $('#btn_query', window.parent.document).click();
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+
+        kbTypeTreeSelect = function (basDisease) {
+            // WebuiPopovers.hideAll();
+            $("#kbTypeId").val(basDisease.kbTypeId);
+            $("#emrKbClassifyName").val(basDisease.kbTypeName);
+        }
+
+    });
+
+    $("#emrKbClassifyName").focus(function(){
+        webuiPopover();
+    });
+
+    function webuiPopover() {
+        var iframeSettings = {
+            width:400,//药品名称内容propover 弹框参数
+            height:420,
+            closeable:true,
+            padding:true,
+            type:'iframe',
+            url:'../emr/emrKbClassifySelect.do'
+        };
+        $("#emrKbClassifyName").webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+    }
+</script>
+</html>

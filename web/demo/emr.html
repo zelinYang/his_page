@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>电子病历设计器</title>
+    <meta charset="utf-8"/>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/ueditor.config.js?id=adsf"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/ueditor.all.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/lang/zh-cn/zh-cn.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/mini-editor/minieditor.config.js?_=sfafa"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/mini-editor/minieditor.min.js?_=sfafa"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/mini-editor/plugins/jquery/jquery.min.js?_=sfafa"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/editor/mini-editor/dialogs/axios/axios.js"></script>
+    <script type="text/javascript" charset="utf-8" src="../resource/hplus/js/minieditor.design.js?v=14"></script>
+    <link href="style/css.css" rel="stylesheet">
+    <link href="../resource/editor/mini-editor/css/icon.css" rel="stylesheet"/>
+    <link href="../resource/editor/mini-editor/css/design.css" rel="stylesheet"/>
+    <style type="text/css">
+        html,body {height: 100%}
+        .designContainer {margin: 0 auto; width: 100%; height: calc(100%); overflow: hidden}
+        .sde .sde-header {margin: 0 auto; width: 800px; padding-right: 12px; z-index: 1000; top:0}
+        div {
+             -webkit-box-sizing: unset;
+             box-sizing: unset;
+        }
+        .container .subHead .iconfont {
+            font-size: 48px;
+            width: 128px;
+            height: 128px;
+            line-height: 128px;
+            display: inline-block;
+            float: left;
+            text-align: center;
+        }
+        .container .subHead {
+            height: 128px;
+        }
+        .container .subHead .tit {
+            line-height: 128px;
+            width: 100%;
+            font-size: 48px;
+            text-align: center;
+        }
+        .container .main {
+            position: absolute;
+            top: 128px;
+            left: 0;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+</head>
+<body style="height: 100%;">
+<div class="container sub">
+    <div class="subHead">
+        <a href="javascript: history.go(-1)">
+            <i class="iconfont icon-jiaoxing-left"></i>
+        </a>
+        <div class="tit">
+            电子胶片
+        </div>
+        <i class="iconfont "></i>
+    </div>
+    <div class="main">
+        <div id="myEditor" type="text/plain" style="margin: 5px auto 0px;">
+            <div contenteditable="true" title="页眉" class="header" id="header">
+                <div style="width: 10%;display: inline-block;"></div>
+                <div contenteditable="true" style="width: 80%;display: inline-block;">
+                    <p style="text-align: center;" contenteditable="false">
+                        <span style="font-size: 20px;"><strong id="hospitalName">**医院</strong></span><br/>
+                    </p>
+                    <p>
+                        <br/>
+                    </p>
+                </div>
+                <div style="width: 10%;display: inline-block;">
+                    <img src width="50" height="50" id="qrcode"/>
+                </div>
+                <hr/>
+            </div>
+            <table data-sort="sortDisabled">
+                <tbody>
+                <tr class="firstRow">
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        姓名：<span class="emr-ctrl" contenteditable="false" id="field1" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E5%A7%93%E5%90%8D%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">姓名</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        性别：<span class="emr-ctrl" contenteditable="false" id="field2" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%80%A7%E5%88%AB%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">性别</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        年龄：<span class="emr-ctrl" contenteditable="false" id="field3" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E5%B9%B4%E9%BE%84%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">年龄</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        CT号：<span class="emr-ctrl" contenteditable="false" id="field4" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22CT%E5%8F%B7%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">CT号</span></span>&nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        科室：<span class="emr-ctrl" contenteditable="false" id="field5" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E7%A7%91%E5%AE%A4%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">科室</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        住院号：<span class="emr-ctrl" contenteditable="false" id="field6" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E4%BD%8F%E9%99%A2%E5%8F%B7%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">住院号</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        床号：<span class="emr-ctrl" contenteditable="false" id="field7" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E5%BA%8A%E5%8F%B7%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">床号</span></span>&nbsp;
+                    </td>
+                    <td width="174" valign="top" style="word-break: break-all;">
+                        检查日期：<span class="emr-ctrl" contenteditable="false" id="field8" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%A3%80%E6%9F%A5%E6%97%A5%E6%9C%9F%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">检查日期</span></span>&nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" colspan="1" rowspan="1" style="word-break: break-all;">
+                        检查部位：<span class="emr-ctrl" contenteditable="false" id="field9" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%A3%80%E6%9F%A5%E9%83%A8%E4%BD%8D%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">检查部位</span></span>&nbsp;
+                    </td>
+                    <td valign="top" colspan="1" rowspan="1" style="word-break: break-all;">
+                        检查设备：<span class="emr-ctrl" contenteditable="false" id="field10" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%A3%80%E6%9F%A5%E8%AE%BE%E5%A4%87%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">检查设备</span></span>&nbsp;
+                    </td>
+                    <td valign="top" colspan="2" rowspan="1" style="word-break: break-all;">
+                        报告日期：<span class="emr-ctrl" contenteditable="false" id="field11" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%8A%A5%E5%91%8A%E6%97%A5%E6%9C%9F%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">报告日期</span></span>&nbsp;
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" colspan="4" rowspan="1" style="word-break: break-all;">
+                        检查项目：<span class="emr-ctrl" contenteditable="false" id="field12" emr-type="text" emr-right="." emr-model="%7B%22type%22%3A%22text%22%2C%22desc%22%3A%22%E6%A3%80%E6%9F%A5%E9%A1%B9%E7%9B%AE%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22verify%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22fieldName%22%3A%22%22%2C%22otherFieldName%22%3A%22%22%2C%22functionName%22%3A%22%22%2C%22defaultValue%22%3A%22%22%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%7D"><span class="emr-value" contenteditable="true" emr-left="[" emr-right="]">检查项目</span></span>&nbsp;
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+            <hr/>
+            <div class="emr-ctrl emr-section" contenteditable="false" id="ctsj" emr-type="clickarea" emr-model="%7B%22desc%22%3A%22CT%E6%89%80%E8%A7%81%22%2C%22labelName%22%3A%22CT%E6%89%80%E8%A7%81%EF%BC%9A%22%2C%22functionName%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%2C%22ctrlType%22%3A%221%22%2C%22type%22%3A%22clickarea%22%7D">
+                <div class="emr-value emr-label5" contenteditable="true">
+                    <span class="emr-label" contenteditable="false" emr-type="label" style="float: left;"><strong>CT所见：</strong></span>
+                    <p>
+                        <br/>
+                    </p>
+                </div>
+            </div>
+            <p>
+                &nbsp;
+            </p>
+            <div class="emr-ctrl emr-section" contenteditable="false" id="cbzd" emr-type="clickarea" emr-model="%7B%22desc%22%3A%22%E5%88%9D%E6%AD%A5%E8%AF%8A%E6%96%AD%22%2C%22labelName%22%3A%22%E5%88%9D%E6%AD%A5%E8%AF%8A%E6%96%AD%EF%BC%9A%22%2C%22functionName%22%3A%22%22%2C%22mode%22%3A%221%22%2C%22required%22%3A0%2C%22saveFlag%22%3A0%2C%22fontColor%22%3A%22%22%2C%22backgroundColor%22%3A%22%22%2C%22ctrlType%22%3A%221%22%2C%22type%22%3A%22clickarea%22%7D">
+                <div class="emr-value emr-label5" contenteditable="true">
+                    <span class="emr-label" contenteditable="false" emr-type="label" style="float: left;"><strong>初步诊断：</strong></span>
+                    <p>
+                        <br/>
+                    </p>
+                </div>
+            </div>
+            <p>
+                &nbsp;
+            </p>
+            <p>
+                <br/>
+            </p>
+        </div>
+    </div>
+    <div class="footer">本报告仅供临床参考</div>
+</div>
+<script type="text/javascript">
+    var datas = {
+        "1": {
+            field1: "张三",
+            field2: "男",
+            field3: "65岁",
+            field4: "CT1401556",
+            field5: "内科",
+            field6: "2019262655",
+            field7: "33",
+            field8: "2019-04-01",
+            field9: "头部，胸部",
+            field10: "西门子64排",
+            field11: "2019-04-01",
+            field12: "胸部CT平扫;CT平扫（颅脑)",
+            ctsj: "双侧大脑半球显示对称，灰白质界线清晰，脑实质内未见明确异常密度影，脑沟、脑池及脑室系统形态、大小正常，中线结构无移位。",
+            cbzd: "平扫未见异常。",
+            img: "data:image/png;base64,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"
+        },
+        "2": {
+            field1: "张三",
+            field2: "男",
+            field3: "65岁",
+            field4: "CT1401556",
+            field5: "内科",
+            field6: "2019262655",
+            field7: "33",
+            field8: "2019-04-01",
+            field9: "头部，胸部",
+            field10: "西门子64排",
+            field11: "2019-04-01",
+            field12: "胸部CT平扫;CT平扫（颅脑)",
+            ctsj: "颅骨骨质结构完整，未见明显破坏征象，左侧颞叶见片状密度减低区，边界模糊不清，余脑实质内未见明显结节及肿块影，脑室不大，脑沟、脑裂增宽，中线结构尚居中。\n" +
+                "      两侧胸廓对称，双肺纹理粗乱，双肺野内可见多发肺大泡影，右下肺可见不规则致密影，较大范围约范围约1.5cm×2.2cm，左肺上叶可见点状致密影，肺门结构欠清晰，气管支气管通畅，纵隔内可见小淋巴结钙化影，双侧胸膜局限性稍厚，胸腔无积液。双侧部分肋骨骨密度局限性增高。\n" +
+                "     肝包膜光整，肝右叶见低密度结节影，边界尚清晰、锐利，直径约0.8cm，另肝右叶包膜下可见结节样高密度影，肝内胆管不扩张，肝门结构清晰自然，胆囊不大，壁光滑，腔内未见明显阳性结石影，脾大，质均匀，胰腺形态、密度未见明显异常，腹膜后腹主动脉周围未见明显肿大淋巴结。",
+            cbzd: "1.脑萎缩，左侧颞叶局限性密度减低区，同2014-09-02片对照无著变，请结合临床建议MRI检查。\n" +
+                "     2.双肺多发肺大泡，双肺结节及肿块影，同前无著变。双侧部分肋骨骨破坏。\n" +
+                "     3.肝右叶囊肿，肝右叶包膜下结节样高密度影，同前无著变。脾大。",
+            img: "data:image/png;base64,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"
+        },
+        '3': {
+            field1: "张三",
+            field2: "男",
+            field3: "65岁",
+            field4: "CT1401556",
+            field5: "内科",
+            field6: "2019262655",
+            field7: "33",
+            field8: "2019-04-01",
+            field9: "头部，胸部",
+            field10: "西门子64排",
+            field11: "2019-04-01",
+            field12: "胸部CT平扫;CT平扫（颅脑)",
+            ctsj: "颅骨骨质结构完整，未见明显破坏征象，左侧颞叶见片状密度减低区，边界模糊不清，余脑实质内未见明显结节及肿块影，脑室不大，脑沟、脑裂增宽，中线结构尚居中。\n" +
+                "      两侧胸廓对称，双肺纹理粗乱，双肺野内可见多发肺大泡影，右下肺可见不规则致密影，较大范围约范围约1.5cm×2.2cm，左肺上叶可见点状致密影，肺门结构欠清晰，气管支气管通畅，纵隔内可见小淋巴结钙化影，双侧胸膜局限性稍厚，胸腔无积液。双侧部分肋骨骨密度局限性增高。\n" +
+                "     肝包膜光整，肝右叶见低密度结节影，边界尚清晰、锐利，直径约0.8cm，另肝右叶包膜下可见结节样高密度影，肝内胆管不扩张，肝门结构清晰自然，胆囊不大，壁光滑，腔内未见明显阳性结石影，脾大，质均匀，胰腺形态、密度未见明显异常，腹膜后腹主动脉周围未见明显肿大淋巴结。",
+            cbzd: "1.脑萎缩，左侧颞叶局限性密度减低区，同2014-09-02片对照无著变，请结合临床建议MRI检查。\n" +
+                "     2.双肺多发肺大泡，双肺结节及肿块影，同前无著变。双侧部分肋骨骨破坏。\n" +
+                "     3.肝右叶囊肿，肝右叶包膜下结节样高密度影，同前无著变。脾大。",
+            img: "data:image/png;base64,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"
+        }
+    };
+
+    var id = getQueryVariable('id');
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+            var pair = vars[i].split("=");
+            if(pair[0] == variable){return pair[1];}
+        }
+        return(false);
+    }
+
+    window.miniEditor = new MiniEditor({
+        id: 'myEditor',
+        modelType: 'readonly',
+        outhtmlWidth: '794px',
+        editor: {
+            toolbars: [],
+            wordCount: false,//关闭字数统计
+            allowDivTransToP: false,
+            elementPathEnabled: false,//关闭elementPath
+            autoClearinitialContent: false,
+            printType: "1"
+        }
+    });
+    miniEditor.ready(function () {
+        var controls = miniEditor.getControlById();
+        for (var i = 0, len = controls.length; i < len; i++) {
+            controls[i].setValue(datas[id][controls[i].getCtrlId()]);
+        }
+        var element = $( "#ueditor_0" ).contents().find( "#qrcode" );
+        element.attr("src", datas[id].img);
+    });
+</script>
+</body>
+</html>

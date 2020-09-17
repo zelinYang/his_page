@@ -1,0 +1,103 @@
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    autocomplete : 'modules/autocomplete'
+}).use(['element','form','table','autocomplete'], function(){
+    var table = layui.table, autocomplete = layui.autocomplete, element = layui.element;
+    var form = layui.form;
+    // 查询床号
+    autocomplete.render({
+        cache : false,
+        searchField : 'currentBedNo',
+        elem : $('#q_currentBedNo')[0],
+        url : '../inpatient/inpatientInhospitalPage.jo?pageSize=7',
+        template_val : '{{d.currentBedNo}}',
+        template_txt : '{{d.currentBedNo}} （{{d.patientName}}）'
+    });
+    $(".refresh").click(function(){
+        window.location.href =  window.location.href;
+     });
+
+    $("#btn-query").click(function(){
+       var params= common.serializeObject($('#queryForm'));
+        //执行重载
+        inpatientTable.reload({
+            where : params
+        });
+    });
+
+    var inpatientTable = table.render({
+        elem: '#inpatientTable'
+        ,url: '../inpatient/inpatientInhospitalPage.jo?inhospitalState=$!{CONST.AppConstants.INHOSPITAL_STATE_IN}' //数据接口
+        //,where: common.serializeObject($('#queryForm',['noticeTime']))
+        ,page: false //开启分页
+        ,limit:50
+        ,height:'full-70'
+        ,cols: [[ //表头
+          {field:'inhospitalId' , type:'radio', width : 30 }
+          ,{field: 'currentBedNo', title: '床号', width : 90}
+          ,{field: 'patientName', title: '姓名', width : 75}
+          ,{field: 'patientSex', title: '性别' , width : 60,templet: function(row){ if(row && row.patientSex) { return dicSex[row.patientSex]; } }}
+        ]]
+        ,done: function (res){
+            $.each(res.data, function (index, inpatientInhospital) {
+                if (inpatientInhospital.inhospitalId == '$!{inpatientInhospital.inhospitalId}') {
+                    $(".layui-table-view[lay-id='inpatientTable'] .layui-table-body tr[data-index='" + index + "'] .layui-form-radio").click();
+                }
+            });
+        }
+      });
+
+    //监听表格radio
+    table.on('radio(inpatientTable)', function(obj){
+        loadTemperatureShow(obj.data.inhospitalId);
+    });
+    //单击行选择radio并重载体温单页面
+    table.on('row(inpatientTable)', function(obj){
+        console.log(obj);
+       $(obj.tr).find("input[type='radio']").prop("checked",true);
+       form.render("radio");
+       loadTemperatureShow(obj.data.inhospitalId);
+       //标注选中样式
+       obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+    });
+    function loadTemperatureShow(inhospitalId){
+        $('li[lay-id="temperatureEdit"]').attr("href", "../inpatient/temperatureEdit.do?inhospitalId=" + inhospitalId + '&showFlag=' + '$!{showFlag}');
+        $('div[lay-id="temperatureEdit"] iframe').attr("src", "../inpatient/temperatureEdit.do?inhospitalId=" + inhospitalId + '&showFlag=' + '$!{showFlag}');
+        $('li[lay-id="temperatureShow"]').attr("href", "../inpatient/temperatureShow.do?inhospitalId=" + inhospitalId);
+        var layId = $('li[lay-id="temperatureShow"]').attr('lay-id');
+        var href = $('li[lay-id="temperatureShow"]').attr('href');
+        reqIframe(layId,href);
+        // $('div[lay-id="temperatureShow"] iframe').attr("src", "../inpatient/temperatureShow.do?inhospitalId=" + inhospitalId);
+    }
+
+    //监听导航菜单点击事件
+    element.on('tab(inSettNav)', function(elem){
+        var layId = $(this).attr('lay-id');
+        var href = $(this).attr('href');
+        var patient = $(this).attr('patient');
+
+        if (href) {
+            url = href; //使用已有的url
+        } else {
+            if (patient) {//必须带当前患者的参数
+                //需要判断患者是否存在，不存在则返回
+                url = mainTab.menu[layId].url   + common.objToParamStr(grobalModel)
+            } else {
+                url = mainTab.menu[layId].url
+            }
+        }
+
+        reqIframe(layId,url);
+    });
+
+    //iframe请求页
+    function reqIframe(layId,url,force) {
+        var destIframe = $('div[lay-id="'+layId+'"] iframe');
+        destIframe.attr('src',url);
+    }
+});
+</script>

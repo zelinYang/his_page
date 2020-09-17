@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-行政区域表管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <style type="text/css">
+        .ztree li span.button.switch.level0 {
+            visibility: hidden;
+            width: 1px;
+        }
+
+        .ztree li ul.level0 {
+            padding: 0;
+            background: none;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <ul id="regionTree" class="ztree full-scroll" style="height: 88vh;"></ul>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_select" class="layui-btn layui-btn-sm">确 认
+        </button>
+        <button type="button" id="btn_noneSelect" class="layui-btn layui-btn-sm">
+            取消选择
+        </button>
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">
+            关闭
+        </button>
+    </div>
+</div>
+<!-- 本页面js -->
+<script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+<script>
+    /**
+     * 行政区域编码规则
+     * 第一、二位表示省（自治区、直辖市）
+     * 第三、四位表示市（地区、自治州)
+     * 第五、六位表示县（市辖区、县级市)
+     * 第七、九位表示乡、镇（街道办事处）
+     * 第十、十二位表示居委会、村委会
+     */
+        //第1～2位，为省级代码
+    var REGION_LEVEL_PROVINCIAL = "$!{CONST.AppConstants.REGION_LEVEL_PROVINCIAL}";
+    //第10～12位，为村级代码
+    var REGION_LEVEL_VILLAGE = "$!{CONST.AppConstants.REGION_LEVEL_VILLAGE}";
+    //行政区域级别长度
+    var dicRegionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegionLevel)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'element', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, element = layui.element;
+
+        //查询长度
+        var regionLevelLen = REGION_LEVEL_PROVINCIAL;
+
+        //过滤数据
+        function filter(treeId, parentNode, result) {
+            var childNodes = result.data;
+            if (!childNodes) return null;
+            $.each(childNodes, function (index, item) {
+                //判断是否是最大级别的最大长度
+                item.isParent = !(item.regionId.length >= REGION_LEVEL_VILLAGE);
+            })
+            return childNodes;
+        }
+
+        //展开事件
+        function zTreeBeforeExpand(treeId, treeNode) {
+            //获取下一个级别的长度
+            regionLevelLen = dicRegionLevel[treeNode.level + 1] || '';
+        };
+
+        //单击事件
+        function onClick(event, treeId, treeNode) {
+            if (treeNode.level == 0) {
+                common.msg("不能选择根节点", 0);
+                zTreeObj.cancelSelectedNode(); //取消所有选中
+            }
+        }
+
+        /**
+         * 刷新根结点全国行政区域树
+         */
+        function refreshRootNode() {
+            var nodes = zTreeObj.getNodes();
+            zTreeObj.selectNode(nodes[0]); //选中第一个子节点
+            refreshNode({type: "add", silent: false});
+        }
+
+        //刷新子节点
+        function refreshNode(data) {
+            var type = data.type,
+                silent = data.silent,
+                nodes = zTreeObj.getSelectedNodes();
+            if (nodes.length == 0) {
+                common.msg("请先选择一个父节点", 0);
+            }
+            for (var i = 0, l = nodes.length; i < l; i++) {
+                zTreeObj.reAsyncChildNodes(nodes[i], type, silent);
+                if (!silent) zTreeObj.selectNode(nodes[i]);
+            }
+        }
+
+        // 初始化树形分类
+        var zTreeObj, setting = {
+            view: {
+                selectedMulti: false,
+                showIcon: false
+            },
+            data: {
+                simpleData: {
+                    enable: true
+                },
+                key: {
+                    name: "regionName"
+                }
+            },
+            async: {
+                enable: true,
+                url: '../basRegion/basRegionListData.jo',
+                otherParam: {
+                    "regionIdLenEqu": function () {
+                        return regionLevelLen
+                    }
+                },
+                autoParam: ["regionId=regionIdLike"],
+                dataFilter: filter
+            },
+            callback: {
+                beforeExpand: zTreeBeforeExpand,
+                onAsyncSuccess: function (event, treeId, treeNode, msg) {
+                    if (!(!!window.ActiveXObject || 'ActiveXObject' in window)) { // 非ie
+                        zTreeObj.expandNode(treeNode, true, false, true, false) //只展开第一个节点
+                    }
+                    zTreeObj.setting.async.otherParam['includeRoot'] = false
+                },
+                onClick: onClick
+            }
+        }
+        //根节点
+        var zNodes = [
+            {"regionName": "全国", open: true, isParent: true}
+        ];
+        zTreeObj = $.fn.zTree.init($('#regionTree'), setting, zNodes);
+        refreshRootNode();
+        zTreeObj.cancelSelectedNode(); //取消所有选中
+
+
+        $("#btn_select").click(function () {
+            var nodes = zTreeObj.getSelectedNodes();
+            if (nodes.length == 0) {
+                common.msg("请先选择一个节点", 0);
+            } else {
+                parent.selectParentRegionCallBack(nodes[0])
+                $("#btn_close").click();
+            }
+        })
+
+        $("#btn_noneSelect").click(function () {
+            parent.selectParentRegionCallBack();
+            $("#btn_close").click();
+        })
+
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+</body>
+</html>

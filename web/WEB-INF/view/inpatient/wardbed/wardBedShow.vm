@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-病区床位设置表详细信息</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<!-- 显示内容begin -->
+<form class="layui-form" id="wardBedForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("wardBedId" "$!{inpatientWardBed.wardBedId}" " id='wardBedId' ")
+    #formHiddenInput("bedUsageFlag" "$!{inpatientWardBed.bedUsageFlag}" " id='bedUsageFlag' ")
+    #formHiddenInput("hospitalId" "$!{inpatientWardBed.hospitalId}" " id='hospitalId' ")
+    #formHiddenInput("wardBedNo" "$!{inpatientWardBed.wardBedNo}" " id='wardBedNo' ")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()病区</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("wardId" "$!inpatientWardBed.wardId" $dicData.dicInpatientWardAll " lay-filter='wardId' autocomplete='off' lay-verify='required' id='wardId' lay-search" "直接选择或搜索选择")
+            </div>
+
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()科室</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("inpatientWardOfficeId" "$!inpatientWardBed.inpatientWardOfficeId" $curWardOfficeMap " lay-filter='inpatientWardOfficeId' id='inpatientWardOfficeId' lay-verify='required' autocomplete='off' lay-search" "请先选择病区，再选择科室")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()房间号 </label>
+            <div class="layui-input-inline">#formNotInChineseInput("wardRoomNo" "#htmlEscape($!{inpatientWardBed.wardRoomNo})" " id='wardRoomNo' maxlength='10' autocomplete='off' lay-verify='required' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()床位号 </label>
+            <div class="layui-input-inline">#formNotInChineseInput("wardBedNo" "#htmlEscape($!{inpatientWardBed.wardBedNo})" " id='wardBedNo' maxlength='10' autocomplete='off' lay-verify='required' class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()床位费用 </label>
+            <div class="layui-input-inline">
+                #formTextInput("bedFee" $!{inpatientWardBed.bedFee} " id='bedFee' maxlength='10' lay-verify='required|number' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label" >#requiredTag()床位级别</label>
+                         <div class="layui-input-inline">
+               #formSingleSelectFirstNone("wardBedLevel" "$!{inpatientWardBed.wardBedLevel}" ${dicData.dicWardBedLevel} " lay-filter='regionId' lay-verify='required' " "" )
+                        </div>
+                    </div>
+    </div>
+    <div class="layui-inline">
+        <label class="layui-form-label">#requiredTag()ICU费用</label>
+        <div class="layui-input-inline">#formFloInput("icuFee" $!{inpatientWardBed.icuFee} " autocomplete='off' id='icuFee' maxlength='12' lay-verify='required' class='layui-input'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()性别限制 </label>
+            <div class="layui-input-inline" style="width: auto;">#formRadioGroup("sexFlag"
+                "$!{inpatientWardBed.sexFlag}" ${dicData.dicSexLimit} "check-msg='请选择性别限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+        #if(${inpatientWardBed})
+        <div class="layui-inline">
+            <label class="layui-form-label">是否有效</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("validFlag" "$!{inpatientWardBed.validFlag}" ${dicData.dicYesNo} "")
+            </div>
+        </div>
+        #end
+        <div class="layui-inline">
+            <label class="layui-form-label">最近操作人员</label>
+            <div class="layui-input-inline">
+                #formTextInput("latestUserId" "#lookUpDict(${dicData.dicSysUser}, $!inpatientWardBed.latestUserId)" "class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">最近操作时间</label>
+            <div class="layui-input-inline">
+                #formTextInput("latestTime" "$!date.format('yyyy-MM-dd HH:mm',$!inpatientWardBed.latestTime)" "class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+<!-- 显示内容begin -->
+<script>
+  layui.use(['form'], function () {
+    var $ = layui.$, form = layui.form
+    common.setFormReadOnly($('#wardBedForm'))
+  })
+</script>
+</body>
+</html>

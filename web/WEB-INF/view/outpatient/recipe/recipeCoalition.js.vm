@@ -1,0 +1,175 @@
+<script type="text/javascript">
+    var ckAll;
+    var importDiaContent;
+    var getCheckData;
+    var buildSetDiaContent;
+    var refreshPage;
+    var outMainWin = parent; //门诊医生主窗口页面对象
+    var coalitionRecipe;//合并处方
+    var splitRecipe;//拆分处方
+    var iframeSettings = {
+        width:130,//诊断内容propover 弹框参数
+        // height:350,
+        closeable:false,
+        padding:false,
+        type:'iframe',
+        placement:'bottom-left'
+
+    };
+
+    layui.use(['jquery','table', 'laypage','form','element'], function(){
+        var element = layui.element;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var table = layui.table;
+
+        splitRecipe = function(param) {
+            var recipeItemIds = [];
+            // 获取勾选的药品明细Id
+
+            var checkItem = $('tbody td input[name=recipeItemId]');
+            for(var i = 0, j = 0; i < checkItem.length; i++){
+                if(checkItem[i].checked == true) {
+                    recipeItemIds[j++] = checkItem[i].value;
+                }
+            }
+
+            if(recipeItemIds.length == 0){
+                common.msg('请勾选拆分的医嘱', 0);
+                return false;
+            }
+
+            param.recipeItemIds = recipeItemIds.join(',');
+            console.log(param.recipeItemIdStr);
+            coalitionRecipe(param);
+
+        }
+
+
+        coalitionRecipe = function(param) {
+			common.requestServer('$contextPath/outpatient/coalitionRecipe.jo', param, function (result) {
+				if (result.code === '0') {
+					WebuiPopovers.hideAll();
+					common.msg(result.msg, 1, function () {
+                        //刷新
+						refreshPage();
+					});
+				} else {
+					common.alert(result.msg, 0);
+                }
+			});
+        }
+
+        //常用药复选框 ，选中则修改值
+        function checkRelateRecipeDiagnosis() {
+            form.on('checkbox(diagnosisId)', function(data){
+				var curTr = $(data.elem).parent().parent().parent();
+				var recipeId = curTr.attr('recipeid');
+
+				var ckBoxList = curTr.find("input[name=diagnosisId]:checked");
+				var diagnosisIdArr = [];
+				var diagnosisIds = '';
+				ckBoxList.each(function(index) {
+					var elem = $(this);
+					diagnosisIdArr.push(elem.val());
+				});
+				diagnosisIds = diagnosisIdArr.join(',');
+
+				var params = {recipeId: recipeId, diagnosisIds: diagnosisIds};
+				common.requestServer('$contextPath/outpatient/relateRecipeDiagnsis.jo', params, function (result) {
+					if (result.code === '0') {
+						common.msg(result.msg, 1);
+					} else {
+						common.alert(result.msg, 0);
+					}
+				});
+            });
+        }
+
+
+        //显示Popover
+        function initPopover() {
+            var oprateDiv = $("tr td .oprate");
+            oprateDiv.each(function(index) {
+                var elem = $(this);
+                var recipeItemId = elem.attr('recipeItemId');
+                var recipeNum = elem.attr('recipe-num');
+
+                var recipeId = $(this).parent().parent().attr('forRecipeId');
+                var param = {recipeId : recipeId, recipeItemId : recipeItemId, registerId: outMainWin.grobalModel.registerId, recipeNum: recipeNum };
+                var  url = '../outpatient/recipeCoalitionSelect.do'+ common.objToParamStr(param);
+                elem.webuiPopover('destroy').webuiPopover($.extend({url:url},iframeSettings));
+            });
+        }
+
+        $(window).resize(function(){
+            $('#queryForm').height($('body').height() - $('#tips').height() - $('#refreshBtn').height() - 60);
+        })
+        //页面初始化
+        $(document).ready(function() {
+            checkRelateRecipeDiagnosis();
+            initPopover();
+            $('#queryForm').height($('body').height() - $('#tips').height() - $('#refreshBtn').height() - 60);
+        });
+    });
+
+
+
+    refreshPage = function() {
+        location.reload();
+    }
+
+    ckAll = function() {
+        $('input[name=recipeItemId]').not("input:checked").siblings('div.layui-form-checkbox').trigger('click');
+    }
+
+    importDiaContent = function() {
+        var recipeCkData = getCheckData();
+        var diaContent = buildSetDiaContent(recipeCkData);
+        console.log(diaContent);
+    ## parent.setMedicineRecipe(diaContent);
+    }
+
+    buildSetDiaContent = function(recipeCkData) {
+        var diaContent = [];
+        $(recipeCkData).each(function(index, data) {
+            $(data.recipeItemRows).each(function(index, recipeItem) {
+                var itemData = [];
+                itemData.push('  ');
+                itemData.push('药品名称：' + recipeItem.medicineName + ";");
+                itemData.push('规格：' + recipeItem.medicineSpec + ";");
+                itemData.push('每日次数：' + recipeItem.usageFrequencyCode + ";");
+                itemData.push('用法：' + recipeItem.medicineUsage + ";");
+                itemData.push('一次用量：' + recipeItem.usageQuantity + recipeItem.usageQuantityUnit + ";");
+                itemData.push('药品总量：' + recipeItem.giveTotalQuantity + ";");
+                itemData.push('用药天数：' + recipeItem.orderDay + "天 ;");
+                diaContent.push(itemData.join(''));
+            });
+        });
+
+        return diaContent.join(' </br> ');
+    }
+
+    getCheckData = function() {
+        var recipeCkData = [];
+        $('tr[recipeId]').each(function(index) {
+            var elemJq = $(this);
+            var recipeId = elemJq.attr('recipeId');
+            var ckRecipeItem = $('[forRecipeId='+ recipeId +'] input[name=recipeItemId]:checked');
+            if (ckRecipeItem.length == 0) {
+                return true;
+            }
+            var recipe = {};
+            recipe.recipeId = recipeId;
+            recipe.recipeItemRows=[];
+            ckRecipeItem.each(function(index) {
+                var recipeItemData = $(this).parent().parent().attr('recipeItem');
+                recipe.recipeItemRows.push(JSON.parse(recipeItemData));
+            });
+            recipeCkData.push(recipe);
+        });
+        return recipeCkData;
+    }
+
+
+</script>

@@ -1,0 +1,202 @@
+    <!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+<style>
+    h5{
+    font-size: 16px;
+    margin: 0;
+    line-height: 36px;
+    padding: 0 15px 0 0;
+    ##text-overflow: ellipsis;
+    font-weight: 100;
+    color: #05a59c;
+    float: left;
+    }
+    .layui-input{
+        height:38px;
+    }
+    .layui-card{
+        margin-bottom: 10px;
+    }
+    .layui-form-selectup dl{
+        top:auto;
+        bottom:42px;
+    }  
+    #baseInfoForm{
+    }
+</style>
+</head>
+<body class="full-height layui-bg-white p-t-sm" style="height:calc(100% - 10px);text-align:center;">
+     <div class="layui-form" lay-filter="" id="clinicPlanForm" style="padding: 2px 3px 0 0;">
+        <form class="layui-form full-height m-l-xs #*layui-form-pane*#" id="clinicPlanForm" style="padding: 2px 3px 0 0;" >
+            <!--药物ID-->
+            <input type="hidden" id="submitFlag" >
+            
+            #formHiddenInput("clinicPlanId" "$!{clinicPlan.clinicPlanId}" " id='clinicPlanId' ")
+            #formHiddenInput("emrTlpId" "$!{clinicPlan.emrTlpId}" " id='emrTlpId' ")
+##            #formHiddenInput("hospitalStayDay" "$!{clinicPlan.hospitalId}" "id='hospitalStayDay' ")
+            #formHiddenInput("createTime" "$!{clinicPlan.createTime}" "id='createTime' ")
+            #formHiddenInput("createUserId" "$!{clinicPlan.createUserId}" "id='createUserId' ")
+            #formHiddenInput("onDutyType" "$!{clinicPlan.onDutyType}" "id='onDutyType' ")
+            #formHiddenInput("hospitalId" "$!{clinicPlan.hospitalId}" "id='hospitalId' ")
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()医/护类别</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("activityProperty" "$!{clinicPlan.activityProperty}" ${dicData.dicActivityProperty} "lay-skin='primary' check-msg='请选择医/护类别' lay-verify='reqRedio'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()是否每天填写</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("everydayRecordFlag" "$!{clinicPlan.everydayRecordFlag}" ${dicData.dicYesNo} "lay-skin='primary' check-msg='请选择每天填写' lay-verify='reqRedio'")
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()电子病历模板</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("emrTlpName" "#htmlEscape($!{clinicPlan.emrTlpName})" " id='emrTlpName' maxlength='200' lay-verify='required'  check-msg='请选择电子病历模板名称'  autocomplete='off' class='layui-input'")
+                    </div>
+                </div>
+##                <div class="layui-inline">
+##                    <label class="layui-form-label" style="width:100px;">入院填写日</label>
+##                    <div class="layui-input-inline">
+##                        #formIntInput("recordDay" $!{clinicPlan.recordDay} " id='recordDay' maxlength='2' autocomplete='off' class='layui-input'")
+##                    </div>
+##                </div>
+            </div>
+
+            <div class="layui-form-item">
+##                <div class="layui-inline">
+##                    <label class="layui-form-label" style="width:100px;">#requiredTag()是否入院首日填</label>
+##                    <div class="layui-input-inline">
+##                        #formRadioGroup("firstDayFlag" "$!{clinicPlan.firstDayFlag}" ${dicData.dicYesNo} "lay-skin='primary' check-msg='请选择是否入院首日填写' lay-verify='reqRedio'")
+##                    </div>
+##                </div>
+##                <div class="layui-inline">
+##                    <label class="layui-form-label" style="width:100px;">#requiredTag()入院当天填写时间点</label>
+##                    <div class="layui-input-inline">
+##                        #formIntInput("hospitalStayDay" $!{clinicPlan.hospitalStayDay} " id='hospitalStayDay' maxlength='2' autocomplete='off' class='layui-input'")
+##                    </div>
+##                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()是否检验填写</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("lisDay" "$!{clinicPlan.lisDay}" ${dicData.dicYesNo} "lay-skin='primary' check-msg='请选择检验填写' lay-verify='reqRedio'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()是否检查填写</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("pacsDay" "$!{clinicPlan.pacsDay}" ${dicData.dicYesNo} "lay-skin='primary' check-msg='请选择检查填写' lay-verify='reqRedio'")
+                    </div>
+                </div>
+            </div> 
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">#requiredTag()是否手术填写</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("surgeryDay" "$!{clinicPlan.surgeryDay}" ${dicData.dicYesNo} "lay-skin='primary' check-msg='请选择是否手术填写' lay-verify='reqRedio'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">术前填写天数</label>
+                    <div class="layui-input-inline">
+                        #formIntInput("beforeDay" $!{clinicPlan.beforeDay} " id='beforeDay' maxlength='2' autocomplete='off' class='layui-input'")
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width:100px;">术后填写天数</label>
+                    <div class="layui-input-inline">
+                        #formIntInput("afterDay" $!{clinicPlan.afterDay} " id='afterDay' maxlength='2' autocomplete='off' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label></label>
+                    <div class="layui-input-inline">
+                    </div>
+                </div>
+            </div>
+
+            <div class="tool-bottom-fixed">
+                <button type="button" id="btn_save" lay-submit lay-filter="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+            </div>
+        </form>
+    </div>
+</body>
+
+<script>
+layui.use('form',function(){
+    var form = layui.form;
+    common.verify(form);
+    form.on('submit(btn_save)',function(data){
+        console.log(data.field);
+        common.requestServer(contextPath + '/pathway/saveClinicPlan.jo?', data.field, function(result){
+            if (result.code == '0') {
+                //将提交按钮设置不可点击
+                $('#btn_save').addClass('layui-btn-disabled');
+                common.msg("保存成功。", 1, function(){
+                    $('#btn_reset', window.parent.document).click();
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        })
+    });
+})
+
+#********************** Popover 输入选择  ***************************#
+var iframeSettings = {  width:480,//病历模板propover 弹框参数
+    height:350,
+    closeable:false,
+    padding:false,
+    type:'iframe',
+    url:'../emrTlp/emrTlpSelect.do'
+};
+
+ //绑定显示Popover
+  function bindShowEmrTlpNamePopover(elem) {
+     elem.webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+  }
+
+
+  //bind搜索Popover
+  function bindSearchEmrTlpNamePopover(elem) {
+      elem.on('input propertychange', function (){  
+           var popoverId = $(this).attr('data-target');
+        $('#'+popoverId+' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+        $('#'+popoverId+' iframe')[0].contentWindow.queryEmrTlp(); //调用iframe的方法 
+      });
+  }
+
+ //病历模板名称选中一行后的回调
+emrTlpRowSelect = function (emrTlpRow) {
+    WebuiPopovers.hideAll(); 
+    $('#emrTlpName').val(emrTlpRow.emrTlpName);
+    $('#emrTlpId').val(emrTlpRow.emrTlpId);
+}
+#********************** Popover 输入选择  ***************************#
+
+$(document).ready(function () {
+    var emrTlpElem = $('#emrTlpName');
+    bindShowEmrTlpNamePopover(emrTlpElem);
+    bindSearchEmrTlpNamePopover(emrTlpElem);
+});
+
+</script>
+</html>    

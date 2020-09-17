@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药库出库查询</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+</head>
+
+<body class="outRecipeGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<form class="layui-form" action="" id="drugstoreOut">
+					<div class="layui-row-query">
+                        #formHiddenInput("drugstoreOutId" "" "id='drugstoreOutId'")
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">出库方式</label>
+								<div class="layui-input-inline">
+									#formSingleSelectFirstNone("drugstoreOutWay" "" $dicData.dicDrugStoreOutFlag "id='drugstoreOutWay' class='layui-input' disabled " "") ## 出库方式
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">申请日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("applyTime" "" "class='layui-input' readonly autocomplete='off' check-msg='请选择申请日期' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">出库日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("outTime" "" "class='layui-input' readonly autocomplete='off' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">领药药房</label>
+								<div class="layui-input-inline">
+									#formSingleSelectFirstNone("pharmacyId" "" $!dicData.dicPharmacy " id='pharmacyId' class='layui-input' disabled" "")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">药库/耗材库</label>
+								<div class="layui-input-inline">
+									#formSingleSelectFirstNone("drugstoreId" "" $!dicData.dicDrugstoreId " id='drugstoreId' class='layui-input' disabled" "")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">出库备注</label>
+								<div class="layui-input-inline">
+									#formTextInput("drugstoreOutRemak" "" "class='layui-input' readonly ")
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="itemTable" lay-filter="itemTable"></table>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<!-- 查询表单 -->
+				<form id="queryForm" class="layui-form">
+					#formHiddenInput("outFinishFlag" "${CONST.AppConstants.YES_FLAG}" "")
+					<div class="layui-row-query search-term">
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">出库方式</label>
+								<div class="layui-input-inline">
+									#formSingleSelectFirstNone("drugstoreOutWay" "" $dicData.dicDrugStoreOutFlag "id='drugstoreOutWay' class='layui-input' " "") ## 出库方式
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">药库名称</label>
+								<div class="layui-input-inline">
+									<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" lay-verify="required" class="layui-input">
+										<option value="">请选择</option>
+										#foreach($drugstore in $drugstoreList)
+											<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+										#end
+									</select>
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">出库日期</label>
+								<div class="layui-input-inline" style="width: 170px;">
+									#formTextInput("outTimeSearch" "" "class='layui-input layer-date' tag='outTimeBegin,outTimeEnd' id='outTimeSearch' placeholder='出库日期范围' readOnly")
+								</div>
+							</div>
+							<div class="layui-inline layui-btn-group fr" >
+								<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+								<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+    #parse("./drugstore/drugstoreSearch/drugstoreOutSearch.js.vm")
+</body>
+</html>

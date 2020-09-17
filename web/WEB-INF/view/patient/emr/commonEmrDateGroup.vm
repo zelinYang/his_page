@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+		.layui-content-wrapper.layui-bg-white{overflow-y: hidden}
+		.layui-content-wrapper.layui-bg-white .layui-fluid{overflow-y: auto;height: calc(100% - 10px)}
+        .layui-table-cell{padding: 0 5px;}
+        .layui-table td, .layui-table th{padding: 5px}
+        .layui-input, .layui-textarea {padding-left: 5px;}
+        .layui-table-view .layui-table td {padding: 3px 0;}
+				.layui-btn + .layui-btn { margin-left: 2px;}
+    </style>
+</head>
+<body >
+    <div class="layui-content-wrapper layui-bg-white">
+		<div class="layui-fluid">
+			<div class="layui-inline p-sm">
+				<label class="layui-form-label" style="width: auto; font-weight: bold">按时间查找</label>
+				<div class="layui-input-inline">
+					#formTextInput("expireDateEnd" "" "id='expireDateEnd' class='layui-input'")
+				</div>
+				<button type="button" id="btn_searchItem" class="layui-btn layui-btn-sm">查询</button>
+				<button type="button" id="history" class="layui-btn layui-btn-sm">展开/回缩</button>
+				<button type="button" id="clear" class="layui-btn layui-btn-sm">刷新</button>
+			</div>
+
+			<div class="layui-collapse layui-bg-white" >
+				<div id="jojo" style="margin-left: 650px;font-size: 10px"></div>
+			</div>
+			<div class="p-sm">
+				<div  id="emrPage" style="position: center;"></div>
+			</div>
+
+			<div class="report-item-examine layui-col-xs10 layui-hide" style="height: 100%;">
+				<iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 0px); " src=""></iframe>
+			</div>
+		</div>
+    </div>
+
+<script>
+	var count = 0;
+	var getInfo=window.location.search.slice(window.location.search.lastIndexOf("?")+1);
+	console.log(getInfo)
+	var pat = getInfo.split("&");
+	var pat1 = pat[0].split("=");
+	var pat2 = pat[1].split("=");
+
+	console.log(pat1[1])
+
+	var role = new Array();
+	var c =  '${patientHospitalEmrGroupMap}'
+	var d = JSON.parse(c);
+
+	var pages = ${patientHospitalEmrGroupPage}
+	//      var ccc=   JSON.stringify(pages)
+	// console.log(ccc+"pages")
+	var date = layui.util.toDateString(new Date(), 'yyyy-MM-dd');
+	var msg = 0;
+
+	for (var key in d){
+		var html = [];
+
+		if (date == key){
+			// $("#emrPage").addClass("layui-hide")
+			msg = 1;
+			html.push('<div id="DGroup" class="layui-colla-item">');
+
+			html.push('<h2 class="layui-colla-title "  id="'+key+'">' + key + '</h2>');
+			for (var valuess in d[key]){
+				if(d[key][valuess].patientId == pat1[1]){
+					html.push('<div class="layui-colla-content" id="'+d[key][valuess].patientHospitalEmrId+'" name="'+d[key][valuess].emrTlpName+'" >'
+									+'<a href="#" >'+ d[key][valuess].emrTlpName +
+									'</a >'+
+									'</div>');
+				}
+
+			}
+
+		}else{
+			if (msg != 1){
+				document.getElementById("jojo").innerText = "今日文书无记录";
+			}else{
+				document.getElementById("jojo").innerText = " ";
+			}
+			$("#emrPage").addClass("layui-hide")
+			html.push('<div id="DGroup" class="layui-colla-item layui-hide" >');
+
+			html.push('<h2 class="layui-colla-title" id="'+key+'">' + key + '</h2>');
+			for (var valuess in d[key]){
+				if(d[key][valuess].patientId == pat1[1]){
+					html.push('<div class="layui-colla-content" id="'+d[key][valuess].patientHospitalEmrId+'" name="'+d[key][valuess].emrTlpName+'" >'
+									+'<a href="#" >'+ d[key][valuess].emrTlpName +
+									'</a >'+
+									'</div>');
+				}
+			}
+
+		}
+
+		html.push('</div>');
+		$(".layui-collapse").append(html.join(''));
+	}
+	console.log(msg+"msg")
+
+  ##            #foreach($d in ${patientHospitalEmrGroupMap.keySet()})
+  ##            $!{patientHospitalEmrGroupMap.get($d)}
+  ##
+  ##                ${d}
+  ##            #end
+	//var arr1=['aa','bb','cc','dd'];
+	//循环只能用在页面
+  ##        #foreach($a in ${patientHospitalEmrGroupMap.keySet()})
+  ##                    data = $a
+  ##            console.log('$a')
+  ##        #end
+
+	// $.each(data, function(i,item) {
+	//     $.each(eName, function(i,items) {
+	//     $(".layui-collapse").append(
+	//             "<div  class='layui-colla-item'>"
+	//             + "<h2 class='layui-colla-title ' id='"+item+"'>" + item + "</h2>"
+	//             + "<div class='layui-colla-content ' id='"+item+i+"'>"+items+"</div>"
+	//             +"</div>"
+	//     );
+	//     });
+	// });
+
+
+
+	layui.use(['element','laypage', 'layer', 'table'], function(){
+		var element = layui.element;
+		var layer = layui.layer;
+		var table =layui.table;
+		var laypage = layui.laypage;
+		var date = layui.laydate
+		laydate.render({elem: '#expireDateEnd',trigger: 'click',value: new Date(), done: function (value, date, endDate){
+
+			}});
+		//初始化分页
+		search()
+		//默认展开第一个折叠面板
+		// $(".layui-collapse .layui-colla-title:first").click();
+		// location.reload();
+		//分页数据
+		function search(){
+			laypage.render();
+			// 分页组件
+			laypage.render({
+				elem: 'emrPage'
+				,count: pages.totalSize //数据总数，从服务端得到
+				,limit: pages.pageSize
+				,curr:  pages.pageNumber
+				,layout: ['count', 'prev', 'page', 'next', 'skip']
+			});
+		};
+	});
+	//监听点击事件
+	$(".layui-colla-content").on('click',function () {
+		var record = this.id;
+		console.log(record+"ASASA")
+		var Oname = $(this).attr('name');
+		// if(pages.totalSize >= 5){
+		if (typeof (parent.parent.openTab) == "function") {
+			parent.parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+							+ 'patientId='+pat1[1]+'&inhospitalId='+pat2[1]+'&emrTlpId=&patientHospitalEmrId='+record, Oname + "详情", '')
+		}else if (typeof (parent.parent.parent.openTab) == "function") {
+			parent.parent.parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'+getInfo+'&emrTlpId=&patientHospitalEmrId='+record, Oname + "详情", '')
+		}
+		// }else{
+		// }
+  ##      $("#emrEdit").attr("src", '$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+  ##              + 'patientId='+pat1[1]+'&inhospitalId='+pat2[1]+'&emrTlpId=&patientHospitalEmrId='+record);
+		// $('.report-item-examine').removeClass('layui-hide');
+	})
+	//查询
+	$('#btn_searchItem').click(function() {
+		var sear = [];
+		var expireDateEnd = $('#expireDateEnd').val();
+		console.log(expireDateEnd+"===expireDateEnd")
+
+		for (var setKey in d){
+
+			console.log(setKey)
+
+			if (setKey == expireDateEnd){
+
+				sear.push('<div id="DGroup" class="layui-colla-item">');
+
+				sear.push('<h2 class="layui-colla-title "  id="'+setKey+'">' + setKey + '</h2>');
+				for (var valuesss in d[setKey]){
+					if(d[setKey][valuesss].patientId == pat1[1]){
+						sear.push('<div class="layui-colla-content layui-show" id="'+d[setKey][valuesss].patientHospitalEmrId+'" name="'+d[setKey][valuesss].emrTlpName+'" >'
+										+'<a href="#" >'+ d[setKey][valuesss].emrTlpName +
+										'</a >'
+										+ '</div>');
+					}
+				}
+			}
+		}
+		sear.push('</div>');
+		$(".layui-collapse").html(sear.join(''));
+		//监听点击事件
+		$(".layui-colla-content").on('click',function () {
+			var record = this.id;
+			console.log(record+"ASASA")
+			var Oname = $(this).attr('name');
+			// if(pages.totalSize >= 5){
+			if (typeof (parent.parent.openTab) == "function") {
+				parent.parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+								+ 'patientId='+pat1[1]+'&inhospitalId='+pat2[1]+'&emrTlpId=&patientHospitalEmrId='+record, Oname + "详情", '')
+			}else if (typeof (parent.parent.parent.openTab) == "function") {
+				parent.parent.parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+								+ 'patientId='+pat1[1]+'&inhospitalId='+pat2[1]+'&emrTlpId=&patientHospitalEmrId='+record, Oname + "详情", '')
+			}
+			// }else{
+			// }
+    ##      $("#emrEdit").attr("src", '$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+    ##              + 'patientId='+pat1[1]+'&inhospitalId='+pat2[1]+'&emrTlpId=&patientHospitalEmrId='+record);
+			//     $('.report-item-examine').removeClass('layui-hide');
+		})
+	});
+	//查看历史
+	$("#history").click(function () {
+		count++;
+		document.getElementById('expireDateEnd').value = ''
+
+		console.log(count+"=====count")
+		if (count%2 == 0) {
+			$(".layui-colla-item").slideUp()
+			$("#emrPage").slideUp()
+
+		}else {
+			if (count ==1){
+
+				$(".layui-colla-item").slideUp().removeClass("layui-hide")
+				$("#emrPage").slideUp().removeClass("layui-hide")
+				$(".layui-colla-item").slideDown()
+				$("#emrPage").slideDown()
+			} else{
+				$(".layui-colla-item").slideDown().removeClass("layui-hide")
+				$("#emrPage").slideDown().removeClass("layui-hide")
+				document.getElementById("jojo").innerText = ""
+			}
+
+
+
+		}
+
+	});
+	//刷新
+	$("#clear").click(function () {
+		location.reload()
+	})
+</script>
+</body>
+
+</html>

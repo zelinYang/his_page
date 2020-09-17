@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>退号列表-</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <!-- 页面js -->
+  <style>
+    .table-responsive { margin-bottom: 10px;}
+    .layui-table-view { padding: 0;}
+    .layui-form-item .layui-form-checkbox { margin-top: 0;}
+    .full-height-scroll { height: calc(100% - 20px);}
+	.layui-table td,.layui-table th { padding: 0 5px; height: 28px; line-height: 28px;}
+	.layui-table.tableData th { width: 200px; font-size: 14px; background-color: #dce3f1; text-align: right;}
+  </style>
+</head>
+
+<body>
+    <div class="layui-content-wrapper">
+      <div class="layui-fluid">
+        <div class="layui-row">
+            <!-- 查询表单 -->
+            <form class="layui-form " id="register_queryForm">
+                <!--挂号日期 年月日  -->
+              #formHiddenInput("registerTime" "$!{registerTime}" " id='registerTime' ")
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">挂号类型</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectSearch("registerType" "" $!{dicData.dicRegisterType} "lay-search")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">就诊科室</label>
+                            <div class="layui-input-inline ">
+                                <div id="visitOfficeIds" style="height: 30px;"></div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">就诊医生</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("visitDoctorName" "" "id='q_visitDoctorName' maxlength='10'
+                                autocomplete='off' class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-input-inline wd-220">
+                                #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group">
+                            <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search"></i></button>
+                            <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-input-inline">
+                                <input type="checkbox" lay-filter="allUnattended" id="allUnattended" name="" title="所有未接诊">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="table-responsive">
+                <!--挂号记录id  -->
+                #formHiddenInput("registerId" "$!{registerId}" " id='registerId' class='billInput'")
+                <table class="layui-table tableData m-n">
+                    <tbody>
+                    <tr>
+                        <th>就诊号码</th>
+                        <td colspan="3"  id="serialNum" class="billInput"></td>
+                    </tr>
+                    <tr>
+                        <th>患者姓名</th>
+                        <td id="patientName" class="billInput"></td>
+                        <th>挂号科室</th>
+                        <td id="visitOfficeName" class="billInput"></td>
+                    </tr>
+                    <tr>
+                        <th>诊查费</th>
+                        <td id="diagnosisFee" class="billInput"></td>
+                        <th>病历费</th>
+                        <td id="medicalRecordsFee" class="billInput"></td>
+                    </tr>
+                    <tr>
+                        <th>合计</th>
+                        <td colspan="3" id="payableSum" class="billInput"></td>
+                    </tr>
+                    <tr>
+                        <th>其中现金</th>
+                        <td id="cash" class="billInput" colspan="3"></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="tool-bottom-fixed " style="position: initial">
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-submit="" id="btn_save" lay-filter="btn_save">退 号</button>
+                <!--<button type="button" id="btn_refresh" class="layui-btn layui-btn-sm " style="margin-left: 30px" onclick="location.reload()" lay-tips="刷新">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                </button>-->
+            </div>
+        </div>
+        <div class="layui-row layui-bg-white">
+          <!-- 数据表格 -->
+          <table id="regPatientTable" lay-filter="regTab" class="m-n"></table>
+        </div>
+      </div>
+    </div>
+    #parse("./outpatient/register/registerBackNo.js.vm")
+    <!-- 页面js -->
+</body>
+</html>

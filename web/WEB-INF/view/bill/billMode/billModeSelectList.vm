@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>发票分类表管理</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+</head>
+
+
+<body class="gray-bg">
+    <div class="wrapper wrapper-content">
+            <div class="ibox float-e-margins full-height">
+                <div class="ibox-content">
+                    <div class="row">
+                        <form id="billMode_queryForm" method="get" class="form-horizontal">
+                            <div class="col-sm-4 ">
+                                <label class="control-label col-sm-4">发票名称</label>
+                                <div class="input-daterange input-group date col-sm-8 ">
+                                    <input type="text"  id="billModeName" name="billModeName" class="form-control "  />
+                                </div>
+                            </div>
+
+                            <div class="col-sm-4 text-center">
+                                <button type="button" id="btn_query" class="btn btn-sm btn-outline btn-primary">
+                                    <i class="layui-icon layui-icon-search"></i> <span>查 询</span>
+                                </button>
+                                &nbsp;&nbsp;&nbsp;
+                                <button type="button" id="btn_clean" class="btn btn-sm btn-outline btn-info">
+                                    <i class="iconfont fa icon-qingchu"></i> <span>清 空</span>
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="ibox float-e-margins full-height m-b-none">
+                <div class="ibox-content p-b-n">
+                    <div class="table-responsive">
+
+                        <!-- 列表表格 -->
+                        <div class="example">
+                            <table id="billModeListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+    </div>
+    <script>
+
+ //查询函数
+function queryRecord() {
+        var queryParams = common.serializeObject($('#billMode_queryForm'));
+        var options = {url: '../billMode/billModeListData.jo', silent: false, query: queryParams};
+        $('#billModeListGrid').bootstrapTable('refresh', options);
+}
+
+    $(document).ready(function () {
+
+            // 查询按钮
+            $('#btn_query').click(function (){
+                queryRecord();
+            });
+
+            // 清空按钮
+            $('#btn_clean').click(function (){
+            // 清空按钮
+           $('#billModeName').val('');
+            });
+
+            //查询发票分类表列表
+            $('#billModeListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../billMode/billModeListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#billMode_queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true,},
+                    {
+                        field : 'billModeName',
+                        title : '发票名称'
+                    }                    ],
+                    onCheck:function(row){
+                        parent.selectBillModeCallBack(row);
+                        // 关闭窗口
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#billModeGrid').parents("body").height() - $('#billMode_queryForm').parents("#billModeQuery").first().height() - 130);
+                        $('#billModeGrid').bootstrapTable('resetView', {height: height});
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+
+
+    </script>
+</body>
+</html>

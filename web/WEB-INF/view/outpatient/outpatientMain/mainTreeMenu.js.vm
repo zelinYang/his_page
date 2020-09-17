@@ -1,0 +1,214 @@
+    
+<!-- 菜单树 ztree js -->
+<script type="text/javascript">
+    /* 菜单js  */
+    var curMenu = null, zTree_Menu = null;
+    var setting = {
+        view: {
+            showLine: false,
+            showIcon: false,
+            selectedMulti: false,
+            dblClickExpand: false,
+            addDiyDom: addDiyDom
+        },
+        data: {simpleData: {enable: true}},
+        callback: {
+            beforeClick: beforeClick,
+            onClick: function(event, treeId, treeNode) {
+              if (!grobalModel.registerId) {
+               common.alert('请先选择挂号的患者！', 0);
+               return false;
+            }    
+              getOutpatient();//获取患者的门诊日志信息
+              var paramStr = common.objToParamStr(grobalModel);
+              var outpatientNode = $('#zTreeMenu_2_a');//根据属性查询节点
+              if (!treeNode.reqUrl) {
+                 alert('log:' + '菜单功能未完成，尽请期待！');
+                 outpatientNode.click();
+              }
+              
+              if(treeNode.id == 2){
+                    reqIframePage(treeNode.reqUrl + paramStr);//门诊日志，需要带参数
+              }else { 
+                      if (!grobalModel.outpatientId){
+                             common.alert('请先填写门诊日志！', 0);
+                             outpatientNode.click();
+                             return false;
+                      }
+                      
+                      if(!treeNode.isParent){ 
+                          $('.work-title').html(treeNode.name);
+                          if (treeNode.reqUrl.indexOf('?') != -1) {
+                               reqIframePage(treeNode.reqUrl);//带有参数的子菜单
+                          }else {
+                               reqIframePage(treeNode.reqUrl + common.objToParamStr(grobalModel));//处方
+                          }
+                      }
+              }
+              
+              //点击菜单操作
+              if (treeNode) {
+                  var treeObj = $.fn.zTree.getZTreeObj("zTreeMenu");
+                  treeObj.selectNode(treeNode, false, true);
+                  if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                      treeObj.expandNode(treeNode, true, false, true, true);
+                  }
+              }
+          },
+      }
+    };
+ 
+    
+    
+    //门诊日志菜单点击
+    function ckOutpatient(outpatientNode) {
+      if (!grobalModel.outpatientId){
+            common.alert('请先填写门诊日志！', 0);
+            outpatientNode.click();
+            return false;
+        }
+      return true;
+    }
+    
+    var zNodes =[
+        { id:1, pId:0, name:"患者姓名@月-日", open:true},
+        { id:2, pId:1, name:"日志",reqUrl:'../outpatient/outpatientEdit.do'},  
+        { id:3, pId:1, name:"检查",reqUrl:'../outpatient/InspectMedicalTechEdit.do'},
+        { id:4, pId:1, name:"化验",reqUrl:'../outpatient/testMedicalTechEdit.do'},
+        { id:5, pId:1, name:"处方",reqUrl:'../outpatient/recipe.do'},
+        { id:6, pId:1, name:"治疗"},
+        { id:7, pId:1, name:"手术"},
+        { id:8, pId:1, name:"入院申请",reqUrl:'../inpatient/inpatientApplyEntry.do'},
+        { id:9, pId:1, name:"疾病证明"}
+        
+    ];
+
+    function addDiyDom(treeId, treeNode) {
+        var spaceWidth = 5;
+        var switchObj = $("#" + treeNode.tId + "_switch"),
+        icoObj = $("#" + treeNode.tId + "_ico");
+        switchObj.remove();
+        icoObj.before(switchObj);
+
+        if (treeNode.level > 1) {
+            var spaceStr = "<span style='display: inline-block;width:" + (spaceWidth * treeNode.level)+ "px'></span>";
+            switchObj.before(spaceStr);
+        }
+    }
+
+    function beforeClick(treeId, treeNode) {
+        if (treeNode.level == 0 ) {
+            var zTree = $.fn.zTree.getZTreeObj("ztree");
+            zTree.expandNode(treeNode);
+            return false;
+        }
+        return true;
+    }
+
+    $(document).ready(function(){
+        var treeObj = $("#zTreeMenu");
+        $.fn.zTree.init(treeObj, setting, zNodes);
+        zTree_Menu = $.fn.zTree.getZTreeObj("zTreeMenu");
+        curMenu = zTree_Menu.getNodes()[0].children[0];
+        zTree_Menu.selectNode(curMenu);
+        
+        //$('.curSelectedNode').click();
+        
+        treeObj.hover(function () {
+            if (!treeObj.hasClass("showIcon")) {
+                treeObj.addClass("showIcon");
+            }
+        }, function() {
+            treeObj.removeClass("showIcon");
+        });
+    }); /* 菜单js  end */
+
+
+    //修改节点名称
+    function  changeNodeName(nodeName){
+       var node = zTree_Menu.getNodes()[0]
+       node.name = nodeName;
+       zTree_Menu.updateNode(node);
+    }
+    
+    //异步加载菜单
+    function asyncMenuData() {
+    var data;
+      $.ajax({  
+            type: "POST",  
+            url: '../outpatient/outpatientMenuData.jo',  
+            data: {registerId:grobalModel.registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){ data = result;},  
+            error: function(res){jqueryPostError(res);} 
+        });//ajax end 
+        
+        if (data) {
+            for(key in data){
+                if (key == 'recipe') {//对应map<recipe,List>
+                  var pid = 5;
+                  var parentNode = zTree_Menu.getNodeByParam("id", pid, null);//根据属性查询节点
+                  zTree_Menu.removeChildNodes(parentNode);//移除子节点
+                  $(data[key]).each(function(i,recipe) {//List 处方列表 
+                      var newNode = { 
+                      id:'500'+i, 
+                      pId:5, 
+                      name:'处方'+recipe.recipeNum,
+                      recipeId:recipe.recipeId, 
+                      reqUrl:'../outpatient/recipe.do?recipeId='+recipe.recipeId};    
+                      zTree_Menu.addNodes(parentNode, newNode);
+                  });
+                }else if (key == 'medicalTech') {//对应map<medicalTech,List>
+                          var pid = 3;
+                          var parentNode = zTree_Menu.getNodeByParam("id", pid, null);//根据属性查询节点
+                          zTree_Menu.removeChildNodes(parentNode);//移除子节点
+                          $(data[key]).each(function(i,medicalTech) {//List 检查单列表 
+                              var newNode = { 
+                              id:'300'+i, 
+                              pId:3, 
+                              name:'检查单'+medicalTech.outpatientTechId,
+                              outpatientTechId:medicalTech.outpatientTechId, 
+                              reqUrl:'../outpatient/InspectMedicalTechEdit.do?outpatientTechId='+medicalTech.outpatientTechId};    
+                              zTree_Menu.addNodes(parentNode, newNode);
+                  });
+                }else if (key == 'testMedicalTech') {//对应map<testMedicalTech,List>
+                    var pid = 4;
+                    var parentNode = zTree_Menu.getNodeByParam("id", pid, null);//根据属性查询节点
+                    zTree_Menu.removeChildNodes(parentNode);//移除子节点
+                    $(data[key]).each(function(i,testMedicalTech) {//List 化验单列表 
+                        var newNode = { 
+                        id:'400'+i, 
+                        pId:4, 
+                        name:'化验单'+testMedicalTech.outpatientTechId,
+                        outpatientTechId:testMedicalTech.outpatientTechId, 
+                        reqUrl:'../outpatient/testMedicalTechEdit.do?outpatientTechId='+testMedicalTech.outpatientTechId};    
+                        zTree_Menu.addNodes(parentNode, newNode);
+                   });
+                }
+            }
+        }
+   }
+    
+   
+    //子页面删除处方时使用
+    function invalidRecipe(recipeId){
+        //获取被删除节点 进行删除
+        var recipeNode = zTree_Menu.getNodeByParam("recipeId", recipeId, null);//根据属性查询节点
+        //判断是否有其他节点 ，有则点击
+        var nextNode = recipeNode.getNextNode(); 
+        var nodeClick;
+        if (nextNode) {
+          nodeClick = nextNode;
+        }else if (recipeNode.getPreNode()){
+          nodeClick = recipeNode.getPreNode();
+        } else {
+          nodeClick = recipeNode.getParentNode();
+        }
+        
+        zTree_Menu.removeNode(recipeNode);
+        zTree_Menu.selectNode(nodeClick);//选择点  
+        zTree_Menu.setting.callback.onClick(null, null, nodeClick);//调用点击事件
+    }
+
+</script>

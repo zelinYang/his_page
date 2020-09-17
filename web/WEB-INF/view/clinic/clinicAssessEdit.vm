@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") 
+</head>
+<body>
+    <div class="layui-row full-height-scroll" style="height: calc(100% - 40px);">
+        <form class="layui-form" action="">
+	        <table class="layui-table layui-table-input m-t-n" lay-skin="sm">
+	            <colgroup>
+                    <col width="30px">
+                    <col width="100px">
+                    <col width="100px">
+                    <col width="80px">
+                    <col>
+                </colgroup>
+	            <thead>
+	                <tr>
+	                    <th>
+	                        &nbsp;&nbsp;<i id="btn_add_tr" class="layui-icon layui-icon-add-1 btn-img-green" title="新增"></i>
+	                    </th>
+	                    <th>序号</th>
+	                    <th>类别</th>
+	                    <th>必选</th>
+	                    <th>内容</th>
+	                </tr>
+	            </thead>
+	            <tbody id="poitList">
+	                #foreach($item in $!assessList)
+	                    <tr>
+	                        <td>
+	                           <i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+	                        </td>
+	                        <td>
+	                           ##排序号
+	                           #formIntZeroInput("sort" "$!item.sort" "class='layui-input' maxLength='5'")
+	                           #formHiddenInput("clinicAssessId" "$!item.clinicAssessId" "")
+	                           #formHiddenInput("clinicDiseaseId" "$!item.clinicDiseaseId" "")
+	                           #formHiddenInput("clinicPathId" "$!item.clinicPathId" "id='clinicPathId'")
+	                        </td>
+	                        <td>
+	                            ##类别
+	                            #formSingleSelectFirstNone("clinicAssessType" "$!item.clinicAssessType" $!dicData.dicClinicAssessType "" "")
+	                        </td>
+	                        <td>
+	                           ##必选
+	                           #formSimpleCheckbox("needFlag" "1" "#if($!item.needFlag == '1')true#else #end" "lay-skin='primary'" "")
+	                        </td>
+	                        <td>
+	                            ##内容
+	                            #formTextInput("clinicAssessContent" "#htmlEscape($!item.clinicAssessContent)" "class='layui-input' maxLength='75'")
+	                        </td>
+	                    </tr>
+	                #end
+	            </tbody>
+	        </table>
+        </form>
+    </div>
+    <!-- 按钮 -->
+    <div class="layui-row tool-bottom-fixed">
+        <button class="layui-btn layui-btn-sm" id="btn_save" type="button"> 保 存  </button>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var templateTr;
+layui.use(['layer', 'form'], function(){
+    layer = layui.layer;
+    var form = layui.form;
+    templateTr = $('#poitList > tr:last').prop("outerHTML");
+    $('#poitList > tr:last').remove();
+
+    // 新增一行tr
+    $('#btn_add_tr').click(function (){
+        $('#poitList').append(templateTr);
+        var currentTr = $('#poitList > tr:last');
+        currentTr.find('input[name="sort"]').val(currentTr.index() + 1);
+        form.render('select');
+        form.render('checkbox');
+    });
+
+    // 保存
+    $('#btn_save').click(function (){
+        var arrayParams = [];
+        $('#poitList > tr').each(function(){
+            var params = {};
+            $(this).find('td > input, select').each(function (){
+                if (!$(this).val()) { return true; }
+                if ($(this).attr('type') == 'checkbox' && !$(this).is(':checked')) {$(this).val('0')}
+                params[$(this).attr('name')] = $(this).val();
+            });
+
+            if(!$.isEmptyObject(params) && params.clinicAssessContent && params.clinicDiseaseId && params.clinicPathId && params.clinicAssessType) { arrayParams.push(params); }
+        });
+
+        if (arrayParams.length) {
+            var formParams = {assessJsonData: JSON.stringify(arrayParams)};
+            common.requestServer(contextPath + '/pathway/saveAssess.jo', formParams, function (result){
+                if (result.code == "0") {
+                    common.msg('保成功存', 1, function  (){
+                        window.location.href = window.location.href;
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }
+    });
+});
+
+// 删除一行
+function deleteTr(obj) {
+    var curTr = $(obj).parent().parent();
+    var pathPointId = curTr.find('input[name="clinicPathPointId"]').val();
+    if (!pathPointId) {
+        curTr.remove();
+        return ;
+    }
+
+    // 从库中删除
+    common.confirm('确定要删除吗？', function (){
+        common.requestServer(contextPath + '/pathway/deletePathPoint.jo', {pathPointId: pathPointId}, function (result){
+            if (result.code == "0") {
+                curTr.remove();
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+}
+</script>
+</html>

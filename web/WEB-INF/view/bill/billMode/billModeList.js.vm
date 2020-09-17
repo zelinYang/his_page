@@ -1,0 +1,115 @@
+<script>
+
+
+$(document).ready(function () {
+
+    // 新增按钮
+    $('#btn_add').click(function (){
+        common.open('$contextPath' + '/billMode/billModeEdit.do', '发票分类表', {area:['99%','98%']});
+    });
+
+    // 删除按钮
+    $('#btn_del').click(function (){
+        var billModeIds = common.getTableSelectRowField('billModeListGrid', true, 'billModeId');
+        if (!billModeIds || billModeIds.length <= 0) {
+            common.alert('请选择要删除的行', 0);
+            return ;
+        }
+        
+        common.confirm("确定要删除已选择的行吗？", function (){
+            common.requestServer('$contextPath' + '/billMode/deleteBillMode.jo', {billModeIds: billModeIds}, function(result){
+                if (result.code == "0") {
+                    $('#btn_query').click();
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function (){
+        var queryParams = common.serializeObject($('#billMode_queryForm'));
+        var options = {url: '../billMode/billModeListData.jo', silent: false, query: queryParams};
+        $('#billModeListGrid').bootstrapTable('refresh', options); 
+    });
+
+    // 清空按钮
+    $('#btn_clean').click(function (){
+        common.cleanForm('queryForm');
+
+    });
+
+
+            //发票分类表表列表
+            $('#billModeListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../billMode/billModeListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#billMode_queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true} ,
+                    {
+                        field : 'billModeName',
+                        title : '发票名称'
+
+                    },
+                    {
+                    field : 'operate',
+                    title : '操作',
+                    width : '150px',
+                    events : operateEvents,
+                    formatter : operateFormatter
+                    }     
+                              ],
+                    onDblClickRow : function (row, element){
+                        $('#billModeListGrid').bootstrapTable('check',element.attr('data-index'));
+                        show();
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#billModeListGrid').parents("body").height() - $('#billMode_queryForm').parents(".ibox").first().height()  - 130);
+                        $('#billModeListGrid').bootstrapTable('resetView', {height: height}); 
+                    }
+                }
+                )//extends
+              );//bootstapTable
+         });//document.ready() event function
+
+    //操作栏操作按钮
+    function operateFormatter(value, row, index) {
+        var btnArray=[];
+        btnArray.push('<a id="btn_show" href="javascript:void(0)" title="详情"><i class="fa fa-eye"></i></a>');
+        btnArray.push('<a id="btn_edit" href="javascript:void(0)" title="修改"><i class="fa fa-pencil-square-o edit"></i></a>');
+        btnArray.push('<a id="btn_delete" href="javascript:void(0)" title="刪除"><i class="fa fa-minus-circle del"></i></a>');
+        return btnArray.join("&nbsp;");
+    }
+
+    //操作栏操作按钮的事件
+    window.operateEvents = {
+        "click #btn_edit" : function (e, value, row, index) {
+            common.open('$contextPath' + '/billMode/billModeEdit.do?billModeId=' + row.billModeId, '发票分类表', {area:['99%','98%']});
+        },
+        "click #btn_show" : function (e, value, row, index) {
+            common.open('$contextPath' + '/billMode/billModeShow.do?billModeId=' + row.billModeId, '发票分类表详情', {area:['99%','98%']});
+        },
+        "click #btn_delete" : function(e, value, row, index) {
+            common.confirm("确定要删除吗？", function (){
+                common.requestServer('$contextPath' + '/billMode/deleteBillMode.jo', {billModeIds: row.billModeId}, function(result){
+                    if (result.code == "0") {
+                        $('#btn_query').click();
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        }
+    };
+    $(window).resize(function() { 
+        var height = ($('#billModeListGrid').parents("body").height() - $('#billMode_queryForm').parents(".ibox").first().height() - 130);
+        $('#billModeListGrid').bootstrapTable('resetView', {height: height}); 
+    })
+</script>

@@ -1,0 +1,530 @@
+<script>
+    var ARRANGE_DUTY_TYPE_AM = '$!{CONST.AppConstants.ARRANGE_DUTY_TYPE_AM}'
+    var ARRANGE_DUTY_TYPE_PM = '$!{CONST.AppConstants.ARRANGE_DUTY_TYPE_PM}';
+
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicAppointRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicAppointRegisterType)');
+    var dicVisitTimeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeFlag)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+    var visitTimeFlagChangeEvent;//午别radio事件
+    var registerTimeChaneEvent;
+    var freshen;
+    var query;
+
+    layui.use(['jquery', 'table', 'laypage', 'element', 'form', 'laydate'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var $ = layui.$;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var element = layui.element;
+        element.render();
+        var curRow = [];//当前页数组列表
+        var curRows = [];//当前页数组列表
+
+        var viewMode = ['table', 'block'];
+        var curViewMode = viewMode[0];
+        var tableBoxHight = 0;
+
+        //监听导航菜单点击事件
+        element.on('tab(childrenNav)', function (data) {
+            var href = $(this).attr("lay-attr");
+            var tab = $(this).attr("tab");
+            data.elem.find('[tab="'+tab +'"] iframe').html(function () {
+                common.openLoad();
+                return $(this).prop('src', href).load(function () {
+                    common.closeLoad();
+                })
+            });
+        })
+
+        visitTimeFlagChangeEvent = function () {
+            form.on('select(visitTimeFlag)', function (selectElem) {
+                visitTimeFlagChange(selectElem);
+            });
+        }
+
+        visitTimeFlagChange = function (selectElem) {
+            query();
+        }
+
+        //一分钟刷新一次患者列表
+        $(function () {
+            visitTimeFlagChangeEvent();
+			setInterval(function () {
+                table.reload('regPatientTable');
+			}, 60 * 1000);
+        });
+
+        /* 获取上午下午 */
+        function getArrangeDutyType() {
+            return (new Date().toLocaleString().indexOf('上午') != -1) ? ARRANGE_DUTY_TYPE_AM : ARRANGE_DUTY_TYPE_PM;
+        }
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#regPatientTable'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            , height: getTableHgt()//高度
+            , url: '../outpatient/regPatientListData.jo' //数据接口
+            , limit: 200
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , where: getQueryParams()
+            , cols: [[
+                {fixed: true,
+                    align: 'center',
+                    width: 60,
+                    templet: '#operateFormatter',
+                    event: 'open'},
+                {field: 'registerId', title: '挂号ID'}
+                , { field : 'healthCard',
+                    title : '电子健康卡',
+                minWidth : 160,
+                }, {
+                    field : 'socialSecurityCard',
+                    title : '医保号',
+                minWidth : 160,
+                }, {field: 'visitCardNo', title: '就诊卡号', minWidth: 76}
+                , {field: 'patientName', title: '患者姓名', minWidth: 76}
+                , {
+                    field: 'patientSex', title: '性别',
+                    width: 80,
+                    templet: function (row) {
+                        if (row.patientSex) return dicSex[row.patientSex];
+                    }
+                }
+                , {field: 'patientAge', title: '年龄',width: 60}
+
+                , {
+                    field: 'registerType', title: '挂号类型', minWidth: 76,
+                    templet: function (row) {
+                        if (row.registerType) return dicRegisterType[row.registerType];
+                    }
+                }, { field: 'appointRegisterType',
+                    title: '预约/挂号类别',
+                    templet: function (row) {
+                        return dicAppointRegisterType[row.appointRegisterType] || '';
+                    },
+                    minWidth: 100
+                }, {
+                    field: 'serialNum',
+                    title: '就诊序号',
+                    width: 60
+                }
+                , {field: 'visitDate', title: '就诊时间', width: 200,
+                    templet :function (d) {
+                        return layui.util.toDateString(d.visitDate, 'yyyy-MM-dd') + " " + (dicVisitTimeFlag[d.visitTimeFlag] || "") +" " +  ((d.visitBeginTime && d.visitEndTime) ? d.visitBeginTime + " - " + d.visitEndTime : '');
+                    }}
+                , {
+                    field: 'visitOfficeName',
+                    title: '就诊科室',
+                    minWidth: 100
+                },  {
+                    field: 'roomName',
+                    title: '挂号诊室',
+                    minWidth: 100
+                }, {
+                    field: 'visitDoctorName',
+                    title: '就诊医生',
+                    minWidth: 100
+                },{
+                    field: 'registerTime',
+                    title: '挂号/预约时间',
+                    width: 140,
+                    templet: function (row) {
+                        return layui.util.toDateString(row.registerTime, 'yyyy-MM-dd HH:mm');
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+                curRows = res.data;
+                randerPage(res, curr, count);
+            }
+        });//table.render
+
+        //渲染页面
+        function randerPage(res, curr, count) {
+            var pageContent = $('.pageContent').clone().removeClass('pageContent').removeClass('layui-hide');
+            var patientList = pageContent.find('.patient-list');
+            var regPatientTpl = pageContent.find('.infoTpl').remove();
+            $(res.data).each(function (index, row) {
+                //获取模板
+                var newRegPatient = regPatientTpl.clone();
+                //赋值
+                newRegPatient.find('.photo').attr('src', getPhoto(row));
+                newRegPatient.find('.patientName').html(row.patientName);
+                newRegPatient.find('.patientAge').html(row.patientAge);
+                newRegPatient.find('.patientSex').html(dicSex[row.patientSex]);
+                var visitCardNo = row.visitCardNo;
+                var len = 18 - row.visitCardNo.length;
+                for (var i = 0; i < len; i++) {
+                    visitCardNo += '&nbsp;&nbsp;';
+                }
+                newRegPatient.find('.visitCardNo').html(visitCardNo);
+                newRegPatient.find('.serialNum').html(row.serialNum);
+                newRegPatient.find('.visitDate').html(row.visitDate);
+                newRegPatient.find('.registerId').val(row.registerId);
+                newRegPatient.data('row', row);
+                //单击事件
+                newRegPatient.dblclick(function () {
+                    var row = $(this).data('row');
+                    rowSelect(row);
+                });
+
+                patientList.append(newRegPatient);
+            });
+
+            //插入layui-table-box start
+            var layuiTableBox = $('.layui-table-box').first();
+            if (!tableBoxHight) tableBoxHight = layuiTableBox.outerHeight();
+            $('.layui-table-box').eq(1).remove();//移除
+
+            var pageTableBox = $('<div class="layui-table-box"></div>').append(pageContent);
+            pageTableBox.css('height', tableBoxHight);
+            pageTableBox.css('overflow-y', 'auto');
+
+            //显示模式
+            if (curViewMode == viewMode[0]) {
+                pageTableBox.addClass('layui-hide')
+            } else {
+                layuiTableBox.addClass('layui-hide')
+
+            }
+            pageTableBox.insertAfter(layuiTableBox);
+            //插入layui-table-box end
+
+            //显示高度适应
+            $(window).resize(function () {
+                var layuiForm = $('.layui-form').first();
+                tableBoxHight = layuiForm.outerHeight() - 55;
+                var pageTableBox = $('.layui-table-box').eq(1);
+                pageTableBox.css('height', tableBoxHight);
+            });
+        }////渲染页面end
+
+        //工具栏事件
+        table.on('toolbar(regTab)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            var data = checkStatus.data;
+            switch (obj.event) {
+                case 'btn_regPass':
+                    regPass();
+                    break;
+                case 'btn_next':
+                    nextReg();
+                    break;
+            }
+            ;
+        });
+
+        function openMainTab(row) {
+            if (parent.grobalModel.registerId && parent.grobalModel.registerId != row.registerId) {
+                layer.confirm("确定要切换患者吗？", {
+                    id: 'registerId' //设定一个id，防止重复弹出
+                    ,btn: ['切换患者','结束就诊']
+                }, function(index){
+                    layer.close(index);
+                    rowSelect(row);
+                }, function(index){
+                    parent.endVisit();
+                    layer.close(index);
+                });
+                return false;
+            } else if(parent.grobalModel.registerId == row.registerId){
+                parent.tabChangeOutpatient();//切换到门诊日志菜单
+            }
+            rowSelect(row);
+        }
+
+        //监听行工具事件
+        table.on('tool(regTab)', function (obj) {
+            var layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === "open") {
+                openMainTab(obj.data)
+            }
+        });
+
+        //监听行单击事件
+        table.on('row(regTab)', function (obj) {
+            openMainTab(obj.data)
+
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            $("#q_keyWord").val('');
+        })
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                visitState: '',
+                visitOfficeId: '',
+                visitDoctorId: '',
+                keyWord: '',
+                regDateRegion: '',
+                visitTimeFlag: '',
+                visitDate: ''
+            }, common.serializeObject($('#reg_patient_queryForm')))
+        }
+
+        //查询列表
+        query = function () {
+            var queryParams = getQueryParams();
+            tableIns.reload({where: queryParams});
+            getVisitCount();
+        }
+
+        $('#btn_next').click(function () {
+            nextReg();
+        });
+
+        //刷新按钮
+        $('#btn_freshen').click(function () {
+            freshen();
+        });
+
+        //视图切换按钮
+        $('.view-show button').click(function () {
+            convertView();
+        });
+
+        //行选择处理
+        function rowSelect(row) {
+            curRow = row;//设置全局的当前行
+            parent.grobalModel.registerId = row.registerId;//设置全局的
+            parent.showCurPatient(row.registerId, row.patientId);//显示患者信息
+            parent.setUrgencyFlag(row.registerType);
+            getOutpatient();
+            parent.tabChangeOutpatient();//切换到门诊日志菜单
+            parent.refreshOutRigTab();//刷新主页右侧tab页面
+            parent.showEastLayout();//显示主页右侧tab页面
+            visitRegister();
+        }
+
+        //刷新
+        freshen = function () {
+            getVisitCount();
+            $('.bottomNav').find('li.active').click();
+        }
+
+        //过号
+        function regPass(regId) {
+            var registerId = '';
+            if (!regId) {
+                registerId = parent.grobalModel.registerId
+            }
+            if (!registerId) {
+                common.alert("请选择过号患者", 0);
+                return false;
+            }
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/regPass.jo',
+                data: {registerId: parent.grobalModel.registerId},
+                dataType: "json",
+                async: false,//同步 请求
+                success: function (result) {
+                    common.alert(result.msg, 1);
+                    getVisitCount();
+                }, error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        //就诊中状态
+        function visitRegister(regId) {
+            var registerId = '';
+            if (!regId) {
+                registerId = parent.grobalModel.registerId
+            }
+            if (!registerId) {
+                common.alert("请选择就诊患者", 0);
+                return false;
+            }
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/register/visitRegister.jo',
+                data: {registerId: parent.grobalModel.registerId},
+                dataType: "json",
+                async: false,//同步 请求
+                success: function (result) {
+                    if (result.code == '0') {
+                        getVisitCount();
+                    }
+
+                }, error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        //下一个患者
+        function nextReg() {
+            $(curRows).each(function (index, row) {
+                if (curRow.registerId == row.registerId && index != (curRows.length - 2)) {
+                    var nextRow = curRows[(index + 1)];
+                    rowSelect(nextRow);//下一行
+                    return false;
+                }
+            });
+        }
+
+
+        // 切换视图
+        function convertView() {
+            $('.view-show button').toggleClass('layui-hide');
+            $('.layui-table-box').toggleClass('layui-hide');
+            if (curViewMode == viewMode[0]) {
+                curViewMode = viewMode[1];
+            } else {
+                curViewMode = viewMode[0];
+            }
+        }
+
+
+        //** 根据患者年龄-性别获取图片
+        function getPhoto(obj) {
+            var photoName = '';
+            if (obj.patientSex <= 12) {
+                photoName = '';
+            }
+            photoName = obj.patientSex == '1' ? 'male' : 'female';
+            if (obj.patientYearAge <= 12) {
+                photoName += '_child';
+            } else if (obj.patientYearAge < 60) {
+                photoName += '_midlife';
+            } else {
+                photoName += '_elder';
+            }
+            photoName += '.png';
+            var dir = '$contextPath/resource/layuiadmin/style/myRes/';
+            return dir + photoName;
+        }
+
+        //tab 选项卡事件
+        function tabClickEvent() {
+            $('ul.layui-tab-title li').click(function () {
+                var tabVal = $(this).attr('tab');
+                $('div.layui-tab-content-diy > div.layui-tab-item[tab=' + tabVal + ']').removeClass('layui-hide').addClass('layui-show');
+                $('div.layui-tab-content-diy > div.layui-tab-item[tab=' + tabVal + ']').siblings().removeClass('layui-show').addClass('layui-hide');
+                regDoctorOfficeTabQuery($(this));
+            });
+        }
+
+        function regDoctorOfficeTabQuery(tab) {
+            var tabVal = tab.attr('tab');
+            if (tabVal != 'regList') {
+                return false;
+            }
+
+            //设置iframe查询表单的值
+            var visitOfficeId = $("input[visitOfficeId]");
+            var visitDoctorId = $("input[visitDoctorId]");
+            if (tab.hasClass('doctor')) {
+                visitOfficeId.val('');
+                visitDoctorId.val(visitDoctorId.attr('visitDoctorId'));
+            } else {
+                visitDoctorId.val('');
+                visitOfficeId.val(visitOfficeId.attr('visitOfficeId'));
+            }
+            query();
+        }
+
+
+        //页面初始化
+        $(document).ready(function () {
+            bottomNavRander();
+            getVisitCount();
+            tabClickEvent();
+        });
+
+        //底部导航菜单渲染
+        function bottomNavRander() {
+            //菜单操作功能
+            $('.bottomNav').find('li').click(function () {
+                $(this).siblings().removeClass('active');
+                $(this).addClass('active');
+                var visitState = $(this).attr('visitState');
+                $('#visitState').val(visitState);
+                tableIns.config.cols[0].hide = true;
+                query();
+            });
+        }
+
+        //查询挂号就诊状态的人数
+        function getVisitCount() {
+            var data;
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/regPatientCountData.jo',
+                data: getQueryParams(),
+                dataType: "json",
+                async: true,//同步 请求
+                success: function (result) {
+                    data = result;
+                    $('.bottomNav .waitCount .count').html(data.waitCount);
+                    $('.bottomNav .regVisitDone .count').html(data.doneCount);
+                    $('.bottomNav .regVisitPassed .count').html(data.passedCount);
+                    $('.bottomNav .regVisitHold .count').html(data.holdCount);
+                    $('.bottomNav .regVisitDoing .count').html(data.doingCount);
+                }, error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+
+        }
+
+
+        //显示当前就诊患者信息
+        function getOutpatient() {
+            var outpatient;
+            parent.grobalModel.outpatientId = '';
+            $.ajax({
+                type: "POST",
+                url: contextPath + '/outpatient/findOutpatient.jo',
+                data: {registerId: parent.grobalModel.registerId},
+                dataType: "json",
+                async: false,//同步 请求
+                success: function (result) {
+                    outpatient = result.data;
+                    if (outpatient) {
+                        parent.grobalModel.outpatientId = outpatient.outpatientId;
+                        parent.curOutpatient = outpatient;
+                    } else {
+                        parent.curOutpatient = null;
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+            return outpatient;
+        }
+        function getTableHgt(){
+            return ($('body').height() - $('#reg_patient_queryForm').height() - 77)
+        }
+        $(window).resize(function(){
+            table.reload('regPatientTable',{
+                height : getTableHgt()
+            })
+        })
+    });
+</script>

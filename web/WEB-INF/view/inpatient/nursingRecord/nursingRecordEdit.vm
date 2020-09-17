@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-护理记录整体录入管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<form class="layui-form" id="inpatientSymptomForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    <!--体温记录ID-->
+    #formHiddenInput("inpatientSymptomId" "$!{inpatientSymptom.inpatientSymptomId}" " id='inpatientSymptomId' ")
+    <!--护理记录ID-->
+    #formHiddenInput("nursingRecordId" "$!{inpatientSymptom.nursingRecordId}" " id='nursingRecordId' ")
+    <!--住院流水号ID-->
+    #formHiddenInput("inhospitalId" "$!{inpatientSymptom.inhospitalId}" " id='inhospitalId' ")
+    <!--就诊病历关联ID-->
+    #formHiddenInput("patientHospitalEmrId" "$!{inpatientSymptom.patientHospitalEmrId}" " id='patientHospitalEmrId'
+    ")
+    <!--患者主键ID-->
+    #formHiddenInput("patientId" "$!{inpatientSymptom.patientId}" " id='patientId' ")
+    <div class=" layui-card">
+        <div class="layui-card-header">三测单记录</div>
+        <div class="layui-card-body">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()测量时间</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("temperatureDate" $!{inpatientSymptom.temperatureDate} " id='temperatureDate'
+                        lay-verify='required' autocomplete='off' class='layui-input'")
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()测量时间段</label>
+                    <div class="layui-input-inline" style="width: auto">
+                        #formRadioGroup("temperatureTimeSort" "$!{inpatientSymptom.temperatureTimeSort}"
+                        $!dicData.dicTemperatureTimeSort " check-msg='请选择测量时间段' lay-verify='reqRedio'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">护理级别</label>
+                    <div class="layui-input-inline" style="width: auto">
+                        #formRadioGroup("nurseLevel" "$!{inpatientSymptom.nurseLevel}" $!dicData.dicNurseLevel "")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+    <div class=" layui-card">
+        <div class="layui-card-header">三测单记录-呼吸</div>
+        <div class="layui-card-body">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()病区</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectSearchFirstNone("wardId" "$!inpatientSymptom.wardId"
+                        $dicData.dicInpatientWardAll " lay-filter='wardId' autocomplete='off' lay-verify='required'
+                        id='wardId' lay-search" "直接选择或搜索选择")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()科室</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectSearchFirstNone("inpatientWardOfficeId" "$!inpatientSymptom.inpatientWardOfficeId"
+                        $curWardOfficeMap " lay-filter='inpatientWardOfficeId' id='inpatientWardOfficeId' lay-verify='required'
+                        autocomplete='off' lay-search" "请先选择病区，再选择科室")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()床位费用 </label>
+            <div class="layui-input-inline">
+                #formTextInput("bedFee" $!{inpatientSymptom.bedFee} " id='bedFee' maxlength='10'
+                lay-verify='required|number' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">ICU费用</label>
+            <div class="layui-input-inline">
+                #formFloInput("icuFee" $!{inpatientSymptom.icuFee} " autocomplete='off' id='icuFee' maxlength='12'
+                class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()性别限制 </label>
+            <div class="layui-input-inline" style="width: auto;">
+                #formRadioGroup("sexFlag" "$!{inpatientSymptom.sexFlag}" ${dicData.dicSexLimit} "check-msg='请选择性别限制'
+                lay-verify='reqRedio'")
+            </div>
+        </div>
+        #if(${inpatientSymptom})
+        <div class="layui-inline">
+            <label class="layui-form-label">是否有效</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("validFlag" "$!{inpatientSymptom.validFlag}" ${dicData.dicYesNo} "")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+#parse("./inpatient/wardbed/wardBedEdit.js.vm")
+</body>
+</html>

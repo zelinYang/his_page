@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>票据领用表管理</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+	<div class="layui-fluid ">
+		<div class="layui-card">
+			<!--搜索条件 开始-->
+			<form id="billRecipient_queryForm" class="layui-form">
+				<div class="layui-row-query">
+					<div class="layui-form-item">
+						<div class="layui-inline">
+							<label class="layui-form-label">票据类型</label>
+							<div class="layui-inline wd-200">#formRadioGroup("billType" "" ${dicData.dicBillType} "")</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">使用方式</label>
+							<div class="layui-inline wd-120">#formSingleSelectSearchFirstNone("usageMode" "" $!{dicData.dicUsageMode} "lay-search" "")</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">当前票据号</label>
+							<div class="layui-inline wd-120">#formTextInput("startNumLessEqu" "" "id='q_cancelReason' maxlength='20' autocomplete='off' class='layui-input' ")</div>
+						</div>
+
+						<div class="layui-inline" style="margin-top: -7px;">
+							<button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+								<i class="layui-icon layui-icon-search "></i>
+							</button>
+						</div>
+						<div class="layui-inline" style="margin-top: -7px;">
+							<button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+								<i class="iconfont icon-qingchu"></i>
+							</button>
+						</div>
+					</div>
+				</div>
+			</form>
+			<!--搜索条件 结束-->
+
+			<!--列表 begin-->
+			<!-- 列表表格 工具栏-->
+			<!-- 是否有效开关 -->
+			<script type="text/html" id="usageFinishFlagTpl">
+    {{#  if(d.usageFinishFlag == '0'){ }}
+      <button class="layui-btn layui-btn-normal layui-btn-xs">未用完</button>
+    {{#  } else if(d.usageFinishFlag == '1'){ }}
+      <button class="layui-btn layui-btn-primary layui-btn-xs">使用完</button>
+    {{#  } else{ }}
+      <button class="layui-btn layui-btn-warm layui-btn-xs">使用中</button>
+    {{#  } }}
+    </script>
+			<!-- 进度条 -->
+			<script type="text/html" id="billUseNumTpl">
+    <div class="layui-progress layuiadmin-order-progress">
+        <span class="layui-progress-text">{{d.pah}}</span> <span style="right: 0; position: absolute; top: -15px; color: #999;" class="layui-progress-text">{{d.billUseNum}}</span>
+        <div class="layui-progress-bar {{d.bar || ''}}" lay-percent="{{d.pah}}" style="width: {{d.pah}};"></div>
+    </div>
+    </script>
+			<!-- 列表表格 工具栏 结束-->
+			<!-- 列表表格 begin -->
+			<table id="billRecipientListGrid" lay-filter="billRecipientListGrid"></table>
+			<!--  列表表格 end -->
+			<!--列表end-->
+		</div>
+	</div>
+	<script>
+        var dicBillType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillType)');
+        var dicUsageMode = JSON.parse('$dicTools.changeMapToJson($dicData.dicUsageMode)');
+
+        layui.config({
+            base : '../resource/layuiadmin/'
+        }).extend({
+            index : 'lib/index'
+        }).use([ 'index', 'form', 'table', 'laytpl' ], function() {
+            var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl;
+
+            //查询函数
+            function queryRecord() {
+                var queryParams =  $.extend({
+                    validFlag : "$!{CONST.AppConstants.YES_FLAG}"
+                }, common.serializeObject($('#billRecipient_queryForm')));
+                //执行重载
+                table.reload('billRecipientListGrid', {
+                    where : queryParams
+                });
+            }
+
+            // 查询按钮
+            $('#btn_query').click(function() {
+                queryRecord();
+            });
+
+            // 清空按钮
+            $('#btn_clean').click(function() {
+                common.cleanForm('billRecipient_queryForm');
+            });
+
+            //票据领用表列表
+            table.render($.extend(basePageTable, {
+                elem : '#billRecipientListGrid',
+                height : getTableHgt(),
+                url : contextPath + '/billRecipient/billRecipientListData.jo',
+                where :  $.extend({
+                    validFlag : "$!{CONST.AppConstants.YES_FLAG}"
+                }, common.serializeObject($('#billRecipient_queryForm'))),
+                cols : [ [ {
+                    type : 'radio'
+                }, {
+                    field : 'recipientTime',
+                    title : '领用日期',
+                    width : 150
+                }, {
+                    field : 'recipientName',
+                    title : '领用人'
+                }, {
+                    field : 'billType',
+                    title : '票据类型',
+                    templet : function(row) {
+                        return dicBillType[row.billType] || '';
+                    }
+                }, {
+                    field : 'usageMode',
+                    title : '使用方式',
+                    templet : function(row) {
+                        return dicUsageMode[row.usageMode] || '';
+                    }
+                }, {
+                    field : 'startNum',
+                    title : '起始票据号'
+                }, {
+                    field : 'endNum',
+                    title : '结束票据号 '
+                }, {
+                    field : 'currentNum',
+                    title : '当前票据号'
+                }, {
+                    field : 'totalNum',
+                    title : '票据数量',
+                    templet : function(row) {
+                        return parseInt(row.endNum) - parseInt(row.startNum);
+                    }
+                }, {
+                    field : 'billUseNum',
+                    title : '使用票据数',
+                    templet : function(row) {
+                        var total = parseInt(row.endNum) - parseInt(row.startNum);
+                        var percent = getPercent(row.billUseNum, total);
+                        var pah = percent + '%';
+                        var bar = '';
+                        if (percent >= 100) {
+                            bar = "layui-bg-red";
+                        } else if (percent >= 70 && percent < 100) {
+                            bar = " layui-bg-blue";
+                        }
+                        var data = {
+                            billUseNum : row.billUseNum,
+                            total : total,
+                            percent : percent,
+                            pah : pah,
+                            bar : bar
+                        };
+                        return laytpl($("#billUseNumTpl").html()).render(data);
+                    }
+                }, {
+                    field : 'cancelBillNum',
+                    title : '领用票据数'
+                }, {
+                    field : 'usageFinishFlag',
+                    title : '使用状态',
+                    width : 100,
+                    sort : true,
+                    unresize : true,
+                    align : "center",
+                    templet : '#usageFinishFlagTpl'
+                } ] ],
+                done : function() {
+                    this.where = {};
+                }
+            })//extends
+            ); //layui.table
+
+            //计算百分比 两位小数
+            function getPercent(num, total) {
+                var per = Math.round(num / total * 10000);
+                return per / 100.00;
+            }
+
+            //表格单击事件 选中
+            table.on('row(billRecipientListGrid)', function(obj) {
+                var row = obj.data;
+                parent.selectBillCancelCallBack(row);
+                // 关闭窗口
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+
+            function getTableHgt() {
+                return ($("body").height() - $('#billRecipient_queryForm').height() - 20);
+            }
+
+            $(window).resize(function() {
+                var height = getTableHgt();
+                table.reload('billRecipientListGrid', {
+                    height : height
+                });
+            })
+        }//layui.use() function()
+        );//layui.use()
+    </script>
+</body>
+</html>

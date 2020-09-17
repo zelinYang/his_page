@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>患者综合信息</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <style type="text/css">
+    .layui-tab-title.highlight.second .layui-this::after {border-width: 3px 0px 1px;}
+    </style>
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .layui-row-query { background-color: #fff;}
+        .layui-tab-card { box-shadow: initial; border: 0; padding: 0;  border-radius: 0; margin: 10px 0 0 0;}
+        .layui-tab-card > .layui-tab-title { margin-left: 1px;}
+        .layui-tab-card > .layui-tab-title li { background-color: #ddd; }
+        .layui-tab-card > .layui-tab-title li.layui-this{ font-weight: bold; background-color: #1c8ee2; color: #fff;}
+        .layui-tab-card > .layui-tab-title .layui-this:after { border-width: 0;}
+        .layui-tab-content {padding: 0; background-color: #fff; height: calc(100% - 33px) }
+
+    </style>
+</head>
+<body>
+
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <form id="patientCompositeForm" class="layui-form">
+                <div class="layui-row-query search-term" >
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <div class="layui-input-inline wd-220">
+                                #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/住院流水号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/住院流水号/社保号/健康卡查询' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline m-r-n">
+	                            <div class="layui-btn-group">
+	                                <button  type="button" class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+	                                    <i class="layui-icon layui-icon-search "></i>
+	                                </button>
+                                    <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+	                            </div>
+	                    </div>
+	                    <div class="layui-inline">
+                            <label class="layui-form-label">住院流水号</label>
+                            <div class="layui-input-inline" id="paientSelectDiv">
+                    #formTextInput("inhospitalId" "" "id='inhospitalId' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("patientName" "" "id='patientName' class='layui-input'  readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">床号</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("currentBedNo" "" "id='currentBedNo' class='layui-input' readOnly")
+                            </div>
+                        </div>
+#*                        <div class="layui-inline">
+                            <label class="layui-form-label">性质</label>
+                            <div class="layui-input-inline ">
+                    #formTextInput("patientKind" "" "id='patientKind' class='layui-input' readOnly ")
+                            </div>
+                        </div>*#
+                        <div class="layui-inline">
+                            <label class="layui-form-label">科室</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("inhospitalOfficeName" "" "id='inhospitalOfficeName' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">入院日期</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("inhospitalDate" "" "id='inhospitalDate' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">总费用</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("" "" "id='' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">自付</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("" "" "id='' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">缴款</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("" "" "id='' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">余额</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("" "" "id='' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">诊断</label>
+                            <div class="layui-input-inline">
+                    #formTextInput("inhospitalDiagnosis" "" "id='inhospitalDiagnosis' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!-- 数据表格 -->
+            <div class="layui-tab layui-tab-card inSettNav" lay-filter="inSettNav">
+                <!-- 主页导航名称 -->
+                <ul class="layui-tab-title second p-b-sm">
+                    <li lay-id="payInTab" href="$path/inpatient/patientComposite.do" class="layui-this">押金信息</li>
+                    <li lay-id="surgery"  href="$path/inpatient/inpatientMgrList.do">手术信息</li>
+                    <li lay-id="settlement" href="$path/inpatient/payInMaster.do" >费用信息</li>
+                    <li lay-id="inpatientOfficeTab" href="$path/inpatient/inhospitalRegisterList.do">科室信息</li>
+                </ul>
+                <!-- 导航内容 根据index对应li -->
+                <div class="layui-tab-content">
+                    <div lay-id="payIn" class="layui-tab-item full-height layui-show">
+                        <table id="payInTab" lay-filter="payInTab" class="layui-table-tabs"></table>
+                    </div>
+                    <div lay-id="surgery" class="layui-tab-item full-height">
+                        <table id="surgeryTab" lay-filter="surgeryTab" class="layui-table-tabs"></table>
+                    </div>
+                    <div lay-id="settlement" class="layui-tab-item full-height">
+                        <table id="settlementTab" lay-filter="settlementTab" class="layui-table-tabs"></table>
+                    </div>
+                    <div lay-id="dayLastSett" class="layui-tab-item full-height">
+                        <table id="inpatientOfficeTab" class="layui-table-tabs" lay-filter="inpatientOfficeTab"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    #parse("./settlement/inpatient/patientInfo/patientComposite.js.vm")
+</body>
+</html>

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>住院开嘱科室统计（按医生）</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+      .layui-table-header div.layui-table-cell{
+      text-align: left;
+      }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!-- 列表表格 工具栏-->
+            <!--搜索条件 开始-->
+            <form id="patient_queryForm" class="layui-form autoWidth">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">开单医生</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("makeOrderDoctorName" "" " id='q_dicTypeName' class='layui-input' autocomplete='off' maxlength='50' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">收费日期 </label>
+                            <div class="layui-input-inline">
+                                #formTextInput("chargeDate" "" " id='chargeDate' autocomplete='off'  class='layui-input' placeholder='请选择时间' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline m-r-n">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                    <i class="layui-icon layui-icon-search "></i>
+                                </button>
+                                <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" lay-tips="导出" id="btn_add">
+                                    <i class="layui-icon layui-icon-export" style="margin-top: 7px"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+
+            <!--列表 begin-->
+            <table id="basDiseaseListGrid" class="layui-table-tabs" lay-filter="basDiseaseListGrid"></table> 
+        </div>
+    </div>
+</div>
+
+<!-- 本页面js -->
+    #parse("./report/syncOutpatientFee/syncOutpatientFeeIncomeList.js.vm")
+</body>
+</html>

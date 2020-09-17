@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style type="text/css">
+		.layui-table td, .layui-table th {padding: 5px;}
+		.layui-card-body .layui-input-block {
+			margin-bottom: 3px;
+		}
+		.layui-form-label{
+			width: 84px;
+		}
+		.layui-card-body .layui-input-block{
+			margin-left: 104px;
+		}
+		.layui-form-mid{
+			margin-left: 10px;
+		}
+		.layui-fluid{height: calc(100% - 10px);}
+		.tool-bottom-fixed.white-bg{position: absolute}
+		.layui-table-tool{background-color: white}
+		@media screen and (max-width: 768px){
+			.layui-table-tool .layui-btn-container{display: flex}
+		}
+	</style>
+</head>
+<body>
+<form class="layui-form" action="" id="clinicPathStageForm">
+    #formHiddenInput("clinicPathId" "$!{clinicPathId}" "id='clinicPathId'")
+    #formHiddenInput("clinicPathStageId" "$!{clinicPathStage.clinicPathStageId}" "id='clinicPathStageId'")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label"><span style="color:red">*</span>名称</label>
+            <div class="layui-input-inline">
+                <input type="text" name="pathStageContent" value="$!clinicPathStage.pathStageContent" maxlength="30" lay-verify="required" autocomplete="off" placeholder="请输入名称" class="layui-input">
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label"><span style="color:red">*</span>执行标准</label>
+            <div class="layui-input-inline">
+                <input type="number" name="exeStandard" value="$!clinicPathStage.exeStandard" maxlength="5" lay-verify="required" autocomplete="off" placeholder="请输入执行标准" class="layui-input">
+            </div>
+            <div class="layui-form-mid layui-word-aux">天</div>
+        </div>
+		<div class="layui-inline">
+			<label class="layui-form-label"><span style="color:red">*</span>有效期限</label>
+			<div class="layui-input-inline">
+				<input type="number" name="validPeriod" value="$!clinicPathStage.validPeriod" maxlength="5" lay-verify="required" autocomplete="off" placeholder="请输入有效期限" class="layui-input">
+			</div>
+			<div class="layui-form-mid layui-word-aux">天</div>
+		</div>
+        <div class="layui-inline">
+            <label class="layui-form-label"><span style="color:red">*</span>类型</label>
+            <div class="layui-input-inline" style="width: auto;">
+                #foreach($option in $dicData.dicPathStageType.keySet())
+                    <input type="radio" lay-filter="pathStageType" name="pathStageType" title="$!{dicData.dicPathStageType.get($option)}" value="$option"  #if("$!clinicPathStage.pathStageType" == "$option")checked#end>
+                #end
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-block">
+            <textarea name="remark" placeholder="请输入备注" maxlength="250" class="layui-textarea">$!clinicPathStage.remark</textarea>
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    var pathStageType = '$!{clinicPathStage.pathStageType}';
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'autocomplete', 'table'], function() {
+        var form = layui.form;
+        var element = layui.element;
+        var table = layui.table;
+        var autocomplete = layui.autocomplete;
+        var $ = layui.$;
+        layui.form.render('select');
+
+        $(function () {
+            if (pathStageType) {
+                pathStageType = ',' + pathStageType + ',';
+                $('input:checkbox[name="pathStageType"]').each(function() {
+                    if (pathStageType.indexOf(',' + $(this).val() + ',') > -1) {
+                        $(this).attr('checked', 'checked');
+                    }
+                });
+            }
+        });
+
+        form.on('radio(pathStageType)', function(data){
+            if (data.value === '2') {
+                if (data.elem.checked) {
+                    $('input:checkbox[value="3"]').attr('disabled', 'disabled');
+                } else {
+                    $('input:checkbox[value="3"]').removeAttr('disabled');
+                }
+            }
+            if (data.value === '3') {
+                if (data.elem.checked) {
+                    $('input[type="checkbox"][value="2"]').attr('disabled', 'disabled');
+                } else {
+                    $('input[type="checkbox"][value="2"]').removeAttr('disabled');
+                }
+            }
+        });
+    });
+</script>
+</body>

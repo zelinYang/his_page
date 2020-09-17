@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class=" layui-fluid layui-content-wrapper layui-bg-white">
+	<div class="layui-row" style="height: 50%;">
+		<div class="layui-col-xs6">
+			<form id="queryForm">
+				#formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+				#formHiddenInput("surgeryFlag" "1" "id='surgeryFlag'")
+				#formHiddenInput("orderGroupFlag" "1" "id='orderGroupFlag'")
+			</form>
+			<table id="orderList" lay-filter="orderList"></table>
+		</div>
+		<div class="layui-col-xs6">
+			<table id="chargeItemList" lay-filter="chargeItemList"></table>
+		</div>
+	</div>
+	<!-- 医嘱编辑 -->
+	<div class="layui-row p-t-n layui-bg-white" id="editTable" style="height: 50%;">
+		<div id="table1_theadDiv" class=" p-n">
+			<table class="layui-table custom-table m-n">
+				<colgroup>
+					<col width="60px">
+					<col width="70px">
+					<col width="55px">
+					<col width="170px">
+					<col width="105px">
+					<col width="60px">
+					<col width="60px">
+					<col width="60px">
+					<col width="60px">
+					<col width="100px">
+					<col width="50px">
+					<col width="110px">
+					<col width="110px">
+					<col>
+				</colgroup>
+				<thead>
+				<tr>
+					<th style="text-align: center;">
+						#formHiddenInput("groupNo" "" "id='groupNo'")
+					</th>
+					<th>分类</th>
+					<th>药型</th>
+					<th>医嘱项目</th>
+					<th>规格</th>
+					<th>剂量</th>
+					<th>单位</th>
+					<th>数量</th>
+					<th>单位</th>
+					<th>频次</th>
+					<th>首</th>
+					<th>用法</th>
+					<th>执行科室</th>
+					<th>单条说明</th>
+					##                            <th class="table-patch"></th>
+				</tr>
+				</thead>
+			</table>
+		</div>
+		<div id="table1_tbodyDiv" style="height:calc(100% - 27px); overflow-y:scroll;">
+			<table class="layui-table custom-table layui-table-input m-t-n m-b-n" >
+				<colgroup>
+					<col width="60px">
+					<col width="70px">
+					<col width="55px">
+					<col width="170px">
+					<col width="105px">
+					<col width="60px">
+					<col width="60px">
+					<col width="60px">
+					<col width="60px">
+					<col width="100px">
+					<col width="50px">
+					<col width="110px">
+					<col width="110px">
+					<col >
+				</colgroup>
+				<tbody id="editOrderList">
+				<tr id="modelTr" class="layui-hide">
+					<td>
+						<i onclick="deleteTr(this)" class="layui-icon layui-icon-delete btn-img-red" title="删除"></i>
+						#formHiddenInput("medicineFlag" "" "")   ##<!-- 是否药品 -->
+						#formHiddenInput("makeOrderFlag" "1" "")   ##<!-- 开嘱人类型 -->
+						#formHiddenInput("exeOrderFlag" "1" "")   ##<!-- 执行类型 -->
+						#formHiddenInput("medicalTechFlag" "0" "") ##<!-- 是否医技主项 -->
+						#formHiddenInput("dispensingStopFlag" "0" "") ##<!-- 是否停药 -->
+						#formHiddenInput("dispensingFlag" "0" "") ##<!-- 发药标识。 -->
+						#formHiddenInput("doctorOrderType" "01" "") ##<!-- 医嘱类型，01：药品。 -->
+						#formHiddenInput("pharmacyId" "" "") ##<!-- 药房/科室二级库ID -->
+						#formHiddenInput("highRiskFlag" "" "") ##<!-- 高危药品标识 -->
+						#formHiddenInput("productBatch" "" "") ##<!-- 药品生产批次号。 -->
+						#formHiddenInput("producingAreaId" "" "") ##<!-- 药品生产地。 -->
+						#formHiddenInput("validUntil" "" "") ##<!-- 药品有效期。 -->
+						#formHiddenInput("medicineId" "" "") ##<!-- 药品ID。 -->
+						#formHiddenInput("chargeItemId" "" "") ##<!-- 药品ID。 -->
+						#formHiddenInput("orderGroupNo" "" "class='orderGroupNo'") ##<!-- 组号。 -->
+						#formHiddenInput("chargeGroupId" "1" "")
+						#formHiddenInput("orderName" "" "")
+						#formHiddenInput("orderId" "" "")
+						#formHiddenInput("urgentFlag" "0" "")   ##<!-- 是否加急-->
+						#formHiddenInput("drugTherapyType" "" "") ##<!-- 药品类型。 -->
+						#formHiddenInput("lisFlag" "0" "")   ##<!-- 是否检验-->
+						#formHiddenInput("examFlag" "0" "")   ##<!-- 是否检查 -->
+						#formHiddenInput("surgeryFlag" "0" "")   ##<!-- 是否手术 -->
+						#formHiddenInput("overdueBillFlag" "0" "")   ##<!-- 是否欠费 -->
+						#formHiddenInput("unitPrice" "0" "")   ##<!-- 单价 -->
+						#formHiddenInput("additionFlag" "0" " class='additionFlag' ")   ##
+					</td>
+					<td>
+						<!-- 类别 -->
+						#formSingleSelectFirstNone("orderClassify" "2" $!dicData.dicOrderClassify "class='layui-input' " "")
+					</td>
+					<td>
+						<!-- 药型  -->
+						#formSingleSelectFirstNone("medicineType" "" $!dicData.dicMedicineTypeInOrder "class='layui-input layui-form-select' id='medicineType' lay-filter='medicineType' " "")
+					</td>
+					<td>
+						<!-- 项目 -->
+						#formTextInput("orderName" "" "search='orderName' call-back='selectDrugOrder' server-url='' class='layui-input' ")
+					</td>
+					<td>
+						<!-- 规格 -->
+						#formTextInput("medicineSpec" "" "class='layui-input' ")
+					</td>
+					<td>
+						<!-- 剂量 -->
+						#formTextInput("dosage" "" "class='layui-input' ")
+					</td>
+					<td>
+						<!-- 剂量单位 -->
+						#formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnit "class='layui-input' style='border:0;'" "")
+					</td>
+					<td>
+						<!-- 数量 -->
+						#formIntInput("usageQuantity" "1" "class='layui-input' style='border:0;' maxlength='4'")
+					</td>
+					<td>
+						<!-- 数量单位 -->
+						#formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnit "class='layui-input' style='border:0;'" "")
+					</td>
+					<td>
+						<!-- 频次 -->
+						#formSingleSelectFirstNone("pharmacyFreqId" "St" $!dicData.dicPharmacyFreq "class='layui-input'" "")
+					</td>
+					<td>
+						<!-- 首 -->
+						#formIntInput("firstDayDosage" "" "class='layui-input' maxlength='2' ")
+					</td>
+					<td>
+						<!-- 用法 -->
+						#formSingleSelectFirstNone("doseWayCode" "" $dicData.dicDoseWay "class='layui-input' " "")
+					</td>
+					<td>
+						<!-- 执行科室 -->
+						#formSingleSelectFirstNone("exeOfficeId" "$!officeId" $dicData.dicSysOrgDeptName "class='layui-input' style='border:0;'" "")
+					</td>
+					<td>
+						<!-- 单条说明 -->
+						#formTextInput("remark" "" "class='layui-input'  maxlength='250'")
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<!-- 按钮 -->
+		<div class="tool-bottom-fixed" id="footerBar">
+			<button class="layui-btn layui-btn-sm" id="btn_save" type="button" > 保存 </button>
+		</div>
+	</div>
+</div>
+</body>
+<script>
+	var modelTr = $('#modelTr').clone().removeClass('layui-hide');
+	var orderGroupNo = '';
+	var orderId = '';
+	$('#modelTr').remove();
+	layui.use(['form', 'laydate', 'element', 'table', 'layer', 'util'], function () {
+		var laydate = layui.laydate, table = layui.table, form = layui.form, layer = layui.layer, util = layui.util;
+
+		var orderList = table.render({
+			elem: '#orderList',
+			where: common.serializeObject($('#queryForm')),
+			url: '../inpatient/inpatientOrderJsonList.jo',
+			height: getTableHgt(),
+			cols: [[
+				{
+					type: 'radio',
+					// fixed: 'left',
+					width: 30,
+				}, {
+					field: 'orderName',
+					title: '医嘱项目'
+				}
+			]]
+		});
+
+		table.on('row(orderList)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.orderList;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+			orderGroupNo = obj.data.orderGroupNo;
+			orderId = obj.data.orderId;
+			// common.requestServer('../inpatient/inpatientOrderJsonList.jo', {inhospitalId: $('#inhospitalId').val(), orderGroupNo: orderGroupNo}, function (result){
+			// 	console.log(result);
+			// 	if (result.code === 0) {
+			// 		$.each(result.data, function (index, order) {
+			// 			generateOrderTr(order);
+			// 		});
+			// 	} else {
+			// 		common.alert(result.msg, 0);
+			// 	}
+			// });
+			generateChargeItemTable(obj.data.chargeGroupId);
+		});
+
+		generateChargeItemTable('');
+
+		function generateChargeItemTable(chargeGroupId) {
+			var chargeItemList = table.render({
+				elem: '#chargeItemList',
+				where: {chargeGroupId: chargeGroupId},
+				url: '../bas/selectChargeItemListBySubChargeItemId.jo',
+				height: getTableHgt(),
+				cols: [[
+					{
+						type: 'checkbox',
+						width: 30,
+					}, {
+						field: 'name',
+						title: '收费项目',
+						templet :function (row) {
+							if (row.type === '1') {
+								return row.chargeName;
+							} else {
+								return row.medicineName;
+							}
+						}
+					}
+				]]
+			});
+
+			table.on('checkbox(chargeItemList)', function(obj){
+				console.log($('#editOrderList').children('tr'));
+				if (obj.type === 'all') {
+					if (obj.checked) {
+						var checkStatus = table.checkStatus('chargeItemList');
+						$.each(checkStatus.data, function (index, value) {
+							value.orderGroupNo = orderGroupNo;
+							generateOrderTr(value);
+						});
+					} else {
+						$('#editOrderList').html('');
+					}
+				} else {
+					if (obj.checked) {
+						obj.data.orderGroupNo = orderGroupNo;
+						generateOrderTr(obj.data);
+					} else {
+						if (obj.data.type === '1') {
+							$('#editOrderList').find('input[name=chargeItemId][value=' + obj.data.chargeItemId + ']').parent().parent().remove();
+						} else {
+							$('#editOrderList').find('input[name=medicineId][value=' + obj.data.medicineId + ']').parent().parent().remove();
+						}
+					}
+				}
+			});
+		}
+
+		function generateOrderTr(data) {
+			var trDom = modelTr.clone();
+			$('#editOrderList').append(trDom);
+			trDom.find('input, select').each(function (i, val){
+				var name = $(val).attr('name' );
+				switch (name) {
+					case 'orderName':
+						if (data.type === '1') {
+							$(val).val(data.chargeName);
+						} else if (data.type === '2') {
+							$(val).val(data.medicineName);
+						} else {
+							$(val).val(data[name]);
+						}
+						break;
+					case 'medicineFlag':
+						if (data.type === '1') {
+							$(val).val('0');
+						} else if (data.type === '2') {
+							$(val).val('1');
+						} else {
+							$(val).val(data[name]);
+						}
+						break;
+					default:
+						if (data[name]) {
+							$(val).val(data[name]);
+						}
+				}
+			});
+			form.render();
+		}
+
+		// 保存或提交医嘱
+		$('#btn_save').click(function (){
+			var self = this;
+			var arrayObj = [];
+			var checkFlag = true;
+			$('#editOrderList > tr').each(function (){
+				var obj = {};
+				$(this).find('td > input, select').each(function (){
+					var name = $(this).attr('name');
+					var value = $(this).val();
+					if(name && value) {
+						obj[name] = value;
+						if (name == 'pharmacyFreqId') {
+							obj['pharmacyFreqName'] = $(this).find("option:selected").text();
+						}
+						if (name == 'exeOfficeId') {
+							obj['exeOfficeName'] = $(this).find("option:selected").text();
+						}
+					}
+				});
+				obj.orderState = '1';
+				if(!$.isEmptyObject(obj) && obj.orderState && obj.orderName && obj.exeOfficeId) {
+					arrayObj.push(obj);
+				}
+				if (!obj.exeOfficeId) {
+					checkFlag = false;
+					return false;
+				}
+			});
+			console.log(arrayObj);
+			if (arrayObj.length > 0 && $('#inhospitalId').val()) {
+				var params = {inhospitalId: $('#inhospitalId').val(), inpatientOrderJson: JSON.stringify(arrayObj), orderId: orderId};
+				console.log(arrayObj);
+				common.requestServer('../inpatient/saveOrderForMedicine.jo', params, function (result){
+					if (result.code == "0") {
+
+					} else {
+						common.alert(result.msg, 0);
+					}
+				});
+			}
+		});
+
+		function getTableHgt() {
+			return ($('body').height() - $('#editTable').height());
+		}
+	});
+</script>
+</html>

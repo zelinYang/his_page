@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>住院费用统计</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1,IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta name="renderer" content="webkit">
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html"/>
+    <![endif]-->
+    <link href="../../../resource/layuiadmin/layui/css/layui.css" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+
+    <style type="text/css">
+        .xm-select-title, .xm-input {
+            height: 30px !important;
+            min-height: 30px !important;
+        }
+
+        .xm-select-parent .xm-select {
+            padding: 0px !important;
+        }
+    </style>
+    <script src="../../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+    <script src="../../../resource/hplus/js/validate/form-validator.js"></script>
+    <script src="../../../resource/hplus/js/contabs.js?v=12"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+    <script src="../../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../../resource/common/bicommon.js"></script>
+</head>
+<body>
+	<div class="layui-content-wrapper">
+	    <div class="layui-fluid">
+	        <div class="layui-bg-white">
+	            <!-- 列表表格 工具栏-->
+	            <!--搜索条件 开始-->
+	            <form id="patient_queryForm" class="layui-form autoWidth">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline">
+                               <input type="text" name="patientName" class="layui-input" id="patientName" placeholder="请输入患者姓名">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">住院号</label>
+                            <div class="layui-input-inline">
+                               <input type="text" name="inhospitalNo" class="layui-input" id="inhospitalNo" placeholder="请输入住院号">
+                            </div>
+                        </div>
+                        <div class="layui-inline ">
+                            <label class="layui-form-label">科室名称</label>
+                            <div class="layui-input-inline  wd-120">
+	                            <select name="currentOfficId" id="officeMap"></select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">入院时间</label>
+                            <div class="layui-input-inline auto-width" style="width: auto;">
+                                <input type="date" name="chargeDate" class="layui-input" id="chargeDate" placeholder="请选择收费日期">
+                            </div>
+                        </div>
+                        <div class="layui-inline m-r-n">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn  layui-btn-sm " lay-tips="查询" type="button" lay-submit lay-filter="btn_query" id="btn_query">
+                                    <i class="layui-icon layui-icon-search "></i>
+                                </button>
+                                <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" lay-tips="导出" id="btn_add">
+                                    <i class="layui-icon layui-icon-export" style="margin-top: 7px"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+	            <!--列表 begin-->
+	            <table id="basDiseaseListGrid" class="layui-table-tabs" lay-filter="basDiseaseListGrid"></table>
+	        </div>
+	    </div>
+	</div>
+</body>
+<script>
+
+    layui.config({
+        base: '/resource/layuiadmin/'   //静态资源所在路径
+    }).use(['element', 'table', 'form', 'layer', 'laydate', 'util'], function () {
+        var table = layui.table,
+            laydate = layui.laydate,
+            element = layui.element,
+            form = layui.form,
+            util = layui.util;
+
+
+        function getDic(dicMapNames){
+        	var data = {}
+        	$.ajax({
+                type: "POST",
+                url: '../../../doc/getDicBorrowFlag.jo',
+                contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+                data: {"dicMapNames": dicMapNames},
+                dataType: "json",
+                async: false,
+                success: function (returl) {
+                   data =  returl.dicMap;
+                }})
+        	return data;
+        }
+        var dicSex = getDic("dicSex")
+        var dicRegStatus = getDic("dicRegStatus")
+        var dicPatientAttribute = getDic("dicPatientAttribute")
+        var dicPaymentMethod = getDic("dicPaymentMethod")
+        var dicRegisterType = getDic("dicRegisterType")
+        console.log(dicPatientAttribute)
+
+
+        function getOfficMap(unitId){
+        	var data = {}
+        	$.ajax({
+                type: "POST",
+                url: '../../../sys/queryDepByUnitId.jo',
+                contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+                data: {"currentOfficId": unitId},
+                dataType: "json",
+                async: false,
+                success: function (returl) {
+                	 $.each(returl, function(index, item){
+                    	console.log(item)
+                		data[item.orgId] = item.name;
+                	})
+                }})
+        	return data;
+        }
+        var  officeMap = getOfficMap("unitId")
+       // console.log(officeMap)
+        //获取开单科室
+         function loadOffice(name, dicMap) {
+            $('select[name="' + name + '"]').empty();
+            var options = $.map(dicMap, function (key, value) {
+                return '<option value="' + value + '">' + key + '</option>';
+            })
+            options.unshift('<option value=""></option>')
+            $('select[name="' + name + '"]').html(options.join(''));
+            form.render();
+        }
+        loadOffice('currentOfficId', officeMap)
+
+        //列表
+          table.render({
+              elem : '#basDiseaseListGrid',
+              url : '../../../report/syncInpatientSettlementListData.jo',//数据接口 ,
+              limit : 20,
+              method:'post',
+              cellMinWidth: 130,
+              cols : [ [
+                  {
+                      title : '序号',
+                      type : 'numbers',
+                      fixed:'left'
+                  },
+                  {
+                      field : 'feeBillNo',
+                      title : '发票号码',
+                      width : 80,
+                      fixed:'left'
+                  },{
+                      field:'inhospitalNo',
+                      title:'住院号',
+                      width : 80,
+                      fixed:'left'
+                  },
+                  {
+                      field : 'patientName',
+                      title : '患者姓名',
+                      width : 80,
+                      fixed:'left'
+                  },
+                  {
+                      field:'currentOfficeName',
+                      title:'科室名称',
+                      width : 80,
+                      fixed:'left'
+                  },
+                  {
+                      field : 'inhospitalDate',
+                      title : '入院时间',
+                      width : 160,
+                      templet: function (row) {
+                          return util.toDateString(row.inhospitalDate);
+                      }
+                  },
+                  {
+                      field : 'outhospitalDate',
+                      title : '离院时间',
+                      width : 160,
+                      templet: function (row) {
+                          return util.toDateString(row.outhospitalDate);
+                      }
+                  },
+                  {
+                      field : 'patientIdCard',
+                      title : '证件号码',
+                      width : 160,
+                  },
+                  {
+                      field : 'contactPhone',
+                      title : '联系电话',
+                  },
+                  {
+                      field : 'feeGroupAmount1',
+                      width : 60,
+                      title : '西药费'
+                  },
+                  {
+                      field : 'feeGroupAmount2',
+                      width : 60,
+                      title : '中草药费'
+                  },
+                  {
+                      field : 'feeGroupAmount3',
+                      width : 60,
+                      title : '中成药费'
+                  },
+                  {
+                      field : 'feeGroupAmount4',
+                      width : 60,
+                      title : '诊察费'
+                  },
+                  {
+                      field : 'feeGroupAmount5',
+                      width : 60,
+                      title : '检查费'
+                  },
+                  {
+                      field : 'feeGroupAmount6',
+                      width : 60,
+                      title : '化验费'
+                  },
+                  {
+                      field : 'feeGroupAmount7',
+                      width : 60,
+                      title : '放射'
+                  },
+                  {
+                      field : 'feeGroupAmount8',
+                      width : 60,
+                      title : '治疗费'
+                  },
+                  {
+                      field : 'feeGroupAmount9',
+                      width : 60,
+                      title : '手术费'
+                  },
+                  {
+                      field : 'feeGroupAmount10',
+                      width : 60,
+                      title : '护理费'
+                  },
+                  {
+                      field : 'feeGroupAmount11',
+                      width : 60,
+                      title : '材料费'
+                  },
+                  {
+                      field : 'feeGroupAmount12',
+                      width : 81,
+                      title : '高值材料费'
+                  },
+                  {
+                      field : 'feeGroupAmount13',
+                      width : 60,
+                      title : '床位费'
+                  },
+                  {
+                      field : 'feeGroupAmount99',
+                      width : 60,
+                      title : '其他费'
+                  },
+                  {
+                      field : 'currentBedNo',
+                      width : 85,
+                      title : '当前床位号'
+                  },
+                  {
+                      field : 'bedDoctorName',
+                      width : 85,
+                      title : '当前管床医师'
+                  },
+                  {
+                      field : 'diagnosisDoctorName',
+                      width : 85,
+                      title : '主治医师'
+                  },
+                  {
+                      field : 'hospitalName',
+                      width : 85,
+                      title : '医疗机构'
+                  },
+                  {
+                      field : 'selfPayInWay',
+                      width : 85,
+                      title : '付款方式'
+                  },
+                  {
+                      field : 'insuredPayInWay',
+                      width : 85,
+                      title : '医保类型'
+                  },
+                  {
+                      field : 'totalPrepaySum',
+                      width : 85,
+                      title : '缴款总金额'
+                  },
+                  {
+                      field : 'visitCardNo',
+                      width : 85,
+                      title : '门诊号码'
+                  }
+
+              ] ],
+              page : true,
+              height : getTableHgt(),
+              request : {
+                  pageName : 'pageNumber' //页码的参数名称，默认：page
+                  ,
+                  limitName : 'pageSize' //每页数据量的参数名，默认：limit
+              },
+              done : function() {
+              }
+          });
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('.layui-form').height() - 10)
+        }
+
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basDiseaseListGrid', {
+                height: height
+            })
+        })
+
+        //监听搜索
+       $('#btn_query').on('click', function () {
+            table.reload('basDiseaseListGrid',{
+                where: getQueryParams()
+            })
+        });
+
+        function getQueryParams() {
+            var params = $.extend({
+            	feeBillNo:'',
+            	visitCardNo:'',
+            	outpatientOfficeId:'',
+            	patientName:'',
+            	chargeDate:'',
+            }, common.serializeObject($('#patient_queryForm')));
+            var chargeDate = $('#chargeDate').val();
+            if (chargeDate) {
+                var chargeDates = chargeDate.split(' - ');
+                params.settlementTimeBegin = chargeDates[0];
+                params.settlementTimeEnd = chargeDates[1];
+            }
+            return params;
+        }
+
+		//监听行双击事件
+		table.on('rowDouble(basDiseaseListGrid)', function(obj){
+
+             var data = obj.data;
+             window.outpatientOfficeId = data.outpatientOfficeId
+    		top.common.open( '../../report/outpatient/rpOutpatientFeeItem.html?outpatientOfficeId=' + data.outpatientOfficeId, '门诊业务详情（' + data.outpatientOfficeName + '）', {
+    	  area: ['90%', '90%'],
+                scroll: true
+            })
+		});
+
+        //新增事件
+        $('#btn_add').click(function() {
+            var title = '导出数据'
+                var iframeEnvironment = 'I402880460168db4bdb4bec6b0168dcd649c523f8';
+                var content = diResource + iframeEnvironment
+                //true 执行
+                common.open(content, title, {
+                    area : [ '1660px', '80%' ],
+                    scroll:'yes'
+                });
+        });
+    });
+
+</script>
+</html>

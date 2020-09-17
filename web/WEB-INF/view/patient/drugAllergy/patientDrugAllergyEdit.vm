@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+</head>
+<body style="background-color: #FFF">
+    <form class="layui-form" lay-filter="patientForm" id="patientForm">
+        #formHiddenInput("drugAllergyId" "$!patientDrugAllergy.drugAllergyId" "")
+        <div class="layadmin-maillist-fluid p-t-sm">
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">#requiredTag()过敏原名称</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formTextInput("allergyDrugName" "#htmlEscape($!patientDrugAllergy.allergyDrugName)" "class='layui-input' maxlength='20' lay-verify='required' placeholder='请输入过敏原名称'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">过敏症状</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formTextInput("allergySymptom" "#htmlEscape($!patientDrugAllergy.allergySymptom)" "class='layui-input' maxlength='50' id='allergySymptom' placeholder='请输入过敏症状'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">#requiredTag()严重程度</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formTextInput("severity" "#htmlEscape($!patientDrugAllergy.severity)" "class='layui-input' maxlength='100' lay-verify='required' placeholder='请输入严重程度'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">首发时间</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm:ss', $!patientDrugAllergy.firstOccurTime)" "class='layui-input' id='firstOccurTime' placeholder='请选择首发时间' readOnly")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit lay-filter="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+        </div>
+    </form>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form', 'element', 'laydate'], function(){
+    var laydate = layui.laydate, form = layui.form;
+    laydate.render({elem: '#firstOccurTime',trigger: 'click', type:'datetime', format: 'yyyy-MM-dd HH:mm:ss'});
+
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+        if (!$('#patientId', parent.document).val()) {
+            common.msg("患者编号不存", 0, function (){});
+            return;
+        }
+
+        data.field.patientId = $('#patientId', parent.document).val();
+        common.requestServer(contextPath + '/patient/savePatientDrugAllergy.jo', data.field, function (result){
+            if (result.code == "0") {
+                common.msg("保存成功。", 1, function (){
+                    $('#btn_refresh', window.parent.document).click();
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+});
+
+</script>
+</html>
+

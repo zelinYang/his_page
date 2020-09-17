@@ -1,0 +1,81 @@
+<html>
+<head>
+	<title>临床路径编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<!-- form检验 -->
+	<script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+	<script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+	<style>
+		.layui-form-checkbox span {
+			height: 30px;
+		}
+		.layui-table-view .layui-form-radio > i {
+			margin-top: 15px;
+		}
+		.singleDisease {
+			display: none;
+		}
+		.layui-form-label {
+			width: 100px;
+		}
+		.layui-card-body .layui-input-block {
+			margin-left: 120px;
+		}
+	</style>
+</head>
+
+<body>
+<div class="layui-fluid p-b-n">
+<script type="text/html" id="toolbarDemo">
+	<div class="layui-btn-container">
+		#if("$!{showFlag}" != "1")
+			<button class="layui-btn layui-btn-sm" lay-event="add" title="新 增"><i class="layui-icon layui-icon-add-1 "></i></button>
+			<button class="layui-btn layui-btn-sm" lay-event="refresh" title="刷 新"><i class="layui-icon layui-icon-refresh "></i></button>
+		#end
+	</div>
+</script>
+<script type="text/html" id="stageBarDemo">
+	<a class="layui-btn layui-btn-xs" lay-tips="详情" lay-event="read"> <i class="layui-icon layui-icon-about"></i></a>
+	#if("$!{showFlag}" != "1")
+	<a class="layui-btn layui-btn-xs" lay-tips="编辑" lay-event="edit"> <i class="layui-icon layui-icon-edit"></i></a>
+	<a class="layui-btn layui-btn-xs" lay-tips="上移" lay-event="up"> <i class="layui-icon layui-icon-triangle-d" style="transform: rotate(180deg);display: inline-block;"></i></a>
+	<a class="layui-btn layui-btn-xs" lay-tips="下移" lay-event="down"> <i class="layui-icon layui-icon-triangle-d" ></i></a>
+	<a class="layui-btn layui-btn-danger layui-btn-xs" lay-tips="刪除" lay-event="del"> <i class="layui-icon layui-icon-delete"></i></a>
+	#end
+</script>
+	<script type="text/html" id="activityBarDemo">
+		<a class="layui-btn layui-btn-xs" lay-tips="详情" lay-event="read"> <i class="layui-icon layui-icon-about"></i></a>
+			#if("$!{showFlag}" != "1")
+			<a class="layui-btn layui-btn-xs" lay-tips="编辑" lay-event="edit"> <i class="layui-icon layui-icon-edit"></i></a>
+			<a class="layui-btn layui-btn-danger layui-btn-xs" lay-tips="刪除" lay-event="del"> <i class="layui-icon layui-icon-delete"></i></a>
+			#end
+	</script>
+<div class="layui-col-md4 layui-col-sm4 layui-col-xs4">
+    #formHiddenInput("clinicPathId" "$!{clinicPathId}" "id='clinicPathId'")
+    <table id="stageTable" lay-filter="stageTable"></table>
+</div>
+<div class="layui-col-md8 layui-col-sm8 layui-col-xs8 full-height">
+##    <table id="activityTable" lay-filter="activityTable"></table>
+    <div class="layui-tab layui-tab layui-tab-card  white-bg outpatientFeeNav full-height m-t-n">
+        <ul class="layui-tab-title">
+            <li id="btn_path_activity" class="layui-this">临床路径阶段活动制定</li>
+##            <li id="btn_path_order">医嘱</li>
+        </ul>
+        <div class="layui-tab-content" style="height:calc(100% - 68px);padding: 0;">
+##            <div class="layui-tab-item full-height-scroll layui-show">
+##                #parse("./clinic/clinicPathStageEdit.vm")
+##            </div>
+            <div class="layui-tab-item full-height layui-show" id="activityDiv">
+                <table id="activityTable" lay-filter="activityTable"></table>
+            </div>
+##            <div class="layui-tab-item full-height" id="orderDiv">
+##				<iframe id="clinicPathOrderEdit" src="$contextPath/clinic/clinicPathOrderEdit.do" class="resizeiframe" style="height: calc(100% - 3px);" width="100%"  scrolling="no" frameborder="0" ></iframe>
+##            </div>
+        </div>
+    </div>
+</div>
+</div>
+    #parse("./clinic/clinicPathStageList.js.vm")
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理</title>
+#parse("./common/pageCss.vm") 
+</head>
+<body class="white-bg">
+    <div class="wrapper wrapper-content full-height" style="height: calc(100% - 40px);">
+        <div class="ibox-content">
+            <div class="row">
+                <form id="queryForm" method="get" class="form-horizontal">
+                    #formHiddenInput("disabledFlag" "0" "")
+                    <div class="col-sm-12">
+                        #formTextInput("medicineName" "" "id='medicineName' class='form-control' placeholder='药品中文名称或拼音字母'")
+                    </div> 
+                </form>
+            </div>
+        </div>
+    
+        <div class="ibox float-e-margins full-height m-b-none">
+	        <div class="table-responsive">
+	            <!-- 列表表格 -->
+	            <table id="dataListGrid" class="table table-bordered" data-mobile-responsive="true"> </table>
+	        </div>
+        </div>
+    </div>
+    #parse("./common/pageJs.vm")
+    <script>
+    $(document).ready(function () {
+            // 查询按钮
+            function queryList(){
+                var queryParams = common.serializeObject($('#queryForm'));
+                var options = {url: '../pharmacy/pharmacyStockListData.jo', silent: false, query: queryParams};
+                $('#dataListGrid').bootstrapTable('refresh', options); 
+            };
+
+            // 监听收费名称值变化
+            $('#medicineName').bind('input propertychange keyup', function() {
+                var val = $(this).val(); 
+                var reg = new RegExp("^[a-zA-Z]+$"); 
+                if (reg.test(val)) {
+                    $(this).attr('name', 'pinyinCode');
+                } else {
+                    $(this).attr('name', 'medicineName');
+                }
+                queryList();
+            });
+
+            //查询列表
+            $('#dataListGrid').bootstrapTable(
+                $.extend(baseTable, {
+                    url : "../pharmacy/pharmacyStockListData.jo",
+                    queryParams : function (params){
+                        var requestParams = common.serializeObject($('#queryForm'));
+                        requestParams.pageSize = params.pageSize;
+                        requestParams.pageNumber = params.pageNumber;
+                        return requestParams;
+                    },
+                    columns : [
+                    {checkbox : true},
+                    {
+                        field : 'medicineName',
+                        title : '药品名称'
+                    }, {
+                        field : 'expireDate',
+                        title : '有效日期',
+                        formatter :function (value, row, index){ return getFormatDateByLong(value, "yyyy-MM-dd");}
+                    }, {
+                        field : 'retailPrice',
+                        title : '单价'
+                    }, {
+                        field : 'stockCount',
+                        title : '库存数量'
+                    }], 
+                    onCheck:function(row){
+                        if (parent.selectMedicineCallBack && typeof(parent.selectMedicineCallBack) == "function") {
+                            parent.selectMedicineCallBack(row);
+                        }
+                    },
+                    onLoadSuccess : function(){
+                        var height = ($('#tab-11', window.parent.document).height() - 85);
+                        $('#dataListGrid').bootstrapTable('resetView', {height: height}); 
+                    }
+                }
+                )//extends
+              );//bootstapTable
+        }//document ready() function()
+    );//document ready()
+    </script>
+</body>
+</html>

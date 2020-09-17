@@ -1,0 +1,171 @@
+
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+        autocomplete : 'autocomplete'
+    }).use(
+            [ 'index', 'table', 'form', 'layer', 'autocomplete','util' ],
+            function() {
+                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, autocomplete = layui.autocomplete,util=layui.util;
+                //表列表
+                table.render({
+                    elem : '#docBorrowListGrid',
+                    url : '../doc/docBorrowListData.jo',
+                    limit : 20,
+                    cols : [ [
+                            {
+                                type : 'numbers'
+                            },
+                            {
+                                field : 'patientMedicalNo',
+                                title : '病案号',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'inhospitalNo',
+                                title : '住院号码',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'diseaseName',
+                                title : '住院号',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'patientName',
+                                title : '患者姓名',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'borrowOfficeId',
+                                title : '借阅科室',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'borrowDoctorName',
+                                title : '借阅医生',
+                                minWidth : 150
+                            },
+                            {
+                                field : 'borrowDate',
+                                title : '借阅日期',
+                                minWidth : 150,
+                                templet : function(d) {
+                                    return util.toDateString(d.borrowDate)
+                                }
+                            },
+                            {
+                                field : 'remark',
+                                title : '借阅备注',
+                                minWidth : 150
+                            },
+                            {  title : '操作',
+                                width : 100,
+                                align : 'center',
+                                fixed : 'right',
+                                toolbar : '#colstoolbar'
+                            } ] ],
+                    page : true,
+                    height : 'full-70',
+                    done : function(res, curr, count) {
+                        this.where = {}
+                    },
+                    request : {
+                        pageName : 'pageNumber' //页码的参数名称，默认：page
+                        ,
+                        limitName : 'pageSize' //每页数据量的参数名，默认：limit
+                    }
+                });
+
+                // 根据诊断/疾病名称查询icd
+                autocomplete.render({
+                    cache : false,
+                    searchField : 'keyWord',
+                    elem : $('#q_diseaseName')[0],
+                    url : '../basDisease/basDiseaseListData.jo?pageSize=7',
+                    template_val : '{{d.diseaseName}}',
+                    template_txt : '{{d.diseaseName}} （{{d.diseaseIcdTcd}}）'
+                });
+
+                //监听数据搜索
+                form.on('submit(btn_query)', function(data) {
+                    var field = data.field;
+                    //执行重载
+                    table.reload('docBorrowListGrid', {
+                        where : field
+                    });
+                    return false;
+                });
+
+                //重置查询表单并刷新表格
+                $("#btn_reset").click(function() {
+                    setTimeout(function() {
+                        $('#btn_query').click();
+                    }, 50);
+                })
+
+                //申请事件
+                $('#btn_apply').click(function() {
+                    //applyBorrow();
+                });
+
+                //监听工具条
+                table.on('tool(docBorrowListGrid)', function(obj) {
+                    var data = obj.data;
+                    switch (obj.event) {
+                    case 'edit':
+                        editDocBorrow(data);
+                        break;
+                    }
+                });
+
+
+                //编辑
+                function editDocBorrow(data) {
+                    var title = '常用诊断'
+                    var content = '$contextPath' + '/docBorrow/docBorrowEdit.do';
+                    //true 执行
+                    if (data) {
+                        title = data.commDiagnosisDesc;
+                        content += '?commDiagnosisId=' + data.commDiagnosisId;
+                    }
+                    common.open(content, title, {
+                        area : [ '420px', '520px' ],
+                        btn : [ '保存' ],
+                        yes : function(index, layero) {
+                            save(index, layero);
+                        }
+                    });
+                }
+
+            
+                //保存
+                function save(index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                        var docBorrowParams = data.field; //获取提交的字段
+                        console.log(docBorrowParams);
+                        //提交 Ajax 成功后，静态更新表格中的数据
+                        common.requestServer(contextPath + '/docBorrow/saveDocBorrow.jo', docBorrowParams, function(result) {
+                            if (result.code == "0") {
+                                common.alertCall("保存成功。", 1, function() {
+                                    $('#btn_query').click();
+                                    layer.close(index); //关闭弹层
+                                });
+                            } else {
+                                common.alert(result.msg, 0);
+                            }
+                        });
+                    });
+                    submit.trigger('click');
+                }
+                
+            });
+</script>

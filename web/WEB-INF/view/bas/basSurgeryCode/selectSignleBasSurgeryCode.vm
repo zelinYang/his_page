@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        @media screen and (max-width: 768px){
+            .layui-form-item.change-inline-marginbottom,
+            .layui-form-item.change-inline-marginbottom .layui-inline{display: inline-flex;}
+        }
+    </style>
+</head>
+<body class="de-bg">
+<!--搜索条件 开始-->
+<form id="sysUser_queryForm" class="layui-form">
+    <div class="layui-row-query">
+        <div class="layui-form-item change-inline-marginbottom">
+            <div class="layui-inline ">
+                <label class="layui-form-label">手术名称</label>
+                <div class="layui-inline  wd-120">
+                    #formTextInput("surgeryName" "" "id='surgeryName' maxlength='30' autocomplete='off' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                    <i class="layui-icon layui-icon-search "></i>
+                </button>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                    <i class="iconfont icon-qingchu"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</form>
+<!--搜索条件 结束-->
+<!-- 用户列表 -->
+<div class="layui-col-xs12 white-bg full-height-scroll">
+    <table id="userList" lay-filter="userList" class="layui-hide"></table>
+    <script type="text/html" id="operateFormatter">
+        <a class="" ><i class="layui-icon layui-icon-ok-circle"></i></a>
+    </script>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicSysDuty = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysDuty)');
+    var dicSysUserAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUserAttribute)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        dtree: 'modules/dtree/dtree'
+    }).use(['element', 'dtree', 'table'], function(){
+        var element = layui.element, dtree = layui.dtree, table = layui.table;
+
+        //给输入框绑定按键事件
+        $("#surgeryName").on('keydown', function (event) {
+            if (event.key == 'Enter') {
+                $('#btn_query').click();
+                return false
+            }
+        })
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                surgeryName: ''
+            }, common.serializeObject($('#sysUser_queryForm')))
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            // 加载用户列表
+            table.reload('userList', {page: {curr: 1},
+                where: queryParams ,
+            })
+            //移除选中树标志
+            $('#orgTree').find('.dtree-theme-item').removeClass('dtree-nav-this dtree-theme-item-this');
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('sysUser_queryForm')
+        })
+
+        // 路径分页列表
+        var tableUrl = contextPath + '/bas/basSurgeryCodePageData.jo';
+        var tableList = table.render($.extend(basePageTable, {
+            url: tableUrl,
+            id:'userList',
+            elem: '#userList',
+            height: 'full-50',
+            //where: getQueryParams(),
+            cols: [[
+                {fixed: true, align:'center',width : 60, templet: '#operateFormatter',event:'select'},
+                {field:'surgeryCodeId', title: '手术CM3码ID', width : '50%'},
+                {field:'surgeryName', title: '手术名称'},
+            ]]
+        }));
+
+        //监听行单击事件
+        table.on('row(userList)', function(obj){
+            if (parent.selectSignleBasSurgeryCodeCall && typeof(parent.selectSignleBasSurgeryCodeCall) == 'function') {
+                parent.selectSignleBasSurgeryCodeCall(obj.data);
+            }
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+        //监听行工具事件
+        table.on('tool(userList)', function(obj){
+            var layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === "select") {
+                if (parent.selectSignleBasSurgeryCodeCall && typeof(parent.selectSignleBasSurgeryCodeCall) == 'function') {
+                    parent.selectSignleBasSurgeryCodeCall(obj.data);
+                }
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            }
+        });
+    });
+</script>
+</html>

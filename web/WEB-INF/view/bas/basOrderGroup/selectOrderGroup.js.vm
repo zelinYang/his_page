@@ -1,0 +1,190 @@
+<script>
+    var dicUrgent = JSON.parse('$dicTools.changeMapToJson($dicData.dicUrgent)');
+    var dicDocType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDocType)');
+    var dicSecurityClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicSecurityClassify)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var checkboxId = [];
+
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form;
+        var tempItemData = [];
+        var templateTr = $('#orderItemList > tr:last').prop("outerHTML");
+        // 渲染组套分页列表
+        table.render($.extend(basePageTable, {
+            id: 'groupGrid',
+            elem: '#groupGrid',
+            height: 'full-48',
+            url: contextPath + '/bas/basOrderGroupListData.jo?orderGroupType=' + $('#orderGroupType').val(),
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'orderGroupName', title: '组套名称', event: 'callClick'}
+            ]],
+            page: {layout: ['prev', 'page', 'next']}
+        }));
+
+        // 关键字检索
+        $('#keyWord').on('input propertychange', function () {
+            table.reload('groupGrid', {url: '../bas/basOrderGroupListData.jo',
+                where: {
+                    keyWord: $(this).val(),
+                    orderGroupClassify: $('#orderGroupClassify').val(),
+                    orderGroupType: $('#orderGroupType').val()
+                }
+            });
+        });
+
+        // 类型检索
+        form.on('select(orderGroupClassify)', function (data) {
+            table.reload('groupGrid', {url: '../bas/basOrderGroupListData.jo',
+                where: {
+                    orderGroupClassify: data.value,
+                    keyWord: $('#keyWord').val(),
+                    orderGroupType: $('#orderGroupType').val()
+                }
+            });
+        });
+
+        //监听复选框全选或全部取消
+        form.on('checkbox(allChargeId)', function (data) {
+            $('input[name="chargeGroupId"]').each(function () {
+                $(this).prop('checked', data.elem.checked);
+            });
+            form.render('checkbox');
+        });
+
+
+        //监听点击组套表格行
+        table.on('checkbox(groupGrid)', function (obj) {
+            if (obj.type == "all") {
+                if (obj.checked == true) {
+                    checkboxId = $.map(table.cache.groupGrid, function (data) {
+                        return data.orderGroupId;
+                    });
+                } else {
+                    checkboxId = [];
+                }
+                console.info(checkboxId);
+            } else {
+                var index = checkboxId.indexOf(obj.data.orderGroupId);
+                if (index > -1) {
+                    checkboxId.splice(index, 1);
+                    $(obj.tr).find('input[name="layTableCheckbox"]').removeAttr('checked');
+                } else {
+                    checkboxId.push(obj.data.orderGroupId)
+                    $(obj.tr).find('input[name="layTableCheckbox"]').attr('checked', 'checked');
+                }
+            }
+
+            form.render("checkbox");
+
+            // 从后台获取组套明细数据
+            var params = {orderGroupIds: checkboxId.join(",")}
+            common.requestServer('../bas/orderItemAllList.jo', params, function (result) {
+
+                if (!result || !result.data) {
+                    $('#orderItemList').html('');
+                    $('#orderItemList').show();
+                    return;
+                }
+                $('#orderItemList').html('');
+                $('#orderItemList').show();
+                tempItemData = result.data;
+                $.each(result.data, function (i, v) {
+                    $('#orderItemList').append(templateTr);
+                    var curTr = $('#orderItemList tr:last');
+                    curTr.find('input[name="lisFlag"]').val(v.lisFlag);
+                    curTr.find('input[name="orderGroupFlag"]').val(v.orderGroupFlag);
+                    curTr.find('input[name="examFlag"]').val(v.examFlag);
+                    curTr.find('input[name="surgeryFlag"]').val(v.surgeryFlag);
+                    curTr.find('input[name="medicineFlag"]').val(v.medicineFlag);
+                    curTr.find('input[name="medicineType"]').val(v.medicineType);
+                    curTr.find('input[name="orderGroupNo"]').val(v.orderGroupNo);
+                    curTr.find('input[name="orderItemId"]').val(v.orderItemId);
+                    curTr.find('input[name="orderGroupId"]').val(v.orderGroupId);
+                    curTr.find('select[name="doctorOrderType"]').val(v.doctorOrderType);
+                    curTr.find('input[name="orderName"]').val(v.orderName);
+                    curTr.find('input[name="medicineSpec"]').val(v.medicineSpec);
+                    curTr.find('input[name="dosage"]').val(v.dosage);
+                    curTr.find('select[name="dosageUnit"]').val(v.dosageUnit);
+                    curTr.find('input[name="usageQuantity"]').val(v.usageQuantity);
+                    curTr.find('select[name="dosageUnit"]').val(v.dosageUnit);
+                    curTr.find('select[name="pharmacyFreqId"]').val(v.pharmacyFreqId);
+                    curTr.find('select[name="doseWayCode"]').val(v.doseWayCode);
+                    curTr.find('select[name="herbUsageWay"]').val(v.herbUsageWay);
+                    curTr.find('select[name="lisSpecimenId"]').val(v.lisSpecimenId);
+                    curTr.find('select[name="exeOfficeId"]').val(v.exeOfficeId);
+                    curTr.find('select[name="orderClassify"]').val(v.orderClassify);
+                    curTr.find('input[name="remark"]').val(v.remark);
+                    if (v.doctorOrderType == '01') {
+                        curTr.find('input[name="chargeGroupId"]').val('1');
+                    } else {
+                        curTr.find('input[name="chargeGroupId"]').val(v.chargeItemId);
+                    }
+                    curTr.find('input[name="medicineId"]').val(v.medicineId);
+                    curTr.find('input[name="chargeItemId"]').val(v.chargeItemId);
+                    curTr.find('input[name="orderName"]').val(v.orderName);
+                });
+                form.render('select');
+                form.render('checkbox');
+            });
+        });
+
+        // 确定选择
+        $('#btn_confirm').click(function () {
+            var validPass = true;
+            var arrayParams = [];
+            // 先从后台服务获取医嘱组号再新增子医嘱
+            common.requestServer(contextPath + '/inpatient/getSysGuid.jo', {}, function (result) {
+                if (!result.sysGuid) {
+                    return;
+                }
+                var orderGroupNo = result.sysGuid;
+
+                $('#orderItemList').find('input[name="chargeGroupId"]:checked').each(function (i) {
+                    var data = {};
+                    $(this).parents('tr').find('input, select, textarea').each(function () {
+                        var name = $(this).attr('name');
+                        if (name && $(this).val()) {
+                            data[name] = $(this).val();
+                        }
+                    });
+                    data.urgentFlag = '0'; // 是否加急0否
+                    data.orderGroupNo = orderGroupNo;
+                    data.orderState = '0'; // 状态0新开
+                    data.overdueBillFlag = '0'; // 是否欠费
+                    data.medicalTechFlag = '0'; //是否医技 0否
+                    data.makeOrderDate = getFormatDate();
+                    inhospitalId = $('#inhospitalId').val();
+                    data.exeOrderStartTime = getFormatDate();
+                    data.exeOfficeName = dicOffice[data.exeOfficeId];
+                    if (!data.orderClassify) {
+                        validPass = false;
+                        return false;
+                    }
+                    arrayParams.push(data);
+                });
+
+                if (!validPass) {
+                    common.alert('请选择组套项目类别', 0);
+                    return;
+                }
+                if (!arrayParams || arrayParams.length <= 0) {
+                    common.alert('请选择组套项目', 0);
+                    return;
+                }
+
+                var p = {inhospitalId: $('#inhospitalId').val(), inpatientOrderJson: JSON.stringify(arrayParams)};
+
+                common.requestServer(contextPath + '/inpatient/saveOrderForMedicine.jo', p, function (result) {
+                    if (result.code == "0") {
+                        $('#btn_refresh', parent.document).click();
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                })
+            });
+        });
+    });
+</script>

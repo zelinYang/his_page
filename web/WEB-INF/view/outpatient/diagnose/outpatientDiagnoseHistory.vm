@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>历史诊断</title> 
+	<link href="$contextPath/resource/hplus/css/plugins/laydate/laydateMini.css" rel="stylesheet" > 
+	#parse("./common/pageCss.vm")	
+	#parse("./common/pageJs.vm")
+	#parse("./outpatient/outpatientMain/outCommon.js.vm")
+	#parse("./outpatient/diagnose/outpatientDiagnoseHistory.js.vm")
+</head>  
+
+<body class="full-height white-bg table-width-full">
+  <!-- 查询表单 -->
+  <form id="historyDiagnosis_queryForm" class="layui-form"> 
+    <div class="layui-form-item p-t-xs"> 
+         #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+         <label class="layui-form-label s-reg-date" >挂号日期</label>
+         <div class="layui-inline wd-200">
+           #formTextInput("diagnosisTime" "" "id='diagnosisTime'  tag='diagnosisTimeBegin,diagnosisTimeEnd'  class='layui-input'")
+         </div>
+         <div class="layui-inline wd-100 m-l-lg" style="margin-top: -1px;"><!-- 午别时段  -->
+	        #set($curOffice = 1)<!-- 默认本科室 -->
+	        #formSingleSelect("diagnoseBelong" "$curOffice" $dicData.dicDiagnoseBelong "class='layui-input' " "")
+         </div>
+         <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button"><i class="layui-icon layui-icon-search"></i></button>
+         <button id="btn_import_outItem"   class="layui-btn layui-btn-sm m-l-lg" type="button">导入</button>
+    </div>
+  </form>
+  <!-- 数据表格 -->
+  <table id="historyDiagnosisTable" lay-filter="historyDiagnosisTable"  calss="lay-hide"></table>
+</body>
+</html>

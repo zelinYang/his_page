@@ -1,0 +1,41 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form);
+        form.on('radio(doctorPostCode)', function (data) {
+            $("#doctorPostName").val($(data.elem).attr('title'));
+        });
+        form.on('select(chargeItemId)', function (data) {
+            $("#chargeName").val($(data.elem).children('option:selected').text());
+            $("#unitPrice").val(dicRegisterDoctorDutyUnitPrice[data.value]);
+        });
+
+        //提交表单
+        function saveBasPostFee() {
+            var basPostFeeParams = common.serializeObject($('#basPostFeeForm'));
+            common.requestServer(contextPath + '/bas/saveBasPostFee.jo', basPostFeeParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasPostFee()
+            return false
+        })
+    })
+</script>

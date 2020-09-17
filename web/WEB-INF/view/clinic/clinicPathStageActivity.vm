@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .layui-table td, .layui-table th {padding : 5px}
+    </style>
+</head>
+<body>
+    <!-- begin路径阶段及活动类型 -->
+    <div class="layui-col-xs2 white-bg full-height-scroll border-r p-l-sm p-r-xs p-t-sm" style="width:150px; height: calc(100%);">
+        <ul class="layui-timeline">
+            #foreach($item in $!pathStageList)
+                <li class="layui-timeline-item p-b-xs">
+                    <i class="layui-icon layui-timeline-axis"></i>
+                    <div class="layui-timeline-content layui-text">
+                        <h4 class="layui-timeline-title font-weight m-b-xs">#htmlEscape($!item.pathStageContent)</h4>
+                        <div>
+                            #set($activityType = $!dicData.dicPathActivityType)
+                            #foreach($option in $!activityType.keySet())
+                                <button class="layui-btn layui-btn-sm layui-btn-primary b-n" name="btn_activityType" stage-id="$!item.clinicPathStageId" open-id="$!option">
+                                    <i class="fa fa-file-text-o"></i> $!activityType.get($!option)
+                                </button><br />
+                            #end
+                        </div>
+                    </div>
+                </li>
+            #end
+            <li class="layui-timeline-item">
+                <i class="layui-icon layui-timeline-axis"></i>
+                <div class="layui-timeline-content layui-text">
+                    <h4 class="layui-timeline-title font-weight">结束</h4>
+                </div>
+            </li>
+        </ul>  
+    </div>
+    <!-- end路径阶段及活动类型 -->
+    <div class="layui-col-xs10 border-l full-height" style="width: calc(100% - 150px);">
+        #formHiddenInput("clinicPathId" "$!clinicPathId" "id='clinicPathId'")
+        <iframe src="" id="activityIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['element'], function(){
+    var element = layui.element;
+
+    // 编辑项目类型配置
+    var optSet = {
+        1:{url: contextPath + '/pathway/clinicPathActivityEdit.do?'},
+        2:{url: contextPath + '/pathway/clinicPathActivityOrderEdit.do?'},
+        3:{url: contextPath + '/pathway/clinicPathActivityEdit.do?'},
+        4:{url: contextPath + '/pathway/clinicPathActivityEdit.do?'}
+    }
+    $('button[name="btn_activityType"]').click(function (){
+        var opt;
+        var validPeriod;
+        var stageStandard;
+        if (!$(this).attr('open-id') || !$(this).attr('stage-id') || !$('#clinicPathId').val() || !(opt = optSet[$(this).attr('open-id')]) || !opt.url) {
+            common.alert('参数无效或页面配置无效', 0);
+            return ;
+        }
+
+        var params = ['clinicPathStageId=' + $(this).attr('stage-id')];
+        params.push('clinicPathId=' + $('#clinicPathId').val());
+        params.push('activityType=' + $(this).attr('open-id'));
+        $('#activityIframe').attr('src', opt.url + params.join('&'));
+    });
+});
+</script>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style>
+        html, body {
+            height: 100%;
+        }
+
+        .layadmin-pagetabs {
+            -moz-box-shadow: 1px 1px 3px #757575;
+            -webkit-box-shadow: 1px 1px 3px #757575;
+            box-shadow: 1px 1px 3px #757575;
+        }
+
+        .layadmin-pagetabs .layui-tab-title li {
+            line-height: 32px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 0px;
+            height: 0px;
+        }
+
+        .layui-nav-tree .layui-nav-bar {
+            background-color: #ff9000;
+        }
+
+        .layadmin-pagetabs {
+            transition: none;
+            -webkit-transition: none;
+        }
+
+        /*无子菜单，隐藏掉，只显示左边菜单*/
+        .not-child-menu > .member-left {
+            width: 40px;
+        }
+        .not-child-menu> .member-content {
+            width: calc(100% - 40px);
+        }
+        .not-child-menu > .member-content > #LAY_app_tabs {
+            left: 40px;
+        }
+        .not-child-menu > .member-content > #LAY_app_body {
+            left: 40px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layadmin-maillist-fluid full-height" style="overflow-x: hidden">
+        <!--菜单栏-->
+        <div class="member-left full-height">
+            <div class="tab_page_menu">
+                <ul id="rootMenu"></ul>
+            </div>
+            <div id="searchMenuContainer">
+                <div class="searchMenu layadmin-flexible" lay-unselect>
+                    <input id="searchMenu" type="text" class="inputMenu" placeholder="菜单搜索">
+                    <span layadmin-event="flexible">
+                        <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
+                    </span>
+                </div>
+                <div id="leftMenu" class="tab_box"></div>
+                <!--菜单搜索层-->
+                <dl class="searchMenu-lay">
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                </dl>
+            </div>
+
+        </div>
+        <!--右侧内容-->
+        <div class="member-content">
+            <!-- 页面标签 -->
+            <div class="layadmin-pagetabs sub-pagetabs" style="top:0px" id="LAY_app_tabs">
+                <div class="layui-icon layadmin-tabs-control layui-icon-prev" layadmin-event="leftPage"></div>
+                <div class="layui-icon layadmin-tabs-control layui-icon-next" layadmin-event="rightPage"></div>
+                <div class="layui-icon layadmin-tabs-control layui-icon-down">
+                    <ul class="layui-nav layadmin-tabs-select" lay-filter="layadmin-pagetabs-nav">
+                        <li class="layui-nav-item" lay-unselect>
+                            <a href="javascript:;"></a>
+                            <dl class="layui-nav-child layui-anim-fadein">
+                                <dd layadmin-event="closeThisTabs"><a href="javascript:;">关闭当前标签页</a></dd>
+                                <dd layadmin-event="closeOtherTabs"><a href="javascript:;">关闭其它标签页</a></dd>
+                                <dd layadmin-event="closeAllTabs"><a href="javascript:;">关闭全部标签页</a></dd>
+                            </dl>
+                        </li>
+                    </ul>
+                </div>
+                <div class="layui-tab" lay-unauto lay-allowClose="true" lay-filter="layadmin-layout-tabs">
+                    <ul class="layui-tab-title" id="LAY_app_tabsheader">
+                        <li lay-id="$!contextPath/outpatient/recipeMedicine.do" lay-attr="$!contextPath/outpatient/recipeMedicine.do" class="layui-this">处方发药
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主体内容 -->
+            <div class="layui-body layui-body-min-left" id="LAY_app_body" style="top:34px">
+                <div class="layadmin-tabsbody-item layui-show">
+                    <iframe src="../outpatient/recipeMedicine.do" id="inhospitalIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+#parse("./common/pageJs.vm")
+<script>
+    var layuiIndex;
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        autocomplete: 'autocomplete'
+    }).use(['index', 'form', 'laydate', 'element', 'autocomplete'], function () {
+        var laydate = layui.laydate, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+        layuiIndex = layui.index;
+
+        // 菜单收缩
+        $(".side-tree .layui-nav-item").click(function () {
+            $('#LAY_app').siblings().removeClass("layadmin-side-shrink");
+        });
+
+        // 初始化左边菜单
+        var menuData = parent.menuData;
+        if (menuData) {
+            var html = [];
+            var tabContent = [];
+            var menu = JSON.parse(menuData).children;
+            $.each(menu, function (i, r) {
+                var href = r.href ? contextPath + "/" + r.href : '';
+                html.push('<li id="' + r.id + '" tab-url="' + href + '" data-menu=' + (r.children ? JSON.stringify(r.children).replace(/\s+/g, "@") : '[]') + '><span><i class="' + r.icon + '"></i><p>' + r.text + '</p></span></li>');
+                tabContent.push('<div class="container_page full-height-scroll"><ul id="leftMenu_' + i + '" class="layui-nav layui-nav-tree layui-inline side-tree"></ul></div>');
+            });
+            $('#rootMenu').html(html.join(''));
+            $('#leftMenu').html(tabContent.join(''));
+
+            /*跟菜单页选项卡切换监听*/
+            $(".tab_page_menu ul li").click(function () {
+                var index = $(".tab_page_menu ul li").index(this);
+                $(this).addClass("selected").siblings().removeClass("selected");
+                $(".tab_box .container_page").eq(index).addClass("selected").siblings().removeClass("selected");
+
+                // 菜单数据
+                var menuHtml = [];
+                var hasChild = false; // 标识是否有子菜单
+                var strData = $(this).attr('data-menu');
+                var data = JSON.parse(strData);
+                if(data.length === 0) {
+                    //判断是否子菜单，如果没有就隐藏
+                    $('.layadmin-maillist-fluid').addClass('not-child-menu');
+                    // 当存在链接且链接长度必须大于5时才打开选项卡
+                    if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                        var url = $(this).attr('tab-url');
+                        // 最后一个参数url 做为iframe的ID
+                        layui.index.openTabsPage(url, $(this).text(), $(this).attr('id'));
+                    }
+                    return
+                }
+                $('.layadmin-maillist-fluid').removeClass('not-child-menu');
+                $.each(data, function (i, r) {
+                    var href = r.href ? contextPath + "/" + r.href : '';
+                    menuHtml.push('<li id="' + r.id + '" class="layui-nav-item">');
+                    menuHtml.push('<a id="' + r.id + '" href="javascript:void(0);" title="' + r.text + '" tab-url="' + href + '"><i class="' + (r.icon ? r.icon.replace('@', ' ') : '') + '"></i><span>' + r.text + '</span></a>');
+                    if (r.children && r.children.length > 0) {
+                        hasChild = true;
+                        menuHtml.push('<dl class="layui-nav-child">');
+                        $.each(r.children, function (j, v) {
+                            href = v.href ? contextPath + "/" + v.href : '';
+                            menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.text + '" tab-url="' + href + '">' + v.text + '</a></dd>');
+                        });
+                        menuHtml.push('</dl>');
+                    }
+                    menuHtml.push('</li>');
+                });
+                $('#leftMenu_' + index).html(menuHtml.join(''));
+                // 重新渲染菜单标签元素
+                element.render();
+
+
+                // 左边菜单点击事件
+                $('#leftMenu a').click(function () {
+                    // 当存在链接且链接长度必须大于5时才打开选项卡
+                    if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                        var url = $(this).attr('tab-url');
+                        // 最后一个参数url 做为iframe的ID
+                        layui.index.openTabsPage(url, $(this).text(), $(this).attr('id'));
+                    }
+                });
+
+                if (hasChild) {
+                    // 监听左边树型菜单展开和收缩
+                    $('#leftMenu li.layui-nav-item').click(function () {
+                        $('li.layui-nav-item').each(function () {
+                            $(this).removeClass('layui-nav-itemed');
+                        });
+                        $(this).addClass('layui-nav-itemed');
+                    });
+                    // 默认打开第一个树型菜单
+                    $('li.layui-nav-item:first').click();
+                }
+            });
+
+            // 打开第一选项卡
+            $(".tab_page_menu ul li:first").click();
+
+            // 监听检索菜单
+            $('#searchMenu').bind('input propertychange', function () {
+                var html = [];
+                var value = $(this).val();
+                $("dl.searchMenu-lay").html('');
+                if (!value) {
+                    return;
+                }
+                $.each(menu, function (i, m) {
+                    var rootId = m.id;
+                    if (!m.children) {
+                        return true;
+                    }
+                    $.each(m.children, function (j, c) {
+                        var reg = RegExp("^.*" + value + ".*$");
+                        if (reg.test(c.text)) {
+                            var selector = (c.href ? 'a#' : "li#") + c.id;
+                            html.push('<dd pId="' + rootId + '" id="' + selector + '" ><a href="javascript:void(0);">' + c.text + '</a></dd>');
+                        }
+                        if (!c.children) {
+                            return true;
+                        }
+                        $.each(c.children, function (k, v) {
+                            var reg = RegExp("^.*" + value + ".*$");
+                            if (reg.test(v.text)) {
+                                html.push('<dd pId="' + rootId + '" id="a#' + v.id + '"><a href="javascript:void(0);">' + v.text + '</a></dd>');
+                            }
+                        });
+                    });
+                });
+                $("dl.searchMenu-lay").html(html.join(''));
+                $("dl.searchMenu-lay > dd").click(function () {
+                    var pId = $(this).attr('pId');
+                    var menuId = $(this).attr('id');
+                    $('li#' + pId).click();
+                    $(menuId).click();
+                    $("dl.searchMenu-lay").hide();
+                });
+                $("dl.searchMenu-lay").show();
+            });
+        }
+        $('#searchMenuContainer').mouseleave(function () {
+            $("dl.searchMenu-lay").html('');
+            $("dl.searchMenu-lay").hide();
+        });
+    });
+
+    // 打开一个新的选项卡窗口，一般在子窗口调用
+    function openTab(url, text, id) {
+        layuiIndex.openTabsPage(url, text, id);
+    }
+</script>
+</html>

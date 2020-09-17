@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    #parse("./common/layuiCss.vm")
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <style>
+        .layui-form-item .layui-form-checkbox { margin-top: 0; }
+        .layui-form.layui-border-box.layui-table-view { background-color: #fff;}
+        .layui-form-item .layui-inline.fr, .layui-btn > button.layui-btn { margin-right: 0;}
+        .layui-icon-delete { cursor: pointer; color: red; }
+        .layui-icon-edit { cursor: pointer; color: #009688; }
+        table>thead>tr>th>div {
+            text-align: center;
+        }
+    </style>
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<body>
+<form class="layui-form full-height-scroll" id="emrTlpClassifyForm">
+<ul id="emrTypeTree" class="ztree white-bg "></ul>
+    <input type="hidden" name="emrTlpClassifyId" id="emrTlpClassifyId" lay-verify="emrTlpClassifyId">
+    <input type="hidden" name="emrTlpClassifyName" id="emrTlpClassifyName" lay-verify="emrTlpClassifyName">
+    <input type="hidden" name="emrTreeCode" id="emrTreeCode" >
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-classify-submit" id="LAY-emr-classify-submit" value="确认" />
+    </div>
+</form>
+<script >
+  layui.use(['form'], function() {
+    var form = layui.form;
+    var $ = layui.$;
+
+    form.verify({
+      emrTlpClassifyId: function(value, item){ //value：表单的值、item：表单的DOM对象
+        if(value === ''){
+          return '请选择模板分类';
+        }
+      },
+      emrTlpClassifyName: function(value, item){ //value：表单的值、item：表单的DOM对象
+        if(value === ''){
+          return '请选择模板分类';
+        }
+      }
+    });
+  });
+  $(function (){
+
+    //将桌面选项卡名称改为 电子病历
+    $("a[data-id='home.html']",parent.document).text('电子病历');
+
+    // 初始化树形分类
+    var zTreeObj, setting = {
+      view : {
+        selectedMulti : false,
+        showIcon: false
+      },
+      async : {
+        enable : true,
+        url : "../emrTlp/getEmrTypeTree.jo",
+        dataType : "json",
+        autoParam : [ "id" ],
+        type : "POST"
+      },
+      callback : {
+        onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+          if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+            zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+          }
+
+          //only first time load tree includeRoot = true ,after set false
+          zTreeObj.setting.async.otherParam["includeRoot"] = false;
+        },
+        onClick: function(event, treeId, treeNode) {
+          $('#emrTreeCode').val(treeNode.emrTreeCode);
+            $('#emrTlpClassifyId').val(treeNode.emrTlpClassifyId);
+            $('#emrTlpClassifyName').val(treeNode.emrTlpClassifyName);
+        }
+      }
+    };
+
+    zTreeObj = $.fn.zTree.init($("#emrTypeTree"), setting, []);
+  });
+</script>
+<script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+</body>
+</html>

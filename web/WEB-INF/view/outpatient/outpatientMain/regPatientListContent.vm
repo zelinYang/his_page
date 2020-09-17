@@ -1,0 +1,94 @@
+ <!-- 查询表单 -->
+<form id="reg_patient_queryForm" class="layui-form">
+ #formHiddenInput("visitState" "${CONST.AppConstants.VISIT_STATE_WAIT}" "id='visitState' ")
+ #formHiddenInput("visitOfficeId" "" "id='visitOfficeId' visitOfficeId='$currentUser.sysOrg.orgId'")
+ #formHiddenInput("visitDoctorId" "$currentUser.userId" "id='visitDoctorId' visitDoctorId='$currentUser.userId'")
+ #formHiddenInput("visitDate" "$!date.format('yyyy-MM-dd', $DateUtils.getTodayDate())" "id='visitDate'")
+  <div class="layui-row-query" >
+      <div class="layui-inline">
+          <div class="layui-input-inline wd-220">
+              #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+          </div>
+      </div>
+
+      <div class="layui-inline layui-btn-group">
+          <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+          <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+      </div>
+       <!-- <button id="btn_freshen"   class="layui-btn layui-btn-sm" type="button">刷新</button> -->
+
+       <div class="layui-inline m-l-lg"><!-- 挂号日期区间  -->
+          #set($curDateRegion = '0')
+          #formRadioGroup("regDateRegion" "$curDateRegion" $regDateBeforeDayMap "lay-filter='regDateRegion'")
+       </div>
+       <div class="layui-inline wd-80 m-l-lg" style="margin-top: -1px;"><!-- 午别时段  -->
+          #formSingleSelectFirstNone("visitTimeFlag" "" $dicData.dicVisitTimeFlag "id='visitTimeFlag' lay-filter='visitTimeFlag'  class='layui-input' " "全天")
+       </div>
+
+       <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button">呼叫</button>
+       <button id="btn_freshen"   class="layui-btn layui-btn-sm" type="button">重呼</button>
+       <button id="btn_regPass"   class="layui-btn layui-btn-sm" type="button">过号</button>
+       <button id="next"   class="layui-btn layui-btn-sm" type="button">下一个</button>
+  </div>
+</form>
+
+
+ <!-- 数据表格 -->
+ <table id="regPatientTable" lay-filter="regTab"></table>
+
+ <!-- 底部导航 -->
+ <div class="layui-row bottomNav"  >
+    <!-- 挂号状态 -->
+     <ul>
+          <li class="waitCount active" visitState="${CONST.AppConstants.VISIT_STATE_WAIT}">未就诊(<span class="count"></span>)</li>
+          <li class="regVisitDoing" visitState="${CONST.AppConstants.VISIT_STATE_DOING}">就诊中(<span class="count"></span>)</li>
+          <li class="regVisitDone" visitState="${CONST.AppConstants.VISIT_STATE_DONE}">已就诊(<span class="count"></span>)</li>
+          <li class="regVisitPassed" visitState="${CONST.AppConstants.VISIT_STATE_PASSED}">已过号(<span class="count"></span>)</li>
+          <li class="regVisitHold" visitState="${CONST.AppConstants.VISIT_STATE_HOLD}">暂挂(<span class="count"></span>)</li>
+     </ul>
+     <!-- 视图切换 -->
+     <div class="view-show">
+          <button id="listMode" class="layui-btn layui-btn-primary layui-btn-sm layui-hide" title="列表式">
+              <i class="layui-icon layui-icon-align-left"></i>
+          </button>
+          <button id="tileMode" class="layui-btn layui-btn-primary layui-btn-sm" title="平铺式">
+              <i class="layui-icon layui-icon-user"></i>
+          </button>
+      </div>
+ </div>
+
+ <!-- 自定义流列表 -->
+   <div class="pageContent layadmin-maillist-fluid layui-hide">
+    <div class="layui-col-space15  patient-list">
+      <!-- 每个挂号患者的信息 -->
+      <div class="infoTpl layui-col-sm4 layui-col-md3 ">
+        <div class="layadmin-contact-box cursorHover" lay-href="member/home.html" lay-text="赵芳丽（住院）" >
+          <div class="layui-col-md4 layui-col-sm4 layui-col-xs3">
+            <a href="javascript:;">
+              <div class="layadmin-text-center">
+                <img class="photo" src="$contextPath/resource/layuiadmin/style/myRes/icon-jiating-nainai.png">
+                <div class="layadmin-maillist-img layadmin-font-blod patientAge">年龄</div>
+              </div>
+            </a>
+          </div>
+          <div class="layui-col-md8 layadmin-padding-left10 layui-col-sm8 layui-col-xs9">
+            <a href="javascript:;">
+              <h3 class="layadmin-title">
+                <strong><span class="patientName">患者姓名</span>&nbsp;</strong>
+              </h3>
+            </a>
+            <div class="layadmin-address">
+              <a href="javascript:;">
+                            性别：<span class="patientSex"></span> <br>
+                            门诊号: <span class="visitCardNo"></span> <br>
+                            号别：<span class="serialNum"></span> <br>
+                            就诊日期：<span class="visitDate"></span>
+                </a>
+            </div>
+          </div>
+        </div>
+      </div><!-- 每个挂号患者的信息 end-->
+
+    </div><!-- 列表 -->
+   </div><!--pageContent -->
+

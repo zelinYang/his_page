@@ -1,0 +1,150 @@
+<script>
+	var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+	var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)'); //药品数量单位
+	var editRecipe;//编辑处方
+	layui.use(['jquery', 'table', 'element'], function () {
+		var table = layui.table, element = layui.element, $ = layui.$;
+		element.render();
+
+		//日期范围
+		laydate.render({elem: '#makeOrderTime',trigger: 'click', range: true});
+
+		//第一个实例
+		var recipeTable = table.render({
+			elem: '#historyRecipeTable'
+			//,toolbar: '#toolbarDemo'
+			, defaultToolbar: []
+			, height: 'full-45'//高度
+			, url: '../register/registerListData.jo' //数据接口
+			//,page: true //开启分页
+			, cellMinWidth: 80
+			, limit: 200
+			, request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				, limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			, where: {patientId: $('#patientId').val(), validFlag: '1'}
+			, cols: [[ //表头
+				{
+					field: 'visitDate', title: '日期',
+					templet: function (row) {
+						return getSmpFormatDateByLong(row.visitDate, false);
+					}
+				}
+				, {
+					field: 'visitDoctorName', title: '门诊医生'
+				}
+				, {field: 'visitOfficeName', title: '门诊科室'}
+				, {align: 'center', fixed: 'right', toolbar: '#test-table-operate-barDemo'}
+			]]
+			//res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+			, done: function (res, curr, count) {
+			}
+		});
+
+		//设置门诊id
+		function setOutpatientId() {
+			if (parent.parent.grobalModel.outpatientId) {
+				$('#outpatientId').val(parent.parent.grobalModel.outpatientId);
+			}
+		}
+
+		setOutpatientId();
+
+		// 查询按钮
+		$('#btn_query_recipe').click(function () {
+			queryRecipe();
+		});
+
+		//查询列表
+		function queryRecipe() {
+			var queryParams = common.serializeObject($('#historyRecipe_queryForm'), ['makeOrderTime']);
+			recipeTable.reload({where: queryParams});
+		}
+
+		//监听行单击事件
+		table.on('row(historyRecipeTable)', function (obj) {
+			var row = obj.data;
+			rowRecipeSelect(row);
+		});
+
+		editRecipe = function (elem) {
+			var recipeId = $(elem).attr('recipeId');
+			//parent.window.location.href = '../outpatient/recipeMedicine.do?recipeId='+ recipeId;
+		}
+
+		//处方行单击查询处方明细
+		function rowRecipeSelect(recipeRow) {
+			$('.main-right').removeClass('layui-hide');
+			$('#registerId').val(recipeRow.registerId);
+			queryRecipeItem();
+		}
+
+		var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+		var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+		//*************************  处方明细项 JS ********************************/
+		var recipeItemTable = table.render({
+			elem: '#historyRecipeItemTable'
+			//,toolbar: '#toolbarDemo'
+			, defaultToolbar: []
+			//,height: '230'//高度
+			, height: 'full-45'//高度
+			, data: [] //数据接口
+			//,page: true //开启分页
+			, limit: 200
+			, request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				, limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			, cols: [[ //表头
+				{type: 'checkbox'}
+				, {
+					field: 'orderName', title: '医嘱内容'
+				}
+				, {
+					field: 'medicineType', title: '类型',
+					templet: function (row) {
+						return dicMedicineType[row.medicineType];
+					}
+				}
+				, {field: 'orderDesc', title: '医生说明'}
+
+			]]
+			//res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+			, done: function (res, curr, count) {
+			}
+		});
+
+		// 导入历史诊断按钮
+		$('#btn_import_recipeItem').click(function () {
+			importHistotyRecipeItem();
+		});
+
+		//查询列表
+		function queryRecipeItem() {
+			var queryParams = common.serializeObject($('#historyRecipeItem_queryForm'));
+			recipeItemTable.reload({
+				where: queryParams
+				, url: '../outpatient/recipeItemListData.jo'
+			});
+		}
+
+		// 导入历史诊断
+		function importHistotyRecipeItem() {
+			var checkRows = table.checkStatus('historyRecipeItemTable'); //test即为基础参数id对应的值
+			//获取选中行的数据 =checkRows.data
+			//获取选中行数量，可作为是否有选中行的条件 =checkRows.data.length
+			//表格是否全选 =checkRows.isAll
+
+			if (!checkRows.data.length) {
+				common.alert('请选择需要导入的数据', 0);
+				return false;
+			}
+			var recipeItemHistoryArr = checkRows.data;
+
+			parent.addRecipeItemHistory(recipeItemHistoryArr);
+		}
+
+	});//layui.use
+</script>

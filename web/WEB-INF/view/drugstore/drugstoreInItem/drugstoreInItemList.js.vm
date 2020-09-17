@@ -1,0 +1,193 @@
+<script>
+    var dicBasDiseaseClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicBasDiseaseClassify)');
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+        autocomplete : 'autocomplete'
+    }).use(
+            [ 'index', 'table', 'form', 'layer', 'laydate','util' ],
+            function() {
+                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, laydate = layui.laydate,util = layui.util;
+              //年选择器_起始
+      		  laydate.render({
+      		    elem: '#q_yearPopu_star'
+      		    ,type: 'date'
+      		    	 ,trigger: 'click' //采用click弹出
+      		  }); 
+              //年选择器_结束
+      		  laydate.render({
+        		    elem: '#q_yearPopu_end'
+        		    ,type: 'date'
+        		    	 ,trigger: 'click' //采用click弹出
+        		  });
+            // 获取表格高度
+            function getTableHgt() {
+                return ($('body').height() - $('.layui-form').height() - 10)
+            }
+            // 重置表格高度
+            $(window).resize(function () {
+                var height = getTableHgt()
+                table.reload('basDiseaseListGrid', {
+                    height: height
+                })
+            })
+                //列表
+                table.render({  
+                    elem : '#basDiseaseListGrid' ,
+                    url : '../drugstore/drugstoreInItemListData.jo',
+                 // where : getTypeQueryParams(),
+                    limit : 20,
+                    method:'post',
+                    cellMinWidth: 130,
+                    totalRow: true,
+                    cols : [ [
+                            {
+                                title : '序号',
+                                type : 'numbers',
+                                fixed:'left',
+                                totalRowText: '总金额',
+                                align: 'right',
+                                 width: 62
+                            },
+                            {
+                                field : 'receiptBillNo',
+                                title : '验收单号',
+                                fixed:'left'
+                            },
+                            {
+                                field : 'medicineVendorName',
+                                title : '单位'
+                            },
+                            {
+                                field : 'medicineType',
+                                title : '类别',
+                                templet: function (row) {
+                                    return dicMedicineType[row.medicineType] || '';
+                                }
+                            },
+                            {
+                                field : 'buyTotalSum',
+                                title : '进货金额',
+                                align : 'right',
+                                totalRow: true
+                            },
+                            {
+                                field : 'retailSum',
+                                title : '零售金额',
+                                align : 'right',
+                                width: 160
+                                , totalRow: true
+                                
+                            },
+                            {
+                                field : 'tradeSum',
+                                title : '批发金额',
+                                align : 'right',
+                                width: 160
+                                , totalRow: true
+                            }, 
+                            {
+                                field : 'expireDate',
+                                title : '验收日期',
+                                width: 160,
+                                templet: function (row) {
+                                    return util.toDateString(row.expireDate,'yyyy-MM-dd');
+                                }
+                                
+                            },
+                            ] ],
+                    page : true,
+                    height : getTableHgt(),
+                     request : {
+                        pageName : 'pageNumber' //页码的参数名称，默认：page
+                        ,
+                        limitName : 'pageSize' //每页数据量的参数名，默认：limit
+                    },
+                    done : function() {
+                     /*    this.elem.next().find('[lay-event="LAYTABLE_COLS"]').click(function(e) {
+                            setTimeout(function() {
+                                layui.$(e.currentTarget).find('.layui-form-checkbox').click(function() {
+                                    console.log(this)
+                                })
+                            }, 50);
+                        }) */
+                    }
+                });
+
+
+                //新增事件
+                $('#btn_add').click(function() {
+                    editBasDisease();
+                });
+
+                
+                //监听搜索
+                $('#btn_query').on('click', function () {
+                	table.reload('basDiseaseListGrid',{
+                        where: getQueryParams()
+                    })
+                });
+  
+				  function getQueryParams() {
+				      var params = $.extend({  
+				    	  expireDates:'',
+				    	  receiptBillNo:'',
+				    	  medicineType:''
+				      }, common.serializeObject($('#patient_queryForm')));
+				      var chargeDate = $('#chargeDate').val();
+				      if (chargeDate) {
+				            var chargeDates = chargeDate.split(' - ');
+				            params.expireDateBegin = chargeDates[0];
+				            params.expireDateEnd = chargeDates[1];
+				        }
+				        return params;
+				    }
+				    //日期时间范围
+				    laydate.render({
+				        elem: '#chargeDate'
+				        ,trigger: 'click', range: true
+				    });
+				
+				})
+
+                           
+               
+                // 更新有效标志状态
+                function updateValidFlag(obj) {
+                    var validFlag = Number(obj.elem.checked);
+                    var diseaseIds = obj.value;
+                    common.requestServer('../basDisease/basDiseaseUpdateValidFlag.jo', {
+                        diseaseIds : diseaseIds,
+                        validFlag : validFlag
+                    }, function(result) {
+                        if (result.code == "0") {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                                icon : 1
+                            });
+                        } else {
+                            layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                                icon : 2
+                            });
+                            obj.elem.checked = !obj.elem.checked;
+                            form.render('checkbox');
+                        }
+                    });
+                }
+             // 获取查询表单参数对象
+                function getTypeQueryParams() {
+                    return $.extend({
+                    	receiptBillNo: '',
+                    	medicineType: '',
+                    }, common.serializeObject($('#patient_queryForm')));
+                }
+
+</script>

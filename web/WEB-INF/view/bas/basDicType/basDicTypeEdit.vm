@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<link rel="stylesheet" href="../resource/layuiadmin/layui/css/layui.css" media="all">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-label{width: 90px}
+        .layui-input-block{margin-left:110px}
+    </style>
+</head>
+<body>
+    <form class="layui-form" style="padding: 20px 30px 0 0;" id="basDicTypeForm">
+        #formHiddenInput("dicTypeId" "$!{basDicType.dicTypeId}" " id='dicTypeId' ")
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()字典分类编码</label>
+            <div class="layui-input-block">#formNotInChineseInput("dicTypeCode" "#htmlEscape($!{basDicType.dicTypeCode})" "id='dicTypeCode' maxlength='48' autocomplete='off' style='padding-right: 32px;' lay-verify='required' class='layui-input unique'")</div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label" style="white-space: normal;word-break: break-all;">国际/国家/行业标准编码</label>
+            <div class="layui-input-block">#formNotInChineseInput("standardCode" "#htmlEscape($!{basDicType.standardCode})" " id='standardCode' maxlength='40' autocomplete='off' class='layui-input'")</div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()字典类型</label>
+            <div class="layui-input-block">#formRadioGroup("dicType" "$!{basDicType.dicType}" ${dicData.dicDicType} "check-msg='请选择字典类型' lay-verify='reqRedio'")</div>
+        </div>
+        #if(${basDicType})
+        <div class="layui-form-item">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{basDicType.validFlag}" ${dicData.dicYesNo} "")</div>
+        </div>
+        #end
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">#requiredTag()字典分类</label>
+            <div class="layui-input-block ">#formTextarea("dicTypeName" "#htmlEscape($!{basDicType.dicTypeName})" "id='dicTypeName' class='layui-textarea' lay-verify='required' maxlength='50' placeholder='请输入内容，字数最多50字'")</div>
+        </div>
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+        </div>
+    </form>
+    #parse("./bas/basDicType/basDicTypeEdit.js.vm")
+</body>
+</html>

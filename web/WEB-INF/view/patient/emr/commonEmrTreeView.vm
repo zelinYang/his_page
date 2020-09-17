@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}</title>
+    <link href="../resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <script type="text/javascript" src="../resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="../resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #set($path = $!contextPath)
+    <style>
+        .text-v{line-height: 30px; color: #ff3d00;}
+        .dic-name{ color:  red;}
+        .ztree li a.curSelectedNode { background-color: #f5f7f7; border: 1px #dedede solid; }
+        .layui-icon.blue:hover{color: #6cbbd4;}
+        .layui-form-item.search-term .layui-inline,
+        .layui-form-item .layui-btn.layui-btn-sm { margin-bottom: 0;}
+        .layui-form-item .layui-input-inline { width:auto;}
+        .layui-form-item.search-term label { font-weight: 100; padding-right: 5px; color: #555;}
+        .layui-tab-title.btn { padding: 10px; margin-left: 0;}
+        .layui-bg-gray{ color: #05a59c!important;}
+        #container .ui-layout-resizer-closed {
+             display: block !important;
+        }
+        @media screen and (max-width:1024px){
+            .layui-form-item.search-term{overflow-x: auto;white-space: nowrap;height: 30px}
+        }
+    </style>
+</head>
+
+<body >
+<div class="layui-content-wrapper">
+  <div class="layui-fluid">
+
+    <div id="container" style="height: 100%;">
+        <div class="ui-layout-west" >
+            <div class="layui-card m-b-sm n-shadow" style="height: calc(100% - 10px); overflow: hidden;">
+                <div class="layui-card-header">列表#cardDisplayHover</div>
+                <div class="layui-card-body p-n full-height-scroll" style="height: calc(100% - 33px);">
+                    <ul id="emrTypeTree" class="ztree white-bg full-height"></ul>
+                </div>
+            </div>
+        </div>
+        <!--east  -->
+        <div class="layui-form ui-layout-center">
+            <!-- 中间导航nav -->
+            <div class="full-height" id="component-tabs">
+                <div class="layui-tab inSettNav m-n full-height" lay-filter="inSettNav" lay-allowclose="">
+                    <!-- 主页导航名称 -->
+                    <ul class="layui-tab-title">
+                        <li lay-id="inhospitalReg" class="layui-this">内容</li>
+                    </ul>
+                    <!-- 导航内容 根据index对应li -->
+                    #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+                    #set($layclass = 'class="layui-tab-item full-height"')
+                    <div class="layui-tab-content layui-bg-white p-l-n p-r-n" style="height: calc(100% - 55px);">
+                        <div lay-id="inhospitalReg" class="layui-tab-item layui-show full-height" >
+                            <iframe targetSrc="$!contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&showBtn=0&emrTlpId=VemrTlpId&&patientId=VpatientId&patientHospitalEmrId=VpatientHospitalEmrId" id="emrIframe" width="100%" height="100%" frameborder="0" scrolling="no" ></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 中间导航nav end -->
+        </div><!-- center -->
+    </div>
+
+
+  </div>
+</div>
+
+<script>
+
+$(function() {
+	initLayout();
+	loadTree({registerId: "$!{registerId}",inhospitalId: "$!{inhospitalId}"});
+});
+
+//jQuery的layout插件初始化
+var initLayout = function() {
+    $('#container').layout({
+        west__size: 350//pane的大小
+        ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+        ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+        ,spacing_open:8//边框的间隙
+        ,maskIframesOnResize:".resizeiframe"
+    });
+}
+/////////////////////////////////////////电子病历树形菜单相关js///////////////////////////////////
+//病历树形列表 z-tree
+ var setting = {
+     data: {key: {title: "text"},simpleData: {enable: true}},
+     view: {
+         fontCss: setFontCss,
+         selectedMulti : false,
+         showIcon: false
+     },
+     callback: {
+         onClick: function(event, treeId, treeNode) {
+             showEmr(treeNode);
+             //showPatientEmrDefectItemList(treeNode);
+         },
+         onDblClick: function(event, treeId, treeNode) {
+             showEmr(treeNode);
+             //showPatientEmrDefectItemList(treeNode);
+         }
+     }
+ };
+
+ function setFontCss(treeId, treeNode) {
+     return treeNode.validFlag == '0' ? {color:"#0bb5a5"} : {};
+ }
+
+ function showEmr(treeNode) {
+     var remark = treeNode.remark;
+     if (remark) {
+          remark= remark.replace('\"','"');
+         var patientEmr = JSON.parse(remark);
+         _patientHospitalEmr = patientEmr;
+         var targetSrc=  $('#emrIframe').attr('targetSrc');
+         if (targetSrc) {
+             targetSrc = targetSrc.replace('VemrTlpId',patientEmr.emrTlpId);
+             targetSrc = targetSrc.replace('VpatientId',patientEmr.patientId);
+             targetSrc = targetSrc.replace('VpatientHospitalEmrId',patientEmr.patientHospitalEmrId);
+             if (patientEmr.inhospitalId) {
+                 targetSrc += '&inhospitalId='+ patientEmr.inhospitalId;
+             } else {
+                 targetSrc += '&registerId='+ patientEmr.registerId;
+             }
+             $('#emrIframe').attr('src',targetSrc);
+         }
+     }
+ }
+
+ function showPatientEmrDefectItemList(treeNode) {
+     var remark = treeNode.remark;
+     if (remark) {
+         remark= remark.replace('\"','"');
+         _patientHospitalEmr = JSON.parse(remark);
+         $('div[tab=patientEmrDefect] iframe')[0].contentWindow.tableReload(); //调用iframe的方法 ,刷新病历缺陷列表
+     }
+ }
+
+ loadTree = function (data) {
+     // 加载检验单类型树型菜单
+     $.ajax({
+         type: "POST",
+         url : "../patient/getEmrTypeTree.jo",
+         data: data,
+         dataType:"json",
+         async : false,
+         success: function(result){
+             var zNodes = result;
+             zTree_Menu = $.fn.zTree.init($("#emrTypeTree"), setting, zNodes);
+         },
+         error: function(res){jqueryPostError(res); }
+     });//ajax end
+ }
+</script>
+
+</body>
+</html>

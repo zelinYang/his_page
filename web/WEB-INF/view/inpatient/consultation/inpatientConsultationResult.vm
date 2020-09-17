@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>会诊意见编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+        #parse("./outpatient/outpatientMain/regPatientList.css.vm")<!-- 页面js -->
+</head>
+
+<body class="white-bg">
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10 full-height">
+            <div class="layui-col-md9 layui-col-xs8 full-height">
+                <iframe id="chart1" width="100%" height="100%" src="$!contextPath/inpatient/inpatientInfoMain.do?patientId=$!{inpatientInhospital.patientId}&inhospitalId=$!{inpatientInhospital.inhospitalId}&optype=show" frameborder="0"></iframe>
+            </div>
+            <div class="layui-col-md3 layui-col-xs4" full-height>
+                <div class="layui-card">
+                    <div class="layui-card-header">会诊目的</div>
+                    <div class="layui-card-body">
+                        $!{consultationApply.consultationAim}
+                    </div>
+                </div>
+                <div class="layui-card">
+                    <div class="layui-card-header">会诊原因</div>
+                    <div class="layui-card-body">
+                        $!{consultationApply.consultationReason}
+                    </div>
+                </div>
+                <div class="layui-card">
+                    <div class="layui-card-header">病情简介</div>
+                    <div class="layui-card-body">
+                        $!{consultationApply.medicalSummary}
+                    </div>
+                </div>
+                <div class="layui-card">
+                    <div class="layui-card-header">会诊意见</div>
+                    <div class="layui-card-body">
+                        <form class="layui-form" id="editForm" action="">
+                            #formHiddenInput("registerId" "$!{registerId}" "id='consultationDoctorItemId'")
+                            #formHiddenInput("consultationDoctorItemId" "$!{consultationDoctorItemId}" "id='consultationDoctorItemId' ")
+                            <div class="layui-form-item layui-form-text">
+                                <textarea name="consultationResult" placeholder="请输入会诊意见" class="layui-textarea" lay-verify="required" rows="10" style="height: auto;">$!{consultationDoctorItem.consultationResult}</textarea>
+                            </div>
+                            <div class="layui-form-item" style="text-align: center;">
+                                <button class="layui-btn" lay-submit lay-filter="*">保存</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    layui.use(['jquery', 'form'], function () {
+        var form = layui.form;
+
+        form.on('submit(*)', function(data){
+            common.requestServer('$contextPath/consultationDoctorItem/saveConsultationDoctorItem.jo', data.field, function (result) {
+                if (result.code == '0') {
+                    common.msg("保存成功", 1);
+                } else {
+                    common.msg(result.msg, 0);
+                }
+            })
+            return false; //阻止表单跳转。如果需要表单跳转，去掉这段即可。
+        });
+    });
+</script>
+</body>
+</html>

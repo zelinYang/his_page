@@ -1,0 +1,106 @@
+
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicEmrDefectType = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrDefectType)');
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+        autocomplete : 'autocomplete'
+    }).use(
+        [ 'index', 'table', 'form', 'layer', 'autocomplete' ],
+        function() {
+            var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, autocomplete = layui.autocomplete;
+
+            //列表
+            table.render({
+                elem : '#emrDefectPrjItemGrid',
+                url : '../emr/emrDefectPrjItemListData.jo',//数据接口
+                limit : 20,
+                where : {
+                    'emrDefectPrjClassifyId' : 1,
+                    'defectMode' : "$!{CONST.AppConstants.DEFECT_MODE_MANUAL}",
+                    'validFlag' : "$!{CONST.AppConstants.YES_FLAG}"
+                },
+                cols : [ [
+                    {
+                        type : 'numbers'
+                    },
+                    {
+                        field : 'emrDefectPrjName',
+                        title : '缺陷类型',
+                        width : 100
+                    },
+                    {
+                        field : 'defectName',
+                        title : '缺陷项目'
+                    },
+                    {
+                        field : 'negateFlag',
+                        title : '单项否决',
+                        templet : function(d) {
+                            return dicYesNo[d.negateFlag] || ''
+                        },
+                        width : 80
+                    },
+                    {
+                        field : 'defectType',
+                        title : '扣分类型',
+                        templet : function(d) {
+                            return dicEmrDefectType[d.defectType] || ''
+                        },
+                        width : 80
+                    },
+                    {
+                        field : 'defectScore',
+                        title : '分值',
+                        width : 50
+                    } ] ],
+                page : true,
+                height : 'full-70',
+                request : {
+                    pageName : 'pageNumber' //页码的参数名称，默认：page
+                    ,
+                    limitName : 'pageSize' //每页数据量的参数名，默认：limit
+                },
+                done : function() {
+
+                }
+            });
+
+            //监听数据搜索
+            form.on('submit(btn_query)', function(data) {
+                var field = data.field;
+                //执行重载
+                table.reload('emrDefectPrjItemGrid', {
+                    where : field
+                });
+                return false;
+            });
+
+            //重置查询表单并刷新表格
+            $("#btn_reset").click(function() {
+                setTimeout(function() {
+                    $('#btn_query').click();
+                }, 50);
+            })
+
+            //监听选择事件
+            table.on('row(emrDefectPrjItemGrid)', function(obj) {
+                if (null == parent.selectItemCall || typeof(parent.selectItemCall) != "function") {
+                    common.alert("缺少调用方法", 0);
+                }
+                //查询缺陷项目,获取缺陷项目最大扣分阈值
+                common.requestServer('../emr/findEmrDefectPrj.jo', {
+                    'emrDefectPrjId' : obj.data.emrDefectPrjId
+                }, function(result) {
+                	obj.data.emrDefectMaxScore = result.data.emrDefectMaxScore;
+                    parent.selectItemCall(obj.data);
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+            });
+
+        });
+</script>

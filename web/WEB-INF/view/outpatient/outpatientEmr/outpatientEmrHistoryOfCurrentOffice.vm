@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>历史病历</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./outpatient/outpatientEmr/outpatientEmr.css.vm")
+    #parse("./common/pageJs.vm")
+</head>
+
+<body class="white-bg emrTreeTemplateVertical">
+<!-- 门诊病历信息 -->
+<div class="main full-height">
+    <div class="layui-collapse full-height-scroll b-n">
+        #foreach($outpatient in $outpatientList)
+            #if("$!registerId" != "$!outpatient.registerId")
+                #set($registerId = $!outpatient.registerId)
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        $!date.format('yyyy-MM-dd', $!outpatient.outpatientDate) $!outpatient.patientName&nbsp;&nbsp;#if($!outpatient.firstDiagnosis)（$!outpatient.firstDiagnosis）#end&nbsp;&nbsp;医生：$!outpatient.diagnosisDoctorName&nbsp;&nbsp;
+                    </div>
+                    <div class="layui-card-body">
+                        #set($patientHospitalEmrList = $patientHospitalEmrMap.get($outpatient.registerId))
+                        #foreach($patientHospitalEmr in $patientHospitalEmrList)
+                            <div class="layui-colla-item" emrTlpId="222" registerId="$!{patientHospitalEmr.registerId}"
+                                 patientId="$!{patientHospitalEmr.patientId}">
+                                <h2 class="layui-colla-title">
+                                    <span class="time">$!date.format('yyyy-MM-dd', $!patientHospitalEmr.createTime)</span>
+                                    <span class="tit">（$!patientHospitalEmr.emrTlpName）</span>
+                                    <span class="doctor">医生：$!patientHospitalEmr.diagnosisDoctorName</span>
+                                </h2>
+
+                                <div class="layui-colla-content layuiShow">
+                                    #set($emrShowUrl = "$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&showBtn=0")
+                                    #set($emrParam =
+                                        "&emrTlpId=$patientHospitalEmr.emrTlpId&registerId=$!{patientHospitalEmr.registerId}&patientId=$!{patientHospitalEmr.patientId}&patientHospitalEmrId=$patientHospitalEmr.patientHospitalEmrId")
+                                    <iframe id="emrIframe" targetSrc="$emrShowUrl$emrParam" #iframeAttr style="height: 900px;"></iframe>
+                                </div>
+                            </div>
+                        #end
+                    </div>
+                </div>
+            #end
+        #end
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        dtree: 'modules/dtree/dtree'
+    }).use(['element', 'dtree'], function () {
+        $(function() {
+            $('.layui-colla-item').click(function() {
+                loadIframe(this);
+            });
+        });
+
+        function loadIframe(elem) {
+            var emrIframe = $(elem).find('iframe');
+            var src = emrIframe.attr('src');
+            if (!src) {
+                var src = emrIframe.attr('targetSrc');
+                emrIframe.attr('src', src);
+            }
+        }
+    });
+</script>
+</html>

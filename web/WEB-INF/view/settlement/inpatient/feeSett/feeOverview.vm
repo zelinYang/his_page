@@ -1,0 +1,91 @@
+<div id="feeOverview" class="feeOverview full-height">
+
+
+    <div class="layui-form-item main-header">住院费用账卡</div> 
+    <form id="reg_patient_queryForm" class="layui-form">
+        #formHiddenInput("inhospitalId" "$!inhospital.inhospitalId" "id=''")
+          <div class="layui-row-query" > 
+              <div class="layui-form-item">
+                   <div class="layui-inline">
+                       <label class="layui-form-label">住院号码</label>
+                       <div class="layui-inline">
+                         #formTextInput("inhospitalNo" "$!inhospital.inhospitalNo" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">患者床号</label>
+                       <div class="layui-inline">
+                         #formTextInput("currentBedNo" "$!inhospital.currentBedNo" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">患者姓名</label>
+                       <div class="layui-inline">
+                         #formTextInput("patientName" "$!inhospital.patientName" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">性质</label>
+                       <div class="layui-inline">
+                          
+                         #formTextInput("patientKind" "#lookUpDict($!dicData.dicPatientKind $!inhospital.patientKind)" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">科室</label>
+                       <div class="layui-inline">
+                         #formTextInput("patientName" "$!inhospital.currentOfficeName" " class='layui-input' ")
+                         
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">入院日期</label>
+                       <div class="layui-inline">
+                         #formTextInput("inhospitalDate" "$!date.format('yyyy-MM-dd', $!inhospital.inhospitalDate)" "id='inhospitalDate' class='layui-input' ")
+                       </div>
+                   </div>
+              </div>
+               <div class="layui-form-item">
+                   <div class="layui-inline">
+                       <label class="layui-form-label">总费用</label>
+                        <div class="layui-inline">
+                         #formTextInput("patientName" "$!settlement.actualChargeAmount" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">自付</label>
+                       <div class="layui-inline">
+                         #formTextInput("chargeCash" "$!settlement.chargeCash" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">预交款</label>
+                       <div class="layui-inline">
+                         #formTextInput("totalPrepaySum" "$!settlement.totalPrepaySum" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">余额</label>
+                       <div class="layui-inline">
+                           #set($cutSettlementSum = $!{settlement.cutSettlementSum} * -1)
+                         #formTextInput("cutSettlementSum" "$!{cutSettlementSum}" " class='layui-input' ")
+                       </div>
+                   </div>
+                   <div class="layui-inline">
+                       <label class="layui-form-label">天数</label>
+                       <div class="layui-inline">
+                         #formTextInput("inHospitalDay" "$!inhospitalDay" " class='layui-input' ")
+                       </div>
+                   </div>
+              </div>
+          </div>
+      
+     </form>
+    <table id="feeItem" lay-filter="feeItem"></table>
+     
+
+    <div class="tool-bottom-fixed btn_gorup">
+          <button type="button" id="btn_settlement" class="layui-btn layui-btn-sm" >结算处理</button>
+    </div>
+</div>   
+        

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>病历审阅</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-form" lay-filter="" id="docBorrowFrom" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "")
+    #formHiddenInput("inhospitalNo" "$!{inpatientInhospital.inhospitalNo}" "")
+    #formHiddenInput("patientMedicalNo" "$!{inpatientInhospital.patientMedicalNo}" "")
+    #formHiddenInput("patientId" "$!{inpatientInhospital.patientId}" "")
+    #formHiddenInput("patientName" "$!{inpatientInhospital.patientName}" "")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()借阅截止日期</label>
+            <div class="layui-input-inline">#formLayDateInput("oughtReturnDate" "" " maxlength='10' lay-verify='required' class='layui-input layer-date' ")</div>
+        </div>
+    </div>
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">#requiredTag()借阅目的</label>
+        <div class="layui-input-block ">#formTextarea("borrowPurpose" "#htmlEscape($!{docBorrow.borrowPurpose})" " class='layui-textarea' lay-verify='required' maxlength='30' placeholder='请输入内容，字数最多30字'")</div>
+    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+    </div>
+</div>
+    <script>
+                    layui.use([ 'form' ], function() {
+                        var $ = layui.$, form = layui.form;
+                        common.setFormReadOnly($("#docBorrowFrom"));
+                    })
+                </script>
+</body>
+</html>

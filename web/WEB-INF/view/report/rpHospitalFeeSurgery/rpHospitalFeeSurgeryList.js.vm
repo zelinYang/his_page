@@ -1,0 +1,533 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var ORDER_TYPE_EXAM = "$!{CONST.AppConstants.ORDER_TYPE_EXAM}";
+    var dicPatientType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientType)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    var dicDoctorOrderSubtype = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderSubtype)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicNarcosisClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicNarcosisClassify)');
+    var dicIncisionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicIncisionLevel)');
+    var dicSurgeryLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryLevel)');
+    var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)');
+    var dicSurgeryNarcosisMode = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryNarcosisMode)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        $('#q_chargeTime').each(function () {
+            var that = this;
+            //按出院日期范围查询
+            laydate.render({
+                elem: that,
+                range: true,
+                trigger: 'click',
+                done: function (value, date, endDate) {
+                    setTimeout(function () {
+                        $('#btn_query').click();
+                    })
+                }
+            });
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#rpHospitalFeeSurgery_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                chargeTimeBegin: '',
+                chargeTimeEnd: '',
+                patientTypes: '',
+                keyWord: '',
+                doctorOrderType: ORDER_TYPE_EXAM,
+                validFlag: YES_FLAG
+            }, common.serializeObject($('#rpHospitalFeeSurgery_queryForm'), ['q_chargeTime']));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('rpHospitalFeeSurgeryListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('rpHospitalFeeSurgery_queryForm');
+        })
+
+        //导出事件
+        $('#btn_import').click(function () {
+            var title = '导出数据'
+            var iframeEnvironment = 'I4028804601699abb9abbf0080169bd1596c93925';
+            var content = diResource + iframeEnvironment
+            //true 执行
+            if (data) {
+                title = data.diseaseName;
+                content += '?regionPopuId=' + data.regionPopuId;
+            }
+            common.open(content, title, {
+                area: ['1660px', '80%'],
+                scroll: 'yes'
+            });
+        });
+        //宽度 = (字数: 不好含符号) * (字符宽度: 全角字符宽度 = 15，字符宽度 = 10);
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#rpHospitalFeeSurgeryListGrid',
+            url: '../report/rpHospitalFeeSurgeryListData.jo',//数据接口
+            where: getQueryParams(),
+            cols: [
+                [
+                    {
+                        title: '序号',
+                        type: 'numbers',
+                        fixed: 'left',
+                        align: 'center',
+                    },
+                    {
+                        field: 'chargeTime',
+                        title: '结账日期',
+                        fixed: 'left',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.chargeTime ? util.toDateString(row.chargeTime) : '';
+                        },
+                    },
+                    {
+                        field: 'exeOfficeName',
+                        title: '医技执行科室',
+                        fixed: 'left',
+                        width: 90,
+                        align: 'center'
+
+                    },
+                    {
+                        field: 'patientType',
+                        title: '患者类型',
+                        width: 90,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicPatientType[d.patientType] || "";
+                        }
+                    },
+                    {
+                        field: 'wardName',
+                        title: '病区名称',
+                        align: 'center'
+                    },
+                    {
+                        field: 'currentBedNo',
+                        title: '床号',
+                        align: 'center'
+                    },
+                    {
+                        field: 'visitCardNo',
+                        title: '诊疗卡号',
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientMedicalNo',
+                        title: '病案档案号',
+                        width: '病案档案号'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientName',
+                        title: '患者姓名',
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientAge',
+                        title: '患者年龄',
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientBirth',
+                        title: '出生年月',
+                        width: 9 * 10,
+                        align: 'center',
+                        templet: function (d) {
+                            return d.patientBirth ? layui.util.toDateString(d.patientBirth, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {
+                        field: 'patientSex',
+                        title: '性别',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicSex[d.patientSex] || "";
+                        }
+                    },
+                    {
+                        field: 'doctorOrderType',
+                        title: '医嘱项目类型',
+                        width: '医嘱项目类型'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicDoctorOrderType[d.doctorOrderType] || "";
+                        }
+                    },
+                    {
+                        field: 'surgeryFeeAmount',
+                        title: '费用金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'surgeryCodeId',
+                        title: '手术操作编码',
+                        width: '手术操作编码'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryName',
+                        title: '手术名称',
+                        align: 'center'
+                    },
+                    {
+                        field: 'applyOfficeName',
+                        title: '申请科室',
+                        align: 'center'
+                    },
+                    {
+                        field: 'applyDoctorName',
+                        title: '申请医生名称',
+                        width: '申请医生名称'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'applyTime',
+                        title: '申请日期',
+                        width: 9 * 10,
+                        align: 'center',
+                        templet: function (d) {
+                            return d.applyTime ? layui.util.toDateString(d.applyTime, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {
+                        field: 'surgeryDate',
+                        title: '手术日期',
+                        width: 9 * 10,
+                        align: 'center',
+                        templet: function (d) {
+                            return d.surgeryDate ? layui.util.toDateString(d.surgeryDate, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {
+                        field: 'surgeryRoom',
+                        title: '手术房间',
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryTableNo',
+                        title: '手术台号',
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryTableNo',
+                        title: '手术台号',
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryDoctorName',
+                        title: '手术主刀医生姓名',
+                        width: '手术主刀医生姓名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryAssitOneName',
+                        title: '手术助手1姓名',
+                        width: '手术助手1姓名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryAssitTwoName',
+                        title: '手术助手2姓名',
+                        width: '手术助手2姓名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryAssitThreeName',
+                        title: '手术助手3姓名',
+                        width: '手术助手3姓名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryAssitFourName',
+                        title: '手术助手4姓名',
+                        width: '手术助手4姓名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'medicDoctorName',
+                        title: '实习医生',
+                        align: 'center'
+                    },
+                    {
+                        field: 'scrubNurseName',
+                        title: '洗手护士',
+                        align: 'center'
+                    },
+                    {
+                        field: 'circulatingNurseName',
+                        title: '巡回护士',
+                        align: 'center'
+                    },
+                    {
+                        field: 'anesthesiaMode',
+                        title: '麻醉方法',
+                        width: 6 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicSurgeryNarcosisMode[d.anesthesiaMode] || "";
+                        }
+                    },
+                    {
+                        field: 'anesthesiaDoctorName',
+                        title: '麻醉医生',
+                        align: 'center'
+                    },
+                    {
+                        field: 'beforeDiagnosis',
+                        title: '术前诊断',
+                        align: 'center'
+                    },
+                    {
+                        field: 'afterSurgery',
+                        title: '术后信息',
+                        align: 'center'
+                    },
+                    {
+                        field: 'specialExam',
+                        title: '特殊检查',
+                        align: 'center'
+                    },
+                    {
+                        field: 'specialInfect',
+                        title: '特殊感染',
+                        align: 'center'
+                    },
+                    {
+                        field: 'specialInstrument',
+                        title: '特殊器械',
+                        align: 'center'
+                    },
+                    {
+                        field: 'bodyPosition',
+                        title: '体位',
+                        align: 'center'
+                    },
+                    {
+                        field: 'officeSort',
+                        title: '科室排序',
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryOfficeName',
+                        title: '手术科室名',
+                        width: '手术科室名'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryDoctorRemark',
+                        title: '手术医生备注',
+                        width: '手术医生备注'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryStartTime',
+                        title: '手术开始日期',
+                        width: 9 * 10,
+                        align: 'center',
+                        templet: function (d) {
+                            return d.surgeryStartTime ? layui.util.toDateString(d.surgeryStartTime, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {
+                        field: 'surgeryEndTime',
+                        title: '手术开始日期',
+                        width: 9 * 10,
+                        align: 'center',
+                        templet: function (d) {
+                            return d.surgeryEndTime ? layui.util.toDateString(d.surgeryEndTime, 'yyyy-MM-dd') : '';
+                        }
+                    },
+                    {
+                        field: 'fastFlag',
+                        title: '加急标志',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.fastFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'anesthesiaFlag',
+                        title: '麻醉记录标志',
+                        width: '麻醉记录标志'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.anesthesiaFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'surgeryRecordFlag',
+                        title: '手术记录标志',
+                        width: '手术记录标志'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.surgeryRecordFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'chargingFlag',
+                        title: '计费标志',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.chargingFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'visitName',
+                        title: '参观人员',
+                        align: 'center'
+                    },
+                    {
+                        field: 'incisionLevel',
+                        title: '手术切口',
+                        width: 8 * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicIncisionLevel[d.incisionLevel] || "";
+                        }
+                    },
+                    {
+                        field: 'surgeryLevel',
+                        title: '手术级别',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicSurgeryLevel[d.surgeryLevel] || "";
+                        }
+                    },
+                    {
+                        field: 'nurseLevel',
+                        title: '护理级别',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicSurgeryLevel[d.nurseLevel] || "";
+                        }
+                    },
+                    {
+                        field: 'asaAnesthesiaGrade',
+                        title: 'ASA麻醉级别',
+                        width: 'ASA麻醉级别'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicNarcosisClassify[d.asaAnesthesiaGrade] || "";
+                        }
+                    },
+                    {
+                        field: 'remark',
+                        title: '备注',
+                        align: 'center'
+                    },
+                    {
+                        field: 'surgeryFinishFlag',
+                        title: '手术完成标志',
+                        width: '手术完成标志'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.surgeryFinishFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'urgencySurgeryFlag',
+                        title: '限期手术',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.urgencySurgeryFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'nonPlanedResurgeryFlag',
+                        title: '非计划再次手术',
+                        width: '非计划再次手术'.length * 15,
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.nonPlanedResurgeryFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'consultSurgeryFlag',
+                        title: '会诊标志',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.consultSurgeryFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'selectiveSurgeryFlag',
+                        title: '择期手术',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.selectiveSurgeryFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'infectionSurgeryFlag',
+                        title: '感染手术',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.infectionSurgeryFlag] || "";
+                        }
+                    },
+                    {
+                        field: 'miniSurgeryFlag',
+                        title: '微创手术',
+                        align: 'center',
+                        templet: function (d) {
+                            return dicYesNo[d.miniSurgeryFlag] || "";
+                        }
+                    },
+                ]
+            ],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

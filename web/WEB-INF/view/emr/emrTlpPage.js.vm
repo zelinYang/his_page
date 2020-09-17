@@ -1,0 +1,460 @@
+ <script>
+  var VISABLE_HOSPITAL = "$!{CONST.AppConstants.VISABLE_HOSPITAL}";//全院
+  var VISABLE_DEPARTMENT  = "$!{CONST.AppConstants.VISABLE_DEPARTMENT}";//科室
+  var VISABLE_INDIVIDUAL  = "$!{CONST.AppConstants.VISABLE_INDIVIDUAL}";//个人
+var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+var dicEmrTlpClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrTlpClassify)');
+var orgMap = JSON.parse('$!orgMap');
+  layui.config({
+   base: '../resource/layuiadmin/'
+  }).extend({
+   index: 'lib/index'
+  }).use(['index','form', 'table'], function () {
+    var table = layui.table;
+    var form = layui.form;
+    var admin = layui.admin;
+ //刷新页面按钮
+ $("#btn_refresh").click(function () {
+  location.reload();
+ });
+
+//输入框回车查询
+ $('#emrTlpName').keydown(function (event) {
+  if (event.keyCode == 13) {
+   $("#btn_query").click();
+  }
+ });
+function getTableHight(){
+    return ($('body').height() - $('.search-term').height() - 10)
+ }
+ $(window).resize(function(){
+     table.reload('emrTlp',{
+         height:getTableHight()
+ })
+ })
+    table.render({
+        elem: '#emrTlp'
+        , url: '../emrTlp/emrTlpPageData.jo'
+        , toolbar: '#toolbarDemo'
+        , title: '用户数据表'
+        , height: getTableHight()
+        , limit: 20
+        , defaultToolbar: []
+        , request: {
+            pageName: 'pageNumber' //页码的参数名称，默认：page
+            , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        , cols: [[
+            {fixed: 'left', type: 'numbers'}
+            , {fixed: 'left', field: 'emrTlpName', title: '模板名称', minWidth: 200}
+            , {
+                field: 'emrTlpClassifyId', title: '模板分类', width: 100, templet: function (res) {
+                    return dicEmrTlpClassify[res.emrTlpClassifyId];
+                }
+            }
+            , {
+                field: 'emrTlpType', title: '属性', width: 180, templet: function (res) {
+                    switch (res.emrTlpType) {
+                        case VISABLE_INDIVIDUAL:
+                            return res.userName;
+                        case VISABLE_DEPARTMENT:
+                            var orgNames = [];
+                            if (res.officeIdStr !== '') {
+                                var orgIds = res.officeIdStr.split(',');
+                                for (var i = 0; i < orgIds.length; i++) {
+                                    orgNames.push(orgMap[orgIds[i]]);
+                                }
+                            }
+                            return orgNames.join(',');
+                        case VISABLE_HOSPITAL:
+                            return dicBelongSysType[res.emrTlpType];
+                    }
+                }
+            }
+            , {field: 'emrTlpVersion', title: '版本号', width: 60}
+            , {field: 'userName', title: '创建者', width: 80}
+            , {
+                field: 'createTime', title: '创建日期', width: 150, templet: function (res) {
+                    return datetimeFormatter(res.createTime);
+                }
+            }
+            , {field: 'latestUserName', title: '修改人', width: 60}
+            , {
+                field: 'latestTime', title: '修改日期', width: 150, templet: function (res) {
+                    return datetimeFormatter(res.latestTime);
+                }
+            }
+            , {field: 'validFlag', title: '是否有效', width: 80, templet: '#switchTpl', unresize: true, fixed: 'right'}
+            , {fixed: 'right', title: '操作', align: 'center', toolbar: '#barDemo', width: 150}
+        ]],done:function(){
+             autoSetHeigt()
+         }
+        , page: true
+    });
+
+     //处理行高问题
+     function autoSetHeigt(){
+     $(".layui-table-main tr").each(function (index, val) {
+         $($(".layui-table-fixed-l .layui-table-body tbody tr")[index]).height($(val).height());
+         $($(".layui-table-fixed-r .layui-table-body tbody tr")[index]).height($(val).height());
+     });
+    }
+    $('.demoTable .layui-btn').on('click', function () {
+        var type = $(this).data('type');
+        active[type] ? active[type].call(this) : '';
+    });
+    form.on('checkbox(emrTlpType)', function (data) {
+        console.log(data);
+        queryData();
+    });
+    //监听搜索
+    form.on('submit(LAY-search)', function (data) {
+        var field = data.field;
+        console.log(data);
+        var arr = new Array();
+        $("input:checkbox[name='emrTlpType']:checked").each(function (i) {
+            arr[i] = $(this).val();
+        });
+        console.log(arr);
+        data.field.emrTlpType = arr.join(",");
+        //执行重载
+        table.reload('emrTlp', {
+            where: field
+        });
+    });
+
+    //监听有效操作
+    form.on('switch(validFlag)', function (obj) {
+        var data = {};
+        if (obj.elem.checked) {
+            data.validFlag = '1'
+        } else {
+            data.validFlag = '0'
+        }
+        data.emrTlpId = obj.elem.getAttribute('emr-tlp-id');
+        $.post("../emrTlp/saveEmrTlpValidFlag.jo", data, function (result) {
+            if (result.code == "0") {
+                common.msgSuccess("保存成功!");
+            } else {
+                common.alert(result.msg, 0);
+            }
+        }, "json");
+    });
+
+    //工具栏事件
+    table.on('toolbar(emrTlp)', function (obj) {
+        var checkStatus = table.checkStatus(obj.config.id);
+        var data = checkStatus.data;
+        console.log(obj.event);
+        switch (obj.event) {
+            case 'btn_add':
+                addEmrTlp()
+                break;
+            case 'btn_edit_emrtlp':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                editEmrTlp(data[0], '0');
+                break;
+            case 'btn_edit_content':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                editEmrTlpContent(data[0]);
+                break;
+            case 'btn_save_as':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                editEmrTlp(data[0], '1');
+                break;
+            case 'btn_delete_tlp':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                deleteEmrTlp(data[0]);
+                break;
+            case 'btn_edit_emr':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                editEmrContent(data[0]);
+                break;
+            case 'btn_emrFuncSet':
+                if (data.length == undefined || data.length <= 0) {
+                    common.alert("请选择电子病历模板", 0);
+                    return;
+                }
+                if (data[0].emrTlpId) {
+                    common.open(contextPath + '/emr/emrTlpDicRelEdit.do?emrTlpId=' + data[0].emrTlpId, "电子病历模板设置", {area: ['750px', '510px']});
+                }
+                break;
+            case 'edit':
+                editEmrTlpContent(obj.data);
+                break;
+            case 'del':
+                deleteEmrTlp(obj.data);
+                break;
+        }
+        ;
+    });
+    //操作事件
+    table.on('tool(emrTlp)', function (obj) {
+        switch (obj.event) {
+            case 'edit':
+                editEmrTlpContent(obj.data);
+                break;
+            case 'del':
+                deleteEmrTlp(obj.data);
+                break;
+            case 'property':
+                editEmrTlp(obj.data, '0');
+                break;
+            case 'saveAs':
+                editEmrTlp(obj.data, '1');
+                break;
+            case 'emrFuncSet':
+                common.open(contextPath + '/emr/emrTlpDicRelEdit.do?emrTlpId=' + obj.data.emrTlpId, "电子病历模板设置", {area: ['750px', '510px']});
+                break;
+        }
+        ;
+    });
+
+    $('#uploadFile').click(function () {
+        var url = '$contextPath' + '/emrTlp/uploadFile.do';
+        var title = '上传模板类';
+        layer.open({
+            type: 2
+            , title: title
+            , content: [url, 'no']
+            , area: ['820px', '500px']
+            , btn: ['确定', '取消']
+            , scrollbar: false
+            , yes: function (index, layero) {
+
+            }
+            , success: function (layero, index) {
+
+            }
+        });
+    });
+
+    $('#emrTlpClassify').click(function () {
+        var url = '$contextPath' + '/emr/emrTlpClassifyTreeEdit.do';
+        var title = '病历分类';
+        createMenuItem(title, url);
+    });
+
+    $('#emrTlpClass').click(function () {
+        var url = '$contextPath' + '/emr/emrTlpClassList.do';
+        var title = '模板类名';
+        createMenuItem(title, url);
+    });
+
+    $("#data_element").click(function () {
+        var url = '$contextPath' + '/emrDataElement/emrDataElementList.do';
+        var title = '数据集合';
+        createMenuItem(title, url);
+    });
+
+    $('#control_model').click(function () {
+        var url = '$contextPath' + '/controlModel/controlModelPage.do';
+        var title = '控件模板';
+        createMenuItem(title, url);
+    });
+
+    $('#emrPrint').click(function() {
+        var url = '$contextPath' + '/emrTlp/emrTlpPrint.do';
+        var title = '打印';
+        createMenuItem(title, url);
+    });
+
+
+    // 新增电子病历
+    function addEmrTlp() {
+        var emrTlpClassifyId = $("#emrTlpClassifyId").val();
+        console.log(emrTlpClassifyId);
+        console.log($("#isAdd").val() == 0);
+        if (!emrTlpClassifyId || emrTlpClassifyId == '' || $("#isAdd").val() == 0) {
+            emrTlpClassifyId = '';
+        }
+        layer.open({
+            type: 2
+            , title: '新增电子病历模板'
+            , content: '../emrTlp/editEmrTlp.do?emrTlpClassifyId=' + emrTlpClassifyId
+            , area: ['820px', '500px']
+            , btn: ['确定', '取消']
+            , scrollbar: true
+            , yes: function (index, layero) {
+                var iframeWindow = window['layui-layer-iframe' + index]
+                    , submitID = 'LAY-emr-submit'
+                    , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                //监听提交
+                iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                    var field = data.field; //获取提交的字段
+                    if (field.emrTlpType !== '2') {
+                        field.officeIdStr = '';
+                    }
+                    if (field.emrTlpType === '2' && field.officeIdStr === '') {
+                        layer.msg('请选择科室', {icon: 2});
+                        return;
+                    }
+                    //提交 Ajax 成功后，静态更新表格中的数据
+                    saveEmrTlp(field, index);
+                });
+
+                submit.trigger('click');
+            }
+            , success: function (layero, index) {
+
+            }
+        });
+    }
+
+    function saveEmrTlp(field, index) {
+        $.post("../emrTlp/saveEmrTlp.jo", field, function (result) {
+            layer.close(index); //关闭弹层
+            if (result.code == "0") {
+                common.msg("保存成功!", 1, function () {
+                    table.reload('emrTlp'); //数据刷新
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        }, "json");
+    }
+
+    // 编辑电子病历属性
+    function editEmrTlp(emrTlp, saveAsFlag) {
+        var url = '../emrTlp/editEmrTlp.do?emrTlpId=' + emrTlp.emrTlpId + '&saveAsFlag=' + saveAsFlag;
+        console.log(emrTlp);
+        var title = emrTlp.emrTlpName;
+        if (saveAsFlag == '1') {
+            title += '（另存为）';
+        } else {
+            title += '（编辑）';
+        }
+        layer.open({
+            type: 2
+            , title: title
+            , content: url
+            , area: ['820px', '500px']
+            , btn: ['确定', '取消']
+            , scrollbar: true
+            , yes: function (index, layero) {
+                var iframeWindow = window['layui-layer-iframe' + index]
+                    , submitID = 'LAY-emr-submit'
+                    , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                //监听提交
+                iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                    var field = data.field; //获取提交的字段
+                    if (field.emrTlpType !== '2') {
+                        field.officeIdStr = '';
+                    }
+                    if (field.emrTlpType === '2' && field.officeIdStr === '') {
+                        layer.msg('请选择科室', {icon: 2});
+                        return;
+                    }
+                    //提交 Ajax 成功后，静态更新表格中的数据
+                    saveEmrTlp(field, index);
+                });
+
+                submit.trigger('click');
+            }
+            , success: function (layero, index) {
+
+            }
+        });
+    ## common.open(url, title, {area: ['40%', '400px']});
+    }
+
+    // 编辑电子病历模板内容
+    function editEmrTlpContent(emrTlp) {
+        var url = '$contextPath' + '/emrTlp/editEmrTlpContent.do?emrTlpId=' + emrTlp.emrTlpId;
+        var title = emrTlp.emrTlpName;
+        createMenuItem(title, url);
+    ## common.open(url, title, {area: ['99%', '99%']});
+    }
+
+    // 删除电子病历模板内容
+    function deleteEmrTlp(emrTlp) {
+        common.confirm("您确定要删除这个电子病历吗？", function () {
+            $.post('../emrTlp/deleteEmrTlp.jo', {emrTlpId: emrTlp.emrTlpId}, function (result) {
+                if (result.code == "0") {
+                    common.msg(result.msg, 1, function () {
+                        $('#btn_query').click();
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            }, "json");
+        });
+    }
+});
+
+//查询电子病历列表
+function queryData() {
+    $('#btn_query').click();
+}
+$(function () {
+
+    //将桌面选项卡名称改为 电子病历
+    $("a[data-id='home.html']", parent.document).text('电子病历');
+
+    // 初始化树形分类
+    var zTreeObj, setting = {
+        view: {
+            selectedMulti: false,
+            showIcon: false
+        },
+        async: {
+            enable: true,
+            url: "../emrTlp/getEmrTypeTree.jo",
+            dataType: "json",
+            autoParam: ["id"],
+            type: "POST"
+        },
+        callback: {
+            onAsyncSuccess: function (event, treeId, treeNode, msg) {
+
+            ## if(treeNode == undefined){
+            ##     treeNode = zTreeObj.getNodeByTId("tree_1");
+            ## }
+            ## zTreeObj.selectNode(treeNode, false, true);
+                if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+
+            },
+            onClick: function (event, treeId, treeNode) {
+                console.log(treeNode);
+                if (treeNode) {
+                    if (treeNode.isParent) {
+                        $("#isAdd").val(0);
+                    } else {
+                        $("#isAdd").val(1);
+                    }
+                    $("#emrTlpClassifyId").val(treeNode.emrTlpClassifyId);
+                    $("#emrTreeCode").val(treeNode.emrTreeCode);
+                    queryData();
+                }
+            }
+        }
+    };
+
+    zTreeObj = $.fn.zTree.init($("#emrTypeTree"), setting, []);
+
+
+});
+ </script>

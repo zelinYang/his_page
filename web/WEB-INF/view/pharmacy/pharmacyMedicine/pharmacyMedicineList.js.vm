@@ -1,0 +1,235 @@
+<script type="text/html" id="shareHospitalFlagTpl">
+    <input type="checkbox" lay-filter="shareHospitalFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="是|否" {{Boolean(+d.shareHospitalFlag) && 'checked' }} >
+</script>
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 列表表格 工具栏 结束-->
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+            class="layui-icon"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicPharmacyDispensingFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyDispensingFlag)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                pharmacyName: '',
+                pharmacyDispensingFlag: '',
+                westernMedicineFlag: '',
+                chineseMedicineFlag: '',
+                herbFlag: '',
+                shareHospitalFlag: '',
+                materialFlag: NO_FLAG,
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#pharmacy_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_pharmacyName").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('pharmacyListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('pharmacy_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/pharmacy/pharmacyMedicineAdd.do', '新增', {
+                area: ['99%', '99%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#pharmacyListGrid',
+            url: contextPath + '/pharmacy/pharmacyMedicinePageData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'pharmacyName',
+                    title: '药房',
+                    minWidth: 200
+                }, {
+                    field: 'pharmacyDispensingFlag',
+                    title: '库房类别',
+                    minWidth: 100,
+                    templet: function (d) {
+                        return dicPharmacyDispensingFlag[d.pharmacyDispensingFlag] || '';
+                    }
+                }, {
+                    field: 'pharmacyOfficeId',
+                    title: '科室二级库',
+                    minWidth: 100,
+                    templet: function (d) {
+                        return d.pharmacyOffice && d.pharmacyOffice.name || '';
+                    }
+                }, {
+                    title: '开放时间',
+                    minWidth: 150,
+                    templet: function (d) {
+                        return (d.openStartTime || '') + ' - ' + (d.openEndTime || '')
+                    }
+                }, {
+                    field: 'westernMedicineFlag',
+                    title: '西药权限',
+                    templet: function (d) {
+                        if (d.westernMedicineFlag == YES_FLAG) {
+                            return '<span style="color:red;">' + dicYesNo[d.westernMedicineFlag] + '</span>'
+                        } else {
+                            return dicYesNo[d.westernMedicineFlag] || '';
+                        }
+                    }
+                }, {
+                    field: 'chineseMedicineFlag',
+                    title: '中药权限',
+                    templet: function (d) {
+                        if (d.chineseMedicineFlag == YES_FLAG) {
+                            return '<span style="color:red;">' + dicYesNo[d.chineseMedicineFlag] + '</span>'
+                        } else {
+                            return dicYesNo[d.chineseMedicineFlag] || '';
+                        }
+                    }
+                }, {
+                    field: 'herbFlag',
+                    title: '草药权限',
+                    templet: function (d) {
+                        if (d.herbFlag == YES_FLAG) {
+                            return '<span style="color:red;">' + dicYesNo[d.herbFlag] + '</span>'
+                        } else {
+                            return dicYesNo[d.herbFlag] || '';
+                        }
+                    }
+                }, {
+                    field: 'shareHospitalFlag',
+                    title: '跨单位申领',
+                    templet: '#shareHospitalFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#pharmacy_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否跨单位申领事件
+        form.on('switch(shareHospitalFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../pharmacy/updatePharmacyShareHospitalFlag.jo', {
+                ids: data.pharmacyId,
+                shareHospitalFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../pharmacy/updatePharmacyValidFlag.jo', {
+                pharmacyIds: data.pharmacyId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(pharmacyListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open(contextPath + '/pharmacy/pharmacyMedicineAdd.do?pharmacyId=' + row.pharmacyId, '编辑', {
+                        area: ['99%', '99%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../pharmacy/deletePharmacy.jo', {
+                            pharmacyIds: row.pharmacyId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+    })
+</script>

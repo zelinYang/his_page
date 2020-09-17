@@ -1,0 +1,254 @@
+<script>
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)');
+    var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+    var dicFoodGuide = JSON.parse('$dicTools.changeMapToJson($dicData.dicFoodGuide)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return parent.getQueryParam();
+        }
+
+        function openDbClickBed(data){
+            parent.dbclickBed(data.inhospitalId, data.patientName);
+        }
+
+        /*住院患者列表*/
+        table.render($.extend(basePageTable, {
+            elem: '#inpatientInhospitalGrid',
+            height: 'full-10',
+            url: contextPath + '/inpatient/selectInpatientPatientPage.jo',
+            where: getQueryParams(),
+            cols: [[{
+                fixed: true,
+                align: 'center',
+                width: 60,
+                templet: '#operateFormatter',
+                event: 'open'
+            }, {field: 'currentBedNo', title: '床位号', width: 105, sort: true, fixed: true}, {
+                field: 'patientName',
+                title: '姓名',
+                width: 90,
+                sort: true,
+                fixed: true
+            }, {field: 'inhospitalNo', title: '住院号', width: 140}, {
+                field: 'inhospitalState',
+                title: '在院状态',
+                width: 130,
+                templet: function (row) {
+                    if (row.inhospitalState) {
+                        if (row.inhospitalState == "0" || row.inhospitalState == "1" || row.inhospitalState == "3") {
+                            return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                        } else {
+                            return dicInhospitalState[row.inhospitalState];
+                        }
+                    } else {
+                        return ""
+                    }
+                }
+            }, {
+                field: 'nurseLevel', title: '护理级别', width: 90, templet: function (row) {
+                    return dicNurseLevel[row.nurseLevel] || '';
+                }
+            }, {
+                field: 'nurseLevel', title: '待复核', width: 60, templet: function (row) {
+                    return row.pendingReview || '无';
+                }
+            }, {
+                field: 'nurseLevel', title: '待执行', width: 60, templet: function (row) {
+                    return row.pending || '无';
+                }
+            }, {
+                field: 'nurseLevel', title: '待复停', width: 60, templet: function (row) {
+                    return row.toBeStopped || '无';
+                }
+            }, {
+                field : 'healthCard',
+                title : '电子健康卡',
+                minWidth : 160,
+            }, {
+                field : 'socialSecurityCard',
+                title : '医保号',
+                minWidth : 160,
+            }, {field: 'visitCardNo', title: '就诊卡号', width: 180}, {
+                field: 'patientIdCard',
+                title: '身份证号',
+                width: 180
+            }, {
+                field: 'patientSex', title: '性别', width: 100, templet: '#sexTpl'
+            }, {field: 'patientAgeYear', title: '年龄', width: 80}, {
+                field: 'inhospitalDate',
+                title: '入院日期',
+                width: 180,
+                sort: true,
+                templet: function (row) {
+                    return util.toDateString(row.inhospitalDate);
+                }
+            }, {
+                field: 'currentOfficeName', title: '当前科室', width: 120
+            }, {
+                field: 'inpatientCondition', title: '患者情况', width: 90, templet: function (row) {
+                    return dicPatientCondition[row.inpatientCondition] || '';
+                }
+            }, {
+                field: 'foodGuide', title: '饮食情况', width: 90, templet: function (row) {
+                    return dicFoodGuide[row.foodGuide] || '';
+                }
+            }, {field: 'managerDoctorName', title: '主管医生', width: 90}, {
+                field: 'dutyNurserName',
+                title: '责任护士',
+                width: 90
+            }, {field: 'outOfficelDate', title: '转入时间', width: 105}, {
+                field: 'outOfficeName',
+                title: '转出科室',
+                width: 120
+            }, {field: 'allergyHistory', title: '过敏药物', width: 150}]]
+            ,done:function (res, curr, count) {
+                //randerPage(res, curr, count);
+                var that = this;
+                window.box = maillist(that);
+            }, maillist : {
+                templet: "#maillistTpl",
+                boxElem:'.layadmin-contact-box',//盒子元素
+                box: function (obj) {
+                    var data = obj.data;
+                    parent.listenerRow(data);
+                },
+                boxDouble: function (obj) {
+                    openDbClickBed(obj.data);
+                }
+            }
+        }))
+        //$("body").append($("#maillistTpl").html())
+
+        /**
+         * 根据性别、年龄获取头像
+         * @param sex 1 男， 2=女
+         * @param age 0-199
+         * @returns {string} 头像路径
+         */
+        window.jiatingPhoto = function(sex, age) {
+            var jiating = {//家庭成员
+                split:'_',//分割符
+                suffix:'.png',//后缀
+                dir: contextPath + '/resource/layuiadmin/style/myRes/',//绝对路径
+                sex : {//性别
+                    1 :'male',//男性
+                    2 :'female'//女性
+                },
+                age: function (age) {
+                    var ageType = {//年龄
+                        '^[0-9]$|^1[0-1]$': 'child',//儿童 0-11
+                        '^[1-5][2-9]$': 'midlife',//成人 12-59
+                        '^[6-9][0-9]$|^1[0-9]{2}$': 'elder'//老人 60-199
+                    }
+                    return $.map(ageType, function (key, val) {
+                        if(new RegExp(val).test(age)) {
+                            return key;
+                        }
+                    });
+                }
+            }
+            return jiating.dir + jiating.sex[sex] + jiating.split + jiating.age(age) + jiating.suffix;
+        }
+
+        /**
+         * 流式列表
+         * @param tableIns
+         * @param options = {
+         *     model 'table' |'fluid' 模式 原始表格和流式列表
+         *     templet 流式列表模板
+         *     boxElem 流式列表盒子元素
+         *     box 单击盒子事件 @param = {elem 盒子元素，data 盒子数据}
+         *     boxDouble 双击盒子事件 入参同单击事件
+         * }
+         * @returns {{elem: (*|jQuery), model: model, config}}
+         * config 配置
+         * elem 流式列表元素
+         * model 'table' |'fluid' 切换模式事件
+         */
+        function maillist(tableIns) {
+            var options = $.extend({model: tableIns.where.model || 'table'}, tableIns.maillist || {});
+            var FLUID_CLASS = 'fluid-box';//流式布局容器类
+            if(!tableIns || !options.templet) return ;
+            var data = table.cache[tableIns.id];
+            var view = $("#"+ tableIns.id).next('.layui-table-view');
+            var box = view.find('.layui-table-box');
+            view.children('.'+ FLUID_CLASS).remove();
+            var fluid = $(layui.laytpl($(options.templet).html()).render(data)).prependTo(view).addClass(FLUID_CLASS);
+            //样式：滚动条
+            fluid.css({'overflow-y': 'auto'});
+            $(window).resize(function () {
+                //设置动态高度
+                fluid.height(tableIns.height - (tableIns.page ? view.find('#' + tableIns.page.elem).height() : 0) - 30)
+            }).resize();
+            //监听行单击双击事件
+            fluid.find(options.boxElem).on('click dblclick', function (e) {
+                var index = $(this).index(options.boxElem);
+                $(this).addClass('box-selected').parent().siblings().find(options.boxElem).removeClass('box-selected');
+                switch (e.type) {
+                    case 'click':
+                        options.box && options.box({
+                            elem: fluid,
+                            data: data[index]
+                        }).call(this);
+                        break;
+                    case "dblclick":
+                        options.box && options.boxDouble({
+                            elem: fluid,
+                            data: data[index]
+                        });
+                        break;
+                }
+            });
+            var obj = {
+                config: options,
+                elem: fluid,
+                model: function (type) {//切换模式
+                    tableIns.where.model = type;
+                    switch (type) {
+                        case 'table':
+                            fluid.hide();
+                            box.show();
+                            break;
+                        case 'fluid':
+                            box.hide();
+                            fluid.show();
+                            break;
+                    }
+                }
+            };
+            obj.model(options.model);
+            return obj;
+        }
+
+        //表格双击事件 详情
+        table.on('rowDouble(inpatientInhospitalGrid)', function (obj) {
+            openDbClickBed(obj.data)
+        })
+
+        //监听行单击事件（单击事件为：rowDouble）
+        table.on('row(inpatientInhospitalGrid)', function(obj){
+            var data = obj.data;
+            parent.listenerRow(data);
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //监听行工具事件
+        table.on('tool(inpatientInhospitalGrid)', function(obj){
+            var layEvent = obj.event; //获得 lay-event 对应的值
+            console.log(obj)
+            if (layEvent === "open") {
+                openDbClickBed(obj.data)
+            }
+        });
+    })
+</script>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<beans xmlns="http://www.springframework.org/schema/beans"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns:jee="http://www.springframework.org/schema/jee"
+         xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-2.5.xsd
+           http://www.springframework.org/schema/jee http://www.springframework.org/schema/jee/spring-jee-2.5.xsd"
+         default-lazy-init="true"
+           >
+
+    <bean class="cn.com.sso.common.util.InstallPropertyEditors" />
+
+    <bean id="springDataSourcePrefix" class="cn.com.sso.common.util.SpringDataSourcePrefix">
+        <property name="dataSourceName"><value>${jdbc.dataSourceName}</value></property>
+    </bean>
+
+    <bean id="dataSource" class="org.springframework.jndi.JndiObjectFactoryBean">
+        <property name="jndiName"><ref bean="springDataSourcePrefix"/></property>
+    </bean>
+
+    <bean id="jdbcTransactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+
+    <bean id="simpleJdbcTemplate" class="cn.com.base.database.dao.impl.SimpleJdbcTemplate">
+        <property name="dataSource" ref="dataSource"/>
+        <property name="skipResultsProcessing"><value>true</value></property>
+    </bean>
+
+</beans>

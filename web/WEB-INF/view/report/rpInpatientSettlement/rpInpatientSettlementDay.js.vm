@@ -1,0 +1,168 @@
+<script>
+	var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'form', 'table', 'util'], function () {
+		var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+		//常规用法
+        laydate.render({
+            elem: '#q_settlementTime',
+            max:0,
+            value:new Date() ,
+            done: function(value){
+                initLoad(value);
+            }
+        });
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			return $.extend({
+				keyWord: '',
+                prepayDate: $('#q_settlementTime').val(),
+                settlementTime: $('#q_settlementTime').val(),
+			}, common.serializeObject($('#inpatientSettlement_queryForm')));
+		}
+
+        $("#btn_query_rpInpatientSettlement").click(function () {
+            initLoad();
+        })
+		var initLayout;
+		initLayout = function () {
+			$('#container').layout({
+				east__size: '50%'//pane的大小
+				, togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				, togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。
+				, spacing_open: 8//边框的间隙
+				, maskIframesOnResize: ".resizeiframe"
+			});
+		}
+		initLayout();
+
+		// 获取表格高度
+		function getTableHgt() {
+			return $('body').height() - $('#queryForm').height() - $('#inpatientSettlement_queryForm').height() - $('.tool-bottom-fixed').height() - 85;
+		}
+
+		// 查询按钮
+		$('#btn_query').click(function () {
+			var queryParams = getQueryParams();
+			if (!queryParams.settlementTime) return;
+			//执行重载
+			table.reload('inhospitalPayInListGrid', {
+				url: '../inpatient/inhospitalPayInPageData.jo',
+				where: queryParams
+			});
+			//执行重载
+			table.reload('inpatientSettlementListGrid', {
+				url: '../inpatient/selectInpatientSettlementPage.jo',
+				where: queryParams
+			});
+		})
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('inpatientSettlement_queryForm');
+		})
+		//表格设置
+		table.render($.extend({}, basePageTable, {
+			elem: '#inhospitalPayInListGrid',
+			height: getTableHgt()
+			, data: [],
+			cols: [[
+				{field: 'prepayReceiptNo', title: '收据号码', width: '80'}
+				, {field: 'inhospitalId', title: '住院号码', width: '80'}
+				, {field: 'patientName', title: '姓名', width: '80'}
+				, {
+					field: 'selfPrepayInWay', title: '付款方式', width: '80',
+					templet: function (row) {
+						return dicPaymentMethod[row.selfPrepayInWay] || '';
+					}
+				}
+				, {
+					field: 'prepayDate', title: '缴款日期', width: '140', templet: function (row) {
+						return row.prepayDate ? util.toDateString(row.prepayDate, 'yyyy-MM-dd HH:mm') : '';
+					}
+				}
+				, {field: 'prepaySum', title: '缴款金额', width: '80'}
+				, {
+					field: 'operPrepayUserName', title: '收款员', width: '80'
+			}
+				]]
+		}));
+		//表格设置
+		table.render($.extend({}, basePageTable, {
+			elem: '#inpatientSettlementListGrid',
+			height: getTableHgt()
+			, data: [],
+			cols: [[
+				{type: 'numbers'},
+				{
+					title: '发票号码',
+					field: 'feeBillNo',
+					width: '80'
+				},
+				{
+					title: '姓名',
+					field: 'patientName',
+					width: '80'
+				},
+                {
+                    title: '结算日期',
+                    field: 'settlementTime',
+                    width: '240',
+                    templet: function (row) {
+                        return row.settlementTime ? util.toDateString(row.settlementTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                },
+				{
+					title: '金额',
+					field: 'actualChargeAmount',
+					sort: true,
+					width: '80'
+				}, {
+                    field: 'operUserName', title: '收款员', width: '80'
+                }]]
+		}));
+
+		function initLoad(settlementTime) {
+			settlementTime = settlementTime || $('#q_settlementTime').val();
+			if (!settlementTime) return;
+			$('#btn_query').click();
+			var emrTlpId = $("#emrTlpId").val();
+			loadEmrTlp(emrTlpId, settlementTime);
+		}
+
+		initLoad();
+
+		//加载电子病历编辑iframe
+		function loadEmrTlp(emrTlpId, settlementTime) {
+			if (!emrTlpId) {
+				common.alert('没有电子病历模板')
+				return;
+			}
+			var params = "emrTlpId=" + emrTlpId + "&view=patient/emr/commonEmrPreview&serviceId=$!serviceId&createTime=" + settlementTime;
+            common.openLoad();
+			$("#emrShow").attr("src", contextPath + '/emr/commonEmrTemplate.do?' + params).load(function () {
+				common.closeLoad();
+			});
+		}
+
+		//监听行双击事件
+		table.on('rowDouble(inhospitalPayInListGrid)', function (obj) {
+			var data = obj.data;
+			top.common.open('$contextPath' + '/inpatient/inhospitalPayInSelectList.do?outpatientFeeId=' + data.outpatientFeeId, '住院费用详情（' + data.patientName + '）', {
+				area: ['90%', '90%'],
+				scroll: true
+			})
+		});
+
+		// 重置表格高度
+		$(window).resize(function () {
+			table.reload('inpatientSettlementListGrid', {
+				height: getTableHgt()
+			});
+		})
+	})
+</script>

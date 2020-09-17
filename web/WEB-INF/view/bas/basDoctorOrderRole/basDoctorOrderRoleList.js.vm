@@ -1,0 +1,155 @@
+<script type="text/html" id="specialMedicineTpl">
+    {{# layui.each(d.basDoctorOrderRoles,function(index, basDoctorOrderRole){ }}
+    {{# if(basDoctorOrderRole.medicineRecipeClassify) { }}
+    <button class="layui-btn layui-btn-xs layui-btn-normal">
+        {{dicSpecialMedicine[basDoctorOrderRole.medicineRecipeClassify] || ''}}
+        {{# if(basDoctorOrderRole.antibioticGen || basDoctorOrderRole.specialMedicineLevel) { }}
+        <span>({{dicAntibioticLevel[basDoctorOrderRole.antibioticGen] || ''}}{{dicSpecialMedicineLevel[basDoctorOrderRole.specialMedicineLevel] || ''}})</span>
+        {{# } }}
+    </button>
+    {{# } }}
+    {{# }) }}
+</script>
+<script>
+    var MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN = "$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN}";
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)')
+    var dicSpecialMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicine)')
+    var dicSpecialMedicineLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicineLevel)')
+    var dicAntibioticLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticLevel)')
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#basDoctorOrderRole_queryForm').height());
+        }
+
+        // 获取查询单参数对象
+        function getQueryParams() {
+            return $.extend({
+                doctorName: '',
+                doctorPost: '',
+                medicineRecipeClassify: ''
+            }, common.serializeObject($('#basDoctorOrderRole_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basDoctorOrderRoleListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basDoctorOrderRole_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/bas/basDoctorOrderRoleEdit.do', '医生开处方权限（特殊药品）', {
+                area: ['80%', '80%']
+            })
+        })
+
+        //格
+        table.render($.extend(basePageTable, {
+            elem: '#basDoctorOrderRoleListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basDoctorOrderRoleByDoctorListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'doctorName',
+                minWidth: 120,
+                title: '医生',
+                templet: function (d) {
+                    return d.doctorName + (dicDoctorPost[d.doctorPost] ? "(" + (dicDoctorPost[d.doctorPost] || "") + ")" : '');
+                }
+            }, {
+                field: 'medicineRecipeClassify',
+                title: '特殊药品',
+                minWidth: 600,
+                templet: "#specialMedicineTpl"
+            }, {
+                field: 'recipeFlag',
+                title: '开处方和医嘱的权限',
+                templet: '#recipeFlagTpl',
+                width: 120,
+                unresize: true,
+                align: 'center',
+                fixed: 'right'
+            }, {
+                title: '操作',
+                width: 120,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]],
+            done: function () {
+            }
+        }));
+
+        //监听开处方和医嘱的权限
+        form.on('switch(recipeFlag)', function (obj) {
+            common.requestServer('../bas/basDoctorOrderRoleUpdateRecipeFlag.jo', {
+                doctorId: obj.value,
+                recipeFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../bas/basDoctorOrderRoleUpdateValidFlag.jo', {
+                doctorId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basDoctorOrderRoleListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open(contextPath + '/bas/basDoctorOrderRoleShow.do?doctorId=' + row.doctorId, '医生开处方权限（特殊药品）详情：' + row.doctorName, {
+                        area: ['80%', '80%']
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open(contextPath + '/bas/basDoctorOrderRoleEdit.do?doctorId=' + row.doctorId, '医生开处方权限（特殊药品）：' + row.doctorName, {
+                        area: ['80%', '80%']
+                    })
+                    break;
+
+                case 'btn_delete':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServerHandler(contextPath + '/bas/delBasDoctorOrderRoleByDoctorIds.jo', {doctorIds: row.doctorId}, "删除成功", function (result) {
+                            obj.del();
+                        })
+                    });
+                    break;
+            }
+        });
+
+        // 重置格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('basDoctorOrderRoleListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>
+

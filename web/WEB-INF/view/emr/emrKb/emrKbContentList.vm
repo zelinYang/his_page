@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .f-input {height: 38px}
+    .page-content-side.layui-bg-white .dtree{width: unset;}
+    .dtree-toolbar-tool {padding: 15px 30px}
+    .layui-form-pane .layui-form-label {width: 100px;}
+    .layui-form-pane .layui-input-block {margin-left: 100px; margin-top: 5px}
+
+    .layui-fluid { display: flex}
+    .page-content-side { width: 200px; border: #e1e1e1 1px solid; height: calc(100% - 3px);}
+    .page-content-side h5 { padding:9px;}
+    .page-content { width: calc(100% - 207px); margin-left: 5px; flex-grow: 1; background-color: #fff;}
+    .layui-inline { margin-bottom: 9px; }
+
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <div class="page-content-side layui-bg-white full-scroll" id="kbTypeTreeDiv">
+                <h5>
+                    <i class="dtreefont dtree-theme-dtreefont dtree-theme-ficon dtree-icon-jian"></i>
+                    <i class="dtreefont dtreefont-special dtree-theme-dtreefont dtree-theme-icon dtree-icon-wenjianjiazhankai"></i>
+                   <span>模板分类 ( 右键编辑 )</span>
+               </h5>
+                <ul id="kbTypeTree" class="dtree" data-id="0"></ul>
+            </div>
+            <div class="page-content">
+                #formHiddenInput("kbTypeCode" "" "id='kbTypeCode'")
+                <form class="layui-form " id="queryForm">
+                    #formHiddenInput("kbTypeId" "" "id='kbTypeId'")
+                  <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">模板类型</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("kbTypeName" "" "id='kbTypeName' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">模板名称</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("kbName" "" "class='layui-input' placeholder='请输入模板名称'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">模板内容</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("kbContent" "" "class='layui-input' placeholder='请输入模板内容'")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group">
+                         <button class="layui-btn layui-btn-sm" type="button" id="btn_query" title="查 询"> <i class="layui-icon layui-icon-search"></i> </button>
+                         <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" id="btn_clean" title="清 空"> <i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                    </div>
+                  </div>
+                </form>
+                <!--搜索条件 结束-->
+                <table id="emrKbContentList" lay-filter="emrKbContentList" class="layui-hide" style="width: 1200px"></table>
+
+            </div>
+        </div>
+    </div>
+</body>
+<script type="text/html" id="operateBar">
+    <a class="layui-btn layui-btn-xs" title="编辑" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" title="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./common/pageJs.vm")
+#parse("./emr/emrKb/emrKbContentList.js.vm")
+</html>

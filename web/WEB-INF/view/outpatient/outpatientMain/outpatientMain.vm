@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊医生工作区</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outpatientMain.css.vm")
+    #parse("./outpatient/outpatientMain/outpatientMain.js.vm")
+    #set($hrefNo = 'href="javascript:;"')
+    #set($patient = 'patient="must"')
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+
+<body>
+<div class="main">
+    <!-- 顶部导航 -->
+    <div class="nav-top">
+        <ul class="layui-nav layui-bg-blue workNav" lay-filter="workNav">
+            <!--
+
+                #set($maintenance = 'model="maintenance"')
+                <li class="layui-nav-item">
+                    <a href="javascript:;" tab="maintenance" >用户维护</a>
+                    <dl class="layui-nav-child">
+                        <dd><a $hrefNo $maintenance onclick="passwordEdit();" >维护密码</a></dd>
+                        <dd><a $hrefNo $maintenance>维护个人文本模板</a></dd>
+                        <dd><a $hrefNo $maintenance lay-id="outInspectGroup" url="$contextPath/bas/outInspectGroup.do">个人检验模板</a></dd>
+                    </dl>
+                </li>
+                <li class="layui-nav-item" nav-id="endVisit">
+                    <a $hrefNo onclick="endVisit();">就诊结束</a>
+                </li> -->
+
+        </ul>
+    </div>
+
+    <!-- 就诊面板 model -->
+    <div class="work panel">
+        <!-- 就诊患者信息 -->
+        <div class="visit-patient">
+            <table class="reg_patient_info ">
+                <tr>
+                    <th><span id="lowIncomeFlag" class="layui-badge" style="display: none;">贫困户</span><span>姓名：</span></th>
+                    <td><span class="patientName" onclick="showPatientInfo();"></span></td>
+                    <th><span>性别：</span></th>
+                    <td><span class="patientSexText"></span></td>
+
+                    <th><span>年龄：</span></th>
+                    <td><span class="patientAge"></span></td>
+                    <th><span>地址：</span></th>
+                    <td><span class="patientAddr"></span></td>
+
+                    <th><span>性质：</span></th>
+                    <td><span class="patientKindText"></span></td>
+                </tr>
+                <tr>
+                    <th><span>电子健康卡：</span></th>
+                    <td><span class="healthCard"></span></td>
+                    <th><span>医保号：</span></th>
+                    <td><span class="socialSecurityCard"></span></td>
+                    <th><span>就诊卡号：</span></th>
+                    <td><span class="visitCardNo"></span></td>
+                    <th style="text-align: right;"><span>过敏：</span></th>
+                    <td>
+                        <div class="drugAllergy-area layui-hide">
+                            <div class="drugAllergy">无过敏</div>
+                            <a $hrefNo onclick="editDrugAllergy();"><i class="layui-icon layui-icon-edit"></i></a>
+                        </div>
+                    </td>
+                    <th style="text-align: right;"><span>诊断：</span></th>
+                    <td>
+                        <div class="firstDiagnosis" onclick="tabChange(mainTab.layFilter, 'outpatientDiagnose');"></div>
+                    </td>
+                    <th style="text-align: right;"><span>诊疗费用：</span></th>
+                    <td>
+                        <span class="fee"></span>元
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <!-- 工作区 -->
+        <div class="main-work">
+            <div id="container">
+                <div class="layui-form ui-layout-center">
+                    <!-- 中间导航nav -->
+                    <div class="outTab full-height overflow-y-h overflow-x-h" id="component-tabs">
+                        <div class="layui-tab layui-tab-card blod white-bg outNav" lay-filter="outNav"
+                             lay-allowclose="true">
+                            <!-- 主页导航名称 -->
+                            <ul class="layui-tab-title">
+                                <li lay-id="regPatient" class="layui-this">患者列表</li>
+                                <li lay-id="outpatientEmr" $patient>门诊病历</li>
+                                <li lay-id="outpatientDiagnose" $patient>诊断</li>
+                                <li lay-id="medicineRecipe" $patient>处方</li>
+								<li lay-id="tcmRecipe" $patient>草药</li>
+                                <li lay-id="tech" $patient>医技申请</li>
+                                <li lay-id="techReport" $patient>报告查阅</li>
+                                <li lay-id="treatApply" $patient>治疗申请</li>
+                                <li lay-id="outAppoint" $patient>诊间预约</li>
+                                <li lay-id="medicalDoc" $patient>医疗文书</li>
+                                <li lay-id="consultationApply" $patient>院内会诊申请</li>
+                                <li lay-id="inhosApply" $patient>住院申请</li>
+                            </ul>
+
+                            <!-- 导航内容 根据index对应li -->
+                            #set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+                            <div class="layui-tab-content" style="height: calc(100% - 32px);">
+                                <div lay-id="regPatient" class="layui-tab-item layui-show full-height">
+                                    <iframe src="../outpatient/regPatientList.do" $iframeAttr ></iframe>
+                                </div>
+                                <div lay-id="outpatientEmr" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="outpatientDiagnose" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="medicineRecipe" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+								<div lay-id="tcmRecipe" class="layui-tab-item">
+									<iframe src="" $iframeAttr></iframe>
+								</div>
+                                <div lay-id="tech" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="techReport" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="treatApply" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="outAppoint" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="medicalDoc" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="consultationApply" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                                <div lay-id="inhosApply" class="layui-tab-item">
+                                    <iframe src="" $iframeAttr></iframe>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- 中间导航nav end -->
+                </div>
+                <div class="ui-layout-east">
+                    <div class="layui-tab layui-tab-card blod full-height outRightNav" id="outRightNav" lay-filter="outRightNav">
+                        <!-- 主页导航名称 -->
+                        <ul class="layui-tab-title" id="rightTitle">
+                            <li lay-id="1" href="$contextPath/outpatient/emrTplOut.do" class="layui-this">病历模板</li>
+                            <li lay-id="2" href="$contextPath/outpatient/outpatientEmrHistoryMaster.do">历史病历</li>
+                            <li lay-id="3" href="$contextPath/outpatient/recipeCoalition.do">处方</li>
+                            <li lay-id="4" href="$contextPath/outpatient/medicalPercentStats.do">药占比</li>
+                            <li lay-id="5">特殊字符</li>
+                        </ul>
+                        <!-- 导航内容 根据index对应li -->
+                        <div class="layui-tab-content" id="rightContent">
+                            #set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+                            <div lay-id="1" class="layui-tab-item layui-show">
+                                <iframe targetSrc="$contextPath/outpatient/emrTplOut.do" class="resizeiframe"
+                                        regActive $iframeAttr></iframe>
+                            </div>
+                            <div lay-id="2" class="layui-tab-item">
+                                <iframe id="historyEmr" regActive $iframeAttr></iframe>
+                            </div>
+                            <div lay-id="3" class="layui-tab-item layui-this">
+                                <iframe regActive $iframeAttr></iframe>
+                            </div>
+                            <div lay-id="4" class="layui-tab-item">
+                                <iframe $iframeAttr></iframe>
+                            </div>
+                            <div lay-id="5" class="layui-tab-item">
+                                <div class="layui-row specilChar">
+                                    ⅠⅡⅢⅣⅤⅥⅦⅧⅨⅩ ⑴⑵⑶⑷⑸⑹⑺⑻⑼⑽ ①②③④⑤⑥⑦⑧⑨⑩㈠㈡㈢㈣㈤㈥㈦㈧㈨㈩*↑↓←→∏±≈≠≤≥＋－×÷∫∮∝∞∧∨ ∑∩∪∈
+                                    ≌∽￥℃αβγδεζηθικλμνξοπρστυφχψω一二三四五六七八九十E㎏㎎㎡㎝㎜‰％
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div><!-- ui-layout-east  -->
+            </div>
+        </div>
+
+
+    </div>
+
+    <!-- 维护面板 model -->
+    <div class="maintenance panel layui-hide">
+        <iframe src="$contextPath/outpatient/outMaintenance.do" $iframeAttr></iframe>
+    </div>
+
+</div> <!-- main  -->
+    #parse("./outpatient/outpatientMain/mainNav.js.vm")
+</body>
+</html>

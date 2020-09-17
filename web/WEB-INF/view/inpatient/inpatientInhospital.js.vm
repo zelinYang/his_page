@@ -1,0 +1,124 @@
+<script type="text/javascript">
+
+
+var getInfo=window.location.search.slice(window.location.search.lastIndexOf("?")+1);
+console.log(getInfo+"getinfo8")
+var pat = getInfo.split("&");
+
+
+layui.use('element', function(){
+        var $ = layui.jquery, element = layui.element;
+        
+        // 初始化时间查询控件
+        laydate.render({elem: '#dateRange' ,range: true });
+        //  根据床号号检索患者
+        $('#currentBedNo').change(function (){
+            var table = $('#table_' + $(this).val());
+            if (!table || $(this).attr('class') == 'bed_info tableSelected') {
+                return ;
+            }
+            $(table).click();
+        });
+
+        // 根据姓名检索患者
+        $('#patientName').change(function (){
+            var table = $('#table_' + $(this).val());
+            if (!table || $(this).attr('class') == 'bed_info tableSelected') {
+                return ;
+            }
+            $(table).click();
+        });
+         // 根据住院号检索患者
+        $('#inhospitalNo').change(function (){
+            var table = $('#table_' + $(this).val());
+            if (!table || $(this).attr('class') == 'bed_info tableSelected') {
+                return ;
+            }
+            $(table).click();
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function (){
+            var dateRange = $('#dateRange').val();
+            if (dateRange) {
+                var item = dateRange.split(' - ');
+                if (item[0]) {
+                    $('#inhospitalDateBegin').val(item[0]);
+                }
+                if (item[1]) {
+                    $('#inhospitalDateEnd').val(item[1]);
+                }
+            }
+            $('#queryForm').submit();
+        });
+
+        // 清空查询条件按钮
+        $('#btn_clean').click(function (){
+            common.cleanForm('queryForm');
+        });
+
+         // 选中住院患者
+        $('#tableList > table').click(function (){
+            $('#tableList > table').each(function (){
+                $(this).attr('class', 'bed_info');
+            });
+            $(this).attr('class', 'bed_info tableSelected');
+
+            $('#patientName').val($(this).attr('data-id'));
+            $("#patientName").trigger("chosen:updated");
+            $('#inhospitalNo').val($(this).attr('data-id'));
+            $("#inhospitalNo").trigger("chosen:updated");
+            $('#currentBedNo').val($(this).attr('data-id'));
+            $("#currentBedNo").trigger("chosen:updated");
+        });
+
+        
+
+        // 监听左边工具栏按钮点击事件
+        $('#tools_btn > li > a').click(function (){
+            var table = $('table.tableSelected');
+        });
+        
+
+        // 监听选项卡切换事件
+        element.on('tab(inpatient)', function(data){
+            if (data.index == 0) {
+                return ;
+            }
+            var _iframe = $('#iframe_' + $(this).attr('lay-id'));
+            if (_iframe) {
+                _iframe.height(_iframe.parent().parent().height() - 5);
+            }
+        });
+
+        // 监听列表头部快捷按钮
+        $('#shortcutBtn > button').click(function (){
+            var tabId = $(this).attr('id');
+            var table = $('table.tableSelected');
+            var dataId = $(table).attr('data-id');
+            var url = ($(this).attr('page-url') ? $(this).attr('page-url') + "inhospitalId=" + dataId : "");
+            if ($('li[lay-id="' + tabId + '"]').attr('lay-id')) {
+                $('#iframe_' + tabId).attr('src', url);
+                element.tabChange('inpatient', tabId);
+                return ;
+            }
+
+            if ($(this).attr('has-param') && !dataId) {
+                common.alert('请选择患者', 0);
+                return ;
+            }
+            if (url) {
+                element.tabAdd('inpatient', {
+                  title: $(this).text(), 
+                  id: tabId,
+                  content: '<iframe id="iframe_' + tabId + '" width="100%" height="100%" scrolling="no" frameBorder="0" class="larry-iframe" src="' + url + '"></iframe>'
+                });
+                // 切换到新增的选项卡
+                element.tabChange('inpatient', tabId);
+            }
+        });
+
+        // 隐藏第一个选项卡的关闭图标
+        $('#tabList > li:first > i').hide();
+    });
+</script>

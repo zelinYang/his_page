@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>行政区域</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-select dl {
+            max-height: 220px;
+        }
+
+        .layui-form-label {
+            width: 90px;
+        }
+
+        .layui-table th,.layui-table tr {
+            text-align: center;
+        }
+        .choose {
+            position: absolute;
+            right: 8px;
+            top: 8px;
+            cursor: pointer;
+        }
+
+        #parendRegionId {
+            position: absolute;
+            top: 0;
+            background-color: transparent;
+            pointer-events: none;
+            color: red;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<form class="layui-form" id="basRegionForm" style="padding: 20px 0 0 0;">
+    #formHiddenInput("regionIdOld" "$!{basRegion.regionId}" "")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">上级行政区域</label>
+            <div class="layui-input-inline ">
+                #formTextInput("" "$!{parendBasRegion.regionName}" " maxlength='40' autocomplete='off'
+                id='parentRegionName' disabled class='layui-input' style='padding-right: 32px;font-weight: bold;'")
+                <i class="layui-icon layui-icon-more choose" title="选择行政区域"></i>
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()行政区域标识</label>
+            <div class="layui-input-inline">
+                #if($!{basRegion.regionId})
+                    #set($regionId = $!{basRegion.regionId})
+                #else
+                    #set($regionId = $!{parendBasRegion.regionId})
+                #end
+                #formFloInput("regionId" "$!{regionId}" " maxlength='12'
+                id='regionId' autocomplete='off' lay-verify='required' class='layui-input'")
+                #formTextInput("" "$!{parendBasRegion.regionId}" "id='parendRegionId' disabled class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()行政区域代码</label>
+            <div class="layui-input-inline">#formNotInChineseInput("regionCode" "$!{basRegion.regionCode}" "
+                maxlength='20' autocomplete='off' lay-verify='required' class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()行政区域名称</label>
+            <div class="layui-input-inline ">#formTextInput("regionName" "$!{basRegion.regionName}" " maxlength='40'
+                autocomplete='off' lay-verify='required' id='regionName' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">经度</label>
+            <div class="layui-input-inline">#formFloInput("longitude" "$!{basRegion.longitude}" " maxlength='18'
+                autocomplete='off' placeholder='' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">纬度</label>
+            <div class="layui-input-inline">#formFloInput("latitude" "$!{basRegion.latitude}" " maxlength='18'
+                autocomplete='off' placeholder='' class='layui-input'")
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+
+        <div class="layui-inline">
+            <label class="layui-form-label">邮政编码</label>
+            <div class="layui-input-inline">#formFloInput("zipCode" "$!{basRegion.zipCode}" " maxlength='18'
+                autocomplete='off' placeholder='' class='layui-input'")
+            </div>
+        </div>
+        #if(${basRegion})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-inline" id="validFlag">#formRadioGroup("validFlag" "$!{basRegion.validFlag}"
+                ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+            </div>
+        </div>
+        #end
+    </div>
+
+    <blockquote class="layui-elem-quote layui-quote-nm" id="tips">
+        <i class="layui-icon layui-icon-tips" lay-tips="统计用区划代码编制规则"></i>
+        统计用区划代码由1～12位代码构成，其各代码表示为：
+        <table class="layui-table">
+            <thead>
+            <tr>
+                <th></th>
+                <th>省级</th>
+                <th>地级</th>
+                <th>县级</th>
+                <th>乡级</th>
+                <th>村级</th>
+            </tr>
+            </thead>
+            <tbody>
+
+            <tr>
+                <td>名称</td>
+                <td id="provincial_name"></td>
+                <td id="prefecture_name"></td>
+                <td id="county_name"></td>
+                <td id="township_name"></td>
+                <td id="village_name"></td>
+            </tr>
+            <tr>
+                <td>代码</td>
+                <td id="provincial_code">00</td>
+                <td id="prefecture_code">00</td>
+                <td id="county_code">00</td>
+                <td id="township_code">000</td>
+                <td id="village_code">000</td>
+            </tr>
+            </tbody>
+        </table>
+    </blockquote>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+</form>
+#parse("./bas/basRegion/basRegionEdit.js.vm")
+</body>
+</html>

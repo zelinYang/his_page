@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>药房入库汇总</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-table { margin: 0;}
+        .layui-tab-card > .layui-tab-title li { background-color: #ddd; }
+        .layui-tab-card > .layui-tab-title li.layui-this{ font-weight: bold; background-color: #1c8ee2; color: #fff;}
+        .layui-tab-card {  border-radius: 0; margin: 0; box-shadow: initial}
+        .layui-tab-card > .layui-tab-title .layui-this:after { border-width: 0;}
+        .layui-table-header div.layui-table-cell{
+         text-align: left;
+          }
+        .error-field{
+			background-color: red;
+			color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-show-md-inline">
+            <form class="layui-form" id="queryForm">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        #formHiddenInput("drugstorePerStockId" "$!{drugstorePerStock.drugstorePerStockId}" "id='drugstorePerStockId'")
+						<div class="layui-inline">
+							<label class="layui-form-label">药库名称</label>
+							<div class="layui-input-inline">
+                                #formTextInput("" "$!{drugstorePerStock.drugstoreName}" "class='layui-input' readonly")
+							</div>
+						</div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">药品名称</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("medicineName" "" "id='medicineName' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">类型</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("medicineType" "" ${dicData.dicMedicineType} "" "")
+                            </div>
+                        </div>
+
+                        <div class="layui-inline layui-btn-group">
+                            <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询" title="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        </div>
+						<div class="layui-inline">
+							<button type="button" id="btn_confirm" class="layui-btn layui-btn-sm" lay-tips="确认盘点" title="确认盘点">确认盘点</button>
+						</div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="layui-tab layui-tab-card  white-bg">
+            <table id="itemTable" class="layui-table" lay-filter="itemTable"></table>
+        </div>
+    </div>
+</div>
+</body>
+    #parse("./drugstore/drugstorePerStock/drugstorePerStockItemList.js.vm")
+
+</html>

@@ -1,0 +1,120 @@
+
+<script>
+	layui.config({
+		base : '../resource/layuiadmin/' //静态资源所在路径
+	}).use([ 'form','table','laydate' ], function() {
+		var $ = layui.$, form = layui.form,table = layui.table,laydate = layui.laydate
+
+        function renderTable(resultData){
+            table.render({
+            elem: '#table'
+            ,height: 312
+            ,page: true //开启分页
+            ,cols: [[ //表头
+        {field: 'label', title: '单位ID', width: 200}
+            , {field: 'aac001', title: '人员ID', width: 200}
+            , {field: 'aaz217', title: '人员医疗就诊事件ID', width: 200}
+            , {field: 'ykb065', title: '执行社会保险办法', width: 200}
+            , {field: 'aka130', title: '支付类别', width: 200}
+            , {field: 'aae030', title: '门诊时间', width: 200}
+            , {field: 'aka120', title: '病种编码', width: 200}
+            ]],
+            data:resultData
+        });
+        }
+
+		// 查询按钮
+		$('#btn_query').click(function () {
+
+            var loading = layer.load(1);
+			var param = serializeForm($('#queryForm'));
+			var url = 'http://localhost:8089/gxp_mi_settlement/medicalInsurance/call/';
+			request(url,param,loading);
+		})
+
+        function request(url,param,loading){
+            JSON.stringify(param);
+            var paramInput = {"input":param};
+            $.ajax({
+                type : "POST",
+                url : url+"${tradeCode}",
+                contentType: "application/json;charset=utf-8",
+                dataType : "json",
+                ajaxOptions: {
+                xhrFields: { //跨域
+                    withCredentials: true
+                },
+                    crossDomain: true
+                },
+                data: JSON.stringify(paramInput),
+                async : false,
+                success : function(result) {
+                if(result.code < 0){
+                    common.alert(result.msg,3)
+                    layer.close(loading);
+                }else{
+                    var rowsList = [];
+                    if(result.data.output == null || result.data.output.length == 0){
+                        renderTable("");
+                        layer.close(loading);
+                    }else{
+                        rowsList.push(result.data.output.sqldata.rows);
+
+                        var rows = [];
+                        for(var i=0;i<rowsList.length;i++){
+                            rows.push(rowsList[i].row)
+                        }
+
+                        renderTable(rows);
+                        formInit(result.data.output);
+                        layer.close(loading);
+                    }
+            }
+
+            },error:function(result){
+                layer.close(loading);
+            }
+
+        });
+
+    }
+
+    function formInit(formData){
+            form.val("formInfo",
+            formData
+        )
+    }
+
+	});
+
+
+
+    function serializeForm(form, arrayDateId) {
+            var o = {};
+            $.each(form.serializeArray(), function(index) {
+
+            if (o[this['name']]) {
+            o[this['name']] = o[this['name']] + "," + this['value'];
+        } else {
+            o[this['name']] = this['value'];
+        }
+    });
+
+    // 处理日期查询条件
+    if (arrayDateId && arrayDateId.length > 0) {
+    var obj = {};
+    for (var i = 0; i < arrayDateId.length; i++) {
+    var dateEle = $(form).find('#' + arrayDateId[i]);
+    if (!dateEle || dateEle.val() == '') { continue; }
+
+    var tag = dateEle.attr('tag').split(',');
+    var arrayDate = dateEle.val().split(" - ");
+    obj[tag[0]] = ((arrayDate[0] != "" && arrayDate[0] != undefined) ? arrayDate[0] : "");
+    obj[tag[1]] = ((arrayDate[1] != "" && arrayDate[1] != undefined) ? arrayDate[1] : "");
+}
+    $.extend(o, obj);
+}
+    return o;
+};
+
+</script>

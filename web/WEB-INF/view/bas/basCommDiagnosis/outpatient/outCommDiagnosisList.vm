@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>门诊医生常用诊断列表 - 个人常用诊断</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+#parse("./bas/basCommDiagnosis/outpatient/outCommDiagnosisList.js.vm")
+  <style>
+		.layui-form-item .layui-btn.layui-btn-sm { margin-bottom: 0;}
+  </style>
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+          <div class="layui-bg-white">
+            <!--搜索条件 开始-->
+            <form class="layui-form layui-form p-t-sm p-b-xs" id="queryForm">
+               #formHiddenInput("diagnosisClassify" "$CONST.AppConstants.BELONGS_DOCTOR" "")
+               #formHiddenInput("doctorId" "$!{session.getAttribute('currentUser').userId}" "")
+                <div class="layui-form-item search-term">
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">诊断/疾病名称</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("diseaseName" "" " maxlength='50' id='q_diseaseName' autocomplete='off' placeholder='请输入诊断/疾病名称' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <div class="layui-input-inline">
+                            #formRadioGroup("diseaseTypeFlag" "" ${dicData.dicDiseaseTypeFlag} "")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <label class="layui-form-label">TCD/ICD10编码</label>
+                        <div class="layui-input-inline">
+                            #formNotInChineseInput("diseaseIcdTcd" "" " maxlength='20' autocomplete='off' placeholder='请输入ICD10编码' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline m-b-xs">
+                        <div class="layui-btn-group">
+                            <button class="layui-btn layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                <i class="layui-icon layui-icon-search "></i>
+                            </button>
+                            <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_reset" style="margin-left: auto;">
+                                <i class="layui-icon layui-icon-refresh"></i>
+                            </button>
+                        </div>
+                        <button class="layui-btn  layui-btn-sm layui-btn-normal m-l-sm" type="button" lay-tips="新增" id="btn_add">
+                            <i class="layui-icon "></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+            <!--列表 begin-->
+            <table id="basCommDiagnosisListGrid" lay-filter="basCommDiagnosisListGrid"></table>
+            <script type="text/html" id="colstoolbar">
+                  <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="edit"><i class="layui-icon"></i></a>
+            </script>
+            <!--  列表表格 end -->
+          </div>
+        </div>
+    </div>
+</body>
+</html>

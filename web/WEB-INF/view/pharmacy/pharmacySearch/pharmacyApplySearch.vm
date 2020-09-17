@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药库出库查询</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+	<style>
+		.layui-row-query.search-term .layui-input-inline {
+			width: 170px;
+		}
+	</style>
+
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<form class="layui-form" action="" id="editForm">
+					<div class="layui-row-query">
+                        #formHiddenInput("pharmacyApplyId" "" "id='pharmacyApplyId'")
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">申领药房</label>
+								<div class="layui-input-inline">
+									#formTextInput("pharmacyName" "" "id='pharmacyName' class='layui-input' readOnly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">申请出库医院</label>
+								<div class="layui-input-inline">
+									#formTextInput("outHospitalName" "" "id='outHospitalName' class='layui-input' readOnly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">申请出库库房</label>
+								<div class="layui-input-inline">
+									#formTextInput("drugstoreName" "" "id='drugstoreName' class='layui-input' readOnly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">#requiredTag()申请日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("pharmacyInDate" "" " id='pharmacyInDate' class='layui-input' readOnly ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">备注</label>
+								<div class="layui-input-inline">
+									#formTextInput("remark" "" "id='remark' class='layui-input'")
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="itemTable" lay-filter="itemTable"></table>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<!-- 查询表单 -->
+				<form id="queryForm" class="layui-form">
+					<div class="layui-row-query search-term">
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">申请日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("pharmacyInDateSearch" "" "class='layui-input layer-date' tag='pharmacyInDateBegin,pharmacyInDateEnd' id='pharmacyInDateSearch' placeholder='申请日期范围' readOnly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">是否入库</label>
+								<div class="layui-input-inline">
+									#formHiddenInput("pharmacyInFlag" "0" "id='pharmacyInFlag'")
+									<input type="checkbox" lay-filter="pharmacyInFlagSwitch" lay-skin="switch" lay-text="是|否" value="1"/>
+								</div>
+							</div>
+							<div class="layui-inline layui-btn-group fr" >
+								<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+								<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+    #parse("./pharmacy/pharmacySearch/pharmacyApplySearch.js.vm")
+</body>
+</html>

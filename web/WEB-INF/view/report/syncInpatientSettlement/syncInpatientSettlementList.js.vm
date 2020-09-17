@@ -1,0 +1,597 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var OPER_PAY_FLAG_COLLECT = "$!{CONST.AppConstants.OPER_PAY_FLAG_COLLECT}";
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var dicInsuredType = JSON.parse('$dicTools.changeMapToJson($dicData.dicInsuredType)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        $('#q_settlementTime,#q_inhospitalDate,#q_outhospitalDate').each(function () {
+            var that = this;
+            //按出院日期范围查询
+            laydate.render({
+                elem: that,
+                range: true,
+                trigger: 'click',
+                done: function (value, date, endDate) {
+                    setTimeout(function () {
+                        $('#btn_query').click();
+                    })
+                }
+            });
+        })
+
+        //全选/反选
+        form.on('checkbox(checkboxMulti)', function (data) {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            forCheckbox.prop('checked', data.elem.checked);
+            that.indeterminate = false;//状态不确定
+            form.render('checkbox');
+        });
+        $(':checkbox[for-checkbox]').each(function () {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            form.on('checkbox(' + forName + ')', function (data) {
+                that.checked = !Boolean(forCheckbox.not(':checked').length);
+                that.indeterminate = !that.checked == forCheckbox.is(':checked');//其中部分选中时，状态不确定
+                form.render('checkbox');
+            });
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#syncInpatientSettlement_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                settlementTimeBegin: '',
+                settlementTimeEnd: '',
+                currentWardName: '',
+                currentOfficeName: '',
+                currentBedNo: '',
+                inhospitalDateBegin: '',
+                inhospitalDateEnd: '',
+                outhospitalDateBegin: '',
+                outhospitalDateEnd: '',
+                selfPayInWays: '',
+                keyWord: '',
+                validFlag: YES_FLAG,
+                operPayFlag: OPER_PAY_FLAG_COLLECT,
+            }, common.serializeObject($('#syncInpatientSettlement_queryForm'), ['q_settlementTime', 'q_inhospitalDate', 'q_outhospitalDate']));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('syncInpatientSettlementListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('syncInpatientSettlement_queryForm');
+            $("#syncInpatientSettlement_queryForm").find(':checkbox').prop('indeterminate', false);
+        })
+
+        //新增事件
+        $('#btn_import').click(function () {
+            var title = '导出数据'
+            var iframeEnvironment = 'I402880460168db4bdb4bec6b016925eae2b9425f';
+            var content = diResource + iframeEnvironment
+            //true 执行
+            if (data) {
+                title = data.diseaseName;
+                content += '?regionPopuId=' + data.regionPopuId;
+            }
+            common.open(content, title, {
+                area: ['1660px', '80%'],
+                scroll: 'yes'
+            });
+        });
+
+        //宽度 = (字数: 不好含符号) * (字符宽度: 全角字符宽度 = 15，字符宽度 = 10);
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#syncInpatientSettlementListGrid',
+            url: '../report/syncInpatientSettlementListData.jo',//数据接口 ,
+            where: getQueryParams(),
+            cols: [
+                [
+                    {
+                        fixed: 'left',
+                        align: 'center',
+                        event: 'open',
+                        templet: '#operateFormatter',
+                        rowspan: 2
+                    },
+                    {
+                        title: '序号',
+                        type: 'numbers',
+                        fixed: 'left',
+                        align: 'center',
+                        rowspan: 2
+                    },
+                    {
+                        field: 'feeBillNo',
+                        title: '发票号码',
+                        fixed: 'left',
+                        width: 8 * 10,
+                        align: 'center',
+                        rowspan: 2
+                    },
+                    {
+                        field: 'settlementNum',
+                        title: '结算次数',
+                        fixed: 'left',
+                        align: 'center',
+                        rowspan: 2
+                    },
+                    {
+                        field: 'settlementTime',
+                        title: '结算时间',
+                        fixed: 'left',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.settlementTime ? util.toDateString(row.settlementTime) : '';
+                        },
+                        rowspan: 2
+                    },
+					{
+						field: 'feeBillNo',
+						title: '发票号码',
+						width: 8 * 10,
+						fixed: 'left',
+						align: 'center',
+						rowspan: 2
+					},
+                    {
+                        title: '住院信息',
+                        align: 'center',
+                        fixed: 'left',
+
+                        colspan: 4,
+
+                    },
+                    {
+                        title: '患者信息',
+                        fixed: 'left',
+                        align: 'center',
+                        colspan: 2
+                    },
+                    {
+                        title: '金额',
+                        align: 'center',
+                        colspan: 2
+                    },
+                    {
+                        title: '住院费用结算(账本归并)',
+                        align: 'center',
+                        colspan: 14
+                    },
+                    {
+                        title: '医保',
+                        align: 'center',
+                        colspan: 16
+                    },
+                    {
+                        title: '自费',
+                        align: 'center',
+                        colspan: 4
+                    },
+                    {
+                        title: '患者信息',
+                        align: 'center',
+                        colspan: 3
+                    },
+                    {
+                        title: '住院信息',
+                        align: 'center',
+                        colspan: 6
+                    }
+                ],
+                [
+                    {
+                        field: 'currentWardName',
+                        title: '病区',
+                        fixed: 'left',
+                        width: 90,
+                        align: 'center'
+
+                    },
+                    {
+                        field: 'currentOfficeName',
+                        title: '科室',
+                        fixed: 'left',
+                        width: 90,
+                        align: 'center'
+
+                    },
+                    {
+                        field: 'currentBedNo',
+                        title: '床号',
+                        fixed: 'left',
+
+                        align: 'center'
+
+                    },
+                    {
+                        field: 'inhospitalNo',
+                        title: '住院号',
+                        fixed: 'left',
+
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientName',
+                        title: '患者姓名',
+                        fixed: 'left',
+                        align: 'center'
+                    },
+                    {
+                        field: 'patientIdCard',
+                        title: '证件号码',
+                        fixed: 'left',
+                        width: 160,
+                        align: 'center'
+                    },
+                    {
+                        field: 'actualChargeAmount',
+                        title: '应收款',
+                        align: 'center',
+                        style: 'text-align: right;',
+                    },
+                    {
+                        field: 'totalPrepaySum',
+                        title: '预交款',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount1',
+                        title: '西药费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount2',
+                        title: '中草药费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount3',
+                        title: '中成药费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount4',
+                        title: '诊察费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount5',
+                        title: '检查费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount6',
+                        title: '化验费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount7',
+                        title: '放射费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount8',
+                        title: '治疗费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount9',
+                        title: '手术费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount10',
+                        title: '护理费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount11',
+                        title: '材料费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount12',
+                        title: '输血费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount13',
+                        title: '床位费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeGroupAmount99',
+                        title: '其他费',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'insuredPayInWay',
+                        title: '付款方式',
+                        templet: function (d) {
+                            return dicInsuredType[d.insuredPayInWay] || "";
+                        },
+                        align: 'center'
+                    },
+                    {
+                        field: 'mbfSelfPay',
+                        title: '自付合计',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfUpLimitAmout',
+                        title: '定价上限金额',
+                        width: '定价上限金额'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfSelfPayRation',
+                        title: '自付比例',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfWholeAmount',
+                        title: '统筹金额',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfMutualHelpAmount',
+                        title: '医疗互助',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfCivilServantAmount',
+                        title: '公务员基金',
+                        width: '公务员基金'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfDisabledSoldierAmount',
+                        title: '残疾军人补助',
+                        width: '残疾军人补助'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfWholesaleSalvageAmount',
+                        title: '大额救助',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfSerousIllnessAmount',
+                        title: '大病互助',
+
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfMedicalAidAmount',
+                        title: '医疗补助支付',
+                        width: '医疗补助支付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfOtherAidAmount',
+                        title: '其他补助支付',
+                        width: '其他补助支付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfClaimingExpensesAmount',
+                        title: '再报销支付',
+                        width: '再报销支付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfFamilyAmount',
+                        title: '家庭账户支付',
+                        width: '家庭账户支付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'mbfFamilyAmount',
+                        title: '家庭账户支付',
+                        width: '家庭账户支付'.length * 15,
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'insuredType',
+                        title: '险种类型',
+                        templet: function (d) {
+                            return dicInsuredType[d.insuredType] || "";
+                        },
+                        align: 'center'
+                    },
+                    {
+                        field: 'selfPayInWay',
+                        title: '付费方式',
+                        templet: function (d) {
+                            return dicPaymentMethod[d.selfPayInWay] || "";
+                        },
+                        align: 'center'
+                    },
+                    {
+                        field: 'chargeCash',
+                        title: '现金',
+                        align: 'center'
+                    },
+                    {
+                        field: 'actualCharge',
+                        title: '实收金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'changeCharge',
+                        title: '找零金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'contactPhone',
+                        title: '手机号码',
+                        width: 11 * 10,
+                        align: 'center'
+                    },
+                    {
+                        field: 'visitCardNo',
+                        title: '诊疗号码',
+                        align: 'center'
+                    },
+                    {
+                        field: 'socialSecurityCard',
+                        title: '医保号码',
+                        align: 'center'
+                    },
+                    /* {
+                         field: 'healthCard',
+                         title: '健康号码',
+                         align: 'center'
+                     },*/
+                    {
+                        field: 'settlementNum',
+                        title: '结算次数',
+                        align: 'center'
+                    },
+                    {
+                        field: 'inhospitalDate',
+                        title: '入院时间',
+                        width: 160,
+                        templet: function (row) {
+                            return row.inhospitalDate ? util.toDateString(row.inhospitalDate) : '';
+                        },
+                        align: 'center'
+                    },
+                    {
+                        field: 'outhospitalDate',
+                        title: '出院时间',
+                        width: 160,
+                        templet: function (row) {
+                            return row.outhospitalDate ? util.toDateString(row.outhospitalDate) : '';
+                        }
+                    },
+                    {
+                        field: 'bedDoctorName',
+                        title: '管床医师',
+                        width: '管床医师'.length * 15,
+                        align: 'center'
+                    },
+                    {
+                        field: 'diagnosisDoctorName',
+                        title: '主治医师',
+                        align: 'center'
+                    },
+                    {
+                        field: 'hospitalName',
+                        title: '医疗机构',
+                        align: 'center',
+                        rowspan: 2
+                    }
+                ]
+            ],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        //监听行工具事件
+        table.on('tool(syncInpatientSettlementListGrid)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'open':
+                    top.common.open('$contextPath' + '/report/syncInpatientSettlementShow.do?inpatientSettlementId=' + data.inpatientSettlementId, '住院费用详情（' + data.patientName + '）', {
+                        area: ['90%', '90%'],
+                        scroll: true
+                    })
+                    break;
+            }
+        });
+        //监听行双击事件
+        table.on('rowDouble(syncInpatientSettlementListGrid)', function (obj) {
+            var data = obj.data;
+            top.common.open('$contextPath' + '/report/syncInpatientSettlementShow.do?inpatientSettlementId=' + data.inpatientSettlementId, '住院费用详情（' + data.patientName + '）', {
+                area: ['90%', '90%'],
+                scroll: true
+            })
+        });
+    })
+</script>

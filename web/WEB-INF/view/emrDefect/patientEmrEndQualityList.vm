@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>终末质控列表</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <link href="../resource/hplus/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../resource/hplus/js/plugins/daterangepicker/1.3.4/daterangepicker.css" rel="stylesheet">
+    <script type="text/javascript" src="../resource/hplus/js/plugins/daterangepicker/1.3.4/moment.js"></script>
+    <script type="text/javascript" src="../resource/hplus/js/plugins/daterangepicker/1.3.4/daterangepicker.js"></script>
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <div class="layui-bg-white">
+                <!-- 列表表格 工具栏-->
+                <!--搜索条件 开始-->
+                <form id="queryForm" class="layui-form" >
+                    <input type="hidden" name="sendFlag" value="$!{CONST.AppConstants.YES_FLAG}"/>
+                    <input type="hidden" name="qualityNodeType" value="$!{CONST.AppConstants.QUALITY_NODE_TYPE_END}"/>
+                    <input type="hidden" name="qualityControllerType" value="$!{CONST.AppConstants.QUALITY_CONTROLLER_TYPE_EXPERT}">
+                    <input type="hidden" name="validFlag" value="$!{CONST.AppConstants.YES_FLAG}">
+                    <div class="layui-row-query layui-form-item search-form search-term">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">姓名</label>
+                            <div class="layui-input-inline ">
+                              #formTextInput("patientName" "" " class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">提交科室</label>
+                            <div class="layui-input-inline " style="width: unset">
+                                #formMultiSelectFirstNone("sendOfficeIds" "" $sysOrgMap " xm-select='sendOfficeIds' xm-select-height='30px' xm-select-search-type='dl' xm-select-search='' xm-select-show-count='1' " "请选择")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                             <label class="layui-form-label">提交时间</label>
+                             <div class="layui-input-inline input-inline-long" style="width:180px;">
+                              #formTextInput("sendTime" "" "class='layui-input layer-date' tag='sendTimeBegin,sendTimeEnd'  id='sendTime' placeholder='提交时间范围' readOnly")
+                              <input type="hidden" name="sendTimeBegin" id="sendTimeBegin"/>
+                              <input type="hidden" name="sendTimeEnd" id="sendTimeEnd"/>
+                             </div>
+                        </div>
+                        <div class="layui-inline m-r-n">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                    <i class="layui-icon layui-icon-search "></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="layui-inline fr p-r-md">
+                            <button type="button" id="qualityControl" lay-submit lay-filter="qualityControl"
+                                    class="layui-btn layui-btn-sm "
+                                     btn-type="have">质控
+                            </button>
+                            <button type="button" id="agreeRecv" lay-submit lay-filter="agreeRecv"
+                                    class="layui-btn layui-btn-sm "
+                                     btn-type="have">签收
+                            </button>
+                            <button type="button" id="unagreeRecv" lay-submit lay-filter="unagreeRecv"
+                                    class="layui-btn layui-btn-sm "
+                                     btn-type="have">退回
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <!--列表 begin-->
+                <table id="inpatientListTable" class="layui-table-tabs" lay-filter="basDiseaseListGrid"></table>
+                <script type="text/html" id="colstoolbar">
+                    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-tips="查看" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+                     <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></a>
+                </script>
+            </div>
+        </div>
+    </div>
+    <!-- 本页面js -->
+    ##parse("./bas/basDisease/basDiseaseList.js.vm")
+    #parse("./emrDefect/patientEmrEndQualityList.js.vm")
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>可编辑表格</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <link rel="stylesheet" href="../jsoneditor/jsoneditor.min.css">
+    <script src="../jsoneditor/jsoneditor.min.js"></script>
+    <script src="../axios/axios.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th><span>字段名（用英文,隔开）</span></th>
+            <th>
+                <label class="checkbox inline"><input id="volumeFlag" type="checkbox"/> 是否包含出入量 </label>
+            </th>
+        </tr>
+        <tr>
+            <td colspan="2">
+                <input type="text" id="fieldName" style="width: calc(100% - 16px)" placeholder="请输入字段名">
+            </td>
+        </tr>
+        <tr>
+            <th><span>需要小结字段</span></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="countField" placeholder="请输入需要小结字段"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span></th>
+            <th>表头所占行数</th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1" selected="selected">编辑模式</option>
+                    <option value="0">只读模式</option>
+                </select>
+            </td>
+            <td>
+                <select id="rowsNum">
+                    <option value="1">1行</option>
+                    <option value="2">2行</option>
+                    <option value="3">3行</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+        <tr>
+            <td colspan="2" style="background-color: white;">
+                <div class="tabbable">
+                    <ul class="nav nav-tabs" style="margin-bottom: 5px;">
+                        <li class="active"><a href="#tab2" data-toggle="tab">首行标题</a></li>
+                    </ul>
+                    <div class="tab-content">
+                        <div class="tab-pane active" id="tab2">
+                            <div id="jsoneditorRequest" style="width:100%;height:300px;float: left;"></div>
+                        </div>
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    var jsoneditorRequest = new JSONEditor(document.getElementById('jsoneditorRequest'), {
+        mode: 'code'
+    });
+
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            return rgbStr;
+        }
+
+        var thePlugins = 'miniedittable',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id')).attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#fieldName').val(opt.fieldName);
+                $('#countField').val(opt.countField);
+                $('#editModeFlag').val(opt.mode);
+                $('#rowsNum').val(opt.rowsNum);
+                if (opt.required === 1) {
+                  $G('requiredFlag').checked = true;
+                }
+                if (opt.saveFlag === 1) {
+                  $G('saveFlag').checked = true;
+                }
+                if (opt.volumeFlag === 1) {
+                    $G('volumeFlag').checked = true;
+                }
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+                jsoneditorRequest.set(opt.titleName || {});
+            } else {
+                $('#ctrlId').val('test');
+                $('#ctrlDesc').val('list');
+                $('#fieldName').val('temperatureDate,temperature,pulseRate/heartRate,breathing,diastolicNbp/systolicNbp,aware,bloodOxygenSaturation,pupilDiameterLeft/pupilReflexLeft,pupilDiameterRight/pupilReflexRight,InpatientInVolume.inDicName,InpatientInVolume.factVolume,InpatientOutVolume.outDicName,InpatientOutVolume.outVolume,InpatientOutVolume.outColor,EmrPatientOtherData.basicNursing,EmrPatientOtherData.healthEducationCon,EmrPatientOtherData.healthEducationEff,diseaseObservation,exeUserName');
+                $('#rowsNum').val(2);
+                jsoneditorRequest.set([
+					{
+						"name": "日期",
+						"children": []
+					},
+					{
+						"name": "体温",
+						"children": []
+					},
+					{
+						"name": "脉搏/心率",
+						"children": []
+					},
+					{
+						"name": "呼吸",
+						"children": []
+					},
+					{
+						"name": "血压",
+						"children": []
+					},
+					{
+						"name": "意识",
+						"children": []
+					},
+					{
+						"name": "SPO2",
+						"children": []
+					},
+					{
+						"name": "瞳孔",
+						"children": [
+							{
+								"name": "左",
+								"children": []
+							},
+							{
+								"name": "右",
+								"children": []
+							}
+						]
+					},
+					{
+						"name": "入量",
+						"children": [
+							{
+								"name": "类别",
+								"children": []
+							},
+							{
+								"name": "量",
+								"children": []
+							}
+						]
+					},
+					{
+						"name": "出量",
+						"children": [
+							{
+								"name": "类别",
+								"children": []
+							},
+							{
+								"name": "量",
+								"children": []
+							},
+							{
+								"name": "颜色性状",
+								"children": []
+							}
+						]
+					},
+					{
+						"name": "基础护理",
+						"children": []
+					},
+					{
+						"name": "健康教育",
+						"children": [
+							{
+								"name": "健康教育内容",
+								"children": []
+							},
+							{
+								"name": "健康教育效果",
+								"children": []
+							}
+						]
+					},
+					{
+						"name": "病情记录",
+						"children": []
+					},
+					{
+						"name": "签名",
+						"children": []
+					}
+				]);
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.fieldName = $('#fieldName').val();
+            newOpt.countField = $('#countField').val();
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.rowsNum = $('#rowsNum').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.volumeFlag = $G('volumeFlag').checked ? 1 : 0;
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.titleName = jsoneditorRequest.get();
+            newOpt.type = 'edittable';
+            if (!!domCtrl) {
+                var fieldName = opt.fieldName;
+                var rowsNum = opt.rowsNum;
+                var titleName = opt.titleName;
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $('#ctrlId').val());
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl' + (newOpt.required? ' ctrl-required': '');
+                domCtrl.setAttribute('contenteditable', newOpt.mode === "1");
+                $(domValue).attr('style', 'display: table-row-group;');
+                //修改
+                ctrl.setOpt(newOpt);
+                if (newOpt.fieldName !== fieldName ||
+                    newOpt.rowsNum !== rowsNum ||
+                    JSON.stringify(newOpt.titleName) !== JSON.stringify(titleName)) {
+                    $(domValue).empty();
+                    generateTable(newOpt, domValue);
+                }
+                delete UE.plugins[thePlugins].editdom;
+                // setTimeout(function () {
+                //     dialog.close();
+                // }, 0);
+                // return false;
+            } else {
+                domCtrl = UE.dom.domUtils.createElement(document, 'table', {
+                    class: 'emr-ctrl' + (newOpt.required? ' ctrl-required': ''),
+                    style: 'width: 100%',
+                    contenteditable: (newOpt.mode === "1"),
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'edittable',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                var tbodyDom = UE.dom.domUtils.createElement(document, 'tbody', {
+                    class: 'emr-value',
+                    style: 'display: table-row-group;'
+                });
+                generateTable(newOpt, tbodyDom);
+                domCtrl.appendChild(tbodyDom);
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt)
+            }
+            UE.plugins[thePlugins].domListener();
+        };
+
+        function generateTable (newOpt, tbodyDom) {
+			var fieldNames = newOpt.fieldName.split(',');
+			console.log(fieldNames);
+        	var len = fieldNames.length;
+			var range = editor.selection.getRange(),
+				start = range.startContainer,
+				firstParentBlock =
+					domUtils.findParent(
+						start,
+						function(node) {
+							return domUtils.isBlockElm(node);
+						},
+						true
+					) || me.body;
+			var tableWidth = firstParentBlock.offsetWidth,
+                tdWidth = Math.floor(tableWidth / len);
+            var trFirstDom = UE.dom.domUtils.createElement(document, 'tr', {});
+            var trSecondDom = UE.dom.domUtils.createElement(document, 'tr', {});
+            var trThirdDom = UE.dom.domUtils.createElement(document, 'tr', {});
+            tbodyDom.appendChild(trFirstDom);
+            for ( var i = 0, firstLen = newOpt.titleName.length; i < firstLen; i++ ) {
+                var firstTitle = newOpt.titleName[i];
+                var tdFirstDom = UE.dom.domUtils.createElement(document, 'td', {
+                    contenteditable: false,
+                    'align': 'center',
+					class: 'word-break: break-all',
+					valign: "top"
+                });
+                var colsFirstNum = 0;
+                tdFirstDom.innerHTML = firstTitle.name;
+                if (firstTitle.children && firstTitle.children.length > 0) {
+                    if (tbodyDom.childNodes.length < 2) {
+                        tbodyDom.appendChild(trSecondDom);
+                    }
+                    var firstChildren = firstTitle.children;
+                    colsFirstNum = firstChildren.length;
+                    for (var j = 0, secondLen = firstChildren.length; j < secondLen; j++ ) {
+                        var secondTitle = firstChildren[j];
+                        var tdSecondDom = UE.dom.domUtils.createElement(document, 'td', {
+                            contenteditable: false,
+                            'align': 'center',
+                            width: tdWidth * secondLen,
+							class: 'word-break: break-all',
+							valign: "top"
+                        });
+                        var colsSecondNum = 0;
+                        tdSecondDom.innerHTML = secondTitle.name;
+                        if (secondTitle.children && secondTitle.children.length > 0) {
+                            if (tbodyDom.childNodes.length < 3) {
+                                tbodyDom.appendChild(trThirdDom);
+                            }
+                            var thirdTitles = secondTitle.children;
+                            colsSecondNum = thirdTitles.length;
+                            colsFirstNum += colsSecondNum - 1;
+                            for (var k = 0, thirdLen = thirdTitles.length; k < thirdLen; k++ ) {
+                                var thirdTitle = thirdTitles[k];
+                                var tdThirdDom = UE.dom.domUtils.createElement(document, 'td', {
+                                    contenteditable: false,
+                                    'align': 'center',
+                                    width: tdWidth,
+                                    class: 'word-break: break-all',
+									valign: "top"
+                                });
+                                tdThirdDom.innerHTML = thirdTitle.name;
+                                trThirdDom.appendChild(tdThirdDom);
+                            }
+                        }
+                        if (colsSecondNum !== 0) {
+                            tdSecondDom.setAttribute('colspan', colsSecondNum);
+							tdFirstDom.setAttribute('width', colsSecondNum * tdWidth);
+                        } else {
+                            tdSecondDom.setAttribute('rowspan', newOpt.rowsNum - 1);
+                        }
+                        trSecondDom.appendChild(tdSecondDom);
+                    }
+                } else {
+                    tdFirstDom.setAttribute('rowspan', newOpt.rowsNum);
+					tdFirstDom.setAttribute('width', tdWidth);
+                }
+                if (colsFirstNum !== 0) {
+                    tdFirstDom.setAttribute('colspan', colsFirstNum);
+					tdFirstDom.setAttribute('width', colsFirstNum * tdWidth);
+                }
+                trFirstDom.appendChild(tdFirstDom);
+            }
+
+            var trBlankDom = UE.dom.domUtils.createElement(document, 'tr', {});
+            for ( var i = 0, len = fieldNames.length; i < len; i++ ) {
+                var tdDom = UE.dom.domUtils.createElement(document, 'td', {
+                	width: tdWidth,
+					class: 'word-break: break-all',
+					valign: "top"
+                });
+                tdDom.innerHTML = '<p><br></p>';
+                trBlankDom.appendChild(tdDom);
+            }
+            tbodyDom.appendChild(trBlankDom);
+        }
+    })(UE);
+</script>
+</body>
+
+</html>

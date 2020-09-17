@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊病历处方</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/recipe/recipe.css.vm")
+    <style type="text/css">
+        .coalition {
+            padding: 10px;
+        }
+
+        .coalition .recipe {
+            padding: 2px;
+        }
+
+        .coalition .recipe a:hover {
+            cursor: pointer;
+            text-decoration: underline;
+            color: #22b3e0;
+        }
+
+    </style>
+
+
+</head>
+
+<body class="white-bg coalition">
+<form class="layui-form full-height">
+    #formHiddenInput("recipeItemId" "$!recipeItemEdit.recipeItemId" "id='recipeItemId'")
+    #formHiddenInput("recipeId" "$!recipeItemEdit.recipeId" "id='recipeId'")
+    <div class="full-height-scroll">
+        #foreach($recipe in $recipeList)
+            #if($!recipeItemEdit.recipeNum != $!{velocityCount})
+                <div class="recipe"><a href="javascript:;" operate="merge" recipeId="$!recipe.recipeId">合并进处方$!{velocityCount}</a></div>
+            #end
+        #end
+        <div class="recipe"><a href="javascript:;" operate="split" recipeId="$!recipe.recipeId">拆分进新处方</a></div>
+    </div>
+</form>
+
+<script type="text/javascript">
+    layui.use(['layer'], function () {
+        var element = layui.layer;
+
+        $('.coalition .recipe a').click(function () {
+            var param = {
+                recipeId: $('#recipeId').val(),
+                destRecipeId: $(this).attr('recipeId'),
+                recipeItemId: $('#recipeItemId').val()
+            }
+            if ($(this).attr('operate') == 'merge') {
+                parent.coalitionRecipe(param);
+            } else {
+                parent.splitRecipe(param);
+            }
+
+        });
+
+    });
+
+</script>
+
+</body>
+</html>

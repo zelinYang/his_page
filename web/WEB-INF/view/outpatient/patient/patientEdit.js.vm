@@ -1,0 +1,402 @@
+<script>
+//定义newCardNo为补办是否使用新就诊卡号标识,默认为不使用新号码
+var newCardNo = false;
+#if("$!{newCardNo}" != "")
+    //根据后台配置信息重新设置
+    newCardNo = $!{newCardNo};
+#end
+
+//layui整体配置
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index', //主入口模块
+    cascader: 'cascader'
+  }).use(['index','form','laydate', 'cascader'], function(){
+    var $ = layui.$,form = layui.form,laydate = layui.laydate;
+    laydate.render({
+        elem: '#patientBirth'//出生日期
+        ,format: 'yyyy-MM-dd'
+        ,min: -54750 //150*365 最小日期不允许选到150年前
+        ,max: 0 // 最大日期不允许超过当天
+        ,done: function(value, date, endDate){}});
+
+    //监听随机生成就诊卡号按钮
+    $("#randomCardNoBtn").click(function() {
+        //获取随机就诊卡号
+        common.requestServer('$contextPath/patient/randomCardNo.jo', "", function(result){
+            if (result.data == null || typeof(result.data) == "undefined") {
+                return;
+            }
+            $("#visitCardNo").val(result.data);
+        });
+    });
+
+    //办卡类型监听
+    form.on('radio(patientIndexCreateType)', function(data){
+        //办卡类型为"新办",清空隐藏信息
+        if (data.value == "1") {
+            $("#patientIndexId").val("");
+            $("#patientId").val("");
+            //重新设置就诊卡号提醒信息
+            $("#visitCardNo").removeAttr("lay-tips").attr("lay-tips", "医院若无就诊卡号，可用患者身份证等信息代替");
+            //显示随机生成就诊卡号按钮
+            $("#randomCardNoBtn").show();
+        } else if (data.value == "2") {
+            //重新设置就诊卡号提醒信息
+            $("#visitCardNo").removeAttr("lay-tips").attr("lay-tips", "请输入需要补办的就诊卡号");
+            //隐藏随机生成就诊卡号按钮
+            $("#randomCardNoBtn").hide();
+        }
+        //判断页面是否填写有身份证信息
+        if ($("#patientIdType").val() != "" && $("#patientIdCard").val() != "") {
+            //调用身份证校验
+            patientIdCardCheck($("#patientIdType").val(), $("#patientIdCard").val());
+        } else if ($("#visitCardNo").val() != "") {//判断页面是否填写有就诊卡号
+            //调用就诊卡号校验
+            visitCardNoCheck($("#visitCardNo").val());
+        }
+    });
+
+    //就诊卡号改变时的校验（本校验只适用于新办或补办就诊卡，没有加入编辑就诊卡功能的逻辑。编辑就诊卡功不能用此校验）
+    $("#visitCardNo").on("change", function(){
+        //调用就诊卡号校验函数
+        visitCardNoCheck($(this).val());
+    });
+
+    //证件号码和证件类型改变时的校验
+    $("#patientIdType, #patientIdCard").on("change", function(){
+        //调用证件号码校验函数
+        patientIdCardCheck($("#patientIdType").val(), $("#patientIdCard").val());
+    });
+
+    //就诊卡号校验函数
+    function visitCardNoCheck(visitCardNo) {
+        //就诊卡号为空不进行校验
+        if (visitCardNo == "") {
+            return;
+        }
+        var patientParams = {"visitCardNoEqu":visitCardNo, "validFlag":"$!{CONST.AppConstants.YES_FLAG}"}
+        common.requestServer('$contextPath/patient/findPatientIndex.jo', patientParams, function(result){
+            //调用就诊卡和身份证校验回调函数
+            patientCheckCallback(result.patientIndex, result.patient);
+        });
+    }
+
+    //身份证号校验函数
+    function patientIdCardCheck(patientIdType, patientIdCard) {
+        //身份证信息未填写完整不进行校验
+        if (patientIdType == "" || patientIdCard == "") {
+            return;
+        }
+        var patientParams = {"patientIdType":patientIdType, "patientIdCardEqu":patientIdCard, "validFlag":"$!{CONST.AppConstants.YES_FLAG}"}
+        common.requestServer('$contextPath/patient/findPatientIndex.jo', patientParams, function(result){
+            //编辑页面单独校验（新办和补办用专用的校验回调函数）
+            if ($("input[name='patientIndexCreateType'][type='hidden']:eq(0)").val() == "$!{CONST.AppConstants.PATIENT_INDEX_CREATE_TYPE_EDIT}") {
+                if (null == result.patientIndex || typeof(result.patientIndex) == "undefined") {
+                    return;
+                }
+                if (result.patientIndex.patientIdCard != $("#patientIdCard").val("")) {
+                    common.alertCall("证件号码已被其他就诊卡使用，请重新输入", 2, function() {
+                        $("#patientIdCard").val("").addClass("layui-form-danger").focus();
+                    });
+                }
+            } else {
+                //调用新办或补办就诊卡和身份证校验回调函数
+                patientCheckCallback(result.patientIndex, result.patient);
+            }
+        });
+    }
+
+    //就诊卡和身份证校验回调函数
+    function patientCheckCallback(patientIndex, patient) {
+        //判断是否存在就诊卡
+        if (null == patientIndex || typeof(patientIndex) == "undefined") {
+            //不存在就诊卡,如果当前为补办并且页面就诊卡ID为空,清除就诊卡和身份证标签内容
+            if ($("input[name='patientIndexCreateType']:checked").val() == "2" && $("#patientIndexId").val() == "") {
+                //提示重新输入就诊卡号或证件号
+                common.alertCall("补办的就诊卡不存在，请重新输入要补办的就诊卡号或证件号码", 2, function() {
+                    //清空内容,增加提醒边框样式和聚焦
+                    $("#visitCardNo").val("").addClass("layui-form-danger").focus();
+                    $("#patientIdCard").val("").addClass("layui-form-danger");
+                });
+            }
+            return;
+        }
+        //以下为存在就诊卡时的js代码
+        //如果页面已选择进行补办，则直接调用补办js方法
+        if ($("input[name='patientIndexCreateType']:checked").val() == "2") {
+            //调用补办js方法
+            reApplyCheck(patientIndex, patient);
+            return;
+        }
+        //页面未选择补办，询问是否进行补办
+        common.confirm("就诊卡已存在，是否补办？", function(){
+            //选择补办，调用补办js方法
+            reApplyCheck(patientIndex, patient);
+        }, function(){
+            //不进行补办，清空就诊卡相关标签数据
+            $("input[name='patientId']").val("");
+            $("input[name='patientIndexId']").val("");
+            //页面填写的就诊卡号与数据库一致则清空数据
+            if ($("#visitCardNo").val() == patientIndex.visitCardNo) {
+                $("#visitCardNo").val("");
+            }
+            //页面填写的身份证信息与数据库一致则清空数据
+            if ($("#patientIdCard").val() == patientIndex.patientIdCard) {
+                $("#patientIdCard").val("");
+            }
+            //办卡类型设置为"新办"
+            $("input[name='patientIndexCreateType'][value='1']").prop("checked", true);
+            $("input[name='patientIndexCreateType'][value='2']").prop("checked", false);
+            //显示随机生成就诊卡号按钮
+            $("#randomCardNoBtn").show();
+            //就诊卡提示信息改为"新办"的提示信息
+            $("#visitCardNo").removeAttr("lay-tips").attr("lay-tips", "医院若无就诊卡号，可用患者身份证等信息代替");
+            //初始化radio,使刚才设置的办卡类型生效
+            form.render("radio");
+        });
+    }
+
+    //补办流程js(确定走补办流程时调用此方法)
+    function reApplyCheck(patientIndex, patient) {
+        if (null == patientIndex || null == patient) {
+            return;
+        }
+        //初始化页面内容
+        if ($("input[name='patientIndexId']:eq(0)").val() == "") {
+            //页面未加载过任何患者信息,使用部分加载功能,以本次页面填写内容为主
+            initValue(patientIndex, false);
+            initValue(patient, false);
+        } else {
+            //页面加载过患者信息，使用全加载功能,以数据库记录内容为主
+            initValue(patientIndex, true);
+            initValue(patient, true);
+        }
+        //办卡类型设置为"补办"
+        $("input[name='patientIndexCreateType'][value='1']").prop("checked", false);
+        $("input[name='patientIndexCreateType'][value='2']").prop("checked", true);
+        //隐藏随机生成就诊卡号按钮
+        $("#randomCardNoBtn").hide();
+        //初始化radio,使刚才设置的办卡类型生效
+        form.render("radio");
+        //判断补办就诊卡是否用新号码
+        if (newCardNo) {
+            //使用新号码补办，清空就诊卡标签数据并增加提醒边框样式和聚焦
+            $("#visitCardNo").val("").addClass("layui-form-danger").focus()
+            .removeAttr("lay-tips").attr("lay-tips", "系统已确认原就诊卡信息，请输入新就诊卡号");//修改原就诊卡标签提示信息
+        } else {
+            //使用原号码补办
+            $("#visitCardNo").removeAttr("lay-tips").attr("lay-tips", "请输入需要补办的就诊卡号");//修改原就诊卡标签提示信息
+        }
+    }
+
+    /*
+     * 根据数据obj数据给页面表达赋值
+     * obj 数据源对象
+     * alloveride 是否使用obj完全覆盖页面表单元素
+     */
+    function initValue(obj, alloveride) {
+        if (null == obj || typeof(obj) == "undefined") {
+            return;
+        }
+        //遍历obj属性设置页面元素的值
+        for (var index in obj) {
+            var value = obj[index];
+            //当前属性在原对象中没有具体值
+            if (null == value || typeof(value) == "undefined") {
+                continue;
+            }
+            //覆盖页面隐藏域的值
+            if ($("input[name='" + index + "'][type='hidden']").length > 0) {
+                $("input[name='" + index + "'][type='hidden']:eq(0)").val(value);
+                continue;
+            }
+            //判断是否使用全覆盖
+            if (alloveride) {
+                //覆盖页面input标签和select标签的值
+                //判断页面对应的input或select标签是否存在
+                if ($("input[name='" + index + "'][type='text']").length > 0) {
+                    $("input[name='" + index + "'][type='text']:eq(0)").val(value);
+                    continue;
+                }
+                //判断页面对应的radio标签是否存在
+                if ($("input[name='" + index + "'][type='radio']").length > 0) {
+                    $("input[name='" + index + "'][type='radio']").removeAttr("checked");
+                    $("input[name='" + index + "'][type='radio'][value='" + value + "']:eq(0)").prop("checked", "checked");
+                    continue;
+                }
+            } else {
+                //使用不完全覆盖，页面填写的内容不会被数据库内容覆盖
+                //判断页面对应的input或select标签是否存在并且没有值
+                if ($("input[name='" + index + "'][type='text']").length > 0 && $("input[name='" + index + "'][type='text']:eq(0)").val() == "") {
+                    $("input[name='" + index + "'][type='text']:eq(0)").val(value);
+                    continue;
+                }
+                //判断页面对应的radio标签是否存在并且没有值
+                if ($("input[name='" + index + "'][type='radio']").length > 0 && $("input[name='" + index + "'][type='radio']:checked").length == 0) {
+                    $("input[name='" + index + "'][type='radio'][value='" + value + "']").prop("checked", true);
+                    continue;
+                }
+            }
+        }
+        //初始化layui标签,使刚才的设置生效
+        form.render();
+    }
+
+    //患者类别
+    form.on('radio(patientClassify)', function(data){
+        //成人adult
+        //儿童children
+        if (data.value == "${CONST.AppConstants.PATIENT_CLASSIFY_ADULT}") {
+            //成人adult 
+            $(".adult").show().find("input,select").prop("disabled",false);//显示成人信息
+            $(".children").hide().find("input,select").prop("disabled" , true).removeAttr("lay-verify");//隐藏儿童信息
+            $("#span_patientIdType").show();
+            $("#span_patientIdCard").show();
+            $("#patientIdType").attr("lay-verify" , "required");
+            $("#patientIdCard").attr("lay-verify" , "required|identityEmpty");
+            $("#marryState").attr("lay-verify" , "required");
+        } else {
+            //儿童children
+            $(".adult").hide().find("input,select").prop("disabled" , true);//隐藏成人信息
+            $(".children").show().find("input,select").prop("disabled",false).attr("lay-verify","required");//显示儿童信息
+            $("#guardIdCard").attr("lay-verify","required|identityEmpty");
+            $("#span_patientIdType").hide();
+            $("#span_patientIdCard").hide();
+            $("#patientIdType").removeAttr("lay-verify");
+            $("#patientIdCard").removeAttr("lay-verify" );
+            $("#marryState").removeAttr("lay-verify" );
+        }
+        form.render();
+    });
+    
+    #if("$!{patient.patientClassify}" == "$!{CONST.AppConstants.PATIENT_CLASSIFY_ADULT}" || "$!{patient.patientClassify}" == "")
+        $('#patientClassify_1').next().click();
+    #else
+        $('#patientClassify_2').next().click();
+    #end
+
+    form.on('select(careerCode)', function(data){
+        //得到被选中的值
+        $("#patientCareer").val(data.value);
+    });
+
+    //自定义验证规则
+    form.verify({
+      phoneEmpty:function(value, item){
+          var regPhone = /^\d[0-9\s\-]+\d$/;
+          var regMobile = /^1[3-9][0-9]{9}$/;
+          if (value != "" && !regPhone.test(value) && !regMobile.test(value)) {
+              var labelName = "格式不正确";
+              if (typeof(item.getAttribute("labelname")) != "undefined" && item.getAttribute("labelname") != null) {
+                  labelName = item.getAttribute("labelname") + labelName;
+              }
+              return labelName;
+          }
+      }
+      ,identityEmpty:function(value, item){
+          var patientIdType = $("#patientIdType").val();
+          var regIdCard = /^$|(^\d{15}$)|(^\d{17}(x|X|\d)$)/;
+          if (value != "" && patientIdType == "01" && !regIdCard.test(value)) {
+              return "请输入正确的身份证号";
+          }
+      }
+      ,numberEmpty:function(e){if(isNaN(e))return"只能填写数字"}
+    });
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+        var patientParams =data.field;
+         common.requestServer('$contextPath/patient/savePatient.jo', patientParams, function(result){
+             if (result.code == "$!{CONST.ResponseContstants.RESULT_SUCCESS_CODE}") {
+                 common.alertCall("保存成功。", 1, function (){
+                     #if($!{patientIndex})
+                         location.reload();
+                     #else  
+                     $('#patientForm_Reset').click();
+                     parent.layui.element.tabChange('registerMainTab','patientList'); //切换到：患者列表
+                     #end
+                 });
+             } else {
+                 common.alert(result.msg, 0);
+             }
+       });
+       return false;
+    });
+
+    $("#btn_saves").click(function(){
+        $("#btn_save").click();//触发表单
+    });
+
+    // 行政区域数据加载及监听选择
+    var len = 3;// 每个区域ID长度的倍数
+    common.requestServer('../basRegion/selectRegion.jo', {}, function (data) {
+        if (!data) {
+            return ;
+        }
+        // 出生地
+        layui.cascader({
+            data: data,
+            elem: "#patientBirthAddr",
+            value: $('#birthRegionId').val() ? common.strToRegionIdArray($('#birthRegionId').val(), len) : [],
+            success: function (data) { $('#birthRegionId').val(data[data.length - 1]); }
+        });
+        // 现住地址
+        layui.cascader({
+            data: data,
+            elem: "#patientAddr",
+            value: $('#regionId').val() ? common.strToRegionIdArray($('#regionId').val(), len) : [],
+            success: function (data) { $('#regionId').val(data[data.length - 1]); }
+        });
+        // 户口地址
+        layui.cascader({
+            data: data,
+            elem: "#nativeRegionAddr",
+            value: $('#nativeRegionId').val() ? common.strToRegionIdArray($('#nativeRegionId').val(), len) : [],
+            success: function (data) { $('#nativeRegionId').val(data[data.length - 1]); }
+        });
+        // 工作单位
+        layui.cascader({
+            data: data,
+            elem: "#companyAddr",
+            value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#companyRegionId').val(), len) : [],
+            success: function (data) { $('#companyRegionId').val(data[data.length - 1]); }
+        });
+        
+       
+    });
+    // 籍贯
+    layui.cascader({
+        type: "post",
+        elem: "#nativePlace",
+        url: "../basRegion/selectRegion.jo",
+        where: {regionIdLen: 6},
+        value: $('#nativePlaceId').val() ? common.strToRegionIdArray($('#nativePlaceId').val(), len) : [],
+        success: function (data) { $('#nativePlaceId').val(data[data.length - 1]); }
+    });
+    
+   
+    
+    
+    function companyAddrHidePluins() {
+        var interval =  setTimeout(function() {
+            companyAddrUp =  $('#companyAddr').next().next();
+            if (companyAddrUp.length==1) {
+                companyAddrUp.click();
+                setTimeout(function() {
+                    $('#stemp').remove();
+                }, 100);
+                clearInterval(interval );//停止
+            }
+        }, 100);
+    }
+    
+   
+    //页面初始化
+    $(document).ready(function() {
+        companyAddrHidePluins();
+    });
+    
+    
+  });
+</script>

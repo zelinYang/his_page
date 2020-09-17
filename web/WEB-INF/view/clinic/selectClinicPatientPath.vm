@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+		.baseInfo > div > label{
+			font-size: 14px;
+			color: #0262da;
+		}
+
+		.baseInfo > div > span{
+			font-size: 14px;
+		}
+		.baseInfo > .layui-inline{
+			padding:7px 14px;
+		}
+		.layui-card-body .layui-input-block{
+			margin-left: 104px;
+		}
+		.layui-card-body .layui-form-label{
+			width: 84px;
+		}
+		.layui-form-switch {
+            margin-top: 4px;
+        }
+		.layui-col-xs6 .layui-card .layui-card-body {
+            height: 100px;
+        }
+		.layui-row .layui-col-xs4 {
+			padding-top: 5px;
+			padding-right: 5px;
+		}
+        .layui-row .layui-col-xs6 {
+            padding-top: 5px;
+            padding-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div class="full-height-scroll">
+	<div class="layui-card" id="patientInfo">
+		<div class="layui-card-header">患者信息</div>
+		<div class="layui-card-body">
+			<div class="layui-row baseInfo">
+                #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+                #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+				<div class="layui-inline"><label class="control-label">床号：</label><span id="currentBedNo">#htmlEscape($!inpatientInhospital.currentBedNo)</span></div>
+				<div class="layui-inline"><span id="lowIncomeFlag" class="layui-badge" style="#if(${CONST.AppConstants.YES_FLAG} != $!patient.lowIncomeFlag)display: none;#end">贫困户</span><label class="control-label">姓名：</label><span id="patientName">#htmlEscape($!inpatientInhospital.patientName)</span></div>
+				<div class="layui-inline"><label class="control-label">性别：</label><span id="patientSex">#lookUpDict($dicData.dicSex $!inpatientInhospital.patientSex)</span></div>
+				<div class="layui-inline"><label class="control-label">住院号：</label><span id="inhospitalNo">$!inpatientInhospital.inhospitalNo</span></div>
+				<div class="layui-inline"><label class="control-label">年龄：</label><span id="age">$!bedAndInpatient.patientAgeShow</span></div>
+				<div class="layui-inline"><label class="control-label">病区：</label><span id="wardId">#lookUpDict($dicData.dicInpatientWardAll $!inpatientInhospital.wardId)</span></div>
+				<div class="layui-inline"><label class="control-label">所在科室：</label><span id="currentOfficeId">#lookUpDict($dicData.dicSysOrgDeptName $!inpatientInhospital.currentOfficeId)</span></div>
+				<div class="layui-inline"><label class="control-label">入院日期：</label><span id="inhospitalDate">$!date.format('yyyy-MM-dd', $!inpatientInhospital.inhospitalDate)</span></div>
+			</div>
+		</div>
+	</div>
+	<div class="layui-card" id="accessPath">
+		<div class="layui-card-header">进入路径</div>
+		<div class="layui-card-body">
+            <form class="layui-form">
+				<div class="layui-form-item" action="">
+					<label class="layui-form-label">临床路径病种</label>
+					<div class="layui-input-block">
+						<select id="clinicPathId" name="clinicPathId" lay-filter="clinicPathId" lay-verify="required" class="layui-input">
+							<option value="">请选择</option>
+							#foreach($clinicPath in $clinicPathList)
+								<option value='${clinicPath.clinicPathId}'>${clinicPath.clinicPathName}</option>
+							#end
+						</select>
+					</div>
+				</div>
+				<div class="layui-form-item">
+					<label class="layui-form-label">适用患者对象</label>
+					<div class="layui-input-block">
+						<textarea type="text" name="clinicPathDesc" id="clinicPathDesc" autocomplete="off" class="layui-textarea"></textarea>
+					</div>
+				</div>
+				<div class="layui-form-item">
+					<label class="layui-form-label">不入临床路径</label>
+					<div class="layui-input-block">
+						<input type="checkbox" name="notIn" lay-filter="notIn" lay-skin="primary" title="是">
+					</div>
+				</div>
+				<div class="layui-form-item">
+					<label class="layui-form-label">不入临床类型</label>
+					<div class="layui-input-block">
+						<input type="radio" name="notInType" value="1" title="病人不同意" disabled>
+						<input type="radio" name="notInType" value="2" title="合并症" disabled>
+					</div>
+				</div>
+				<div class="layui-form-item">
+					<label class="layui-form-label">不入详细原因</label>
+					<div class="layui-input-block">
+						<textarea name="notInReason" placeholder="请输入" class="layui-textarea" disabled></textarea>
+					</div>
+				</div>
+				<div class="layui-form-item" style="text-align: center;">
+					<button type="button" id="btn_save" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_save"><span>提交</span></button>
+				</div>
+            </form>
+		</div>
+	</div>
+	<div class="layui-row">
+		<div class="layui-col-xs4">
+			<div class="layui-card">
+				<div class="layui-card-header">临床路径阶段</div>
+				<div class="layui-card-body">
+					<table id="clinicPathStageTable" lay-filter="clinicPathStageTable" ></table>
+				</div>
+			</div>
+		</div>
+		<div class="layui-col-xs8">
+			#foreach($option in $dicData.dicPathActivityType.keySet())
+				<div class="layui-col-xs6">
+					<div class="layui-card">
+						<div class="layui-card-header">$!{dicData.dicPathActivityType.get($option)}</div>
+						<div class="layui-card-body" id="type$option" style="overflow: auto;">
+
+						</div>
+					</div>
+				</div>
+			#end
+		</div>
+	</div>
+</div>
+</body>
+	#parse("./clinic/selectClinicPatientPath.js.vm")
+</html>

@@ -1,0 +1,431 @@
+<html>
+<head>
+    <title>临床路径活动</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+	<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <style>
+        .layui-form-checkbox span {
+            height: 30px;
+        }
+        .layui-table-view .layui-form-radio > i {
+            margin-top: 15px;
+        }
+        .layui-form-item .layui-input-inline {
+            border-radius: 2px 0 0 2px;
+        }
+        .path-order{
+            display: none;
+        }
+        .path-emr{
+            display: none;
+        }
+    </style>
+	<style type="text/css">
+		.text-inline{
+			display:inline;
+		}
+		.layui-form .layui-input-inline{width: 180px;}
+		/*.order-list{height: calc(60% - 120px);}*/
+		/*.edit-list{height: 40%;  z-index: 999999}*/
+		/*.the-list{height: 100%}*/
+		/*@media screen and (max-width: 1024px){*/
+		/*    .order-list{height: calc(60% - 148px);}*/
+		/*}*/
+		/*@media screen and (max-width: 768px){*/
+		/*    .order-list{height: calc(60% - 50px);}*/
+		/*    .edit-list{height: calc(40% - 160px);}*/
+		/*}*/
+		.layui-table.layui-table-input tr td {
+			/*padding: 0px 0px !important;*/
+			text-align: center !important;
+		}
+		.layui-table td input {
+			height: 100%;
+			border: none;
+		}
+		.layui-table td input[readonly] {
+			background-color: #f4f5f6;
+			color: #000!important;
+		}
+		.layui-table.custom-table{min-width: 1300px}
+		.layui-btn + .layui-btn-group {
+			margin-left: 10px;
+		}
+		.layui-btn-group + .layui-btn {
+			margin-left: 10px;
+		}
+        .input-row{
+            font-size: 16px;
+            color: red;
+            letter-spacing: 1px;
+        }
+	</style>
+</head>
+
+<body>
+    <div class="layui-card">
+        <div class="layui-card-body">
+            <form class="layui-form" action="" id="pathActivityForm">
+                #formHiddenInput("clinicPathActivityId" "$!{clinicPathActivity.clinicPathActivityId}" "id='clinicPathActivityId'")
+                #formHiddenInput("clinicPathStageId" "$!{clinicPathStageId}" "id='clinicPathStageId'")
+                <div class="layui-form-item text-center" style="font-size: 18px; font-weight: bold;">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="activityContent" lay-verify="required" autocomplete="off" placeholder="请输入名称"
+                                   class="layui-input input-row" value="$!{clinicPathActivity.activityContent}"/>
+                        </div>
+                    </div>
+					<div class="layui-inline">
+						<label class="layui-form-label">执行标准</label>
+						<div class="layui-input-inline width-auto">
+							<input type="text" name="activityExeStandard" lay-verify='required' autocomplete="off" placeholder="请输入执行标准"
+								   class="layui-input input-row" value="$!{clinicPathActivity.activityExeStandard}"/>
+						</div>
+					</div>
+                </div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">生成方式</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("activityGenWay" "$!{clinicPathActivity.activityGenWay}" ${dicData.dicActivityGenWay} "lay-filter='activityGenWay'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">预警级别</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("clinicEarlyWarningFlag" "$!{clinicPathActivity.clinicEarlyWarningFlag}" ${dicData.dicClinicEarlyWarningFlag} "lay-filter='clinicEarlyWarningFlag'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">活动分类</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("clinicActivityClassify" "$!{clinicPathActivity.clinicActivityClassify}" ${dicData.dicActivityClassify} "lay-filter='clinicActivityClassify' lay-verify='required'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">强制执行</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("activityMustFlag" "$!{clinicPathActivity.activityMustFlag}" ${dicData.dicYesNo} "lay-filter='activityMustFlag' lay-verify='required'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">项目类别</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("activityProperty" "$!{clinicPathActivity.activityProperty}" ${dicData.dicDoctorNurseFlag} "lay-filter='activityProperty' lay-verify='required'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">活动环节</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("clinicActivityNode" "$!{clinicPathActivity.clinicActivityNode}" ${dicData.dicActivityNode} "lay-filter='clinicActivityNode' lay-verify='required'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">诊疗级别</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("clinicActivityLevel" "$!{clinicPathActivity.clinicActivityLevel}" ${dicData.dicTechClinicLevel} "lay-filter='clinicActivityLevel'")
+                        </div>
+                    </div>
+				</div>
+				<div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">项目分类</label>
+                        <div class="layui-input-inline width-auto">
+                            #formRadioGroup("activityType" "$!{clinicPathActivity.activityType}" ${dicData.dicPathActivityType} "lay-filter='activityType' lay-verify='required'")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide" style="overflow: auto">
+                    <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认"/>
+                </div>
+            </form>
+            <div class="layui-form-item path-emr">
+                <label class="layui-form-label">病历模板</label>
+                <div class="layui-input-block m-b-sm">
+                    <input type="text" name="emrTlpName" lay-verify="emrTlpName" autocomplete="off" placeholder="请输入病历模板" class="layui-input"/>
+                    <table id="emrTlpTable" lay-filter="emrTlpTable"></table>
+                    <script type="text/html" id="delBar">
+                        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+                    </script>
+                </div>
+            </div>
+            <!-- 医嘱列表 -->
+            <div class="layui-row white-bg order-list path-order">
+                #parse("./clinic/clinicPathOrderEdit.vm")
+            </div>
+
+        </div>
+    </div>
+<script type="text/javascript">
+    // 0101	西药
+    var ORDER_TYPE_W_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_W_MEDICINE}";
+    //0102	中成药
+    var ORDER_TYPE_WTCM_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_WTCM_MEDICINE}";
+    // 02=检查类医嘱
+    var ORDER_TYPE_PACS_EXAM = "$!{CONST.AppConstants.ORDER_TYPE_PACS_EXAM}";
+    // 03=检验类医嘱
+    var ORDER_TYPE_LIS = "$!{CONST.AppConstants.ORDER_TYPE_LIS}";
+    //04=手术类医嘱
+    var ORDER_TYPE_SURGERY = "$!{CONST.AppConstants.ORDER_TYPE_SURGERY}";
+    //05=处置类医嘱
+    var ORDER_TYPE_TREAT = "$!{CONST.AppConstants.ORDER_TYPE_TREAT}";
+    //住院医嘱颜色
+    var dicInhospitalStateColor = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalStateColor)');
+    //医护类型，对应bas_dic.dic_type_id=53  1=医 2=护
+    var doctorNurseFlag = '$!{doctorNurseFlag}';
+
+    var form;
+    var currentTr;
+    var mergeTd = {};// 存放计算医嘱表格数据需要合并的组号（子医嘱）
+    var orderData = [];// 存放药品、检验检索结果,单击选中药品、检验后的数据从这里获取
+    var selectOrderData = [];//已选中的医嘱项目
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicOrdrItem  = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrdrItem)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    var dicPharmacyFreqDayFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqDayFreq)'); //用药频率对应的数量
+    var dicPharmacyFreqWeekFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqWeekFreq)'); //用药周频率对应的数量
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');//给药途径
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    var childOrderEditFeild = {orderName:true, dosage:true, dosageUnit:true, usageQuantityUnit:true, usageQuantity:true, remark:true}
+    var emrTlpTable;
+
+    var clinicPathEmrList;
+    if ('' != '$!{clinicPathActivity.clinicPathEmrs}') {
+        clinicPathEmrList = JSON.parse('$clinicPathActivity.clinicPathEmrs');
+    }
+
+    layui.config({base: '../resource/layuiadmin/'}).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['form', 'laydate', 'element', 'table','layer','util', 'autocomplete'], function(){
+        var laydate = layui.laydate, table = layui.table, form = layui.form, layer = layui.layer, util  = layui.util, autocomplete = layui.autocomplete;
+
+        window.getEmrTlpTableData = function () {
+            return layui.table.cache["emrTlpTable"];
+        }
+
+        form.on('radio(activityType)', function(data){
+            switch(data.value) {
+                case '2':
+                    $('.path-order').show();
+                    $('.path-emr').hide();
+                    break;
+                case '4':
+                    $('.path-order').hide();
+                    $('.path-emr').show();
+                    generateEmrTable();
+                    if (clinicPathEmrList) {
+                        table.reload('emrTlpTable', {
+                            data: clinicPathEmrList
+                        });
+                        form.render();
+                    }
+                    break;
+                default:
+                    $('.path-order').hide();
+                    $('.path-emr').hide();
+            }
+        });
+
+        $(function () {
+			if ('$!{clinicPathActivity.activityType}' == '2') {
+				$('.path-order').show();
+				$('.path-emr').hide();
+			} else if ('$!{clinicPathActivity.activityType}' == '4') {
+                $('.path-order').hide();
+                $('.path-emr').show();
+                generateEmrTable();
+                if (clinicPathEmrList) {
+                    table.reload('emrTlpTable', {
+                        data: clinicPathEmrList
+                    });
+                    form.render();
+                }
+            }
+		});
+
+        //科室名称
+        $('input[name="emrTlpName"]').each(function () {
+            bindEmrSearch(this);
+        });
+
+        // 绑定部门检索
+        function bindEmrSearch(elem) {
+            // 检索病种
+            var emr = autocomplete.render({
+                cache: false,
+                method: 'post',
+                searchField: 'keyWord',
+                elem: elem,
+                url: contextPath + '/emrTlp/emrTlpPageData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+                template_val: '{{d.emrTlpName}}',
+                template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{d.emrTlpId}}</span>&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{d.emrTlpVersion}}</strong>&nbsp;&nbsp;&nbsp;{{d.emrTlpName}}',
+                onselect: function (obj) {
+                    var tableData = table.cache['emrTlpTable'];
+                    tableData.push({
+                        'emrTlpId': obj.emrTlpId,
+                        'emrTlpName': obj.emrTlpName
+                    });
+                    table.reload('emrTlpTable', {
+                        data: tableData
+                    });
+                    $(elem).val('');
+                    form.render();
+                }
+            });
+        }
+
+        function generateEmrTable() {
+            emrTlpTable = table.render({
+                data: [],
+                id: 'emrTlpTable',
+                elem: '#emrTlpTable',
+                height: 200,
+                cols: [[
+                    {field: 'emrTlpId', title: 'ID', width: 150},
+                    {field: 'emrTlpName', title: '名称'},
+                    {fixed: 'right', title: '操作', toolbar: '#delBar', width: 50}
+                ]],
+                page: false,
+                limit: 20,
+                request: {
+                    pageName: 'pageNumber',
+                    limitName: 'pageSize'
+                },
+                done: function () {
+
+                }
+            });
+            table.on('tool(emrTlpTable)', function(obj){
+                if (obj.event === 'del'){
+                    layer.confirm('确定删除这条数据吗？', function(index){
+                        obj.del();
+                        updateTableData('emrTlpTable');
+                        layer.close(index);
+                    });
+                }
+            });
+
+            function updateTableData(tableId) {
+                var tableData = table.cache[tableId];
+                console.log(tableData);
+                for (var i = 0; i < tableData.length; i++) {
+                    if (JSON.stringify(tableData[i]) === '[]') {
+                        tableData.splice(i, 1);
+                    }
+                }
+                table.reload(tableId, {
+                    data: tableData
+                });
+            }
+        }
+    });
+
+    //回车焦点转移
+    function enterFocusConvert() {
+        function activeNextTd(curTd) {
+            var nextFocusElem = curTd.nextAll().find('input,select,.layui-unselect').not('[readonly]').not('[type^=hidden]').first();
+            if (nextFocusElem.length==0)  return false;
+            $('.curFocus').removeClass('curFocus');
+            nextFocusElem.addClass('curFocus');
+            //如果是layui-unselect
+            if (nextFocusElem.hasClass('layui-unselect')) {
+                nextFocusElem.find('.layui-edge').click();
+            } else {
+                //一般的input
+                nextFocusElem.focus();
+            }
+            return true;
+        }
+
+
+        //回车焦点移至同列下一行单元格的输入框，如果到了底部，则焦点移至下一列第一行的单元格输入框
+        $(document).keydown(function(event){
+            if (event.keyCode == 13){
+                var inputFocus = $(event.target);
+                var curTd;
+                var nextFocusElem ;
+                //td的input元素下一个input框
+                nextFocusElem = inputFocus.nextAll().not('[readonly]').not(':hidden').first();
+                if (nextFocusElem.length>0) {
+                    nextFocusElem.focus();
+                    return true;
+                }
+
+                //下一个td的input元素的第一个input框或者select控件
+                curTd =  inputFocus.parents('td'); if (activeNextTd(curTd)) return true;
+                curTd =  inputFocus.parents('td').parent().next("tr").find("td").first(); if (activeNextTd(curTd)) return true;
+                //curTd =  $('.curFocus').parents('td'); if (activeNextTd(curTd)) return true;
+                //此处新增行有bug，会新增多次
+                //inputFocus.parents('table').prev('table').find(".btn-add").click();
+            }
+        });
+    }
+
+	function getOrderList() {
+		var arrayObj = [];
+		var orderGroupNos = [];
+		var validFlag = false;
+		$('#editOrderList > tr').each(function () {
+			var obj = {};
+			$(this).find('td > input, select').each(function () {
+				var name = $(this).attr('name');
+				var value = $(this).val();
+				if (name && value) {
+					obj[name] = value;
+					if (name == 'pharmacyFreqId') {
+						obj['pharmacyFreqName'] = $(this).find("option:selected").text();
+					}
+				}
+			});
+			if (!orderGroupNos.contains(obj.orderGroupNo)) {
+				orderGroupNos.push(obj.orderGroupNo);
+			}
+
+			var medicineType = obj.medicineType;
+
+			if ($(self).attr('operate-type') == '1' && medicineType != '1' && medicineType != '2' && medicineType != '3' ){
+				obj.orderState = '1';
+			} else {
+				obj.orderState = '0';
+			}
+
+			if(medicineType == '1' || medicineType == '2' || medicineType == '3'){
+				validFlag = true;
+			}
+
+			if (!$.isEmptyObject(obj) && obj.orderState
+					&& obj.orderName && obj.orderState) {
+				arrayObj.push(obj);
+			}
+		});
+		return arrayObj;
+	}
+    $("#table1_tbodyDiv").scroll(function(e) {
+        $("#table1_theadDiv").scrollLeft($("#table1_tbodyDiv").scrollLeft());
+    });
+    $(document).ready(function() {
+        $('#orderListDiv1').height(($('body').height() - $('#queryForm').height() - $('#centerBar').height() - $('#footerBar').height() - 36)/2);
+    });
+</script>
+</body>
+</html>

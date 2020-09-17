@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Copyright (c) 2002 by ObjectLearn. All Rights Reserved. -->
+<web-app 
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+    xmlns="http://java.sun.com/xml/ns/j2ee" 
+    xmlns:javaee="http://java.sun.com/xml/ns/javaee" 
+    xmlns:web="http://java.sun.com/xml/ns/javaee/web-app_2_5.xsd" 
+    xsi:schemaLocation="http://java.sun.com/xml/ns/j2ee 
+    http://java.sun.com/xml/ns/j2ee/web-app_2_4.xsd" 
+    id="WebApp_1226641136656" version="2.4">
+
+  <filter>
+    <filter-name>HttpsCheckFilter</filter-name>
+    <filter-class>cn.com.sso.filter.HttpsCheckFilter</filter-class>
+  </filter>
+  <filter>
+    <filter-name>AuthenticationFilter</filter-name>
+    <filter-class>cn.com.sso.filter.AuthenticationFilter</filter-class>
+    <init-param>
+      <param-name>debugModel</param-name>
+      <param-value>true</param-value>
+    </init-param>
+    <init-param>
+      <!-- 设置session刷新时间 -->
+      <param-name>accessInterval</param-name>
+      <param-value>5</param-value>
+    </init-param>
+  </filter>
+   
+  <filter>
+    <filter-name>encodingFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+    <init-param>
+      <param-name>forceEncoding</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+  <!-- GBK -->
+  <filter>
+    <filter-name>GBKFilter</filter-name>
+    <filter-class>org.springframework.web.filter.CharacterEncodingFilter</filter-class>
+    <init-param>
+      <param-name>encoding</param-name>
+      <param-value>UTF-8</param-value>
+    </init-param>
+    <init-param>
+      <param-name>forceEncoding</param-name>
+      <param-value>true</param-value>
+    </init-param>
+  </filter>
+
+  <filter>
+    <filter-name>requestContextFilter</filter-name>
+    <filter-class>
+            org.springframework.web.filter.RequestContextFilter
+        </filter-class>
+  </filter>
+ 
+  <filter-mapping>
+    <filter-name>HttpsCheckFilter</filter-name>
+    <url-pattern>/</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>HttpsCheckFilter</filter-name>
+    <url-pattern>/index.html</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>HttpsCheckFilter</filter-name>
+    <url-pattern>/common/login.action</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>encodingFilter</filter-name>
+    <url-pattern>*.do</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>encodingFilter</filter-name>
+    <url-pattern>*.jo</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>encodingFilter</filter-name>
+    <url-pattern>*.xo</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>encodingFilter</filter-name>
+    <url-pattern>*.action</url-pattern>
+  </filter-mapping>
+  <filter-mapping>
+    <filter-name>GBKFilter</filter-name>
+    <url-pattern>*.mo</url-pattern>
+  </filter-mapping>
+ 
+  <filter-mapping>
+    <filter-name>AuthenticationFilter</filter-name>
+    <url-pattern>*.do</url-pattern>
+  </filter-mapping>
+
+  <filter-mapping>
+    <filter-name>AuthenticationFilter</filter-name>
+    <url-pattern>*.jo</url-pattern>
+  </filter-mapping>
+
+  <listener>
+    <listener-class>org.springframework.web.context.ContextLoaderListener</listener-class>
+  </listener>
+  <servlet>
+    <servlet-name>bofan</servlet-name>
+    <servlet-class>cn.com.base.spring.util.ViewContainerDispatcherServlet</servlet-class>
+    <load-on-startup>2</load-on-startup>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.do</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.jo</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.xo</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.action</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.sso</url-pattern>
+  </servlet-mapping>
+  <servlet-mapping>
+    <servlet-name>bofan</servlet-name>
+    <url-pattern>*.mo</url-pattern>
+  </servlet-mapping>
+  <welcome-file-list>
+    <welcome-file>index.html</welcome-file>
+  </welcome-file-list>
+  <error-page>
+    <error-code>404</error-code>
+    <location>/error.htm</location>
+  </error-page>
+  <error-page>
+    <exception-type>java.lang.Exception</exception-type>
+    <location>/common/handleThrowable.do</location>
+  </error-page>
+  <error-page>
+    <exception-type>java.lang.Throwable</exception-type>
+    <location>/common/handleThrowable.do</location>
+  </error-page>
+</web-app>

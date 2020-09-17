@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-护士住院已分配床位列表</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+    /*工具栏图标大小*/
+    td[lay-event="open"] i.fa {
+    font-size: 18px;
+    }
+    td[lay-event="open"] i.fa {
+    font-size: 18px;
+    }
+    .layui-table { margin: 0;}
+
+    .view-show {
+        position: relative;
+        float: right;
+        bottom: 35px;
+        right: 70px;
+    }
+    .patient-list {
+        width: 98%;
+        float: left;
+    }
+    .layadmin-contact-box:focus, .layadmin-contact-box:hover,.layadmin-contact-box.box-selected{
+        box-shadow: 0 2px 12px 0 rgba(0,0,0,.1);
+        background: #fcfcfc;
+    }
+    .layadmin-contact-box.box-selected{
+        background-color:#f2f8fe;
+    }
+    </style>
+</head>
+<body class="white-bg">
+<div class="layui-fluid ">
+    <!--搜索条件 结束-->
+    <div class=" layui-hide">
+        <input type="button" id="btn_query" value="查询">
+    </div>
+    <!--列表 begin-->
+    <!-- 列表表格 工具栏-->
+    <script type="text/html" id="operateFormatter">
+        <a class="" ><i class="iconfont icon-shou"></i></a>
+    </script>
+    <!-- 性别 -->
+    <script type="text/html" id="sexTpl">
+        <span class="layui-badge {{d.patientSex == 1 ? 'layui-bg-blue' : (d.patientSex == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{ dicSex[d.patientSex] || '' }}</span>
+    </script>
+    <!-- 列表表格 工具栏 结束-->
+    <!-- 列表表格 begin -->
+    <table id="inpatientInhospitalGrid" lay-filter="inpatientInhospitalGrid"></table>
+    <!--  列表表格 end -->
+    <!--列表end-->
+
+    <!--流式列表模板-->
+    <script type="text/html" id="maillistTpl">
+        <div class="layui-fluid  layadmin-maillist-fluid">
+            <div class="layui-row layui-col-space5">
+                {{# layui.each(d, function(index, item){ }}
+                <div class="layui-col-sm4 layui-col-md3" >
+                    <div class="layadmin-contact-box" >
+                        <div class="layui-col-md4 layui-col-sm6">
+                            <a href="javascript:;">
+                                <div class="layadmin-text-center">
+                                    <img src="{{jiatingPhoto(item.patientSex, item.patientAgeYear)}}" onerror="javascript:this.src = contextPath+'/resource/layuiadmin/style/myRes/jiating_default.png'">
+                                    <div class="layadmin-maillist-img layadmin-font-blod">
+                                        <span>{{dicSex[item.patientSex]}}</span>
+                                        <span>{{item.patientAgeYear ? item.patientAgeYear + '岁' : (item.patientAgeMonth ? item.patientAgeMonth + '月<span style="color: red">婴儿</span>' : '')}}</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                        <div class="layui-col-md8 layadmin-padding-left20 layui-col-sm6" style="height: 150px;">
+                            <a href="javascript:;">
+                                <h3 class="layadmin-title">
+                                    <strong>{{item.patientName}}</strong>
+                                    <span class="{{['0','1'].includes(item.nurseLevel) ? 'layui-badge' : (item.nurseLevel == '2' ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{dicNurseLevel[item.nurseLevel] ||''}}</span>
+                                    <span class="{{item.inpatientCondition ? 'layui-badge-rim':''}}" style="{{['2','3','4'].includes(item.inpatientCondition)  ? 'color: red':''}}">{{dicPatientCondition[item.inpatientCondition] ||''}}</span>
+                                </h3>
+                                <!--<p class="layadmin-textimg">
+                                    <i class="layui-icon layui-icon-location"></i>
+                                    上海
+                                </p>-->
+                            </a>
+                            <div class="layadmin-address">
+                                <a href="javascript:;">
+                                    床 <strong>{{item.currentBedNo}}</strong>
+                                    <br>
+                                    入院日期: {{layui.util.toDateString(item.inhospitalDate ,"yyyy-MM-dd")}} <span style="color: red">{{dicInhospitalState[item.inhospitalState]}}</span>
+                                    <br>
+                                    主管医生: {{item.managerDoctorName || ''}}
+                                    <br>
+                                    责任护士: {{item.dutyNurserName || ''}}
+                                    <br>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {{# })  }}
+            </div>
+        </div>
+    </script>
+</div>
+<!-- 本页面js -->
+#parse("./inpatient/nurseHome/nurseWardList.js.vm")
+</body>
+</html>

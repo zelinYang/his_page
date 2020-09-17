@@ -1,0 +1,68 @@
+   <script>
+      var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+      var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+      var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+      var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+      var dicAntibioticLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticLevel)');
+      var dicSpecialMedicineLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicineLevel)');
+      var queryMedicine;//查询药品库存
+
+      layui.use(['jquery','table', 'laypage','element','form'], function(){
+          var table = layui.table;
+          var element = layui.element;
+          var form = layui.form;
+          var laypage = layui.laypage;
+          var $ = layui.$;
+
+       $("#search").keyup(function(event){
+       (event.key== "Enter") && $("#btn_searchItem").click();
+   });
+
+          element.render();
+          //第一个实例
+          var tableIns = table.render({
+              elem: '#medicineTable'
+              //,toolbar: '#toolbarDemo'
+              ,defaultToolbar: []
+              //,height: '230'//高度
+              ,height: '320'//高度
+              ,url: contextPath + '/medicine/medicineSimpleListData.jo' //数据接口
+              ,page: false //开启分页
+              ,limit:200
+              ,request: {
+                  pageName: 'pageNumber' //页码的参数名称，默认：page
+                  ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+              }
+              ,cols: [[ //表头
+                  {field : 'medicineName',title : '名称', minWidth:200, templet :function (row) {return row.medicineName;}}
+                  ,{field : 'medicineType', title : '类别', sort: true, width:100, templet :function (row) {return dicMedicineType[row.medicineType];}}
+                  ,{field : 'medicineSpec', title : '药品规格', width:200, templet :function (row) {return row.medicineSpec;}}
+                  ,{field : 'producingAreaName', title : '厂商', width:150}
+              ]]
+              //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+              ,done: function(res, curr, count){
+              }
+          });
+
+        //搜索
+          $("#btn_searchItem").on("click",function () {
+              var search =$("#search").val();
+              var medicineType =$("#medicineType").val();
+              tableIns.reload({url:'../medicine/medicineSimpleListData.jo', page: {curr: 1}, where:{medicineName: search,medicineType:medicineType} })
+          })
+
+          //查询列表
+          queryMedicine = function() {
+              var queryParams = common.serializeObject($('#medicine_queryForm'));
+              tableIns.reload({ where: queryParams });
+          }
+
+
+          //监听行单击事件
+          table.on('row(medicineTable)', function(obj){
+              var medicine = obj.data;
+              parent.medicineRowSelect(medicine);
+          });
+
+      });//layui.use
+  </script>

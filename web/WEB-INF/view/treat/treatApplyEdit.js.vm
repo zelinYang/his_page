@@ -1,0 +1,373 @@
+<script type="text/javascript">
+	var ORDER_CLASSIFY_TMP = "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}";
+	var ORDER_STATE_NEW = "$!{CONST.AppConstants.ORDER_STATE_NEW}";
+	//05=处置类医嘱
+	var ORDER_TYPE_TREAT  = "$!{CONST.AppConstants.ORDER_TYPE_TREAT}"
+	var YES_FLAG  = "$!{CONST.AppConstants.YES_FLAG}"
+	var dicBodyPartClassifyTreat = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifyTreat)');
+	var surgeryArr = [];
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).use(['form', 'element', 'table'], function(){
+		var  form = layui.form, table =layui.table;
+		laydate.render({ elem:'#exeOrderStartTime', type:'datetime', value: getFormatDate()});
+		var checkboxed = {};
+		var emrTlpId = $('#emrTlp').val() ? $('#emrTlp').val() : '528';
+		//如果存在电子病历Id 加载
+		if(emrTlpId){
+			loadEmrTlp(emrTlpId);
+			$('#emrTlp').val(emrTlpId);
+		}
+
+		$("#btn_add").click(function () {
+			common.confirm("新增会清除掉当前页面内容，请先确认是否已保存数据，确认新增治疗吗？", function () {
+				window.location.reload();
+			});
+		});
+
+		//治疗科室
+		$("#btn_office").click(function () {
+            common.open('$contextPath' + '/outpatient/treatOfficeAdd.do', '设置治疗科室', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+		});
+
+		// 获取表格高度
+		function getTableHgt() {
+			return ($('body').height() - $('#queryForm').height() - ($('body').height() - $('.layui-fluid').height()));
+		}
+// 重置表格高度
+		$(window).resize(function () {
+			var height = getTableHgt()
+			table.reload('basChargeGroupListGrid', {
+				height: height
+			})
+		})
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			return $.extend({
+				treatFlag: YES_FLAG
+			}, common.serializeObject($('#queryForm')));
+		}
+
+		//表格设置
+		table.render($.extend(basePageTable, {
+			elem: '#basChargeGroupListGrid',
+			height: getTableHgt(),
+			url: contextPath + '/bas/basChargeGroupListData.jo',
+			where: getQueryParams(),
+			parseData:function (res) {
+				res.data = $.map(res.data, function (basChargeGroup) {
+					var obj = {};
+					if (basChargeGroup.chargeItemIdStr) {
+						var chargeItemIdStrs = basChargeGroup.chargeItemIdStr.split(',');
+						$.each(chargeItemIdStrs, function (index, chargeItemIdStr) {
+							var chargeItemIdDatas = chargeItemIdStr.split('_');
+							obj[chargeItemIdDatas[0]] = chargeItemIdDatas[1];
+						})
+					}
+					var items = $.map(basChargeGroup.basChargeItems, function (basChargeItem) {
+						basChargeItem.chargeGroupName = basChargeGroup.chargeGroupName;
+						basChargeItem.chargeGroupId = basChargeGroup.chargeGroupId;
+						basChargeItem.chargeItemIdStr = basChargeGroup.chargeItemIdStr;
+						basChargeItem.surgeryCodeId = basChargeGroup.surgeryCodeId;
+						basChargeItem.bodyPartClassify = basChargeGroup.bodyPartClassify;
+						basChargeItem.surgeryName = basChargeGroup.chargeGroupName;
+						basChargeItem.doctorOrderSubtype = basChargeGroup.doctorOrderSubtype;
+						basChargeItem.doctorOrderType = basChargeGroup.doctorOrderType;
+						basChargeItem.giveTotalQuantity = obj[basChargeGroup.chargeItemId]? obj[basChargeGroup.chargeItemId]: 1;
+						return basChargeItem;
+					});
+					if (basChargeGroup.medicines) {
+						$.each(basChargeGroup.medicines, function (index, medicine) {
+							var basChargeItem = {};
+							basChargeItem.chargeGroupName = basChargeGroup.chargeGroupName;
+							basChargeItem.chargeGroupId = basChargeGroup.chargeGroupId;
+							basChargeItem.chargeItemIdStr = basChargeGroup.chargeItemIdStr;
+							basChargeItem.surgeryCodeId = basChargeGroup.surgeryCodeId;
+							basChargeItem.bodyPartClassify = basChargeGroup.bodyPartClassify;
+							basChargeItem.surgeryName = basChargeGroup.chargeGroupName;
+							basChargeItem.doctorOrderSubtype = basChargeGroup.doctorOrderSubtype;
+							basChargeItem.doctorOrderType = basChargeGroup.doctorOrderType;
+							basChargeItem.giveTotalQuantity = obj[basChargeGroup.chargeItemId]? obj[basChargeGroup.chargeItemId]: 1;
+							basChargeItem.unitPrice = medicine && medicine.minRetailPrice || 1;
+							basChargeItem.chargeName = medicine && medicine.medicineName || '';
+							basChargeItem.medicineId = medicine && medicine.medicineId || '';
+							items.push(basChargeItem);
+						});
+					}
+					return items;
+				});
+				return res;
+			},
+			cols: [[
+				{field: 'chargeGroupId',hide:true},
+				{field: 'chargeGroupName', minWidth: 200,title: '治疗项目'},
+				{field: 'bodyPartClassify', title: '部位分类', width: 100, templet: function (d) {
+						return dicBodyPartClassifyTreat[d.bodyPartClassify] || "";}},
+				{field: 'chargeName',minWidth: 200, title: '费用名称'},
+				{field: 'unitPrice', title: '单价'}
+			]],
+			done: function (res) {
+				var that = this;
+				//存放需要合并的username
+				var chargeGroupIds = layui.$.unique(layui.$.map(res.data, function (item) {
+					return item.chargeGroupId;
+				}));
+				//合并显示单元格字段
+				var groupCells = ['chargeGroupName','bodyPartClassify'];
+				//合并关键字段
+				var groupKeyWord = 'chargeGroupId';
+				layui.each(chargeGroupIds, function (index, contains) {
+					var tr = that.elem.next().find('.layui-table-main tr td[data-field="'+ groupKeyWord +'"]>.layui-table-cell:contains('+ contains +')').filter(function () {
+                        return $(this).text() == contains;
+                    }).parents('tr');
+					layui.each(groupCells, function (i, field) {
+						tr.find('td[data-field="' + field + '"]').first().attr('rowspan', tr.length).end().not(":first").remove();
+					});
+					//移入背景颜色
+					tr.hover(function () {
+						tr.addClass('layui-table-hover');
+					}, function () {
+						tr.removeClass('layui-table-hover');
+					})
+				})
+			}
+		}));
+
+		function refreshTable(){
+			table.reload('basChargeGroupListGrid', {
+				where: common.serializeObject($('#queryForm'), ['chargeGroupName'])
+			});
+		}
+
+		$("#q_surgeryName").bind("input propertychange",function(event){
+			var keyWord = $('#surgeryName').val();
+			table.reload('basChargeGroupListGrid', {
+				where: {keyWord: keyWord}
+			});
+		});
+
+		table.on('row(basChargeGroupListGrid)', function(obj){
+			var data = obj.data;
+			if (!$('#emrTlp').val()) {
+				common.alert('请选择病历模板', 0);
+				refreshTable();
+				return;
+			}
+			//手术id
+			var chargeGroupIds = $.map(surgeryArr, function (item) {
+				return item.chargeGroupId;
+			});
+			console.log(surgeryArr);
+			if (chargeGroupIds.contains(data.chargeGroupId)) {
+				common.alert('该治疗项目已存在');
+				return;
+			}
+			$.each(table.cache.basChargeGroupListGrid, function (i, item) {
+				if (item.chargeGroupId === obj.data.chargeGroupId) {
+					surgeryArr.push(item);
+				}
+			});
+			addBasCHargeItem(data);
+			setEmrData(surgeryArr)
+		});
+
+		// 设置电子病历数据
+		function setEmrData(surgeryArr) {
+			// renderSurgeryItemList(surgeryArr);
+			//检查部位
+			var examBodyParts = $.unique($.map(surgeryArr, function (item) {
+				return dicBodyPartClassifyTreat[item.bodyPartClassify];
+			}))
+			var emrIframe = $("#emrIframe")[0].contentWindow;
+			var surgeryNames = [];
+			var involvedMedicines = [];
+			var basChargeItemMap = {};
+			$.each(surgeryArr, function(index, basChargeItem) {
+				if (!basChargeItemMap[basChargeItem.chargeGroupId]) {
+					basChargeItemMap[basChargeItem.chargeGroupId] = [];
+				}
+				basChargeItemMap[basChargeItem.chargeGroupId].push(basChargeItem);
+			})
+			for (var key in basChargeItemMap) {
+				surgeryNames.push(basChargeItemMap[key][0].chargeGroupName);
+				var involvedMedicineArr = $.map(basChargeItemMap[key], function (basChargeItem) {
+					return basChargeItem.chargeName + '（' + basChargeItem.unitPrice + '元）';
+				});
+				involvedMedicines.push('[' + involvedMedicineArr.join('，') + ']');
+			}
+			emrIframe.setTemplateContent('TreatApply_surgeryName', surgeryNames.join('，'));
+			$('#techApplyName').val(surgeryNames.join('，'));
+			emrIframe.setTemplateContent('TreatApply_orderGroupNo', $('#orderGroupNo').val());
+			emrIframe.setTemplateContent('TreatApply_involvedMedicine', involvedMedicines.join('，'));
+			emrIframe.setTemplateContent('TreatApply_treatPart', examBodyParts.join('，'));
+        }
+
+		function addBasCHargeItem(basChargeItem) {
+			var html = [];
+			html.push('<button type="button" class="layui-btn layui-btn-xs" ' + 'sub-charge-item-id="' + basChargeItem.chargeGroupId + '">');
+			html.push(basChargeItem.chargeGroupName);
+			html.push('<span class="layui-bg-red"><i class="layui-icon layui-unselect layui-tab-close">ဆ</i></span>');
+			html.push('</button>');
+			$('#selectedItem').append(html.join(''));
+			$('#selectedItem .layui-btn .layui-bg-red .layui-tab-close').unbind();
+			$('#selectedItem .layui-btn .layui-bg-red .layui-tab-close').click(function () {
+				var chargeGroupId = $(this).parent().parent().attr('sub-charge-item-id');
+				for (var i = surgeryArr.length - 1; i >= 0; i--) {
+					if (chargeGroupId == surgeryArr[i].chargeGroupId) {
+						surgeryArr.splice(i, 1);
+					}
+				}
+				$(this).parent().parent().remove();
+				setEmrData(surgeryArr);
+			});
+		}
+
+		// 监听加急复选框
+		var urgentFlag = '0';
+		form.on('checkbox(urgentFlag)', function (data){
+			urgentFlag = data.elem.checked ? '1' : '0';
+		});
+
+		function loadEmrTlp(emrTlpId){
+			var params =  "emrTlpId=" + emrTlpId + "&patientId=" + $('#patientId').val() + "&patientHospitalEmrId=" + $('#patientHospitalEmrId').val();
+
+			if ($('#registerId').val()){
+				params += "&registerId=" + $('#registerId').val();
+			}
+			if ($('#inhospitalId').val()) {
+				params += "&inhospitalId=" + $('#inhospitalId').val();
+			}
+			$('#emrIframe').attr('src', contextPath + '/emr/commonEmrTemplate.do?' + params);
+		}
+
+		// 监听病历模板下拉选择事件
+		form.on('select(emrTlp)', function (data){
+			$('#surgeryItemList').html('');
+			surgeryArr = [];
+			if(!data.value) return false;
+			if (!$('#inhospitalId').val() && !$('#registerId').val()) {
+				common.alert('住院号或挂号ID无效', 0);
+				return ;
+			}
+			loadEmrTlp(data.value);
+		});
+
+	});
+	//获取收费项目id 和 数量 数组 value="12_32"  chargeItemId_chargeItemCount
+	function getChargeItems() {
+		return $.map($("#chargeItemIdStr").val().split(','), function (chargeItem) {
+			var chargeItemId = chargeItem.split('_')[0];
+			var chargeItemCount = chargeItem.split('_')[1];
+			return {chargeItemId:chargeItemId, chargeItemCount:chargeItemCount || '1' }
+		})
+	}
+	//提交表单
+	function submitForm(minieditorDesign, orderState){
+		if (!$('#inhospitalId').val() && !$('#registerId').val()) {
+			common.msg('住院流水号、挂号流水号或病历模板参数无效', 0);
+			return;
+		}
+		if (!surgeryArr || surgeryArr.length == 0) {
+			common.msg('请选择治疗项目', 0);
+			return ;
+		}
+        //获取电子病历的执行科室
+        var exeOfficeId = '';
+        var elem =  minieditorDesign.miniEditor.getControlById('TreatApply_exeOfficeName');
+        if(elem.length != 0){
+            var ctonDom = JSON.parse(decodeURIComponent($(elem[0].getDom()).attr('text-value')));
+            exeOfficeId = ctonDom.exeOfficeId;
+        }
+        if (!exeOfficeId) {
+            common.msg('请选择执行科室', 0);
+            return ;
+        }
+		var params = $.map(surgeryArr, function (item) {
+			console.log(item);
+			var inpatientOrderSub = {};// 住院子医嘱
+			var outpatientTechItem = {} //门诊检查医技明细
+			if ($('#inhospitalId').val()) {
+				inpatientOrderSub = {
+					chargeGroupName: item.chargeGroupName
+					, chargeGroupId: item.chargeGroupId
+					, techApplyName: $("#techApplyName").val()
+					, inhospitalChargeGroupCode: item.inhospitalChargeGroupCode
+					, docChargeGroupCode: item.docChargeGroupCode
+					, doctorOrderSubtype: item.doctorOrderSubtype
+					, doctorOrderType: item.doctorOrderType
+					, unitPrice: item.unitPrice
+					, giveTotalQuantity: item.giveTotalQuantity? item.giveTotalQuantity: 1
+					, makeOrderFlag: '1'
+				}
+			} else {
+				outpatientTechItem = {
+					doctorOrderSubtype: item.doctorOrderSubtype
+					, chargeGroupName: item.chargeGroupName
+					, chargeGroupId: item.chargeGroupId
+					, techApplyName: $("#techApplyName").val()
+					, doctorOrderType: item.doctorOrderType
+					, unitPrice: item.unitPrice
+					, giveTotalQuantity: item.giveTotalQuantity? item.giveTotalQuantity: 1
+				}
+			}
+			return $.extend({chargeItemId: item.chargeItemId, medicineId: item.medicineId}, inpatientOrderSub, outpatientTechItem);
+		});
+		if (!params || params.length <= 0) { return ;}
+		//InpatientOrderEditInfo 主医嘱
+		var inpatientOrderEditInfo = {
+			inhospitalId: $('#inhospitalId').val(),
+			urgentFlag: $('#urgentFlag').val(),
+			makeOrderFlag: '1',
+			medicalTechFlag: '3',
+			orderClassify: ORDER_CLASSIFY_TMP, // 医嘱类别 2临时
+			orderState: ORDER_STATE_NEW, // 状态新开
+			exeOrderStartTime: $('#exeOrderStartTime').val(),
+			doctorOrderType: $("#doctorOrderType").val(),
+			inpatientOrderJson: JSON.stringify(params),
+			techApplyName: $("#techApplyName").val()
+		}
+		var outpatientTechInfo = {
+			patientType: '2', // 申请类型， 2表示住院
+			urgentFlag: $('#urgentFlag').val(),
+			registerId: $('#registerId').val(),
+			orderGroupNo: $('#orderGroupNo').val(),
+			treatApplyId: $('#treatApplyId').val(),
+			doctorOrderType: ORDER_TYPE_TREAT,
+			medicalTechFlag: '3',
+			doctorOrderType: $("#doctorOrderType").val(),
+			chargeGroupId: $('#chargeGroupId').val() ? $('#chargeGroupId').val() : 0,
+            chargeGroupName: $('#chargeGroupName').val() ? $('#chargeGroupName').val() : 0,
+			treatApplyJson: JSON.stringify(params),
+			techApplyName: $("#techApplyName").val(),
+            exeOfficeId: exeOfficeId
+		};
+		var medicalTechEditInfo = {
+			registerId: $('#registerId').val(),
+			outpatientTechInfoJson: JSON.stringify(outpatientTechInfo),
+			outpatientTechItemListJson: JSON.stringify(params)
+		};
+
+		minieditorDesign.addParams({EmrOtherBusinessData: $.extend({}, inpatientOrderEditInfo, medicalTechEditInfo)});
+		minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo?serviceId=treatApplyService', function (result) {
+			console.log(result);
+			if (result.code === "0") {
+				var treatApplyIframe = $('div[lay-id=treatApply] iframe', window.parent.document);
+				$('#btn_refresh', treatApplyIframe.contents()).click();//.contents(): 取iframe里面的html内容
+			}
+		});
+	}
+
+	//初始化保存，一般用在病历数据对象新增时（修改不用调用），需要调用该方法
+	function saveBeforeCall(minieditorDesign, operateType) {
+		if (operateType == "0") {
+			submitForm(minieditorDesign, '0');
+		}
+		if (operateType == "1") {
+			submitForm(minieditorDesign, '1');
+		}
+	}
+
+</script>

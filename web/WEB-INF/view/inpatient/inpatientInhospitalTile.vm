@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <!-- 患者列表 -->
+    <div class="layadmin-maillist-fluid layui-fluid white-bg full-height">
+        <div id="dataList" class="layui-col-space15 full-height-scroll" style="height: calc(100% - 45px);"></div>
+        <div id="pageBar"></div>
+    </div>
+    <!-- 模板 -->
+    <div id="template" style="display: none">
+        <div class="layui-col-sm4 layui-col-md4" name="patientList" data-id="$!option.inhospitalId" data-title="#htmlEscape($!option.patientName)">
+            <div class="layadmin-contact-box cursorHover" lay-text="">
+                <div class="layui-col-md4 layui-col-sm4 layui-col-xs3">
+                    <a href="javascript:;">
+                        <div id="img" class="layadmin-text-center"></div>
+                    </a>
+                </div>
+                <div class="layui-col-md8 layadmin-padding-left10 layui-col-sm8 layui-col-xs9">
+                    <a href="javascript:;">
+                        <h3 class="layadmin-title">
+                            <strong id="patientName"></strong>
+                        </h3>
+                    </a>
+                    <div class="layadmin-address">
+                        <a href="javascript:;">性别：<span id="patientSex"></span> &nbsp;&nbsp; 年龄：<span id="age"></span>
+                            <br>床号：<span id="currentBedNo">#htmlEscape($!option.currentBedNo)</span>
+                            <br>入院日期：<span id="inhospitalDate">$!date.format('yyyy-MM-dd', $!option.inhospitalDate)</span>
+                            <br>主治医生：<span id="diagnosisDoctorName">#htmlEscape($!option.diagnosisDoctorName)</span>
+                            <br>主要诊断：<span id="diseaseName">#htmlEscape($!option.diseaseName)</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+layui.use(['element','layer', 'laypage'], function (){
+    var laypage = layui.laypage, element = layui.element;
+    var layer  =layui.layer
+    // 初始化查询第一页数据
+    loadData(1);
+
+    // 加载患者列表数据
+    function loadData(pageNumber) {
+        var params = parent.getQueryParam();
+        params.pageNumber = pageNumber;
+        common.requestServer(contextPath + '/inpatient/inpatientInhospitalJsonList.jo', params, function (result){
+            if (!result || !result.data) {
+                return ;
+            }
+
+            var template = $('#template').html();
+            var container = $('#dataList').html('');
+            $.each(result.data, function (i, v) {
+                var curTile = container.append(template).find('div[name="patientList"]:last');
+                curTile.attr('data-id', v.inhospitalId);
+                curTile.attr('data-title', (v.patientName ? v.patientName : ''));
+
+                var img = [];
+                if(v.patientSex == "1") {
+                    img.push('<img src="../resource/layuiadmin/style/myRes/icon-jiating-baba.png">');
+                } else if (v.patientSex == "2") {
+                    img.push('<img src="../resource/layuiadmin/style/myRes/icon-jiating-mama.png">');
+                }
+                img.push('<div class="layadmin-maillist-img layadmin-font-blod">￥0.00</div>');
+                curTile.find("div#img").html(img.join(''));
+
+                curTile.find("#age").html((v.patientAgeYear || ''));
+                curTile.find("#patientSex").html(dicSex[v.patientSex]);
+                curTile.find("#patientName").html((v.patientName ? v.patientName : ''));
+                curTile.find("#currentBedNo").html((v.currentBedNo ? v.currentBedNo : ''));
+                curTile.find("#inhospitalDate").html(getSmpFormatDateByLong(v.inhospitalDate, 'yyyy-MM-dd'));
+                curTile.find("#diagnosisDoctorName").html((v.diagnosisDoctorName ? v.diagnosisDoctorName : ''));
+                curTile.find("#diseaseName").html((v.diseaseName ? v.diseaseName : ''));
+            });
+
+            // 监听卡片点击事件
+            $('#dataList > div[name="patientList"]').click(function (){
+                var id = $(this).attr('data-id');
+                var name = $(this).attr('data-title');
+                var url = contextPath + '/inpatient/inpatientInhospital.do?inhospitalId=' + id;
+                parent.mainTab({title: name, href: url, index: 'patientInfo'});
+            });
+
+            // 分页工具
+            if (pageNumber <= 1) {
+                laypage.render({
+                    elem: 'pageBar',
+                    count: result.count,
+                    layout: ['count', 'prev', 'page', 'next', 'skip'],
+                    jump: function(obj, first){
+                        if(first){ return ; }
+                        loadData(obj.curr);
+                    }
+                });
+            }
+        });
+    }
+});
+</script>
+</html>

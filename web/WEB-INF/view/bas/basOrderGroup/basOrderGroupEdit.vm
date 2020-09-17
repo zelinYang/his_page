@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>新增组套</title>
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+
+	<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+	<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+	<style type="text/css">
+		.outRecipeGroupEdit .layui-table[table-eidt] tr td {
+			padding: 0px 0px !important;
+			text-align: center !important;
+		}
+
+		.outRecipeGroupEdit .order-group-item  .layui-card-body-content{
+			padding: 0 5px;
+		}
+		.outRecipeGroupEdit .layui-card-header  .title{
+			margin-left: 50px;
+			color: #333;
+		}
+		.outRecipeGroupEdit .main-content .layui-table{
+			width: 2300px;margin-top: 0;
+		}
+		.layui-form-selectup dl{bottom: auto;}
+		.layui-form-checkbox[lay-skin=primary] {
+			padding-left: 18px;
+		}
+		.layui-form-switch {
+			margin-top: 0px;
+		}
+	</style>
+	<style>
+		.table-data tbody:nth-of-type(1) tr td:nth-child(2) { background-color: #FF2D2D;}
+		.table-data tbody:nth-of-type(2) tr td:nth-child(2) { background-color: #00cd1e;}
+		.table-data tbody:nth-of-type(3) tr td:nth-child(2) { background-color: #0400e9;}
+		.table-data tbody:nth-of-type(4) tr td:nth-child(2) { background-color: #5d00ad;}
+		.table-data tbody:nth-of-type(5) tr td:nth-child(2) { background-color: #c8b700;}
+		.table-data tbody:nth-of-type(6) tr td:nth-child(2) { background-color: #00cee1;}
+		.table-data tbody:nth-of-type(7) tr td:nth-child(2) { background-color: #9e009d;}
+		.table-data tbody:nth-of-type(8) tr td:nth-child(2) { background-color: #ee5c00;}
+		.table-data tbody:nth-of-type(9) tr td:nth-child(2) { background-color: #97d933;}
+		.table-data tbody:nth-of-type(10) tr td:nth-child(2) { background-color: #0090fc;}
+		.table-data tbody:nth-of-type(11) tr td:nth-child(2) { background-color: #c358c3;}
+		.table-data tbody:nth-of-type(12) tr td:nth-child(2) { background-color: #00bc40;}
+		.table-data tbody:nth-of-type(13) tr td:nth-child(2) { background-color: #FF9224;}
+		.table-data tbody:nth-of-type(14) tr td:nth-child(2) { background-color: #c0006e;}
+		.table-data tbody:nth-of-type(15) tr td:nth-child(2) { background-color: #6e2ed6;}
+		.table-data tbody:nth-of-type(16) tr td:nth-child(2) { background-color: #FF5809;}
+		.table-data tbody:nth-of-type(17) tr td:nth-child(2) { background-color: #5bec71;}
+		.table-data tbody:nth-of-type(18) tr td:nth-child(2) { background-color: #B15BFF;}
+		.table-data tbody:nth-of-type(19) tr td:nth-child(2) { background-color: #E6CAFF;}
+		.table-data tbody:nth-of-type(20) tr td:nth-child(2) { background-color: #9393FF;}
+		.table-data tbody:nth-of-type(21) tr td:nth-child(2) { background-color: #C2FF68;}
+		.table-data tbody:nth-of-type(22) tr td:nth-child(2) { background-color: #B87070;}
+		.table-data tbody:nth-of-type(23) tr td:nth-child(2) { background-color: #AFAF61;}
+		.table-data tbody:nth-of-type(24) tr td:nth-child(2) { background-color: #6FB7B7;}
+		.table-data tbody:nth-of-type(25) tr td:nth-child(2) { background-color: #9999CC;}
+		.table-data tbody:nth-of-type(26) tr td:nth-child(2) { background-color: #B766AD;}
+		.table-data tbody:nth-of-type(27) tr td:nth-child(2) { background-color: #FF9D6F;}
+		.table-data tbody:nth-of-type(28) tr td:nth-child(2) { background-color: #79FF79;}
+		.table-data tbody:nth-of-type(29) tr td:nth-child(2) { background-color: #ffd306;}
+		.table-data tbody:nth-of-type(30) tr td:nth-child(2) { background-color: #a8ff24;}
+		.table-data tbody:nth-of-type(31) tr td:nth-child(2) { background-color: #4555b4;}
+		.table-data tbody:nth-of-type(32) tr td:nth-child(2) { background-color: #66B3FF;}
+	</style>
+</head>
+<body class="outRecipeGroupEdit">
+<div class="layui-content-wrapper">
+	<form id="basOrderGroupForm" class="layui-form layui-bg-white full-height">
+		<!-- 组套信息 -->
+		<div class="layui-card order-group m-b-n full-height-scroll">
+			<div class="layui-card-body p-n p-b-xs order-group-body" id="searchTerm">
+				<div class="layui-row-query search-term">
+					<div class="layui-form-item">
+						#formHiddenInput("orderGroupId" "$!basOrderGroup.orderGroupId" "")
+						#formHiddenInput("orderGroupClassify" "${CONST.AppConstants.BELONGS_DOCTOR}" "")
+						#formHiddenInput("validFlag" "$!basOrderGroup.validFlag" "")
+						<div class="layui-inline">
+							<label class="layui-form-label"  >#requiredTag组套名称</label>
+							<div class="layui-input-inline" >
+								#formTextInput("orderGroupName" "$!basOrderGroup.orderGroupName" "class='layui-input' lay-verify='required' ")
+							</div>
+						</div>
+						#if(${CONST.AppConstants.NO_FLAG} == ${groupRoleFalg})
+						#formHiddenInput("orderGroupClassify" "${CONST.AppConstants.VISABLE_INDIVIDUAL}" "")
+						#else
+						<div class="layui-inline">
+							<label class="layui-form-label" >#requiredTag组套所属类型</label>
+							<div class="layui-input-inline" >
+								#formSingleSelectFirstNone("orderGroupClassify" "$!basOrderGroup.orderGroupClassify" $!dicData.dicBelongSysType "lay-search='' lay-verify='required' " "")
+							</div>
+						</div>
+						#end
+						<div class="layui-inline">
+							<label class="layui-form-label" >#requiredTag组套类型</label>
+							<div class="layui-input-inline" style="width: auto;">
+								#formSingleSelectFirstNone("orderGroupType" "$!basOrderGroup.orderGroupType" $!dicData.dicOrderGroupTypeNotTcm "lay-search='' id='doctorOrderType' lay-verify='required' " "")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">常用药</label>
+							<div class="layui-input-inline" style="width: auto">
+								#if($basOrderGroup && $basOrderGroup.commonMedicineFlag == '1')
+								<input type="checkbox" name="commonMedicineFlag" value="1" checked="checked"
+									   lay-filter='commonMedicineFlag' lay-skin="primary"  >
+								#else
+								<input type="checkbox" name="commonMedicineFlag" value="0"
+									   lay-filter='commonMedicineFlag' lay-skin="primary"  >
+								#end
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label" >排序号</label>
+							<div class="layui-input-inline" >
+								#formIntInput("sort" "$!basOrderGroup.sort" " maxlength='10' class='layui-input'")
+							</div>
+						</div>
+						<div class="layui-inline">
+							<label class="layui-form-label">备注信息</label>
+							<div class="layui-input-inline" >
+								#formTextInput("specialRemark" "$!basOrderGroup.specialRemark" "class='layui-input'")
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="layui-card-body p-n main-content full-height table-width-full" id="searchTbody">
+				<table class="layui-table table-data" table-eidt>
+					<colgroup>
+						<col width="60">
+						<col width="10">
+						<col data-index="2" width="90">
+						<col data-index="1" width="200">
+						<col data-index="3" width="90">
+						<col data-index="4" width="60">
+						<col data-index="5" width="90">
+						<col data-index="6" width="90">
+						<col data-index="7" width="150">
+						<col data-index="8" width="100">
+						<col data-index="9" width="120">
+						<col data-index="10" width="60">
+						<col data-index="11" width="60">
+						<col data-index="12" width="100">
+						<col data-index="13" width="100">
+						<col data-index="14" width="120">
+						<col data-index="15" width="120">
+						<col data-index="16" width="100">
+						<col>
+					</colgroup>
+					<thead>
+					<tr>
+						<th><i id="btn_add" class="layui-icon layui-icon-add-1 icon-btn"  ></i></th>
+						<th></th>
+						<th data-index="1">类型</th>
+						<th data-index="2">医嘱项目</th>
+						<th data-index="3">医嘱类别</th>
+						<th data-index="4">规格</th>
+						<th data-index="5">每次数量</th>
+						<th data-index="6">每次剂量/用量</th>
+						<th data-index="7">用法</th>
+						<th data-index="8">频次</th>
+						<th data-index="9">每日剂量</th>
+						<th data-index="10">天数</th>
+						<th data-index="11">总量</th>
+						<th data-index="12">总量单位</th>
+						<th data-index="13">皮试</th>
+						<th data-index="14">最小包装单位价格</th>
+						<th data-index="15">包装单位价格</th>
+						<th data-index="16">特殊说明</th>
+					</tr>
+					</thead>
+					<!-- 处方组 foreach 循环-->
+					<!-- 处方组明细 foreach 循环-->
+					#foreach($item in $!softTypeMap.entrySet())
+					<option value="$!{item.key}">$!{item.key}. $!{item.value.name}</option>      //1.爱奇艺app
+					#end
+					#foreach($basOrderGroupEntrrySet in $!basOrderGroupMap.entrySet())
+					<tbody class="tbody-data" >
+					##set($pharmacyName = $dicData.dicPharmacy.get($AppTools.toString($!recipe.pharmacyId)))
+					#set($medicine = $medicineMap.get($!orderItem.medicineId))
+					#if($orderItem.pharmacyId)
+					#set($pharmacyName = $dicData.dicPharmacy.get($AppTools.toString($orderItem.pharmacyId)))
+					#end
+					#foreach($orderItem in $!basOrderGroupEntrrySet.value)
+					<tr>
+						<td>
+							<i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeTrOrderItem(this)" ></i>
+							#if($!orderItem.orderGroupFlag == '1')
+							<i class="layui-icon layui-icon-add-1 icon-btn btn_add_tr"  ></i>
+							#end
+						</td>
+						<td></td>
+
+						<td data-index="1">
+							<!-- 类别 -->
+							#formSingleSelectFirstNone("medicineType" "$!orderItem.medicineType" $!dicData.dicMedicineTypeInOrder "class='layui-input layui-form-select' lay-filter='medicineType'  " "")
+						</td>
+						<td data-index="2" style="width: 200px; ">
+							#formHiddenInput("orderItemIdPage" "" "")
+							#formHiddenInput("validFlag" "$!orderItem.validFlag" "")
+							#formHiddenInput("orderItemId" "$!orderItem.orderItemId" "")
+							#formHiddenInput("medicineId" "$!orderItem.medicineId" "")
+							#formHiddenInput("chargeItemId" "" "") ##<!-- 诊疗项目ID。 -->
+							#formHiddenInput("chargeItemId" "$!orderItem.chargeItemId" "")
+							#formTextInput("orderName" "$!orderItem.orderName" "class='layui-input' autocomplete='off'  ")
+							#formHiddenInput("doctorOrderType" "$!orderItem.doctorOrderType" "")
+							#formHiddenInput("orderGroupNo" "$!orderItem.orderGroupNo" "")
+							#formHiddenInput("orderGroupFlag" "$!orderItem.orderGroupFlag" "")
+							#formHiddenInput("medicineRecipeClassify" "$!orderItem.medicineRecipeClassify" "")
+							#formHiddenInput("antibiosisLockFlag" "$!orderItem.antibiosisLockFlag" "")
+							#formHiddenInput("antibioticFlag" "$!orderItem.antibioticFlag" "")
+							#formHiddenInput("drugTherapyType" "$!orderItem.drugTherapyType" "")
+							#formHiddenInput("examFlag" "$!orderItem.examFlag" "")
+							#formHiddenInput("lisFlag" "$!orderItem.lisFlag" "")
+							#formHiddenInput("surgeryFlag" "$!orderItem.surgeryFlag" "")
+							#formHiddenInput("treatFlag" "$!orderItem.treatFlag" "")
+							#formHiddenInput("injectionFlag" "$!orderItem.injectionFlag" "")
+							#formHiddenInput("medicineGrade" "$!orderItem.medicineGrade" "")
+							#formHiddenInput("medicineFlag" "$!orderItem.medicineFlag" "")
+							#formHiddenInput("producingAreaId" "$!orderItem.producingAreaId" "")
+							#formHiddenInput("riskMedicineFlag" "$!orderItem.riskMedicineFlag" "")
+							#formHiddenInput("specialMedicine" "$!orderItem.specialMedicine" "")
+							#formHiddenInput("specialMedicineFlag" "$!orderItem.specialMedicineFlag" "")
+							#formHiddenInput("transfuseFlag" "$!orderItem.transfuseFlag" "")
+						</td>
+						<td data-index="3">
+							<!-- 长/临 -->
+							#formSingleSelectFirstNone("orderClassify" "$!orderItem.orderClassify" $!dicData.dicOrderClassify "class='layui-input layui-form-select' lay-filter='orderClassifyNew' " "")
+						</td>
+						<td data-index="4">#formTextInput("medicineSpec" "$!orderItem.medicineSpec" "class='layui-input' readonly")</td>
+						<td data-index="5">
+							#formFloInput("perOrderCount" "$!orderItem.perOrderCount" "class='wd-50 p-l-xs' maxlength='5' #if($!orderItem.validFlag == '0')disabled#end")
+							#formHiddenInput("minMedicineUnit" "$!orderItem.minMedicineUnit" "placeholder='单位' class='wd-30' readonly")
+							#formTextInput("minMedicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.minMedicineUnit)" "class='wd-50' readonly")
+						</td>
+						<td data-index="6">
+							#formFloInput("dosage" "$!orderItem.dosage" "class='wd-50' maxlength='5' readonly")
+							#formHiddenInput("dosageUnit" "$!orderItem.dosageUnit" "placeholder='单位' class='wd-50' readonly")
+							#formTextInput("dosageUnitText" "#lookUpDict($!dicData.dicDrugNumUnitDosageUnit $!orderItem.dosageUnit)" "class='wd-50' readonly")
+						</td>
+						<td data-index="7">
+							#formSingleSelectSearchFirstNone("doseWayCode" "$!{orderItem.doseWayCode}" ${dicData.dicDoseWay} " maxlength='10' " "")
+						</td>
+						<td data-index="8">
+							#formSingleSelectFirstNone("pharmacyFreqId" "$!orderItem.pharmacyFreqId" $dicData.dicPharmacyFreqId "class='layui-input' style='border:0;' lay-filter='pharmacyFreqId'  " "")
+						</td>
+						<td data-index="9">
+							#formIntInput("usageQuantity" "$!orderItem.usageQuantity" "class='wd-50' maxlength='5' readonly")
+							#formTextInput("dosageUnitText" "#lookUpDict($!dicData.dicDrugNumUnitDosageUnit $!orderItem.dosageUnit)" "class='wd-50' readonly")
+						</td>
+						<td data-index="10"> #formSingleSelectFirstNone("orderDay" "$!orderItem.orderDay" $dicData.dicOrderDay "class='layui-input' style='border:0;' lay-filter='orderDay' " "")</td>
+						<td data-index="11">
+							#formTextInput("giveTotalQuantity" "$!orderItem.giveTotalQuantity" "placeholder='总量' class='wd-50 white-bg' readOnly")
+						</td>
+						<td data-index="12">
+							<select name="giveTotalQuantityUnit"  class=“layui-input” style="border:0;" lay-filter="giveTotalQuantityUnit">
+								#if("$!medicineMap.get($!{orderItem.medicineId}).outpatientUnpackFlag" == "1")
+								<option value="$!orderItem.minMedicineUnit">#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.minMedicineUnit)</option>
+								#end
+								<option value="$!orderItem.medicineUnit" #if("$!orderItem.giveTotalQuantityUnit" == "$!orderItem.medicineUnit")selected#end>#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.medicineUnit)</option>
+							</select>
+						</td>
+						<td data-index="13">
+							#formSingleSelect("needSkinTestFlag" "$!orderItem.needSkinTestFlag" $dicData.dicSkinTestFlag "class='layui-input' style='border:0;' lay-filter='skinTestFlag'")
+						</td>
+						<td data-index="14">
+							#formTextInput("minRetailPrice" "$!orderItem.minRetailPrice" "class='wd-50' readOnly")
+							元/
+							#formTextInput("minMedicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.minMedicineUnit)" "placeholder='单位' class='wd-50' readonly")
+						</td>
+						<td data-index="15">
+							#formTextInput("retailPrice" "$!orderItem.retailPrice" "class='wd-50' readOnly")
+							元/
+							#formHiddenInput("medicineUnit" "$!orderItem.medicineUnit" "")
+							#formTextInput("medicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.medicineUnit)" "placeholder='单位' class='wd-50' readonly")
+						</td>
+						<td data-index="16"> #formTextInput("specialRemark" "$!orderItem.specialRemark" "placeholder='特殊说明' class='layui-input' ")</td>
+					</tr>
+					#end
+					</tbody>
+					#end
+				</table>
+				<!-- 表格模板 -->
+				<table class="rowTpl layui-hide">
+					<tbody class="tbody-data">
+					<!-- tpl_row 模板行 数据 -->
+					<tr class="tplRow trRow">
+						<td>
+							<i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeTrOrderItem(this)" ></i>
+							<i class="layui-icon layui-icon-add-1 icon-btn btn_add_tr"  ></i>
+						</td>
+						<td></td>
+						<td data-index="1">
+							<!-- 类别 -->
+							#formSingleSelectFirstNone("medicineType" "" $!dicData.dicMedicineTypeInOrder "class='layui-input layui-form-select' lay-filter='medicineType'" "")
+						</td>
+						<td data-index="2" style="width: 200px;">
+							#formHiddenInput("orderItemId" "" "")
+							#formHiddenInput("chargeItemId" "" "")
+							#formHiddenInput("medicineId" "" "")
+							#formTextInput("orderName" "" "placeholder='选择项目' class='layui-input'  autocomplete='off' ")
+							#formHiddenInput("doctorOrderType" "" "")
+							#formHiddenInput("orderGroupNo" "" "")
+							#formHiddenInput("orderGroupFlag" "" "")
+							#formHiddenInput("medicineRecipeClassify" "" "")
+							#formHiddenInput("antibiosisLockFlag" "" "")
+							#formHiddenInput("antibioticFlag" "" "")
+							#formHiddenInput("drugTherapyType" "" "")
+							#formHiddenInput("examFlag" "0" "")
+							#formHiddenInput("lisFlag" "0" "")
+							#formHiddenInput("surgeryFlag" "0" "")
+							#formHiddenInput("treatFlag" "0" "")
+							#formHiddenInput("injectionFlag" "" "")
+							#formHiddenInput("medicineGrade" "" "")
+							#formHiddenInput("medicineFlag" "1" "")
+							#formHiddenInput("producingAreaId" "" "")
+							#formHiddenInput("riskMedicineFlag" "" "")
+							#formHiddenInput("specialMedicine" "" "")
+							#formHiddenInput("specialMedicineFlag" "" "")
+							#formHiddenInput("transfuseFlag" "" "")
+						</td>
+						<td data-index="3">
+							<!-- 长/临 -->
+							#formSingleSelectFirstNone("orderClassify" "$!{CONST.AppConstants.ORDER_CLASSIFY_TMP}" $!dicData.dicOrderClassify "class='layui-input layui-form-select'  lay-filter='orderClassifyNew' " "")
+						</td>
+						<td data-index="4">#formTextInput("medicineSpec" "" "class='layui-input' readonly")</td>
+						<td data-index="5">
+							#formFloInput("perOrderCount" "$!orderItem.perOrderCount" "class='wd-50 p-l-xs' maxlength='5' #if($!orderItem.validFlag == '0')disabled#end")
+							#formHiddenInput("minMedicineUnit" "$!orderItem.minMedicineUnit" "placeholder='单位' class='wd-30' readonly")
+							#formTextInput("minMedicineUnitText" "#lookUpDict($!dicData.dicDrugNumUnit $!orderItem.minMedicineUnit)" "class='wd-50' readonly")
+						</td>
+						<td data-index="6">
+							#formFloInput("dosage" "" "class='wd-50' maxlength='5' readonly")
+							#formHiddenInput("dosageUnit" "" "placeholder='单位' class='wd-50' readonly")
+							#formTextInput("dosageUnitText" "" "placeholder='单位' class='wd-50' readonly")
+						</td>
+						<td data-index="7">
+							#formSingleSelectSearchFirstNone("doseWayCode" "" ${dicData.dicDoseWay} " maxlength='10' " "")
+						</td>
+
+						<td data-index="8"> #formSingleSelectFirstNone("pharmacyFreqId" "$!orderItem.pharmacyFreqId" $dicData.dicPharmacyFreqId
+							" class='layui-input' style='border:0;' lay-filter='pharmacyFreqId' " "")
+						</td>
+						<td data-index="9">
+							#formIntInput("usageQuantity" "$!orderItem.usageQuantity" "class='wd-50' maxlength='5' readonly ")
+							#formTextInput("dosageUnitText" "" "class='wd-50' readonly")
+						</td>
+						<td data-index="10"> #formSingleSelectFirstNone("orderDay" "$!orderItem.orderDay" $dicData.dicOrderDay "class='layui-input' style='border:0;' lay-filter='orderDay' " "")</td>
+						<td data-index="11">
+							#formTextInput("giveTotalQuantity" "" "class='wd-50 white-bg' readonly ")
+						</td>
+						<td data-index="12">
+							<select name="giveTotalQuantityUnit" class=“layui-input” style="border:0;" lay-filter="giveTotalQuantityUnit"></select>
+						</td>
+						<td data-index="13">
+							#formSingleSelect("needSkinTestFlag" "$!{CONST.AppConstants.NO_FLAG}" $dicData.dicSkinTestFlag "class='layui-input' style='border:0;' lay-filter='skinTestFlag' ")
+						</td>
+						<td data-index="14">
+							#formTextInput("minRetailPrice" "" "class='wd-50' readOnly")
+							/
+							#formTextInput("minMedicineUnitText" "" "placeholder='单位' class='wd-50' readonly")
+						</td>
+						<td data-index="15">
+							#formTextInput("retailPrice" "" "class='wd-50' readOnly")
+							/
+							#formHiddenInput("medicineUnit" "" "")
+							#formTextInput("medicineUnitText" "" "placeholder='单位' class='wd-50' readonly")
+						</td>
+						<td data-index="16"> #formTextInput("specialRemark" "" "class='layui-input' ")</td>
+					</tr>
+					</tbody>
+				</table><!--table 模板  -->
+			</div><!-- main-content 医嘱编辑内容 -->
+		</div>
+
+		<!-- 底部按钮栏  -->
+		<div class="tool-bottom-fixed">
+			<button lay-filter="btn_save" lay-submit class="layui-btn layui-btn-sm" type="button">保存</button>
+		</div>
+	</form>
+</div>
+#parse("./common/commonSelect.js.vm")
+#parse("./bas/basOrderGroup/basOrderGroupEdit.js.vm")
+</body>
+</html>

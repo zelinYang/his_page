@@ -1,0 +1,219 @@
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    //否显示红色
+    dicYesNo['0'] = '<font color="red">否</font>'
+    var dicActivityProperty = JSON.parse('$dicTools.changeMapToJson($dicData.dicActivityProperty)');
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index'//主入口模块
+    }).use(['index', 'useradmin', 'table', 'form', 'layer'], function () {
+        var $ = layui.$
+            , form = layui.form
+            , table = layui.table
+            , layDate = layui.laydate;
+        //表列表
+        laydate.render({
+            elem: '#createTime'
+            , range: true
+        });
+        table.render({
+            elem: '#clinicPlanTable'
+            , url: "../pathway/clinicPlanListData.jo" //后台数据接口
+            , limit: 20
+            , cellMinWidth: 100
+
+            , cols: [[
+                {type: 'numbers', fixed: 'left'}
+                , {
+                    field: 'activityProperty', fixed: 'left', width: '50',
+                    title: '类别', templet: function (rowData) {
+                        return dicActivityProperty[rowData.activityProperty] || '';
+                    }
+                }
+                , {field: 'emrTlpName', title: '病历模板', fixed: 'left', minWidth: '200'}
+                // ,{field:'firstDayFlag',title:'入院首日', unresize: true, templet: function(d){
+                //    return dicYesNo[d.firstDayFlag]||'';
+                //    ##return '<input type="checkbox" name="firstDayFlag" value="'+d.clinicPlanId+'" lay-skin="switch" lay-text="是|否" lay-filter="firstDayFlag" '+ (d.firstDayFlag == 1 ? 'checked' : '' )+'>';
+                // }}
+                // ,{field:'hospitalStayDay',title:'填写时间'}
+                // ,{field:'recordDay',title:'入院填写日'}
+                , {
+                    field: 'surgeryDay', title: '手术填写', unresize: true, templet: function (d) {
+                        return dicYesNo[d.surgeryDay] || '';
+                         ## return '<input type="checkbox" name="surgeryDay" value="'+d.clinicPlanId+'" lay-skin="switch" lay-text="是|否" lay-filter="surgeryDay" '+ (d.surgeryDay == 1 ? 'checked' : '' )+'>';
+                    }
+                }
+                , {field: 'beforeDay', title: '术前填写'}
+                , {field: 'afterDay', title: '术后填写'}
+
+                , {
+                    field: 'everydayRecordFlag', title: '每天填写', unresize: true, templet: function (d) {
+                        return dicYesNo[d.everydayRecordFlag] || '';
+                        ##return '<input type="checkbox" name="everydayRecordFlag" value="'+d.clinicPlanId+'" lay-skin="switch" lay-text="是|否" lay-filter="everydayRecordFlag" '+ (d.everydayRecordFlag == 1 ? 'checked' : '' )+'>';
+                    }
+                }
+                , {
+                    field: 'lisDay', title: '检验填写', unresize: true, templet: function (d) {
+                        return dicYesNo[d.lisDay] || '';
+                         ##return '<input type="checkbox" name="lisDay" value="'+d.clinicPlanId+'" lay-skin="switch" lay-text="是|否" lay-filter="lisDay" '+ (d.lisDay == 1 ? 'checked' : '' )+'>';
+                    }
+                }
+                , {
+                    field: 'pacsDay', title: '检查填写', unresize: true, templet: function (d) {
+                        return dicYesNo[d.pacsDay] || '';
+                         ##return '<input type="checkbox" name="pacsDay" value="'+d.clinicPlanId+'" lay-skin="switch" lay-text="是|否" lay-filter="pacsDay" '+ (d.pacsDay == 1 ? 'checked' : '' )+'>';
+                    }
+                }
+                , {title: '操作', align: 'center', fixed: 'right', toolbar: '#colstoolbar', width: '110'}
+            ]]
+            , page: true
+            , height: 'full-100'
+            , request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+        });
+
+        //工具栏事件
+        $('#btn_list_add').click(function (e) {
+            common.open('$contextPath' + '/pathway/clinicPlanListNewEdit.do', '新增诊疗计划', {area: ['99%', '98%']});
+        });
+        //工具栏事件
+        $('#btn_add').click(function (e) {
+            common.open('$contextPath' + '/pathway/clinicPlanEdit.do', '新增诊疗计划', {area: ['800px', '400px']});
+        });
+
+        //重置查询表单并刷新表格
+        $("#btn_reset").click(function () {
+            window.location.href = window.location.href;
+        });
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function (data) {
+            var field = data.field;
+            //执行重载
+            table.reload('clinicPlanTable', {
+                where: field
+            });
+            return false;
+        });
+
+        //监听工具条
+        table.on('tool(clinicPlanTable)', function (obj) {
+            switch (obj.event) {
+                case 'edit':
+                    common.open('$contextPath' + '/pathway/clinicPlanEdit.do?clinicPlanId=' + obj.data.clinicPlanId, '编辑诊疗计划', {area: ['800px', '500px']});
+                    break;
+                case 'del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('$contextPath' + '/pathway/deleteClinicPlan.jo?clinicPlanId=' + obj.data.clinicPlanId, function (result) {
+                            if (result.code == "0") {
+                                $('#btn_query').click();
+                            } else {
+                                common.alert(result.msg, 0);
+                            }
+                        })
+                    })
+                    break;
+            }
+        });
+        //监听行单击事件
+        table.on('row(clinicPlanTable)', function (obj) {
+            common.open('$contextPath' + '/pathway/clinicPlanShow.do?clinicPlanId=' + obj.data.clinicPlanId, '诊疗计划详情'
+                , {
+                    area: ['980px', '700px']
+                    , btn: ['确认']
+                    , yes: function () {
+                        layer.close(layer.index);
+                    }
+                });
+        });
+
+        // 更新入院首日填写标志状态
+        // form.on('switch(firstDayFlag)', function(obj){
+        //     var firstDayFlagValue = (obj.elem.checked ? "1" : "0");
+        //     common.requestServer('../pathway/clinicPlanUpdateFirstDayFlag.jo', {clinicPlanIds: this.value, firstDayFlag: firstDayFlagValue}, function(result){
+        //         if (result.code == "0") {
+        //             layer.msg('设置 '+dicYesNo[firstDayFlagValue]+ ' 成功', {icon: 1});
+        //         }else{
+        //             layer.msg('设置 '+dicYesNo[firstDayFlagValue]+ ' 失败', {icon: 2});
+        //             obj.elem.checked=!obj.elem.checked;
+        //             form.render('checkbox');
+        //         }
+        //     });
+        // });
+
+        //监听有无效操作  // 更新手术填写标志状态
+        form.on('switch(surgeryDay)', function (obj) {
+            var surgeryDayValue = (obj.elem.checked ? "1" : "0");
+            common.requestServer('../pathway/clinicPlanUpdateSurgeryDay.jo', {
+                clinicPlanIds: this.value,
+                surgeryDay: surgeryDayValue
+            }, function (result) {
+                if (result.code == "0") {
+                    layer.msg('设置 ' + dicYesNo[surgeryDayValue] + ' 成功', {icon: 1});
+                } else {
+                    layer.msg('设置 ' + dicYesNo[surgeryDayValue] + ' 失败', {icon: 2});
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            });
+        });
+
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(everydayRecordFlag)', function (obj) {
+            var everydayRecordFlagValue = (obj.elem.checked ? "1" : "0");
+            common.requestServer('../pathway/clinicPlanUpdateEverydayRecordFlag.jo', {
+                clinicPlanIds: this.value,
+                everydayRecordFlag: everydayRecordFlagValue
+            }, function (result) {
+                if (result.code == "0") {
+                    layer.msg('设置 ' + dicYesNo[everydayRecordFlagValue] + ' 成功', {icon: 1});
+                } else {
+                    layer.msg('设置 ' + dicYesNo[everydayRecordFlagValue] + ' 失败', {icon: 2});
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            });
+        });
+
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(lisDay)', function (obj) {
+            var lisDayValue = (obj.elem.checked ? "1" : "0");
+            common.requestServer('../pathway/clinicPlanUpdateLisDay.jo', {
+                clinicPlanIds: this.value,
+                lisDay: lisDayValue
+            }, function (result) {
+                if (result.code == "0") {
+                    layer.msg('设置 ' + dicYesNo[lisDayValue] + ' 成功', {icon: 1});
+                } else {
+                    layer.msg('设置 ' + dicYesNo[lisDayValue] + ' 失败', {icon: 2});
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            });
+        });
+
+        //监听有无效操作  // 更新有效标志状态
+        form.on('switch(pacsDay)', function (obj) {
+            var pacsDayValue = (obj.elem.checked ? "1" : "0");
+            common.requestServer('../pathway/clinicPlanUpdatePacsDay.jo', {
+                clinicPlanIds: this.value,
+                pacsDay: pacsDayValue
+            }, function (result) {
+                if (result.code == "0") {
+                    layer.msg('设置 ' + dicYesNo[pacsDayValue] + ' 成功', {icon: 1});
+                } else {
+                    layer.msg('设置 ' + dicYesNo[pacsDayValue] + ' 失败', {icon: 2});
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            });
+        });
+
+    });
+
+</script>
+  

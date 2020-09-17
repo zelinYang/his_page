@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>万能查询</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="renderer" content="webkit">
+  <!--[if lt IE 9]>
+  <meta http-equiv="refresh" content="0;ie.html"/>
+  <![endif]-->
+  <link href="../../../resource/layuiadmin/layui/css/layui.css" rel="stylesheet" media="all">
+  <link href="../../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+  <link href="../../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+  <link href="../../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+  <style>
+    .docMain .docType{ padding: 0; margin-bottom: 10px;}
+    .layui-form-item .layui-form-checkbox { margin-top: 0;}
+    .full-height div[class*=col-] {height: 100%;}
+    .layui-row-query { border-bottom: 0;}
+    layui-card-header
+
+  </style>
+
+
+</head>
+<body>
+<div class="layui-content-wrapper">
+  <div class="layui-fluid docMain">
+    <div class="layui-row full-height layui-col-space10">
+      <div class="col-4">
+        <div class="layui-card m-b-xs" id="docType">
+          <div class="layui-card-body p-n">
+            <table class="layui-hide" id="type" lay-skin="line"></table>
+          </div>
+        </div>
+        <div class="layui-card">
+          <div class="layui-card-body p-n">
+            <table class="layui-hide" id="test-table-simple" lay-skin="line"></table>
+          </div>
+        </div>
+      </div>
+      <div class="col-7">
+        <form action="" class="layui-form" id="basicItemSearch">
+          <div class="layui-form-item layui-row-query search-term p-l-n p-r-n">
+            <div class="layui-inline">
+              <label class="layui-form-label">查询条件编码</label>
+              <div class="layui-input-inline">
+                <input type="text" name="fullname" value="10" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-inline">
+              <label class="layui-form-label">条件条件</label>
+              <div class="layui-input-inline">
+                <input type="text" name="fullname" value="腰间盘突出" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+              </div>
+            </div>
+            <div class="layui-inline">
+              <input type="checkbox" name="" title="临时查询" checked>
+
+            </div>
+
+
+
+
+          </div>
+        </form>
+        <div class="layui-card">
+          <div class="layui-card-header layui-row-query p-t-md p-b-md">
+            <span>基本条件</span>
+            <div class="fr toolBar">
+              <button class="layui-btn layui-btn-sm" data-type="getCheckData">增加</button>
+              <button class="layui-btn layui-btn-sm layui-btn-danger" data-type="getCheckLength">删除</button>
+              <button class="layui-btn layui-btn-sm layui-btn-normal" data-type="isAll">保存</button>
+              <button class="layui-btn layui-btn-sm" data-type="isAll">查询</button>
+            </div>
+          </div>
+          <div class="layui-card-body p-n">
+            <table class="layui-hide" id="basicItem" lay-skin="line"></table>
+          </div>
+        </div>
+      </div>
+      <div class="col-13">
+        <table class="layui-hide" id="basicItemDetailed" lay-skin="line"></table>
+        <div class="layui-bg-white p-sm">
+          <button class="layui-btn layui-btn-sm layui-btn-danger" data-type="getCheckLength">删除</button>
+          <button class="layui-btn layui-btn-sm" data-type="isAll">保存列表</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="../../../resource/hplus/js/jquery.min.js"></script>
+<script src="../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+<script src="../../../resource/hplus/js/validate/form-validator.js"></script>
+<script src="../../../resource/hplus/js/contabs.js?v=12"></script>
+<script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+<script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+<script src="../../../resource/layuiadmin/layui/layui.js"></script>
+<script>
+    layui.config({
+        base: '../../../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['index', 'table'], function(){
+        var table = layui.table;
+
+        table.render({
+            elem: '#type'
+            //,url: layui.setter.base + 'json/table/user.js'
+            ,data:[{
+                "id":0,
+                "username":"全部类别"
+            }
+            ,{
+                "id":1,
+                "username":"基本信息类"
+            },{
+                "id":2,
+                "username":"入出转类"
+            },{
+                "id":3,
+                "username":"诊断类"
+            },{
+                "id":4,
+                "username":"手术类"
+            },{
+                "id":5,
+                "username":"医护人员类"
+            },{
+                "id":6,
+                "username":"中医类"
+            },{
+                "id":7,
+                "username":"其他类"
+            },{
+                "id":8,
+                "username":"费用类"
+            }]
+      ,height: 200
+
+            ,cols: [[
+                {field:'id', width:60, title: '序号'}
+                ,{field:'username', title: '名称'}
+
+            ]]
+        });
+
+      table.render({
+          elem: '#test-table-simple'
+          //,url: layui.setter.base + 'json/table/user.js'
+          ,data: [
+              {"id":10,"username":"病案号"}
+              ,{"id":20,"username":"住院号"}
+              ,{"id":25,"username":"医疗付款方式"}
+              ,{"id":30,"username":"医疗付款方式描述"}
+              ,{"id":40,"username":"姓名"}
+              ,{"id":45,"username":"住院次数"}
+              ,{"id":50,"username":"性别"}
+              ,{"id":60,"username":"性别描述"}
+              ,{"id":70,"username":"医疗保险号"}
+              ,{"id":75,"username":"出生日期"}
+              ,{"id":80,"username":"年龄"}
+              ,{"id":85,"username":"年龄单位"}
+              ,{"id":90,"username":"婚姻"}
+              ,{"id":95,"username":"婚姻描述"}
+              ,{"id":100,"username":"职业"}
+              ,{"id":110,"username":"出生地"}
+              ,{"id":120,"username":"民族"}
+              ,{"id":130,"username":"国籍"}
+              ,{"id":140,"username":"身份证号"}
+              ,{"id":141,"username":"现住址"}
+              ,{"id":142,"username":"现住址编码"}
+              ,{"id":150,"username":"工作地址"}
+              ,{"id":160,"username":"工作电话"}
+              ,{"id":170,"username":"工作邮编"}
+              ,{"id":181,"username":"户口所在地址"}
+              ,{"id":182,"username":"户口地址编码"}
+              ,{"id":190,"username":"户口电话"}
+              ,{"id":200,"username":"户口邮编"}
+              ,{"id":210,"username":"联系人姓名"}
+              ,{"id":220,"username":"联系人关系"}
+              ,{"id":230,"username":"联系人地址"}
+              ,{"id":240,"username":"联系人电话"}
+              ,{"id":250,"username":"入院时间"}
+              ,{"id":260,"username":"入院科室"}
+              ,{"id":270,"username":"入院病区"}
+              ,{"id":280,"username":"术前住院天数"}
+              ,{"id":290,"username":"专科日期"}
+              ,{"id":300,"username":"转入科室"}
+              ,{"id":310,"username":"转入病区"}
+              ,{"id":320,"username":"再转科室"}
+              ,{"id":330,"username":"出院日期"}
+              ,{"id":340,"username":"出院科室"}
+              ,{"id":350,"username":"出院病区"}
+              ,{"id":360,"username":"住院天数"}
+              ,{"id":370,"username":"死亡原因"}
+              ,{"id":380,"username":"死亡日期"}
+              ,{"id":390,"username":"门诊诊断"}
+              ,{"id":391,"username":"门急诊医生描述"}
+              ,{"id":395,"username":"入院情况"}
+              ,{"id":400,"username":"入院诊断"}
+              ,{"id":401,"username":"入院诊断医生描述"}
+              ,{"id":402,"username":"入院途径"}
+              ,{"id":405,"username":"确诊日期"}
+              ,{"id":406,"username":"诊断类型"}
+              ,{"id":407,"username":"主要诊断ICD"}
+              ,{"id":408,"username":"主要诊断描述"}
+              ,{"id":409,"username":"出院情况"}
+              ,{"id":410,"username":"院内感染"}
+              ,{"id":411,"username":"并发症"}
+              ,{"id":412,"username":"损伤中毒原因"}
+              ,{"id":413,"username":"损伤中毒医生描述"}
+              ,{"id":414,"username":"其他诊断1"}
+              ,{"id":415,"username":"其他诊断2"}
+              ,{"id":416,"username":"其他诊断3"}
+              ,{"id":417,"username":"其他诊断4"}
+              ,{"id":418,"username":"其他诊断5"}
+              ,{"id":419,"username":"其他诊断6"}
+              ,{"id":420,"username":"肿瘤编码"}
+          ]
+          //,cellMinWidth: 40 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+          ,height: getTableHgt()
+          ,limit: 1000
+          ,cols: [[
+              {field:'id', width:60, title: '序号'}
+              ,{field:'username', title: '名称'}
+              ,{type: 'checkbox', width:40, fixed: 'right', title: '显示'}
+          ]]
+      });
+
+      table.render({
+          elem: '#basicItem'
+          //,url: layui.setter.base + 'json/table/user.js'
+          ,data:[
+              {
+                  "conditionName":"出院日期"
+                  ,"rel":"大于等于"
+                  ,"conditionValue":"2020-04-01"
+                  ,"link":"并且"
+              }
+              ,{
+                  "conditionName":"出院日期"
+                  ,"rel":"小于等于"
+                  ,"conditionValue":"2020-04-30"
+                  ,"link":"并且"
+              }
+              ,{
+                  "conditionName":"主要诊断"
+                  ,"rel":"相似"
+                  ,"conditionValue":"腰间盘突出"
+                  ,"link":""
+              }
+          ]
+          //,cellMinWidth: 40 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+          ,height: getBasicItemHgt()
+          ,limit: 20
+          ,cols: [[
+              {field:'conditionName', title: '条件顶'}
+              ,{field:'rel', width: 100, title: '关系'}
+              ,{field:'conditionValue', title: '条件值'}
+              ,{field:'link', width: 80, title: '关联'}
+          ]]
+      });
+      table.render({
+          elem: '#basicItemDetailed'
+          //,url: layui.setter.base + 'json/table/user.js'
+          ,data:[
+              {"id":"1","code":"yjptc","name":"腰间盘突出","creator":"测试人员","group":""}
+              ,{"id":"2","code":"yzshzhz","name":"腰椎术后综合征","creator":"测试人员","group":""}
+              ,{"id":"3","code":"jcrd","name":"交叉韧带","creator":"测试人员","group":""}
+              ,{"id":"4","code":"bybss","name":"半月板损伤","creator":"测试人员","group":""}
+              ,{"id":"5","code":"bfz","name":"并发症","creator":"测试人员","group":""}
+              ,{"id":"6","code":"zycs","name":"住院次数","creator":"测试人员","group":""}
+              ,{"id":"7","code":"rdss","name":"韧带损伤","creator":"测试人员","group":""}
+              ,{"id":"8","code":"jzcw","name":"脊柱侧弯","creator":"测试人员","group":""}
+              ,{"id":"9","code":"zyts","name":"住院天数","creator":"测试人员","group":""}
+              ,{"id":"10","code":"jzb","name":"颈椎病","creator":"测试人员","group":""}
+              ,{"id":"11","code":"sw","name":"死亡","creator":"测试人员","group":""}
+              ,{"id":"12","code":"ssjb","name":"手术级别","creator":"测试人员","group":""}
+              ,{"id":"13","code":"zyycyssrcs","name":"中医药参与手术人次数","creator":"测试人员","group":""}
+              ,{"id":"14","code":"yngr","name":"院内感染","creator":"测试人员","group":""}
+              ,{"id":"15","code":"wjry","name":"外籍人员","creator":"测试人员","group":""}
+              ,{"id":"16","code":"zxyjh","name":"中西医结合","creator":"测试人员","group":""}
+              ,{"id":"17","code":"sslcljrs","name":"实施临床路径人数","creator":"测试人员","group":""}
+              ,{"id":"18","code":"cyqk","name":"出院情况","creator":"测试人员","group":""}
+              ,{"id":"19","code":"ssrc","name":"手术人次","creator":"测试人员","group":""}
+          ]
+          //,cellMinWidth: 40 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+          ,height: 'full-62'
+          ,limit: 20
+          ,cols: [[
+        {field:'id', width:50, title: '序号'}
+        ,{field:'code', cellMinWidth: 100, title: '编码'}
+        ,{field:'name', title: '查询名称'}
+        ,{field:'creator', cellMinWidth: 120, title: '创建人'}
+        ,{field:'group', cellMinWidth: 120, title: '分组'}
+          ]]
+      });
+
+
+
+
+      // 获取表格高度
+      function getTableHgt() {
+          return ($('body').height() - $('#docType').height() - 17);
+      }
+      // 获取表格高度
+      function getBasicItemHgt() {
+          return ($('body').height() - $('#basicItemSearch').height() - $('.toolBar').parents('.layui-card-header').height() - 37);
+      }
+
+
+
+
+    });
+
+  // 重置表格高度
+  $(window).resize(function () {
+      var height = getTableHgt(), T_height = getBasicItemHgt();
+      table.reload('test-table-simple', {
+          height: height
+      });
+      table.reload('basicItem', {
+          height: T_height
+      });
+
+
+  })
+
+
+</script>
+
+</body>
+</html>

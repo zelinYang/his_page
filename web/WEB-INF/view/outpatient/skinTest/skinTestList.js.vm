@@ -1,0 +1,63 @@
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var dicSex  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+  layui.use(['jquery','table','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var $ = layui.$;
+
+    //日期范围
+    laydate.render({elem: '#makeOrderTime', range: true});
+
+    element.render();
+    //第一个实例
+    var tableIns = table.render({
+       elem: '#commonDiagnosisTable'
+      ,defaultToolbar: []
+      ,height: 'full-55'//高度
+      ,cellMinWidth:80
+      ,url: '../skintest/skinTestListData.jo' //数据接口
+      ,where:common.serializeObject($('#commonDiagnosis_queryForm'))
+      ,limit:20
+      ,request: {
+         pageName: 'pageNumber' //页码的参数名称，默认：page
+        ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+      }
+      ,cols: [[ //表头
+        {field : 'skinTestNo',title : '单据号'}
+       ,{field : 'applyOfficeId',title : '申请科室',}
+       ,{field : 'patientName',title : '患者姓名'}
+       ,{field : 'patientSex',title : '性别',templet: function (row) {
+           return dicSex[row.patientSex] || '';
+       }}
+       ,{field : 'patientAge',title : '年龄'}
+       ,{field : 'medicineName',title : '皮试药品'}
+       ,{field : 'endTime',title : '皮试时间'}
+       ,{field : 'skinTestResult',title : '皮试结果'}
+       ,{field : 'exeNurseName',title : '执行护士'}
+      ]]
+      //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+      ,done: function(res, curr, count){}
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function (){
+        query();
+    });
+
+    //查询列表
+    function query() {
+        var queryParams = common.serializeObject($('#commonDiagnosis_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+
+    //单选按钮触发查询
+    form.on('radio(diagnosisClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+      query();
+    });
+
+  });//layui.use
+</script>

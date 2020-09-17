@@ -1,0 +1,131 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+
+layui.use(['table', 'element', 'form'], function () {
+    var table = layui.table, form = layui.form;
+    var $ = layui.jquery, element = layui.element;
+    var calculativeHeight = Math.round($('#queryForm').height() + 13);
+    var dicSysOrgHospital = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgHospital)');
+    var techTable = table.render($.extend(basePageTable, {
+        elem: '#tech'
+        , id: 'tech'
+        , height: "full-" + calculativeHeight
+        , url: '$contextPath/report/rpOutpatientFeeOfficeListData.jo' //数据接口
+        , cols: [[ //表头
+            {field: '' ,type: 'numbers',fixed:'left'},
+            {
+                field: 'outpatientOfficeName', title: '门诊科室',minWidth:100,fixed:'left'
+            },{
+                field: 'makeOrderDoctorName', title: '开单医生',minWidth:100,fixed:'left'
+            },{
+                field:'settlementTime',title:'结账日期',minWidth:150,fixed:'left',templet:function (res) {
+                    return layui.util.toDateString(res.settlementTime,'yyyy-MM-dd HH:mm:ss')
+                }
+            },{
+                field:'medicinePayRatio',title:'药比%',minWidth:100,
+            	templet : function(row){
+            		return Number((Number(row.feeGroupAmount1)
+            				+Number(row.feeGroupAmount2)
+            				+Number(row.feeGroupAmount3)
+            		).toFixed(2)/Number(Number(row.feeGroupAmount1)
+            				+Number(row.feeGroupAmount2)
+            				+Number(row.feeGroupAmount3)
+            				+Number(row.feeGroupAmount4)
+            				+Number(row.feeGroupAmount5)
+            				+Number(row.feeGroupAmount6)
+            				+Number(row.feeGroupAmount7)
+            				+Number(row.feeGroupAmount8)
+            				+Number(row.feeGroupAmount9)
+            				+Number(row.feeGroupAmount99)
+            		)*100).toFixed(2)+'%';
+            	}
+            },{
+                field: 'actualChargeAmount', title: '应收款',minWidth:100,align:'right'
+            },{
+                field: 'feeGroupAmount1', title: '西药费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount2', title: '中成药费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount3', title: '中草药费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount4', title: '诊察费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount5', title: '检查费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount6', title: '化验费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount7', title: '放射费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount8', title: '治疗费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount9', title: '手术费',width:80,align:'right'
+            },{
+                field: 'feeGroupAmount99', title: '其他费',width:80,align:'right'
+            },{
+                field:'',title:'合计',width:100,align:'right',templet:function (res) {
+                    return res.feeGroupAmount1
+                        +res.feeGroupAmount2
+                        +res.feeGroupAmount3
+                        +res.feeGroupAmount4
+                        +res.feeGroupAmount5
+                        +res.feeGroupAmount6
+                        +res.feeGroupAmount7
+                        +res.feeGroupAmount8
+                        +res.feeGroupAmount9
+                        +res.feeGroupAmount99
+                }
+            },{
+                field: 'hospitalName', title: '医疗机构名称',minWidth:100,templet:function (res) {
+                    var hospitalName = dicSysOrgHospital[res.hospitalId] == undefined ? '' : dicSysOrgHospital[res.hospitalId];
+                    return res.hospitalName ? res.hospitalName : hospitalName;
+                }
+            }
+        ]]
+    }));
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 13);
+    }
+
+    //监听搜索
+    $('#search').on('click', function () {
+        techTable.reload({
+            where: getQueryParams()
+        })
+    });
+
+    function getQueryParams() {
+        var params = $.extend({
+            outpatientOfficeId: '',
+            makeOrderDoctorId: '',
+            settlementTimeBegin: '',
+            settlementTimeEnd: ''
+        }, common.serializeObject($('#queryForm'), ['settlementTimeRange']));
+        return params;
+    }
+    //日期时间范围
+    laydate.render({
+        elem: '#settlementTimeRange',trigger: 'click'
+        , range: true
+    });
+
+    //新增事件
+    $('#btn_add').click(function() {
+        editBasDisease();
+    });
+    //编辑
+    function editBasDisease(data) {
+        var title = '导出数据'
+        var iframeEnvironment = 'I4028804601699abb9abbf0080169c587d1666377';
+        var content = diResource + iframeEnvironment
+        //true 执行
+        if (data) {
+            title = data.diseaseName;
+            content += '?regionPopuId=' + data.regionPopuId;
+        }
+        common.open(content, title, {
+            area : [ '1160px', '80%' ],
+            scroll:'yes'
+        });
+    }
+})
+</script>

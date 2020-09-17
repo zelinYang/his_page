@@ -1,0 +1,160 @@
+<script type="text/javascript">
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'element', 'form', 'layer', 'laydate', 'util'], function () {
+        var form = layui.form;
+        var laydate = layui.laydate;
+        var element = layui.element;
+        var util = layui.util;
+
+        //住院病区
+        form.on('select(currentWardId)', function () {
+            $('#btn_query').click();
+        });
+
+        //按入院日期范围查询
+        laydate.render({
+            elem: '#inhospitalDate', range: true
+            ,trigger: 'click' //采用click弹出
+            , done: function (value, date, endDate) {
+                $("#inhospitalDate").val(value);
+                $('#btn_query').click();
+            }
+        });
+
+        //按出院日期范围查询
+        laydate.render({
+            elem: '#outhospitalDate', range: true
+            ,trigger: 'click' //采用click弹出
+            , done: function (value, date, endDate) {
+                $("#outhospitalDate").val(value);
+                $('#btn_query').click();
+            }
+        });
+
+        //责任护士
+        form.on('select(dutyNurserRange)', function () {
+            $('#btn_query').click();
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            $('.layui-tab[lay-filter="doctorNav"]').find('.layui-tab-title li.layui-this').click();
+            listenerRow();//清除当前患者信息
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            $('#q_currentBedNo,#q_keyWord').val('')
+        })
+
+        //护理级别
+        form.on('checkbox(nurseLevels)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //病情
+        form.on('checkbox(inpatientConditions)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //在院状态
+        form.on('checkbox(inhospitalStates)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //切换操作按钮的显示隐藏
+        function toggleBtnByTabId(tabId) {
+            //设置隐藏
+            $('[for-tab]:not([placeholder])').addClass('layui-hide').filter(function () {
+                return $(this).attr('for-tab').split(',').includes(tabId);
+            }).removeClass('layui-hide');
+            //设置占位隐藏 placeholder
+            $('[for-tab][placeholder]').css({'visibility' : 'hidden', 'opacity':'0'}).filter(function () {
+                return $(this).attr('for-tab').split(',').includes(tabId);
+            }).css({'visibility' : 'visible', 'opacity':'1'});
+            //设置禁用
+            $('[for-tab]').find(':input').prop('disabled',true).end().filter(function () {
+                return $(this).attr('for-tab').split(',').includes(tabId);
+            }).find(':input').prop('disabled',false);
+            switch (tabId) {
+                case 'inHospitalPatient':
+                    break;
+                case 'outHospitalPatient':
+                    break;
+                default:
+            }
+        }
+
+        //监听Tab切换
+        element.on('tab(doctorNav)', function (data) {
+            var href = $(this).attr("lay-attr");
+            var tab = $(this).attr("tab");
+            data.elem.find('[tab="' + tab + '"] iframe').html(function () {
+                common.openLoad();
+                return $(this).prop('src', href).load(function () {
+                    common.closeLoad();
+                })
+            });
+            toggleBtnByTabId($(this).attr('tab'));
+            $(window).resize()
+        });
+
+        //初始化列表页面，打开首个页面
+        $('.layui-tab[lay-filter="doctorNav"]').find('.layui-tab-title li').first().click();
+
+        //重置 tab 高度
+        $(window).resize(function () {
+            $('.doctorHome-content').height($('body').height() - $('#queryForm').height() - 15);
+        }).resize()
+    });
+
+    //获取查询表单数据 iframe 子页面调用
+    function getQueryParam() {
+        var params = $.extend({
+            currentWardId:'',
+            currentBedNo:'',
+            queryType:'',
+            keyWord: '',
+            nurseLevels: '',
+            inpatientConditions: '',
+            inhospitalStateFlag: '',
+            model: $('.view-show button.layui-hide').data('model')// 表格显示模式 流式列表
+        }, common.serializeObject($("#queryForm"), ['inhospitalDate', 'outhospitalDate']));
+        return params;
+    }
+
+    //在院患者的单击事件 打开菜单 iframe  子页面调用
+    function dbclickBed(inhospitalId, patientName) {
+        if(inhospitalId!=null && inhospitalId!=""){
+            var url = contextPath + '/inpatient/inpatientInhospital.do?inhospitalId=' + inhospitalId;
+            parent.openTabMenu({title: patientName, href: url, index: 'patientInfo'});
+        }else{
+            common.alert("该病床没有患者");
+        }
+    }
+
+    //绑定床位的单击事件 打开菜单 iframe  出院患者 子页面调用
+    function openLeaveHospital(inhospitalId, patientName){
+        top.common.open('$contextPath' + '/inpatient/inpatientInfoMain.do?inhospitalId=' + inhospitalId, '住院信息（' + patientName + '）', {
+            area: ['90%', '90%'],
+            scroll: true
+        })
+    }
+    //视图切换按钮
+    $('.view-show button').click(function () {
+        $(this).addClass('layui-hide').siblings().removeClass('layui-hide');
+        $("#inpatientList")[0].contentWindow.box.model($(this).data('model'));
+    });
+</script>

@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-医生开处方权限（特殊药品）设置管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .region-search {
+            position: absolute;
+            right: 8px;
+            top: 5px;
+            cursor: pointer;
+        }
+
+        .layui-card-body.medicineRecipeClassify {
+            height: calc(100vh - 250px);
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form m-sm" id="basDoctorOrderRoleForm" lay-filter="basDoctorOrderRoleForm">
+    <!-- 表单 开始 -->
+    <div class="layui-card">
+        <div class="layui-card-header">基本信息</div>
+        <div class="layui-card-body deps">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()医生</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("doctorName" "$!basDoctorOrderRole.doctorName" "class='layui-input' readonly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">处方医嘱权限</label>
+                    <div class="layui-input-inline">
+                        #formRadioGroup("recipeFlag" "$!{basDoctorOrderRole.recipeFlag}" ${dicData.dicYesNo} " ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">最近操作人员</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("latestUserId" "#lookUpDict(${dicData.dicSysUser}, $!basDoctorOrderRole.latestUserId)" "class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">最近操作时间</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("latestTime" "$!date.format('yyyy-MM-dd HH:mm',$!basDoctorOrderRole.latestTime)" "class='layui-input'")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-card">
+        <div class="layui-card-header">特殊药品</div>
+        <div class="layui-card-body medicineRecipeClassify m-l-md">
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+        </button>
+    </div>
+
+    <!-- 表单 结束 -->
+    <script type="text/html" id="specialMedicineTpl">
+        {{# layui.each(dicSpecialMedicine,function(specialMedicineValue, specialMedicineName){ }}
+        <div class="layui-form-item">
+            <div class="layui-input-inline">
+                <input type="checkbox" name="medicineRecipeClassify" lay-filter="medicineRecipeClassify" value="{{specialMedicineValue}}" lay-skin="primary" title="{{specialMedicineName}}"  lay-verify="reqRedio" check-msg='请选择特殊药品'>
+            </div>
+            <div class="layui-input-inline" style="width: auto;">
+                <!--抗菌药-->
+                {{# if(MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == specialMedicineValue){ }}
+                {{#layui.each(dicAntibioticLevel, function(value, title){ }}
+                <input type="radio" name="antibioticGen" value="{{value}}" title="{{title}}" disabled check-msg='请选择抗菌药等级'>
+                {{# }) }}
+                {{# }else if(MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE == specialMedicineValue){ }}
+                {{#layui.each(dicSpecialMedicineLevel, function(value, title){ }}
+                <input type="radio" name="specialMedicineLevel_{{specialMedicineValue}}" value="{{value}}" title="{{title}}" disabled check-msg='请选择毒麻级别'>
+                {{# }) }}
+                {{# } }}
+            </div>
+        </div>
+        {{# }) }}
+    </script>
+</form>
+<script>
+
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN = "$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN}";
+    var MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE = '$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE}';
+    var basDoctorOrderRoles = JSON.parse('$AppTools.toJSONString($!{basDoctorOrderRoles})');
+    var dicAntibioticLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticLevel)');
+    var dicSpecialMedicineLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicineLevel)');
+    var dicSpecialMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicine)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect, laytpl = layui.laytpl
+        common.verify(form)
+
+        //加载特殊药品和级别
+        function loadMedicineRecipeClassify(basDoctorOrderRoles) {
+            $(".medicineRecipeClassify").html(laytpl($('#specialMedicineTpl').html()).render({}));
+            $($.map(basDoctorOrderRoles ? basDoctorOrderRoles : [], function (basDoctorOrderRole) {
+                if (basDoctorOrderRole.validFlag != YES_FLAG) return;
+                var strs = [':checkbox[name="medicineRecipeClassify"][value="' + basDoctorOrderRole.medicineRecipeClassify + '"]'];
+                if (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == basDoctorOrderRole.medicineRecipeClassify) {
+                    //抗菌级别
+                    strs.push(':radio[name="antibioticGen"][value="' + basDoctorOrderRole.antibioticGen + '"]');
+                } else if (MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE == basDoctorOrderRole.medicineRecipeClassify) {
+                    //精神级别
+                    strs.push(':radio[name="specialMedicineLevel_' + basDoctorOrderRole.medicineRecipeClassify + '"][value="' + basDoctorOrderRole.specialMedicineLevel + '"]');
+                }
+                //赋值特殊药品
+                return strs.join();
+            }).join()).prop('checked', true);
+            //特殊药品级别禁用开启
+            changeMedicineRecipeClassify()
+            form.render();
+        }
+
+        loadMedicineRecipeClassify(basDoctorOrderRoles);
+
+        //根据医生获取处方权限
+        function getBasDoctorOrderRoleByDoctorId(doctorId) {
+            var basDoctorOrderRoles = [];
+            $.ajax({
+                type: "GET",
+                url: "../bas/basDoctorOrderRoleListData.jo?doctorId=" + doctorId,
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    basDoctorOrderRoles = result.data;
+                }
+            });
+            return basDoctorOrderRoles;
+        }
+
+        //选择医生
+        $('#doctorName,.region-search').click(function () {
+            top.common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {
+                area: ['750px', '450px'], success: function (layero, index) {
+                    var iframeWindow = top.window['layui-layer-iframe' + index]
+                        , tableId = 'userList';
+                    setTimeout(function () {
+                        iframeWindow.layui.table.on('row(' + tableId + ')', function (obj) {
+                            selectSingleUserCall(obj.data)
+                            top.layui.layer.close(index); //关闭弹层
+                        });
+                        //监听行工具事件
+                        iframeWindow.layui.table.on('tool(' + tableId + ')', function (obj) {
+                            var layEvent = obj.event; //获得 lay-event 对应的值
+                            if (layEvent === "select") {
+                                selectSingleUserCall(obj.data)
+                                top.layui.layer.close(index); //关闭弹层
+                            }
+                        });
+                    }, 50);
+                }
+            });
+
+        })
+
+        //选择医生触发方法的回调函数
+        function selectSingleUserCall(data) {
+            var basDoctorOrderRoles = getBasDoctorOrderRoleByDoctorId(data.userId);
+            //表单赋值
+            form.val('basDoctorOrderRoleForm', basDoctorOrderRoles[0] || {doctorId: data.userId, doctorName: data.name});
+            loadMedicineRecipeClassify(basDoctorOrderRoles)
+        }
+
+        //显示抗菌类特殊药品级别
+        function changeMedicineRecipeClassify() {
+            $(':checkbox[name="medicineRecipeClassify"]').each(function () {
+                var value = $(this).val();
+                var flag = $(this).is(':checked');
+                if (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == value) {
+                    //抗菌级别
+                    $(':radio[name="antibioticGen"]').prop('disabled', !flag)[flag ? 'attr' : 'removeAttr']('lay-verify', 'reqRedio');
+                } else {
+                    //非抗菌级别
+                    $(this).closest('.layui-form-item').find(':radio[name^="specialMedicineLevel"]').prop('disabled', !flag)[flag ? 'attr' : 'removeAttr']('lay-verify', 'reqRedio');
+                }
+            })
+            form.render();
+        }
+
+        //初始化 特殊药品级别
+        form.on('checkbox(medicineRecipeClassify)', function (data) {
+            changeMedicineRecipeClassify()
+        });
+
+        common.setFormReadOnly($('#basDoctorOrderRoleForm'))
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+
+
+</body>
+</html>

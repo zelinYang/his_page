@@ -1,0 +1,38 @@
+<script>
+    //当前选中子菜单数据
+    var menuData;
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index',
+  }).use(['index', 'element'], function () {
+    var element = layui.element
+    // 初始化左边菜单
+    if (parent.menuData) {
+      var html = []
+      var tabContent = []
+      var menu = JSON.parse(parent.menuData).children
+      if(!menu){
+        //无子菜单结束
+        return ;
+      }
+      $.each(menu, function (i, r) {
+        html.push('<li id="' + r.id + '" tab-url="' + r.href + '" data-menu=' + (r.children ? JSON.stringify(r.children).replace(/\s+/g, "@") : '[]') + '><span><i class="' + r.icon + '"></i><p>' + r.text + '</p></span></li>');
+        tabContent.push('<div class="container_page full-height "><iframe class="container_iframe " scrolling="no" frameborder="0" marginheight="0" marginwidth="0" width="100%" height="100%" ></iframe></div>')
+      })
+      $('#rootMenu').html(html.join(''))
+      $('#app_body').html(tabContent.join(''))
+      /*跟菜单页选项卡切换监听*/
+      $('.tab_page_menu ul li').click(function () {
+          menuData = $(this).data('menu');//子菜单数据
+        var href = $(this).attr("tab-url") ? contextPath + "/" + $(this).attr("tab-url") : '';
+        var index = $(this).index()
+        $(this).addClass('selected').siblings().removeClass('selected')
+        $('#app_body').children('.container_page').eq(index).addClass('layui-show').siblings().removeClass('layui-show').end().find('.container_iframe:not([src])').prop('src', href)
+      })
+
+      // 打开第一选项卡
+      $('.tab_page_menu ul li:first').click()
+    }
+  })
+</script>

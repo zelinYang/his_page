@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <style>
+            .view {
+                padding:0;
+                word-wrap:break-word;
+                cursor:text;
+                height:90%;
+            }
+            body {
+                margin:8px;font-family: 宋体, SimSun;
+                font-size:14px;
+                line-height: 1.4
+            }
+            p {
+                margin:0;
+                line-height: 1.4;
+            }
+            #printarea {
+                border: 1px solid #d4d4d4;
+                border-radius: 4px;
+                box-shadow: 0 0 0 1px #d1d1d1, 0 0 3px 1px #ccc;
+            }
+            .footer {
+                /*border-bottom: 4px solid #d4d4d4;*/
+                /*margin: 0 -40px;*/
+            }
+            .footer-p {
+                border-bottom: 4px solid #d4d4d4;
+                margin: 0 -40px;
+            }
+        </style>
+        <script src="../../mini-editor/plugins/jquery/jquery.min.js?_=sfafa"></script>
+        <script type="text/javascript" src="../internal.js"></script>
+        <script src="../../ueditor.parse.js"></script>
+        <title></title>
+    </head>
+    <body class="view">
+        <div>
+            <button onclick="doPrint()">打印</button>
+        </div>
+        <div id="printarea" style="width:784px;height: 100%;margin: 5px auto 0px;">
+            <div id="preview" style="margin:40px">
+
+            </div>
+        </div>
+    </body>
+    <script>
+        var previewDom = document.getElementById('preview');
+        var printareaDom = document.getElementById('printarea');
+        previewDom.innerHTML = editor.getContent();
+        var printType = editor.options.printType;
+        var pageHeight = (printType === '1'? 1070: 784 - 40);
+        printareaDom.style.width = (printType === '1'? '784px': '1070px');
+
+        window.onload = function () {
+            //动态添加打印样式
+            var style = document.createElement("style");
+            style.type = "text/css";
+            var pageStyle = (printType === '2' ? '@page { size: A4 landscape; }' : '@page { size: A4 portrait; }');
+            try{
+                style.appendChild(document.createTextNode(pageStyle));
+            }catch(ex){
+                style.styleSheet.cssText = pageStyle;//针对IE
+            }
+            var head = document.getElementsByTagName("head")[0];
+            head.appendChild(style);
+            // 计算页面高度
+            var headerDom = document.getElementById('header');
+            var footerDom = document.getElementById('footer').cloneNode(true);
+            var headerHeight = headerDom.clientHeight;
+            var footerHeight = document.getElementById('footer').clientHeight;
+            $('#footer').remove();
+            var marginTop = previewDom.style.marginTop? parseInt(previewDom.style.marginTop.replace('px', '')): 0;
+            var marginBottom = previewDom.style.marginBottom? parseInt(previewDom.style.marginBottom.replace('px', '')): 0;
+            var height = marginTop + marginBottom + headerHeight + footerHeight;
+            var footerPageDom = UE.dom.domUtils.createElement(document, 'p', {
+                class: 'footer',
+                style: 'text-align: center;'
+            });
+            var pDom = UE.dom.domUtils.createElement(document, 'p', {});
+            var hideDom = UE.dom.domUtils.createElement(document, 'p', {
+                style: 'height: 40px',
+                class: 'hide-p'
+            });
+            var footerPDom = UE.dom.domUtils.createElement(document, 'p', {
+                style: 'height: 40px',
+                class: 'footer-p'
+            });
+            var index = 1;
+            console.log(height);
+            $('#preview').children().each(function () {
+                if (this.id === 'header' || this.id === 'footer') {
+                    return;
+                }
+                var thisDom = this;
+                height += $(this).height();
+                if (height > pageHeight) {
+                    height = height - $(this).height();
+                    if (this.nodeName === 'TABLE') {
+                        var firstRow = '';
+                        var isExceed = false;
+                        var tableDom = UE.dom.domUtils.createElement(document, 'table', {});
+                        var tbodyDom = UE.dom.domUtils.createElement(document, 'tbody', {});
+                        tableDom.append(tbodyDom);
+                        $(this.firstChild).children().each(function (index, dom) {
+                            if (index === 0) {
+                                firstRow = this;
+                                tbodyDom.append(this.cloneNode(true));
+                            }
+                            if (!isExceed) {
+                                height += $(this).height();
+                            }
+                            if (height > pageHeight) {
+                                height -= $(this).height();
+                                isExceed = true;
+                            }
+                            if (isExceed) {
+                                tbodyDom.append(this);
+                            }
+                        });
+                        $(this).after($(tableDom));
+                        thisDom = tableDom;
+                    }
+                    pDom.style = 'height:' + (pageHeight - height) + 'px';
+                    footerPageDom.innerHTML = '第' + index + '页';
+                    var footerDomClone = footerDom.cloneNode(true);
+                    footerDomClone.firstChild.append(footerPageDom.cloneNode(true));
+                    $(thisDom).before($(pDom).clone());
+                    $(thisDom).before($(footerDomClone).clone());
+                    $(thisDom).before($(footerPDom).clone());
+                    $(thisDom).before($(hideDom).clone());
+                    $(thisDom).before($(headerDom).clone());
+                    height = marginTop + marginBottom + headerHeight + footerHeight + $(thisDom).height();
+                    index ++;
+                }
+            });
+            console.log(height);
+            pDom.style = 'height:' + (pageHeight - height) + 'px';
+            $('#preview').append($(pDom).clone());
+            footerPageDom.innerHTML = '第' + index + '页';
+            footerDom.firstChild.append(footerPageDom.cloneNode(true));
+            $('#preview').append(footerDom.cloneNode(true));
+        };
+        uParse('#preview',{
+            rootPath : '../../',
+            chartContainerHeight:500
+        })
+        dialog.oncancel = function(){
+            document.getElementById('preview').innerHTML = '';
+        }
+
+        function doPrint() {
+            var bdhtml = window.document.body.innerHTML;
+            var printarea = document.getElementById('preview');
+            var marginTop = printarea.style.marginTop? parseInt(printarea.style.marginTop.replace('px', '')): 0;
+            var marginBottom = printarea.style.marginBottom? parseInt(printarea.style.marginBottom.replace('px', '')): 0;
+            var marginLeft = printarea.style.marginLeft? parseInt(printarea.style.marginLeft.replace('px', '')): 0;
+            var marginRight = printarea.style.marginRight? parseInt(printarea.style.marginRight.replace('px', '')): 0;
+            printarea.style.marginTop = (marginTop - 40) + 'px';
+            printarea.style.marginBottom = (marginBottom - 40) + 'px';
+            printarea.style.marginLeft = (marginLeft - 40) + 'px';
+            printarea.style.marginRight = (marginRight - 40) + 'px';
+            $(printarea).find('.hide-p').hide();
+            $(printarea).find('.footer-p').hide();
+            window.document.body.innerHTML = printarea.outerHTML; //把需要打印的指定内容赋给body.innerHTML
+            window.print(); //调用浏览器的打印功能打印指定区域
+
+            window.document.body.innerHTML = bdhtml;//重新给页面内容赋值；
+        }
+    </script>
+</html>

@@ -1,0 +1,132 @@
+
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util','laydate'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util,laydate = layui.laydate;
+
+        //常规用法
+        laydate.render({
+            elem: '#q_settlementTime',
+            max:0,
+            value:new Date() ,
+            done: function(value){
+                initLoad(value);
+            }
+        });
+
+        $("#btn_query_rpOutpatientFee").click(function () {
+            initLoad();
+        })
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                settlementTime: $('#q_settlementTime').val(),
+            }, common.serializeObject($('#outpatientFee_queryForm')));
+        }
+        var initLayout;
+        initLayout = function () {
+            $('#container').layout({
+                east__size: '75%'//pane的大小
+                , togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                , togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。
+                , spacing_open: 8//边框的间隙
+                , maskIframesOnResize: ".resizeiframe"
+            });
+        }
+        initLayout();
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('body').height() - $('#queryForm').height() - $('#outpatientFee_queryForm').height() - $('.tool-bottom-fixed').height() - 26;
+        }
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            if (!queryParams.settlementTime) return;
+            //执行重载
+            table.reload('outpatientFeeListGrid', {
+                url: '../outpatientFee/outpatientFeeListData.jo',
+                where: queryParams
+            });
+        })
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('outpatientFee_queryForm');
+        })
+        //表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#outpatientFeeListGrid',
+            height: getTableHgt()    ,
+            totalRow: true //开启合计行
+            , data:[],
+            cols: [[
+                {type: 'numbers'},
+                {
+                    title: '发票号码',
+                    field: 'feeBillNo', totalRowText: '合计：'
+                },
+                {
+                    title: '姓名',
+                    field: 'patientName'
+                },
+				{
+					title: '科室名称',
+					field: 'outpatientOfficeName'
+				},
+                {
+                    title: '收费日期',
+                    field: 'settlementTime',
+                    width: 125,
+                    templet: function (row) {
+                        return util.toDateString(row.settlementTime, 'yyyy-MM-dd HH:mm');
+                    }
+                },
+                {
+                    title: '金额',
+                    field: 'actualChargeAmount', sort: true, totalRow: true
+                }]]
+        }));
+        function initLoad(settlementTime) {
+            settlementTime = settlementTime || $('#q_settlementTime').val();
+            if (!settlementTime) return;
+            $('#btn_query').click();
+            var emrTlpId = $("#emrTlpId").val();
+            loadEmrTlp(emrTlpId, settlementTime);
+        }
+        initLoad();
+        //加载电子病历编辑iframe
+        function loadEmrTlp(emrTlpId, settlementTime) {
+            if (!emrTlpId) {
+                common.alert('没有电子病历模板')
+                return;
+            }
+            var params = "emrTlpId=" + emrTlpId + "&view=patient/emr/commonEmrPreview&serviceId=$!serviceId&createTime=" + settlementTime;
+            common.openLoad();
+            $("#emrShow").attr("src", contextPath + '/emr/commonEmrTemplate.do?' + params).load(function () {
+                common.closeLoad();
+            });
+        }
+
+
+		//监听行双击事件
+		table.on('rowDouble(outpatientFeeListGrid)', function(obj){
+             var data = obj.data;
+            top.common.open('$contextPath' + '/report/syncOutpatientFeeItem.do?outpatientFeeId=' + data.outpatientFeeId, '门诊费用详情（' + data.patientName + '）', {
+                area: ['90%', '90%'],
+                scroll: true
+            })
+		});
+
+        // 重置表格高度
+        $(window).resize(function () {
+            table.reload('outpatientFeeListGrid', {
+                height: getTableHgt()
+            });
+        })
+    })
+</script>

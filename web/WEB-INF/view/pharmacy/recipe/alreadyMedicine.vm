@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>已发药</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style>
+        .layui-form-item .layui-btn.layui-btn-sm { margin-bottom: 0;}
+        @media screen and (min-width: 768px) and (max-width: 1024px){
+            #recipeForm .layui-form-item .layui-input-inline{width: 130px}
+        }
+        @media screen and (max-width: 768px){
+            #recipeForm .layui-form-item .layui-input-inline{width: 90px}
+        }
+    </style>
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form class="layui-form layui-bg-white m-b-xs" id="queryForm" >
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    #formHiddenInput("dispensingFlag" "1" "")
+                    #formHiddenInput("deliverFlag" "1" "")
+                    <div class="layui-inline">
+                        <label class="layui-form-label">领药药房</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelect("pharmacyId" "" $!dicData.dicPharmacy "class='layui-input'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">按关键字查询</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("keyWord" "" "id='keyWord' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn_search" class="layui-btn layui-btn-sm" title="查 询"> <i class="layui-icon layui-icon-search "></i></button>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn_warn" class="layui-btn layui-btn-sm"><span>药品预警</span></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class=" layui-form layui-col-space10 full-height">
+            <div class="layui-col-md4 layui-col-sm4 layui-col-xs4 layui-bg-white">
+                <table id="mainTable" lay-filter="mainTable"></table>
+            </div>
+            <div class="layui-col-md8 layui-col-sm8 layui-col-xs8 layui-bg-white">
+                <div class="layui-row" style="height: 40px;">
+                    <div class="layui-col-xs3" id="recipeSign" style="display: none;">
+                        <span id="urgencyFlag" class="layui-badge-rim layui-bg-green"></span>
+                        <span id="recipeFlag" class="layui-badge-rim layui-bg-blue"></span>
+                        <span id="payFeeFlag" class="layui-badge-rim layui-bg-orange"></span>
+                    </div>
+                </div>
+                <form class="layui-form" action="" id="recipeForm">
+                    <div class="layui-form-item">
+                        #formHiddenInput("recipeId" "" "id='recipeId'")
+                        <div class="layui-inline">
+                            <label class="layui-form-label">姓名</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("patientName" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">性别</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("patientSex" "" "class='layui-input' readonly ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">年龄</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("patientAge" "" "class='layui-input' readonly ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">开单医生</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("makeOrderDoctorName" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">处方号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("recipeNum" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">科室</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("outpatientOfficeName" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">诊断</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("diagnosisName" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <form class="layui-form" id="operateForm">
+                    <div class="layui-form-item" style="padding-top: 9px;">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">配药人</label>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                #formTextInput("dispensingUserId" "" "class='layui-input' readonly")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">发药人</label>
+                            <div class="layui-input-inline" style="width: 80px;">
+                                #formTextInput("deliverUserId" "" "class='layui-input' readonly ")
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <div class="layui-bg-white">
+                    <div class="layui-table-body" style="height: calc(100% - 5px)">
+                        <table abc="" id="mainItemTable" lay-filter="mainItemTable"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicDrugstoreId = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreId)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var parmas;
+    var firstClick = true;
+    var tabFlag = '1';
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+        // 处方发药列表
+        var mainTableUrl = contextPath + '/outpatient/recipePage.jo';
+        parmas = common.serializeObject($('#queryForm'));
+        var mainTableOpt = {
+            url: mainTableUrl,
+            id: 'mainTable',
+            elem: '#mainTable',
+            height: getMainTableHeight(),
+            where: parmas,
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                common.removeHeadCheckbox('recipeId');
+                $(".layui-table-view[lay-id='mainTable'] .layui-table-body tr[data-index='0'] .layui-form-radio").click();
+                if (res.data.length === 0) {
+                    resetContent();
+                    $("#recipeSign").hide();
+                }
+            },
+            cols: [[
+                {type: 'radio', field: 'recipeId'},
+                {
+                    field: 'recipeNum'
+                    , title: '处方号'
+                    , width: 150
+                }, {
+                    field: 'patientName'
+                    , title: '姓名'
+                    , width: 80
+                }, {
+                    field: 'patientSex'
+                    , title: '性别'
+                    , width: 80
+                }, {
+                    field: 'patientAge'
+                    , title: '年龄'
+                    , width: 80
+                }, {
+                    field: 'visitCardNo'
+                    , title: '就诊卡号'
+                    , width: 80
+                }, {
+                    field: 'patientIdCard'
+                    , title: '证件号'
+                    , width: 80
+                }, {
+                    field: 'outpatientOfficeName'
+                    , title: '科室'
+                    , width: 80
+                }, {
+                    field: 'makeOrderDoctorName'
+                    , title: '开单医生'
+                    , width: 80
+                }, {
+                    field: 'dispensingUserId'
+                    , title: '配药人'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.dispensingUserId) {
+                            return dicSysUser[row.dispensingUserId];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'widndow'
+                    , title: '窗口'
+                    , width: 80
+                }, {
+                    field: 'callNumber'
+                    , title: '是否叫号'
+                    , width: 80
+                }
+            ]]
+        };
+        var mainItemTableUrl = contextPath + '/outpatient/recipeItemPageData.jo';
+        var mainItemTableOpt = {
+            data: [],
+            id: 'mainItemTable',
+            elem: '#mainItemTable',
+            height: getMainTableItemHeight(),
+            totalRow: true,
+            cols: [[
+                {
+                    field: 'orderName'
+                    , title: '药品名称'
+                    , width: '150'
+                    , totalRowText: '总金额'
+                }, {
+                    field: 'medicineOtherName'
+                    , title: '其他名'
+                    , width: '150'
+                }, {
+                    field: 'medicineSpec'
+                    , title: '规格'
+                    , width: 80
+                }, {
+                    field: 'unitPrice'
+                    , title: '单价'
+                    , width: 80
+                }, {
+                    field: 'giveTotalQuantity'
+                    , title: '数量'
+                    , width: 80
+                }, {
+                    field: 'giveTotalQuantityUnit'
+                    , title: '单位'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.giveTotalQuantityUnit) {
+                            return dicDrugNumUnit[row.giveTotalQuantityUnit];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'actualPrice'
+                    , title: '金额'
+                    , width: 80
+                    , totalRow: true
+                }, {
+                    field: 'dosage'
+                    , title: '单量'
+                    , width: 80
+                }, {
+                    field: 'dosageUnit'
+                    , title: '单位'
+                    , width: 80
+                    , templet: function (row) {
+                        if (row.dosageUnit) {
+                            return dicDrugNumUnitDosageUnit[row.dosageUnit];
+                        }
+                        return '';
+                    }
+                }, {
+                    field: 'usageQuantity'
+                    , title: '付数'
+                    , width: 80
+                }, {
+                    field: 'medicineUsage'
+                    , title: '用法'
+                    , width: 80
+                }, {
+                    field: 'pharmacyFreqId'
+                    , title: '频次'
+                    , width: 80
+                }, {
+                    field: 'noField'
+                    , title: '医生嘱托'
+                    , width: 80
+                }, {
+                    field: 'manageUserName'
+                    , title: '费用类型'
+                    , width: 80
+                }, {
+                    field: 'stockCount'
+                    , title: '库存数'
+                    , width: 80
+                }, {
+                    field: 'remark'
+                    , title: '备注'
+                    , width: 80
+                }
+            ]]
+        };
+        var mainTable = table.render($.extend(basePageTable, mainTableOpt));
+        var mainItemTable = table.render($.extend(singlePageTable, mainItemTableOpt));
+        //处方接收列表行单击事件
+        table.on('row(mainTable)', function (obj) {
+            common.setTableRadioSelect(obj, layui, 'mainTable');
+            showMainData(obj.data);
+            table.reload('mainItemTable', {
+                where: {recipeId: obj.data.recipeId}
+                , url: mainItemTableUrl
+            });
+        });
+
+        function showMainData(data) {
+            $("#recipeSign").show();
+            if (data.urgencyFlag === '1') {
+                $('#urgencyFlag').removeClass('layui-bg-green').addClass('layui-bg-red').html('紧急');
+            } else {
+                $('#urgencyFlag').removeClass('layui-bg-red').addClass('layui-bg-green').html('普通');
+            }
+            $('#recipeFlag').html('已发药');
+            $('#payFeeFlag').html(dicPayFeeState[data.payFeeFlag]);
+            $('#recipeForm input[name="recipeId"]').val(data.recipeId);
+            $('#recipeForm input[name="patientName"]').val(data.patientName);
+            $('#recipeForm input[name="patientSex"]').val(dicSex[data.patientSex]);
+            $('#recipeForm input[name="patientAge"]').val(data.patientAge);
+            $('#recipeForm input[name="makeOrderDoctorName"]').val(data.makeOrderDoctorName);
+            $('#recipeForm input[name="recipeNum"]').val(data.recipeNum);
+            $('#recipeForm input[name="outpatientOfficeName"]').val(data.outpatientOfficeName);
+            $('#recipeForm input[name="diagnosisName"]').val(data.diagnosisName);
+            $('#operateForm input[name="dispensingUserId"]').val(data.dispensingUserId? dicSysUser[data.dispensingUserId]: '');
+            $('#operateForm input[name="deliverUserId"]').val(data.deliverUserId? dicSysUser[data.deliverUserId]: '');
+        }
+
+        //监听搜索
+        $('#btn_search').click(function() {
+            var data = common.serializeObject($("#queryForm"));
+            if (!data.keyWord) {
+                data.keyWord = '';
+            }
+            mainTable.reload( {where: data });
+        });
+
+        function refreshCurTable() {
+            firstClick = true;
+            $('#btn_search').click();
+        }
+
+        function resetContent() {
+            $("#recipeForm").find("input").each(function (index, dom) {
+                $(dom).val('');
+            });
+            $("#operateForm").find("input").each(function (index, dom) {
+                $(dom).val('');
+            });
+            table.reload('mainItemTable', {
+                where: {recipeId: ''}
+                , url: ''
+                , data: []
+            });
+        }
+
+        // 初始化校验radio和checkbox控件
+        common.verify(form);
+
+        // 获取表格高度
+        function getMainTableHeight() {
+            return ($('body').height() - $('#queryForm').height() - 10);
+        }
+        function getMainTableItemHeight() {
+            return ($('body').height() - $('#queryForm').height() - $('#recipeForm').height() - $('#operateForm').height() - 50)
+        }
+        $(window).resize(function () {
+            table.reload('mainTable',{
+                height:getMainTableHeight()
+            });
+            table.reload('mainItemTable',{
+                height:getMainTableItemHeight()
+            });
+        })
+    });
+
+    var index = 0;
+    function onEnter() {
+        if (event.keyCode == 13){
+            index++;
+            var inputLength = $('#itemList').find('input[type!=hidden][readonly!=readonly], select').length;
+            if (index >= inputLength) {
+                index = 0
+            }
+            $('#itemList').find('input[type!=hidden][readonly!=readonly], select').each(function (i) {
+                if (i == index) {
+                    if (this.nodeName === 'SELECT') {
+                        $(this).next().find('.layui-select-title input').click();
+                    }
+                    $(this).focus();
+                }
+            })
+        }
+    }
+</script>
+<script>
+
+</script>
+</html>

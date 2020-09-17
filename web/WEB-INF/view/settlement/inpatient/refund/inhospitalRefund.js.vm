@@ -1,0 +1,223 @@
+<script>
+var feeBillNo = '$!{feeBillNo}';
+var feeItemTable;
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+layui.use(['element', 'layer', 'table', 'form'], function(){
+    var element = layui.element, table = layui.table, form = layui.form, $ = layui.$, layer = layui.layer;
+    element.render();
+
+    feeItemTable = table.render({
+        elem: '#feeItemTable',
+        id: 'feeItemTable',
+        page: false,
+        height: getTableHeight(),
+        totalRow: true,
+        data: [],
+        cols: [[{
+            type: 'checkbox'
+        }, {
+            field: 'chargeName',
+            title: '费用名称',
+            minWidth: 150,
+            totalRowText: '合计'
+        }, {
+            field: 'giveTotalQuantity',
+            title: '数量'
+        }, {
+            field: 'giveTotalQuantityUnit',
+            title: '单位',
+            minWidth: 150,
+            templet: function (row) {
+                if (row.giveTotalQuantityUnit) {
+                    return dicDrugNumUnit[row.giveTotalQuantityUnit]? dicDrugNumUnit[row.giveTotalQuantityUnit]: row.giveTotalQuantityUnit;
+                }
+                return '';
+            }
+        }, {
+            field: 'unitPrice',
+            title: '单价'
+        }, {
+            field: 'settlementPrice',
+            title: '金额',
+            totalRow: true
+        }, {
+            field: 'outpatientTechId', title: '门诊医技ID', hide: true
+        }, {
+            field: 'recipeId', title: '门诊处方ID', hide: true
+        }]],
+        done: function (res, curr, count) {
+
+        }
+    });
+
+    table.on('checkbox(feeItemTable)', function (obj) {
+        if (obj.data.outpatientTechId) {
+            obj.tr.siblings().find('td[data-field="outpatientTechId"]>.layui-table-cell:contains(' + obj.data.outpatientTechId + ')').filter(function () {
+                return $(this).text() == obj.data.outpatientTechId;
+            }).parents('tr').find(':checkbox[name="layTableCheckbox"]').click();
+            $.each(table.cache.feeItemTable, function (i, item) {
+                if (item.outpatientTechId === obj.data.outpatientTechId) {
+                    if (obj.checked) {
+                        item.LAY_CHECKED = true;
+                    } else {
+                        delete item.LAY_CHECKED;
+                    }
+                }
+            });
+        }
+        if (obj.data.recipeId) {
+            obj.tr.siblings().find('td[data-field="recipeId"]>.layui-table-cell:contains(' + obj.data.recipeId + ')').filter(function () {
+                return $(this).text() == obj.data.recipeId;
+            }).parents('tr').find(':checkbox[name="layTableCheckbox"]').click();
+            $.each(table.cache.feeItemTable, function (i, item) {
+                if (item.outpatientTechId === obj.data.outpatientTechId) {
+                    if (obj.checked) {
+                        item.LAY_CHECKED = true;
+                    } else {
+                        delete item.LAY_CHECKED;
+                    }
+                }
+            });
+        }
+        countRefundAmount();
+        form.render('checkbox');
+    });
+
+    function countRefundAmount() {
+        var checkStatus = table.checkStatus('feeItemTable');
+        var refundAmount = 0;
+        $.each(checkStatus.data, function (index, feeItem) {
+            refundAmount += feeItem.settlementPrice;
+        });
+        $("#refundAmount").val(refundAmount);
+    }
+
+    $('#all_refund').click(function () {
+        var refundActualCharge = 0;
+        var notApplyRefundName = [];
+        // $.each(table.cache.feeItemTable, function(index, feeItem) {
+        //     refundActualCharge += feeItem.settlementPrice;
+        //     if (feeItem.payFeeFlag !== '3') {
+        //         notApplyRefundName.push(feeItem.chargeName);
+        //     }
+        // });
+        // if (notApplyRefundName.length > 0) {
+        //     common.alert(notApplyRefundName.join('，') + '需审批退费后才能退费', 2);
+        //     return;
+        // }
+        var params = {
+            inpatientSettlementId: $('#inpatientSettlementId').val(),
+            feeBillNo: $('#feeBillNo').val(),
+            allRefundFlag: '1',
+            refundActualCharge: refundActualCharge
+        };
+        inhospitalFeeRefund(params);
+    });
+
+    $('#refund').click(function () {
+        var allRefundFlag = '0';
+        var checkStatus = table.checkStatus('feeItemTable');
+        if (checkStatus.data.length === 0) {
+            common.msg("请选择退费的项目", 0);
+            return;
+        }
+        var notApplyRefundName = [];
+        var refundActualCharge = 0;
+        // $.each(checkStatus.data, function(index, feeItem) {
+        //     refundActualCharge += feeItem.settlementPrice;
+        //     if (feeItem.payFeeFlag !== '3') {
+        //         notApplyRefundName.push(feeItem.chargeName);
+        //     }
+        // });
+        // if (notApplyRefundName.length > 0) {
+        //     common.alert(notApplyRefundName.join('，') + '需审批退费后才能退费', 2);
+        //     return;
+        // }
+        var inhospitalFeeItemIds = $.map(checkStatus.data, function (inhospitalFeeItem, index) {
+            return inhospitalFeeItem.inhospitalFeeItemId;
+        });
+        if (table.cache.feeItemTable.length === checkStatus.data.length) {
+            allRefundFlag = '1';
+        }
+        var params = {
+            inpatientSettlementId: $('#inpatientSettlementId').val(),
+            feeBillNo: $('#feeBillNo').val(),
+            inhospitalFeeItemIds: inhospitalFeeItemIds.join(','),
+            allRefundFlag: allRefundFlag,
+            refundActualCharge: refundActualCharge
+        };
+        inhospitalFeeRefund(params);
+    });
+
+    function inhospitalFeeRefund(params) {
+        common.confirm("确定退费吗？", function () {
+            common.openLoad();
+            common.requestServer(contextPath + '/inpatient/inhospitalFeeRefund.jo', params, function (result) {
+                if (result.code === "0") {
+                    common.msg(result.msg, 1, function () {
+                        initialize();
+                        $('#search',window.parent.document).click();
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+                common.closeLoad();
+            });
+        });
+    }
+
+    $('#btn_query').click(function () {
+        initialize();
+        feeBillNo = $('#feeBillNoQuery').val();
+        if (feeBillNo) {
+            $.post(contextPath + "/inpatient/findInpatientSettlementByFeeBillNo.jo", {feeBillNo: feeBillNo}, function (result) {
+                if (result.code === "0") {
+                    if (result.data.payFeeFlag === '4') {
+                        common.msg('该发票已退费', 0);
+                        return;
+                    }
+                    $('#feeBillNo').val(feeBillNo);
+                    $('#patientName').val(result.data.patientName);
+                    $('#inpatientSettlementId').val(result.data.inpatientSettlementId);
+                    feeItemTable.reload({
+                        url: contextPath + '/inpatient/inhospitalFeeItemListData.jo',
+                        where: {feeBillNo: feeBillNo, payFeeFlag: '1'}
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            }, "json");
+        }
+    });
+
+    function initialize() {
+        $('#feeBillNo').val('');
+        $('#patientName').val('');
+        $('#refundAmount').val('');
+        feeItemTable.reload({
+            data: [],
+            url: ''
+        });
+    }
+
+    $(function() {
+        if (feeBillNo) {
+            feeItemTable.reload({
+                url: contextPath + '/outpatientFeeItem/outpatientFeeItemListData.jo',
+                where: {feeBillNo: feeBillNo}
+            })
+        }
+    });
+
+    // 获取表格高度
+    function getTableHeight() {
+        return ($('body').height() - $('#queryForm').height() - 10)
+    }
+    $(window).resize(function(){
+        table.reload('feeItemTable',{
+            height: getTableHeight()
+        })
+    })
+});
+
+</script>

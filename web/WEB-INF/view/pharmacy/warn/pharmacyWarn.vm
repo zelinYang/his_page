@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .layui-table td {
+            padding: 2px 3px;
+        }
+        .layui-tab-item.full-scroll {height: calc(100% - 70px);padding: 10px 0;}
+    </style>
+</head>
+<body>
+<div class="layui-fluid">
+    <form class="layui-form layui-bg-white p-t-sm m-b-sm" id="queryForm" >
+        <div class="layui-form-item search-term">
+            <div class="layui-inline">
+                <label class="layui-form-label">药房</label>
+                <div class="layui-input-inline">
+                    #formSingleSelect("pharmacyId" "1" $!dicData.dicPharmacy "lay-filter='pharmacyId' class='layui-input'" "")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <div class="layui-form-item">
+                    <input type="radio" name="medicineTypeIn" lay-filter="medicineTypeIn" value="1,2,3,11,12,21,22,31,32,33" title="药品" checked>
+                    <input type="radio" name="medicineTypeIn" lay-filter="medicineTypeIn" value="4,9" title="材料">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">名称</label>
+                <div class="layui-input-inline">
+                    #formTextInput("keyWord" "" "id='keyWord' class='layui-input' ")
+                </div>
+            </div>
+            <div class="layui-inline" id="expireParam">
+                <label class="layui-form-label">预警天数</label>
+                <div class="layui-input-inline">
+                    <input class="layui-input" name="warnDate" id="warnDate" type="number" value="300"/>
+                </div>
+            </div>
+            <div class="layui-inline" id="stockParam" style="display: none;">
+                <div class="layui-form-item">
+                    <input type="radio" name="stockWarnFlag" lay-filter="stockWarnFlag" value="0" title="下限预警" checked>
+                    <input type="radio" name="stockWarnFlag" lay-filter="stockWarnFlag" value="1" title="上限预警">
+                </div>
+            </div>
+            <div class="layui-inline m-l-lg">
+                <button type="button" id="btn_search" class="layui-btn layui-btn-sm" title="查询"> <i class="layui-icon layui-icon-search "></i></button>
+            </div>
+        </div>
+    </form>
+    <div class="layui-col-sm12 layui-col-xs12" id="sm1">
+        <div class="layui-tab layui-tab-card"
+             lay-filter="demo">
+            <ul class="layui-tab-title">
+                <li id="btn_expireDate" class="layui-this">效期预警</li>
+                <li id="btn_stock">库存预警</li>
+            </ul>
+            <div class="layui-tab-content">
+                <div class="layui-tab-item layui-show">
+                    <div id="drugstoreInItemDiv">
+                        <table id="expireDateTable" lay-filter="expireDateTable"></table>
+                    </div>
+                </div>
+                <div class="layui-tab-item">
+                    <div>
+                        <table id="stockTable" lay-filter="stockTable"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicDrugstoreId = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreId)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var expireDateTable, stockTable;
+    var params;
+    var tabFlag = '1';
+    var warnDate = 300;
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+        // 处方接收列表
+        var expireDateUrl = contextPath + '/pharmacy/pharmacyStockPageData.jo';
+        params = common.serializeObject($('#queryForm'));
+        params.expireDateEnd = getSomeDateFormat(warnDate);
+        expireDateTable = table.render($.extend(basePageTable, {
+            url: expireDateUrl,
+            id: 'expireDateTable',
+            elem: '#expireDateTable',
+            height: expireDateTableHight(),
+            where: params,
+            cols: [[
+                {
+                    field: 'medicineId'
+                    , title: '药品编码'
+                    , width: 100
+                }, {
+                    field: 'expireDate'
+                    , title: '有效期'
+                    , templet: function (res) {
+                        return new Date(res.expireDate).format('yyyy-MM-dd');
+                    },
+                    width: 120
+
+                }, {
+                    field: 'medicineName'
+                    , title: '药品名称'
+                    , width: 120
+                }, {
+                    field: 'medicineSpec'
+                    , title: '药品规格'
+                    , width: 120
+                }, {
+                    field: 'producingAreaName'
+                    , title: '药品厂家'
+                    , width: 120
+                }, {
+                    field: 'tradePrice'
+                    , title: '成本价'
+                    , width: 120
+                }, {
+                    field: 'retailPrice'
+                    , title: '售价'
+                    , width: 120
+                }, {
+                    field: 'medicineUnit'
+                    , title: '单位'
+                    , width: 120
+                    , templet: function (res) {
+                        return dicDrugNumUnit[res.medicineUnit];
+                    }
+                }, {
+                    field: 'batchNum'
+                    , title: '批号'
+                    , width: 120
+                }, {
+                    field: 'minMedicinePack'
+                    , title: '包装'
+                    , width: 120
+                    , templet: function (res) {
+                        return res.minMedicinePack + dicDrugNumUnitDosageUnit[res.minMedicineUnit] + '/' + dicDrugNumUnit[res.medicineUnit];
+                    }
+                }, {
+                    field: 'stockCount'
+                    , title: '库存数量'
+                    , width: 120
+                    , templet: function (res) {
+                        return res.stockCount / res.minMedicinePack;
+                    }
+                }
+            ]]
+        }));
+        var stockTableOpt = {
+            url: contextPath + '/pharmacy/pharmacyStockWarnData.jo',
+            id: 'stockTable',
+            elem: '#stockTable',
+            page: false,
+            height: expireDateTableHight(),
+            cols: [[
+                {
+                    field: 'medicineId'
+                    , title: '药品编码'
+                    , width: 100
+                }, {
+                    field: 'medicineName'
+                    , title: '药品名称'
+                    , width: 120
+                }, {
+                    field: 'medicineSpec'
+                    , title: '药品规格'
+                    , width: 120
+                }, {
+                    field: 'producingAreaName'
+                    , title: '药品厂家'
+                    , width: 120
+                }, {
+                    field: 'medicineUnit'
+                    , title: '药品单位'
+                    , width: 120
+                    , templet: function (res) {
+                        return dicDrugNumUnit[res.medicineUnit];
+                    }
+                }, {
+                    field: 'minMedicinePack'
+                    , title: '药品包装'
+                    , width: 120
+                    , templet: function (res) {
+                        return res.minMedicinePack + dicDrugNumUnitDosageUnit[res.minMedicineUnit] + '/' + dicDrugNumUnit[res.medicineUnit];
+                    }
+                }, {
+                    field: 'stockCount'
+                    , title: '实际数量'
+                    , width: 120
+                    , templet: function (res) {
+                        return res.stockCount / res.minMedicinePack;
+                    }
+                }, {
+                    field: 'lowStockCount'
+                    , title: '下限数量'
+                    , width: 120
+                }, {
+                    field: 'highStockCount'
+                    , title: '上限数量'
+                    , width: 120
+                }, {
+                    field: 'tradePrice'
+                    , title: '成本价'
+                    , width: 120
+                }, {
+                    field: 'retailPrice'
+                    , title: '售价'
+                    , width: 120
+                }
+            ]]
+        };
+
+        form.on('radio(medicineTypeIn)', function(data){
+            $('#btn_search').click();
+        });
+
+        form.on('radio(stockWarnFlag)', function(data){
+            $('#btn_search').click();
+        });
+
+        form.on('select(pharmacyId)', function(data){
+            $('#btn_search').click();
+        });
+
+        $('#btn_search').click(function() {
+            var data = common.serializeObject($("#queryForm"));
+            if (!data.keyWord) {
+                data.keyWord = '';
+            }
+            if (!data.medicineTypeIn) {
+                data.medicineTypeIn = '';
+            }
+            if (tabFlag === '1') {
+                warnDate = data.warnDate;
+                data.expireDateEnd = getSomeDateFormat(warnDate);
+                expireDateTable.reload( {where: data });
+            } else {
+                data.expireDateEnd = '';
+                if (!stockTable) {
+                    stockTableOpt.where = data;
+                    stockTable = table.render($.extend(basePageTable, stockTableOpt));
+                } else {
+                    stockTable.reload( {where: data });
+                }
+            }
+        });
+
+        $('#btn_expireDate').click(function() {
+            $('#expireParam').show();
+            $('#stockParam').hide();
+            $('#warnDate').val(warnDate);
+            tabFlag = '1';
+        });
+        $('#btn_stock').click(function() {
+            $('#expireParam').hide();
+            $('#stockParam').show();
+            warnDate = $('#warnDate').val();
+            tabFlag = '2';
+            if (!stockTable) {
+                $('#btn_search').click();
+            }
+        });
+    });
+
+    function getSomeDateFormat(num) {
+        var date = new Date();
+        date.setTime(date.getTime() + num * 24 * 60 * 60 * 1000);
+        return date.format('yyyy-MM-dd');
+    }
+
+    var index = 0;
+
+    function onEnter() {
+        if (event.keyCode == 13) {
+            index++;
+            var inputLength = $('#itemList').find('input[type!=hidden][readonly!=readonly], select').length;
+            if (index >= inputLength) {
+                index = 0
+            }
+            $('#itemList').find('input[type!=hidden][readonly!=readonly], select').each(function (i) {
+                if (i == index) {
+                    if (this.nodeName === 'SELECT') {
+                        $(this).next().find('.layui-select-title input').click();
+                    }
+                    $(this).focus();
+                }
+            })
+        }
+    }
+    function expireDateTableHight() {
+        return ($('body').height() - $('#queryForm').height() - 100);
+    }
+    function pharmacyApplyItemListHight() {
+        return ($('body').height() - $('#queryForm').height() - $('.layui-tab-title').height() - $('#pharmacyApplyRead').height() - 70);
+    }
+    $(window).resize(function () {
+        expireDateTable.reload('basDicListGrid', {
+            height: expireDateTableHight()
+        });
+    });
+    $(document).ready(function () {
+
+    })
+</script>
+</html>

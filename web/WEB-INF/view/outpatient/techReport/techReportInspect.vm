@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>检验报告查阅</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link href="../resource/hplus/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../resource/hplus/js/plugins/daterangepicker/1.3.4/daterangepicker.css" rel="stylesheet">
+    <script type="text/javascript" src="../resource/hplus/js/plugins/daterangepicker/1.3.4/moment.js"></script>
+    <script type="text/javascript" src="../resource/hplus/js/plugins/daterangepicker/1.3.4/daterangepicker.js"></script>
+    <style>
+        .trend-chart{height: 100px;overflow: auto;}
+        .trend-chart img{height: 100%;margin: 3px;}
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <!--搜索条件 开始-->
+            <form id="queryForm" class="layui-form">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">申请时间</label>
+                            <div class="layui-input-inline wd-200">
+                                <div class="layui-input-inline input-inline-long" style="width:180px;">
+                                  #formTextInput("makeOrderTime" "" "class='layui-input layer-date' tag=''  id='makeOrderTime' placeholder='申请时间范围' readOnly")
+                                  <input type="hidden" name="makeOrderTimeBegin" id="makeOrderTimeBegin"/>
+                                  <input type="hidden" name="makeOrderTimeEnd" id="makeOrderTimeEnd"/>
+                                  <input type="hidden" name="makeOrderDateBegin" id="makeOrderDateBegin"/>
+                                  <input type="hidden" name="makeOrderDateEnd" id="makeOrderDateEnd"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="button" id="btn_query" lay-filter="btn_query" lay-submit class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        </div>
+                        <div class="layui-inline">
+                            <button id="trendChartButton" class="layui-btn  layui-btn-sm" type="button"> 趋势图 </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <div class="layui-col-md3 layui-col-xs4">
+                <!-- 列表表格 begin -->
+                <table id="lisApplyGrid" lay-filter="lisApplyGrid" lay-skin="line" class="layui-hide"></table>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md9 layui-col-xs8">
+                <!-- 列表表格 begin -->
+                <table id="lisResultGrid" lay-filter="lisResultGrid"></table>
+                <!--  列表表格 end -->
+                <!-- 检验图片信息 -->
+                <div class="trend-chart">
+                 <!-- <img src="#" alt="img"/> -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+//刷新页面按钮
+$("#btn_refresh").click(function () {
+    location.reload();
+});
+
+//注意：折叠面板 依赖 element 模块，否则无法进行功能性操作
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    index: 'lib/index'
+}).use(['index', 'form', 'table', 'util'], function () {
+    var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+    var dicQualitativeShow = JSON.parse('$dicTools.changeMapToJson($dicData.dicQualitativeShow)');
+    var registerId = getUrlParam("registerId");
+    var inhospitalId = getUrlParam("inhospitalId");
+    //设置门诊检验申请列表查询参数
+    var outpatientTableOption = {
+        elem: '#lisApplyGrid'
+        ,id: 'lisApplyGrid'
+        ,url: '../outpatient/outpatientTechPageData.jo'
+        ,where: getQueryParams()
+        //,toolbar: '#toolbarDemo'
+        ,title: ''
+        ,height: 'full-70'
+        ,limit : 20
+        ,defaultToolbar: []
+        ,request: {
+            pageName: 'pageNumber' //页码的参数名称，默认：page
+            ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,cols: [[
+            {type: 'numbers', title:'序号', event:'click_call'}//event属性用于增加table点击后的背景,里面的值不需要有实际意义
+            ,{field:'chargeGroupName', title:'项目名称', minWidth:120, event:'click_call'}
+            ,{field:'makeOrderTime', title:'申请时间', width:160, event:'click_call', templet: function(d){
+                return d.makeOrderTime ? util.toDateString(d.makeOrderTime) : "";
+            }}
+        ]]
+        ,page: true
+    }
+    //设置住院检验申请类别查询参数
+    var inhospitalTableOption = {
+        elem: '#lisApplyGrid'
+        ,id: 'lisApplyGrid'
+        ,url: '../inpatient/inpatientOrderJsonPageList.jo'
+        ,where: getQueryParams()
+        //,toolbar: '#toolbarDemo'
+        ,title: ''
+        ,height: 'full-70'
+        ,limit : 20
+        ,defaultToolbar: []
+        ,request: {
+            pageName: 'pageNumber' //页码的参数名称，默认：page
+            ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,cols: [[
+            {type: 'numbers', title:'序号', event:'click_call'}//event属性用于增加table点击后的背景,里面的值不需要有实际意义
+            ,{field:'chargeGroupName', title:'项目名称', minWidth:120, event:'click_call'}
+            ,{field:'makeOrderDate', title:'申请时间', width:160, event:'click_call', templet: function(d){
+                return d.makeOrderDate ? util.toDateString(d.makeOrderDate) : "";
+            }}
+        ]]
+        ,page: true
+    }
+
+    //根据情况显示门诊或住院的检查申请信息
+    if (null != inhospitalId && "" != inhospitalId) {
+        table.render(inhospitalTableOption);
+    } else {
+        table.render(outpatientTableOption);
+    }
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        var queryParam = $.extend({
+            patientId: '$!{patientId}',
+            inhospitalId: '',
+            registerId: '',
+            doctorOrderTypeLeftLike: '$!{CONST.AppConstants.ORDER_TYPE_EXAM}',
+            validFlag: '$!{CONST.AppConstants.YES_FLAG}',
+            makeOrderTimeBegin: '',
+            makeOrderTimeEnd: ''
+        }, common.serializeObject($('#queryForm')));
+        var inhospitalId = "$!{inhospitalId}";
+        var registerId = "$!{registerId}";
+        if (null != inhospitalId && "" != inhospitalId) {
+            queryParam["inhospitalId"] = inhospitalId;
+        } else if (null != registerId && "" != registerId) {
+            queryParam["registerId"] = registerId;
+        }
+        return queryParam;
+    }
+
+    //监听检验项目行单击事件
+    table.on('row(lisApplyGrid)', function(obj) {
+        var data = obj.data;
+        var commonQueryParams = {}
+        var registerId = data.registerId;
+        var inhospitalId = data.inhospitalId;
+        if (null != inhospitalId && "" != inhospitalId) {
+            commonQueryParams["inhospitalId"] = inhospitalId;
+        } else if (null != registerId && "" != registerId) {
+            commonQueryParams["registerId"] = registerId;
+        }
+        renderLisResult(data.lisShapeCode, commonQueryParams);
+    });
+
+    //加载结果列表
+    function renderLisResult(lisShapeCode, commonQueryParams) {
+        //清空检验样本图片信息
+        $("div .trend-chart").html("");
+        //定义检验结果表数据列
+        var resultTableCols = [[
+            {
+                type:'checkbox'
+            },
+            {
+                field : 'englishName',
+                title : '项目英文名称',
+                minWidth : 80
+            },
+            {
+                field : 'chineseName',
+                title : '中文名称',
+                minWidth : 110
+            },
+            {
+                field : 'quantitativeResult',
+                title : '结果',
+                width : 80
+            },
+            {
+                field : 'testItemUnit',
+                title : '单位',
+                width : 110
+            },
+            {
+                field : 'qualitativeResult',
+                title : '定性',
+                align : 'center',
+                width : 50,
+                templet : function(row) {
+                    if (row.qualitativeResult == "ah" || row.qualitativeResult == "h") {
+                        return '<font color="red">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                    } else if (row.qualitativeResult == "al" || row.qualitativeResult == "l") {
+                        return '<font color="blue">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                    }
+                    return '';
+                }
+            },
+            {
+                field : 'testItemReference',
+                title : '参考值'
+            },
+            {
+                field : 'rulePrompt',
+                title : '危急值'
+            },
+            {
+                field : 'rulePromptFlag',
+                title : '危急标记',
+                templet : function(row) {
+                    var rulePromptFlag = typeof(row.rulePromptFlag) == "undefined" ? "" : row.rulePromptFlag;
+                    return '<font color="red">' + rulePromptFlag + '</font>';
+                }
+            }]];
+        //如果没有lisShapeCode,初始化检验结果表格
+        if (null == lisShapeCode || "" == lisShapeCode) {
+            table.render({
+                elem : '#lisResultGrid'
+                ,cols : resultTableCols
+                ,height: 'full-180'
+                ,data : []
+            });
+            return;
+        }
+        if (null == commonQueryParams || "" == commonQueryParams) {
+            common.alert("缺少必要查询条件", 0);
+            return;
+        }
+        commonQueryParams["lisShapeCode"] = lisShapeCode;
+        table.render({
+            elem: '#lisResultGrid'
+            ,id: 'lisResultGrid'
+            ,url: '../tech/inspectionSampleResult.jo'
+            ,where: commonQueryParams
+            ,title: ''
+            ,height: 'full-70'
+            ,cols : resultTableCols
+            ,done : function() {
+                /*在列表头部checkbox后面增加"趋势图"功能按钮(暂取消,使用查询按钮盘的"趋势图"按钮替代)
+                $("div[lay-id='lisResultGrid']").find("th:first").find("div:first").append('  <button id="tend_btn" type="button" class="layui-btn layui-btn-xs">趋势图</button>');
+                $("#tend_btn").bind("click", function(){
+                    openTend();
+                });
+                */
+                var tableData = table.cache['lisResultGrid'];
+                if (null != tableData && tableData.length > 0) {
+                    var inspectionIdArray = new Array();
+                    for (var i = 0; i < tableData.length; i++) {
+                        var inspectionSampleResult = tableData[0];
+                        var inspectionId = inspectionSampleResult.inspectionId;
+                        if (inspectionIdArray.indexOf(inspectionId) < 0) {
+                            inspectionIdArray.push(inspectionId);
+                        }
+                    }
+                }
+                loadInspectGraph(inspectionIdArray);
+            }
+        });
+    }
+
+    //加载样本图片
+    function loadInspectGraph(inspectionIdArray) {
+        if (!(inspectionIdArray instanceof Array)) {
+            return;
+        }
+        var params = {
+            inspectionIds : inspectionIdArray
+        };
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/tech/lisInpatientSampleGraphListData.jo',
+            data: params,
+            traditional: true,
+            dataType: "json",
+            success: function (result) {
+                if (result.code = "0" && result.count > 0) {} {
+                    var htmlContent = "";
+                    for (var i = 0; i < result.data.length; i++) {
+                        var dataArray = result.data[i];
+                        htmlContent += "<img src='data:image/BMP;base64," + dataArray[1] + "' >";
+                    }
+                    $("div .trend-chart").html(htmlContent);
+                }
+            },
+            error: function (res) {
+                jqueryPostError(res);
+            }
+        });//ajax end
+    }
+    
+    //监听数据搜索
+    form.on('submit(btn_query)', function (data) {
+        table.reload("lisApplyGrid", {
+            where : getQueryParams()
+        });
+        return false;
+    });
+
+    //"趋势图"按钮监听
+    $("#trendChartButton").on("click", function() {
+        openTend();
+    });
+
+    //打开趋势图
+    function openTend() {
+        var selectData = table.checkStatus('lisResultGrid').data;
+        if (null == selectData || 0 == selectData.length) {
+            common.alert("请选择检验结果", 0);
+            return;
+        }
+        var testItemIdStr = "";
+        for (var i = 0; i < selectData.length; i ++) {
+            var testItemIdEncode = encodeURI(selectData[i]["testItemId"]);
+            testItemIdStr += testItemIdEncode + ",";
+        }
+        if ("" !== testItemIdStr && testItemIdStr.length > 0) {
+            testItemIdStr = testItemIdStr.substring(0, testItemIdStr.length - 1);
+        }
+        var patientId = "$!{patientId}";
+        var inhospitalId = "$!{inhospitalId}";
+        var registerId = "$!{registerId}";
+        var patientParams = "patientId=$!{patientId}";
+        if (null != inhospitalId && "" != inhospitalId) {
+            patientParams += "&inhospitalId=" + inhospitalId;
+        } else if (null != registerId && "" != registerId) {
+            patientParams += "&registerId=" + registerId;
+        }
+       // common.open('$contextPath' + '/basDic/basDicEdit.do?dicTypeId='+(currentDicType.dicTypeId || ""), (currentDicType.dicTypeId ? '<b>' + currentDicType.dicTypeName + '</b>：' :'') +'字典明细新增', {
+        common.open('$contextPath/view/techReport/lisInspectionResultTends.html?' + patientParams + '&testItemIdStr=' + testItemIdStr, "趋势图",{
+            area: ['900px', '330px'],
+            scroll: true
+        });
+    }
+});
+
+$('#makeOrderTime').daterangepicker({
+    ranges: {
+        '今天': [moment(), moment()],
+        '本周': [moment().startOf('week'), moment().endOf('week')],
+        '本月': [moment().startOf('month'), moment().endOf('month')],
+        '今年': [moment().startOf('year'), moment().endOf('year')]
+    },
+    startDate: moment(),
+    endDate: moment().endOf('month')
+},
+function(start, end) {
+    $('#makeOrderTime').val(start.format('YYYY-MM-DD') + ' - ' + end.format('YYYY-MM-DD'));
+    //门诊的申请时间是makeOrderTime
+    $('#makeOrderTimeBegin').val(start.format('YYYY-MM-DD'));
+    $('#makeOrderTimeEnd').val(end.format('YYYY-MM-DD'));
+    //住院的申请时间是makeOrderDate
+    $('#makeOrderDateBegin').val(start.format('YYYY-MM-DD'));
+    $('#makeOrderDateEnd').val(end.format('YYYY-MM-DD'));
+});
+</script>
+</body>
+</html>

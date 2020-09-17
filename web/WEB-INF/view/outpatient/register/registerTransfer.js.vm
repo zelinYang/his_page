@@ -1,0 +1,359 @@
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var VISIT_STATE_WAIT = "$!{CONST.AppConstants.VISIT_STATE_WAIT}";
+    //挂号类型
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    //用户
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    //护士医生
+    var dicNurseDoctor = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseDoctor)');
+    //科室
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicRegisterDoctorDutyName = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyName)');
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+    var dicVisitTimeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeFlag)');
+    var dicVisitTimeRange = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeRange)');
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)')
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)')
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laydate', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, laydate = layui.laydate, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getInOfficeQueryParams() {
+            return {arrangeDutyDate: $("#q_arrangeDutyDate").data('value')};
+        }
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#register_queryForm').height();
+        }
+
+        //单击行选中radio 与 点击radio选中行
+        function clickRowSelectRadio(obj) {
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+            obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+            form.render('radio');
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                visitState: VISIT_STATE_WAIT,
+                keyWord: '',
+                visitDate: layui.util.toDateString(new Date(), 'yyyy-MM-dd')
+            }, common.serializeObject($('#register_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('registerListGrid', {
+                where: queryParams
+            });
+            setInPatientData();
+        })
+
+        // 设置 患者转科数据
+        function setInPatientData(data) {
+            if (data) {
+                form.val('inOffice_form', data);
+                $('#q_arrangeDutyDate').text(util.toDateString(data.registerTime, 'yyyy-MM-dd')).data('value', util.toDateString(data.registerTime, 'yyyy-MM-dd'));
+                $('#q_visitTimeFlag').text(dicVisitTimeFlag[data.visitTimeFlag] + ' ' + dicVisitTimeRange[data.visitTimeFlag]).data('value', data.visitTimeFlag);
+                table.reload('arrangeDutyOfficeListGrid', {
+                    url: contextPath + '/register/officeRegisterTotalList.jo',
+                    where: {
+                        arrangeDutyDate: $("#q_arrangeDutyDate").data('value'),
+                        arrangeDutyType: $('#q_visitTimeFlag').data('value')
+                    }
+                });
+            } else {
+                $('#inOffice_form input').val(null);
+                $('#q_arrangeDutyDate').text('就诊日期').data('value', null);
+                $('#q_visitTimeFlag').text('时段').data('value', null);
+                table.reload('arrangeDutyOfficeListGrid', {url: ''});
+            }
+            setInOfficeData();
+        }
+
+        // 设置科室数据
+        function setInOfficeData(data) {
+            if (data) {
+                $("#inVisitOfficeName").val(dicSysOrgName[data.arrangeDutyOfficeId]);
+                $("#inVisitOfficeId").val(data.arrangeDutyOfficeId);
+                //当日值班医生
+                table.reload('arrangeDutyDoctorListGrid', {
+                    url: '../outpatient/arrangeDutyDoctorListData.jo',
+                    where: {
+                        doctorOfficeId: data.arrangeDutyOfficeId,
+                        arrangeDutyDate: $("#q_arrangeDutyDate").data('value'),
+                        arrangeDutyType: $('#q_visitTimeFlag').data('value')
+                    }
+                });
+            } else {
+                $("#inVisitOfficeName").val('');
+                $("#inVisitOfficeId").val('');
+                table.reload('arrangeDutyDoctorListGrid', {url: ''});
+            }
+            setInDoctorData();
+        }
+
+        // 设置医生数据
+        function setInDoctorData(data) {
+            if (data) {
+                if ($('#visitDoctorId').val() == data.doctorId) {
+                    common.msg("转入医生和当前医生不能相同", 0);
+                    setInDoctorData();
+                    return;
+                }
+                $("#inConsultingRoomId").val(data.consultingRoomId);
+                $("#inRoomName").val(data.consultingRoomName);
+                $("#inVisitDoctorId").val(data.doctorId);
+                $("#inVisitDoctorName").val(data.doctorName);
+            } else {
+                $("#inConsultingRoomId").val(null);
+                $("#inRoomName").val(null);
+                $("#inVisitDoctorId").val(null);
+                $("#inVisitDoctorName").val(null);
+            }
+        }
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('register_queryForm');
+            $('#q_visitDateBegin, #q_visitDateEnd').blur();
+        })
+
+        //表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#registerListGrid',
+            url: contextPath + '/register/registerListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号',
+                minWidth: 180,
+                fixed: 'left'
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 90,
+                fixed: 'left'
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                templet: '#sexTpl'
+            }, {
+                field: 'registerType',
+                title: '挂号类型',
+                templet: function (row) {
+                    return dicRegisterType[row.registerType] || '';
+                },
+                width: 100
+            }, {
+                field: 'serialNum',
+                title: '就诊序号',
+                minWidth: 100
+            }, {
+                title: '就诊时间',
+                width: 180,
+                templet: function (d) {
+                    return util.toDateString(d.visitDate, 'yyyy-MM-dd') + " " + ((d.visitBeginTime && d.visitEndTime) ? d.visitBeginTime + " - " + d.visitEndTime : '');
+                }
+            }, {
+                field: 'visitOfficeName',
+                title: '就诊科室',
+                width: 100
+            }, {
+                field: 'roomName',
+                title: '挂号诊室',
+                width: 100
+            }, {
+                field: 'visitDoctorName',
+                title: '就诊医生',
+                width: 100
+            }]], done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        //监听行单击事件
+        table.on('row(registerListGrid)', function (obj) {
+            var data = obj.data;
+            data.visitDoctorPostName = dicDoctorPost[data.visitDoctorPost] || '';
+            setInPatientData(data);
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        })
+
+        // 获取表格高度
+        function getInOfficeTableHgt() {
+            return $('.layui-fluid').height() - $('#inOffice_form').height() - $(".tool-bottom-fixed").height() - 100;
+        }
+
+        //表格设置
+        table.render($.extend({}, singlePageTable, {
+            elem: '#arrangeDutyOfficeListGrid',
+            data: [],
+            cols: [[{
+                type: 'radio',
+                fixed: 'feft'
+            }, {
+                title: '科室名称',
+                field: 'arrangeDutyOfficeId',
+                fixed: 'feft',
+                minWidth: 100,
+                templet: function (row) {
+                    return dicSysOrgName[row.arrangeDutyOfficeId] || ''
+                }
+            }, {
+                field: 'limitCount',
+                title: '限额',
+                templet: function (d) {
+                    return '<span style="' + (Boolean(d.limitCount) ? 'color: #FF5722;' : "") + '">' + d.limitCount + '</span>';
+                }
+            }, {
+                field: 'registerCount',
+                title: '已挂',
+                templet: function (d) {
+                    return '<span style="' + (Boolean(d.registerCount) ? 'color: #FF5722;' : "") + '">' + d.registerCount + '</span>';
+                }
+            }]], done: function (res) {
+                tableReHeight(this, getInOfficeTableHgt);
+            }
+        }));
+        //监听行单击事件
+        table.on('row(arrangeDutyOfficeListGrid)', function (obj) {
+            var data = obj.data;
+            setInOfficeData(data);
+            clickRowSelectRadio(obj);
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //表格设置
+        table.render($.extend({}, singlePageTable, {
+            elem: '#arrangeDutyDoctorListGrid',
+            data: [],
+            cols: [[{
+                type: 'radio',
+                fixed: 'feft'
+            }, {
+                field: 'doctorId',
+                title: '医生姓名',
+                fixed: 'feft',
+                minWidth: 100,
+                templet: function (row) {
+                    return row.doctorName + (NO_FLAG == row.validFlag ? ' <span class="layui-badge">停诊</span>' : '');
+                }
+            }, {
+                field: 'doctorPost',
+                title: '职称',
+                minWidth: 180,
+                templet: function (row) {
+                    return dicDoctorPost[row.doctorPost] || '';
+                }
+            }, {
+                field: 'limitCount',
+                title: '限额'
+            }, {
+                field: 'registerCount',
+                title: '已挂'
+            }, {
+                field: 'consultingRoomName',
+                title: '诊室',
+                minWidth: 100
+            }]], done: function () {
+                tableReHeight(this, getInOfficeTableHgt);
+            }
+        }));
+
+        //监听行单击事件
+        table.on('row(arrangeDutyDoctorListGrid)', function (obj) {
+            var data = obj.data;
+            setInDoctorData(data);
+            clickRowSelectRadio(obj);
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        function saveForm() {
+            var params = {
+                registerId: $("#registerId").val(),
+                visitOfficeId: $("#inVisitOfficeId").val(),
+                consultingRoomId: $("#inConsultingRoomId").val(),
+                visitDoctorId: $("#inVisitDoctorId").val(),
+            }
+            if (!params.registerId) {
+                common.msg("请选择转科患者", 0);
+                return;
+            }
+            if (!params.visitOfficeId) {
+                common.msg("请选择患者转入科室", 0);
+                return;
+            }
+            if (!params.visitDoctorId) {
+                common.msg("请选择患者转入医生", 0);
+                return;
+            }
+            var url = contextPath + '/register/saveRegisterTransfer.jo', msg = "转科成功";
+
+            common.requestServer(url, params, function (result) {
+                if (result.code === '0') {
+                    common.msg(msg, 1);
+                    $('#btn_query').click();
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }
+
+        $("#btn_save").click(function () {
+            saveForm();
+        })
+        $("#btn_refresh").click(function () {
+            $('#btn_query').click();
+        })
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+    })
+</script>

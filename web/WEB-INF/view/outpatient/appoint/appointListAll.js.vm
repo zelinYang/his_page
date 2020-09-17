@@ -1,0 +1,223 @@
+<script>
+    var APPOINT_REGISTER_FLAG_APPOINT = "${CONST.AppConstants.APPOINT_REGISTER_FLAG_APPOINT}"
+    //挂号类型
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    //用户
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    //是否退号
+    var dicBackRegisterId = JSON.parse('$dicTools.changeMapToJson($dicData.dicBackRegisterId)');
+
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)')
+    //预约类别
+    var dicAppointRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicAppointRegisterType)');
+    var dicVisitTimeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeFlag)');
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)');
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util, xmSelect = layui.xmSelect;
+
+        // 门诊科室
+        var visitOfficeIds = xmSelect.render({
+            el: '#visitOfficeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'visitOfficeIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../outpatient/arrangeDutyOfficePageData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.arrangeDutyOfficeName, value: item.arrangeDutyOfficeId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#register_queryForm').height();
+        }
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                registerType: '',
+                visitDoctorName: '',
+                visitOfficeIds: '',
+                registerTimeBegin: '',
+                registerTimeEnd: '',
+                appointRegisterFlag: APPOINT_REGISTER_FLAG_APPOINT
+            }, common.serializeObject($('#register_queryForm')));
+        }
+
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('registerListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('register_queryForm');
+            visitOfficeIds.setValue([]);
+        })
+
+        //表格设置
+        var registerListGrid = table.render($.extend(basePageTable, {
+            elem: '#registerListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/register/registerListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field : 'healthCard',
+                title : '电子健康卡',
+                minWidth : 160,
+                fixed : 'left'
+            }, {
+                field : 'socialSecurityCard',
+                title : '医保号',
+                minWidth : 160,
+                fixed : 'left'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号',
+                minWidth: 180,
+                fixed: 'left'
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 90,
+                fixed: 'left'
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                templet: '#sexTpl'
+            }, {
+                field: 'registerType',
+                title: '挂号类型',
+                templet: function (row) {
+                    return dicRegisterType[row.registerType] || '';
+                },
+                width: 100
+            }, {
+                field: 'appointRegisterType',
+                title: '预约类别',
+                templet: function (row) {
+                    return dicAppointRegisterType[row.appointRegisterType] || '';
+                },
+                minWidth: 100
+            }, {
+                field: 'serialNum',
+                title: '就诊序号',
+                width: 60
+            }, {
+                title: '就诊时间',
+                width: 200,
+                templet: function (d) {
+                    return util.toDateString(d.visitDate, 'yyyy-MM-dd') + " " + (dicVisitTimeFlag[d.visitTimeFlag] || "") +" " +  ((d.visitBeginTime && d.visitEndTime) ? d.visitBeginTime + " - " + d.visitEndTime : '');
+                }
+            }, {
+                field: 'visitOfficeName',
+                title: '就诊科室',
+                width: 100
+            },  {
+                field: 'roomName',
+                title: '挂号诊室',
+                width: 100
+            }, {
+                field: 'visitDoctorName',
+                title: '就诊医生',
+                width: 100
+            }, {
+                title: '职称',
+                width: 80,
+                templet: function (d) {
+                    return dicDoctorPost[d.visitDoctorPost] || '';
+                }
+            }, {
+                field: 'registerFee',
+                title: '诊查费'
+            }, {
+                field: 'medicalRecordsFee',
+                title: '病历费'
+            }, {
+                field: 'diagnosisFee',
+                title: '诊疗金额'
+            }, {
+                field: 'backRegisterFlag',
+                title: '是否退号',
+                templet: function (d) {
+                    return dicBackRegisterId[d.backRegisterFlag] || '';
+                }
+            }, {
+                field: 'operUserId',
+                title: '挂号员',
+                width: 100,
+                templet: function (d) {
+                    return dicSysUser[d.operUserId] || '';
+                }
+            }, {
+                field: 'registerTime',
+                title: '预约时间',
+                width: 140,
+                templet: function (row) {
+                    return util.toDateString(row.registerTime, 'yyyy-MM-dd HH:mm');
+                }
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

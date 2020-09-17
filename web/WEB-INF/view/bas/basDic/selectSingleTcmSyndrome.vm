@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row white-bg p-t-xs">
+        <form class="layui-form" id="queryForm">
+            <div class="layui-form-item search-term">
+                <div class="layui-block">
+                    <div class="layui-input-block m-l-xs">
+                        #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入疾病名称或识别码'")
+                            #formHiddenInput("dicTypeId" "201" "id='dicTypeId' class='layui-input'")
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+    <!--搜索条件 结束-->
+
+    <!--列表 begin-->
+    <div class="layui-row white-bg" lay-filter="groupDiv" style="height: calc(100% - 38px);">
+        <table id="tcmSyndrome" lay-filter="tcmSyndrome"></table>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+    layui.use(['table', 'form'], function () {
+        var table = layui.table, form = layui.form;
+
+        var tableUrl = contextPath + '/basDic/basDicListData.jo';
+        var tableList = table.render($.extend(basePageTable, {
+                    url: tableUrl,
+                    id: 'tcmSyndrome',
+                    elem: '#tcmSyndrome',
+                    height: 'full-50',
+                    where: {dicTypeId: $('#dicTypeId').val()},
+                    cols: [[
+                        {field: 'dicName', title: '中医证候名称'},
+                        {field: 'dicCode', title: '证候编码'}
+                    ]]
+                })
+        );
+
+        //监听行工具事件(编辑和删除)
+        table.on('row(tcmSyndrome)', function (obj) {
+            if (parent.selectSingleTcmSyndromeCall && typeof(parent.selectSingleTcmSyndromeCall) == 'function') {
+                parent.selectSingleTcmSyndromeCall(obj.data);
+            }
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+        // 检索
+        $('#keyWord').bind('input propertychange', function () {
+            tableList.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+        });
+    });
+</script>
+</html>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/visualizationCss.vm")
+<style type="text/css">
+    .layui-table td, .layui-table th {padding: 5px;}
+</style>
+</head>
+<body class="de-bg">
+    <div class="layui-col-xs3 white-bg full-height m-r-xs  p-t-xs" style="width: 350px;">
+        <div class="layui-row">
+            <form class="layui-form" action="">
+                <div class="p-l-sm p-r-sm">
+                    #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入医技名称或识别码' maxLength='50'")
+                </div>
+            </form>
+        </div>
+        <div class="layui-row" lay-filter="techGridDiv" style="height: calc(100% - 55px);">
+            <table id="techGrid" lay-filter="techGrid" class="layui-hide"></table>
+        </div>
+    </div>
+    <div class="layui-col-xs9 white-bg full-height" style="width: calc(100% - 357px);">
+        #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+        #formHiddenInput("" "$!inhospital.inhospitalId" "id='inhospitalId'")
+        <div class="full-height p-r-n p-l-n" id="designContent" style="width:100%; margin:0 auto;">$!emrTlp.emrTlpContent</>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./common/visualizationJs.vm")
+<script type="text/javascript">
+var formDesign = new formDesign('designContent', {
+    mode: 'EDITOR',
+    width: 650,
+    initData: $!ermData,
+    commonObjField: 'content',
+    commonObjName: 'emrContent',
+    iframeJs: ["$!contextPath/resource/hplus/js/jquery-3.3.1.min.js"],
+    saveUrl: '../inpatient/saveInpatientInhospitalWizard.jo',
+    baseFormParams: {emrTlpId:"$!emrTlp.emrTlpId", inhospitalId:"$!inhospital.inhospitalId", patientId:"$!inhospital.patientId", contentId:"$!emrContent.contentId"}
+});
+</script>
+#parse("./tech/inpatientOrderTechApplyEdit.js.vm")
+</html>

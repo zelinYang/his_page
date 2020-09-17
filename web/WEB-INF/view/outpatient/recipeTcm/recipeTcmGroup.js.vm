@@ -1,0 +1,286 @@
+<script>
+    //var medicineToOrderGroupTypeMap = {1:1,2:3,3:2};//药品类型与组套类型映射 药品类型 1=西药2=中药3=成药 ,组套类型 1西药 2成药 3草药 4检查 5化验（检验）
+    var queryRecipeTcmGroup;//查询方法
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicHerbCooking = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbCooking)');
+    var re =  /^\+?[1-9][0-9]*$/; //正则
+    var basOrderGroup;
+	var userId = '$!{user.userId}';
+
+    layui.use(['jquery','table', 'element', 'form'], function(){
+        var table = layui.table, element = layui.element, $ = layui.$, form = layui.form;;
+        element.render();
+
+        //组套tabel
+        var recipeTcmGroupTable = table.render({
+            elem: '#recipeTcmGroupTable'
+            ,defaultToolbar: []
+            ,height: 'full-40'//高度
+            ,url: '../outpatient/orderTcmGroupListData.jo' //数据接口
+            ,page: true //开启分页
+            ,where: getQueryParams()
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,cols: [[ //表头
+                {type: 'radio'}
+                , {field : 'orderGroupId',title : '药方ID' }
+                , {field : 'orderGroupName',title : '药方名称'}
+            ]]
+        });
+
+        // 查询按钮
+        $('#btn_query_recipeTcmGroup').click(function (){
+            queryRecipeTcmGroup();
+        });
+
+        //监听单选按钮
+        form.on('radio(orderGroupClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+            queryRecipeTcmGroup();
+            $('.main-right').addClass('layui-hide');
+        });
+
+        // 获取查询表单参数对象
+		function getQueryParams() {
+			var initFrom = common.serializeObject($('#recipeTcmGroup_queryForm'));
+			if (initFrom.orderGroupClassify === '1') {
+				initFrom.orderUserId = userId;
+			} else {
+				initFrom.orderUserId = '';
+			}
+			return $.extend({
+				orderGroupName: '',
+				orderGroupClassify: ''
+			}, initFrom);
+		}
+
+        //查询列表
+        queryRecipeTcmGroup = function() {
+            var queryParams = common.serializeObject($('#recipeTcmGroup_queryForm'));
+            recipeTcmGroupTable.reload({ where: queryParams });
+        }
+
+        //监听行单击事件
+        table.on('row(recipeTcmGroupTable)', function(obj){
+            var row = obj.data;
+			basOrderGroup = row;
+            rowRecipeTcmGroupSelect(row);
+
+            // 行选触发radio选中
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.recipeTcmGroupTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+        });
+
+        //处方组套行单击查询处方明细
+        function rowRecipeTcmGroupSelect(recipeGroupRow) {
+            $('.main-right').removeClass('layui-hide');
+            $('#orderGroupId').val(recipeGroupRow.orderGroupId);
+            queryRecipeTcmGroupItem();
+        }
+
+        //*************************  处方组套明细项 JS ********************************/
+        var recipeTcmGroupItemTable = table.render({
+            elem: '#recipeTcmGroupItemTable'
+            ,defaultToolbar: []
+            ,height: 'full-35'//高度
+            ,data: []
+            ,limit:200
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,cols: [[ //表头
+                {type:'checkbox'}
+                ,{field : 'orderName',title : '药品名称'}
+				,{field : 'medicineSpec',title : '规格'}
+                ,{field : 'dosage',title : '剂量'}
+                ,{field : 'dosageUnit',title : '剂量单位',
+                    templet :function (row) {
+                        if(row.dosageUnit) {
+                            return dicDrugNumUnitDosageUnit[row.dosageUnit];
+                        } else {
+                            return '剂';
+                        }
+                    }
+                }
+				,{field : 'minRetailPrice',title : '单价'}
+				,{
+            	    field : 'herbCookingCode'
+                    ,title : '特殊煎法'
+                    ,templet :function (row) {
+						if(row.herbCookingCode) {
+							return dicHerbCooking[row.herbCookingCode];
+						}
+						return '';
+					}}
+            ]]
+            ,done: function(res, curr, count){
+                $(res.data).each(function(index, data){
+                    if(count == 1){
+                        $('tr[data-index="'+index+'"] td[data-field="dosage"] div').html(data.orderItem.dosage);
+                    }
+                });
+            }
+        });
+
+
+        // 导入按钮
+        $('#btn_import').click(function (){
+            common.confirm('确认导入草药处方？', function () {
+				importRecipeTcmItem();
+			})
+        });
+
+        function importRecipeTcmItem() {
+			var recipeTcmGroupParams = importRecipeTcmGroupItem();
+			//组套明细参数
+			var recipeTcmGroupItemArr = recipeTcmGroupParams.recipeTcmGroupItemArr;
+			//库存不足的药品
+			var medicineStockShortage = recipeTcmGroupParams.medicineStockShortage;
+
+			if(medicineStockShortage.length){
+				var medicineNames = '';
+				$(medicineStockShortage).each(function(index, data) {
+					medicineNames += data.orderName + ',';
+				});
+				medicineNames = common.clearLastChar(medicineNames,',');
+				common.alert(medicineNames + '库存不足', 0);
+				return false;
+			}
+
+			var recipeTcmItems = setImportRecipeTcmItemParam(recipeTcmGroupItemArr);//设置明细参数
+			var recipeTcmParam = getImportRecipeTcmParam(recipeTcmGroupParams.basOrderGroup);
+
+			if(recipeTcmItems.length <= 0) {
+				common.msg("导入的药品都已存在!", 0);
+				return;
+			}
+
+			recipeTcmParam.recipeItemEditInfoList = recipeTcmItems;
+			$.ajax({
+				type:"POST",
+				dataType:"json",
+				contentType: 'application/json;charset=utf-8',
+				url: "$contextPath/outpatient/saveTcmRecipe.jo",
+				data: JSON.stringify(recipeTcmParam),
+				success:function(result){
+					if (result.code == "0") {
+						console.log(result.data);
+						common.alertCall("保存成功。", 1, function (){
+							parent.query();
+							var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.parent.document);
+							var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+							emrEditWin.getEmrRecipeTcmItem(result.data.registerId);//设置到门诊病历
+						});
+					} else {
+						common.alert(result.msg, 0);
+					}
+				}
+			}).error(function (e){jqueryPostError(e)});
+		}
+
+
+        //查询列表
+        function queryRecipeTcmGroupItem() {
+            var queryParams = common.serializeObject($('#recipeTcmGroupItem_queryForm'));
+			console.log(queryParams);
+            recipeTcmGroupItemTable.reload({
+                where: queryParams
+				,url: '../outpatient/orderTcmGroupItemListData.jo' //数据接口
+            });
+        }
+
+
+        // 导入组套明细
+        function importRecipeTcmGroupItem() {
+            var medicineIdsItem = [];//组套明细项药品
+            var checkRows = table.checkStatus('recipeTcmGroupItemTable'); //test即为基础参数id对应的值
+
+            //没有勾选药品
+            if (checkRows.data.length < 1) {
+                common.alert('请选择需要导入的药品', 0);
+                return ;
+            }
+
+            var recipeTcmGroupItemArr = [];//组套明细参数数组
+            var medicineIds = [];
+            $(checkRows.data).each(function (index, data){
+                medicineIds.push(data.medicineId);
+            });
+
+            var medicineInfoArray = parent.selectRecipeMedicineInfo(medicineIds.join(','));
+            console.log(medicineInfoArray);
+            //转成map
+            var recipeGroupItemMap  = parent.convertRecipeItemMap(checkRows.data, true);
+			console.log(recipeGroupItemMap);
+
+            var medicineStockShortage = []
+            $(medicineInfoArray).each(function (index,mInfo) {
+                var dosage = recipeGroupItemMap[mInfo.medicineId].dosage * 7;//剂量*剂数 的数量
+                if (mInfo.stockCount < dosage) {
+                    medicineStockShortage.push(recipeGroupItemMap[mInfo.medicineId]);//添加库存不足的药品到数组
+                    return true;//继续for循环
+                } else {
+                    recipeTcmGroupItemArr.push(recipeGroupItemMap[mInfo.medicineId]);//添加有库存的药品到数组
+                }
+            });
+            var recipeTcmGroupParams = {
+				basOrderGroup: basOrderGroup,
+                recipeTcmGroupItemArr: recipeTcmGroupItemArr,
+                medicineStockShortage: medicineStockShortage
+            };
+
+            return recipeTcmGroupParams;
+        }
+
+
+        //获取处方明细参数
+        function setImportRecipeTcmItemParam(recipeTcmGroupItemArr){
+            $(recipeTcmGroupItemArr).each(function(index, data) {
+				data.actualPrice = data.minRetailPrice * 7 * data.dosage;
+				data.unitPrice = data.minRetailPrice;
+				data.perOrderCount = 1;
+				data.pharmacyFreqId = 'qd';
+            });
+            return recipeTcmGroupItemArr;
+        }
+
+
+        //获取处方参数
+        function getImportRecipeTcmParam(basOrderGroup){
+            var recipeTcmParam = {};
+            recipeTcmParam.registerId = $('#registerId', parent.document).val();
+            recipeTcmParam.patientId = $('#patientId', parent.document).val();
+            recipeTcmParam.herbUsageWay = basOrderGroup.herbUsageWay;// TODO 默认每日2剂水煎服
+            recipeTcmParam.orderDay = basOrderGroup.orderDay;// TODO 默认7剂
+            recipeTcmParam.usageFrequencyCode = basOrderGroup.usageFrequencyCode;
+            recipeTcmParam.recipeRemark = basOrderGroup.remark;
+            recipeTcmParam.takeBoilFlag = basOrderGroup.takeBoilFlag;
+            recipeTcmParam.diseaseIcdTcd = basOrderGroup.diseaseIcdTcd;
+            recipeTcmParam.diseaseName = basOrderGroup.diseaseName;
+            recipeTcmParam.tcmSymptom = basOrderGroup.tcmSymptom;
+            recipeTcmParam.tcmSymptomName = basOrderGroup.tcmSymptomName;
+            recipeTcmParam.pasteProcessingFlag = basOrderGroup.pasteProcessingFlag;
+			recipeTcmParam.herbUsageClassify = basOrderGroup.herbUsageClassify;
+			recipeTcmParam.recipeType = basOrderGroup.recipeType;
+			recipeTcmParam.medicineFlag = '1';
+			recipeTcmParam.medicineType = '3';
+            return recipeTcmParam;
+        }
+
+
+    });//layui.use
+</script>

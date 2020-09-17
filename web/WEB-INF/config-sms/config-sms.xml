@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="smsMapping" class="org.springframework.web.servlet.handler.SimpleUrlHandlerMapping">
+        <property name="mappings">
+            <props>
+            </props>
+        </property>
+    </bean>
+
+    <bean id="smsReceivingQueryUtil" class="cn.com.base.basesystem.common.utils.FullQueryMethod"> <!--SmReceiving full查询 -->
+        <property name="selectClause"><value></value></property>
+        <property name="fromClause"><value>com.bofan.sms.valueobject.SmsReceiving smsRev</value></property>
+        <!-- 查询已经接收的短信 -->
+        <property name="defaultWhereClause"><value>(months_between(sysdate,smsRev.receiveTime)>1)</value></property>
+        <property name="groupByClause"><value></value></property>
+        <property name="orderByClause"><value>receiveId desc</value></property>
+        <property name="queryParam">
+            <list>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="smsSendingQueryUtil" class="cn.com.base.basesystem.common.utils.FullQueryMethod"> <!--SmSending full查询 -->
+        <property name="selectClause"><value></value></property>
+        <property name="fromClause"><value>com.bofan.sms.valueobject.SmsSending sending</value></property>
+        <!-- 查询马上发送和定时发送的短信 -->
+        <property name="defaultWhereClause"><value>sending.timingSendFlag = '0' or (sending.timingSendFlag = '1' and sysdate > sending.timingSendTime)</value></property>
+        <property name="groupByClause"><value></value></property>
+        <property name="orderByClause"><value>sendId desc</value></property>
+        <property name="queryParam">
+            <list>
+            </list>
+        </property>
+    </bean>
+    <bean id="smsSendedQueryUtil" class="cn.com.base.basesystem.common.utils.FullQueryMethod"> <!--SmSended full查询 -->
+        <property name="selectClause"><value></value></property>
+        <property name="fromClause"><value>com.bofan.sms.valueobject.SmsSended sended</value></property>
+        <!-- 查询已经发送的短信 -->
+        <property name="defaultWhereClause"><value>(months_between(sysdate,sended.sendTime)>1)</value></property>
+        <property name="groupByClause"><value></value></property>
+        <property name="orderByClause"><value>sendId desc</value></property>
+        <property name="queryParam">
+            <list>
+            </list>
+        </property>
+    </bean>
+    <bean id="smsInBoxQueryUtil" class="cn.com.base.basesystem.common.utils.SimpleQueryMethod"> <!--SmsInBox简单查询 -->
+        <property name="valueObjectClassName"><value>com.bofan.sms.valueobject.SmsInBox</value></property>
+        <property name="orderByClause"><value>masSmsId desc</value></property>
+        <property name="tableAlias"><value>inbox</value></property>
+        <property name="queryParam">
+            <list>
+                <value>APPLICATIONID, applicationId, EQU</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="smsSendThreadService" class="com.bofan.sms.thread.SmsSendThreadService">
+         <!--等待间隔时间的毫秒数  -->
+         <property name="waitMilliSeconds"><value>1000</value></property>
+          <!--查询数量 -->
+         <property name="findNum"><value>50</value></property>
+         <property name="phoneSplit"><value>;</value></property>  <!-- 多个手机用“;”分割,最大不超过50个 -->
+         <property name="phoneMaxNum"><value>50</value></property>  <!-- 多个手机用“;”分割,最大不超过50个 -->
+    </bean>
+
+    <bean id="smsRevThreadService" class="com.bofan.sms.thread.SmsRevThreadService">
+         <!--等待间隔时间的毫秒数  -->
+         <property name="waitMilliSeconds"><value>1000</value></property>
+         <!--查询数量 -->
+         <property name="findNum"><value>100</value></property>
+    </bean>
+
+    <bean id="smsSendDelThreadService" class="com.bofan.sms.thread.SmsSendDelThreadService">
+         <!--等待间隔时间的毫秒数  -->
+         <property name="waitMilliSeconds"><value>1000</value></property>
+         <!--查询数量 -->
+         <property name="findNum"><value>100</value></property>
+    </bean>
+
+ </beans>

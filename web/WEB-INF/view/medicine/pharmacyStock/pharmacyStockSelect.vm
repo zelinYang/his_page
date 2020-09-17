@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>药品库存</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-table, .layui-table-view {
+            margin: 0px 0;
+        }
+    </style>
+</head>
+
+<body class="full-height white-bg table-width-full">
+<!-- 查询表单 -->
+<form id="medicine_queryForm">
+    #formHiddenInput("keyWord" "" " id='keyWord' class='layui-input' placeholder='药品库存检索' ")
+    #formHiddenInput("pharmacyId" "$!{pharmacyId}" " id='pharmacyId' class='layui-input' placeholder='药房/科室二级库ID' ")
+</form>
+
+<!-- 数据表格 -->
+<table id="medicineTable" lay-filter="medicineTable">
+##    <div style="margin-left: -50px">
+##        <label class="layui-form-label">药名</label>
+##        <div class="layui-input-inline">
+##            <input type="text" value="" id="search" class="layui-input">
+##        </div>
+##        <div class="layui-inline m-b-xs">
+##            <button type="button" id="btn_searchItem" class="layui-btn layui-btn-sm"><span>查询</span>
+##            </button>
+##        </div>
+##    </div>
+</table>
+
+
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicAntibioticLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticLevel)');
+    var dicSpecialMedicineLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSpecialMedicineLevel)');
+    var queryMedicine;//查询药品库存
+
+    layui.use(['jquery', 'table', 'laypage', 'element', 'form'], function () {
+        var table = layui.table;
+        var element = layui.element;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var $ = layui.$;
+
+        $("#search").keyup(function (event) {
+            (event.key == "Enter") && $("#btn_searchItem").click();
+        });
+
+        element.render();
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#medicineTable'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            //,height: '230'//高度
+            , height: 'full-1'//高度
+            , url: contextPath + '/pharmacy/pharmacyStockSelectListData.jo' //数据接口
+            , page: false //开启分页
+            , limit: 200
+            , where: common.serializeObject($('#medicine_queryForm'))
+            , request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                , limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            , cols: [[ //表头
+                {
+                    field: 'medicineName', title: '名称', width: 200, templet: function (row) {
+                        return row.medicineName;
+                    }
+                }
+                , {
+                    field: 'medicineType', title: '类别', width: 100, templet: function (row) {
+                        return dicMedicineType[row.medicineType];
+                    }
+                }
+                , {
+                    field: 'medicineSpec', title: '药品规格', width: 150, templet: function (row) {
+                        return row.medicineSpec;
+                    }
+                }
+                , {
+                    field: 'stockCount', title: '库存数量', width: 100, templet: function (row) {
+                        return parseInt(row.stockCount / row.minMedicinePack);
+                    }
+                }
+                , {
+                    field: 'retailPrice', title: '批发价格', width: 100, templet: function (row) {
+                        return row.retailPrice;
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });
+
+        //搜索
+        $("#btn_searchItem").on("click", function () {
+            var search = $("#search").val();
+
+            tableIns.reload({
+                url: '../pharmacy/pharmacyStockSelectListData.jo',
+                page: {curr: 1},
+                where: {medicineName: search}
+            })
+        });
+
+        //查询列表
+        queryMedicine = function () {
+            var queryParams = common.serializeObject($('#medicine_queryForm'));
+            if (!queryParams.keyWord) {
+                queryParams.keyWord = '';
+            }
+            tableIns.reload({where: queryParams});
+        };
+
+
+        //监听行单击事件
+        table.on('row(medicineTable)', function (obj) {
+            var medicine = obj.data;
+            console.log(medicine);
+            parent.medicineRowSelect(medicine);
+        });
+
+    });//layui.use
+</script>
+</body>
+</html>

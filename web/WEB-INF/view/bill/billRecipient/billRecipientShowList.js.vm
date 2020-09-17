@@ -1,0 +1,137 @@
+<script>
+    var dicBillType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillType)')
+    var dicUsageMode = JSON.parse('$dicTools.changeMapToJson($dicData.dicUsageMode)')
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl
+
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = common.serializeObject($('#billRecipient_queryForm'))
+            console.log(queryParams)
+            //执行重载
+            table.reload('billRecipientListGrid', {
+                where: queryParams
+            })
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('billRecipient_queryForm')
+        })
+
+        //票据领用表列表
+        table.render($.extend(basePageTable, {
+            elem: '#billRecipientListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/billRecipient/billRecipientListData.jo',
+            where: common.serializeObject($('#billRecipient_queryForm')),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'recipientTime',
+                title: '领用日期',
+                width: 150,
+                templet :function (row) {
+                    return row.recipientTime ? layui.util.toDateString(row.recipientTime, 'yyyy-MM-dd HH:mm') :'';
+                }
+            }, {
+                field: 'recipientName',
+                title: '领用人'
+            }, {
+                field: 'billType',
+                title: '票据类型',
+                templet: function (row) {
+                    return dicBillType[row.billType] || ''
+                },
+                width: 80
+            }, {
+                field: 'usageMode',
+                title: '使用方式',
+                templet: function (row) {
+                    return dicUsageMode[row.usageMode] || ''
+                },
+                width: 80
+            }, {
+                field: 'startNum',
+                title: '起始票据号',
+                width: 100
+            }, {
+                field: 'endNum',
+                title: '结束票据号 ',
+                width: 100
+            }, {
+                field: 'currentNum',
+                title: '当前票据号',
+                width: 100
+            }, {
+                field: 'totalNum',
+                title: '票据数量',
+                templet: function (row) {
+                    return parseInt(row.endNum) - parseInt(row.startNum)
+                },
+                width: 80
+            }, {
+                field: 'billUseNum',
+                title: '使用票据数',
+                minWidth: 100,
+                templet: function (row) {
+                    var total = parseInt(row.endNum) - parseInt(row.startNum)
+                    var percent = getPercent(row.billUseNum, total)
+                    var pah = percent + '%'
+                    var bar = ''
+                    if (percent >= 100) {
+                        bar = 'layui-bg-red'
+                    } else if (percent >= 70 && percent < 100) {
+                        bar = ' layui-bg-blue'
+                    }
+                    var data = {
+                        billUseNum: row.billUseNum,
+                        total: total,
+                        percent: percent,
+                        pah: pah,
+                        bar: bar
+                    }
+                    return laytpl($('#billUseNumTpl').html()).render(data)
+                }
+            }, {
+                field: 'cancelBillNum',
+                title: '作废票据数',
+                width: 100
+            }, {
+                field: 'usageFinishFlag',
+                title: '使用状态',
+                width: 100,
+                sort: true,
+                unresize: true,
+                align: 'center',
+                templet: '#usageFinishFlagTpl'
+            }]],
+            done: function () {
+                this.where = {}//清除查询条件
+            }
+        }))
+
+        //计算百分比 两位小数
+        function getPercent(num, total) {
+            var per = Math.round(num / total * 10000)
+            return per / 100.00
+        }
+
+        function getTableHgt() {
+            return ($('body').height() - $('#billRecipient_queryForm').height() - 5)
+        }
+
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('billRecipientListGrid', {
+                height: height
+            })
+        })
+    })
+</script>

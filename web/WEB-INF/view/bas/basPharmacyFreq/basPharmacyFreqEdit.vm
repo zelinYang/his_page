@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+</head>
+<body>
+	<div class="layui-form" lay-filter="" id="" style="padding: 20px 30px 0 0;">
+		#formHiddenInput("pharmacyFreqIdOld" "$!{basPharmacyFreq.pharmacyFreqId}" " id='pharmacyFreqId' ") 
+		#formHiddenInput("validFlag" "$!{basPharmacyFreq.validFlag}" " id='validFlag' ")
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label" style="width: auto;">#requiredTag()用药频次名称</label>
+				<div class="layui-input-inline">#formTextInput("pharmacyFreqName" "#htmlEscape($!{basPharmacyFreq.pharmacyFreqName})" " lay-verify='required' id='pharmacyFreqName' maxlength='50' autocomplete='off' class='layui-input'")</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label" style="width: auto;">#requiredTag()用药频次代码</label>
+				<div class="layui-input-inline">#formNotInChineseInput("pharmacyFreqId" "#htmlEscape($!{basPharmacyFreq.pharmacyFreqId})" " id='pharmacyFreqId' maxlength='18' autocomplete='off' class='layui-input'")</div>
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label" s>#requiredTag()用药频次</label>
+				<div class="layui-input-inline">#formNotInChineseInput("pharmacyFreq" "#htmlEscape($!{basPharmacyFreq.pharmacyFreq})" " id='pharmacyFreq' maxlength='50' autocomplete='off' class='layui-input'")</div>
+			</div>
+
+			<div class="layui-inline">
+				<label class="layui-form-label">#requiredTag()属性</label>
+				<div class="layui-input-block">#formRadioGroup("pharmacyFreqType" "$!{basPharmacyFreq.pharmacyFreqType}" ${dicData.dicPharmacyFreqType} "")</div>
+			</div>
+		</div>
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label">每日次数</label>
+				<div class="layui-input-inline">#formNotInChineseInput("dayFreq" "#htmlEscape($!{basPharmacyFreq.dayFreq})" " id='dayFreq' maxlength='20' autocomplete='off' class='layui-input'")</div>
+			</div>
+			<div class="layui-inline">
+				<label class="layui-form-label">每周次数 </label>
+				<div class="layui-input-inline">#formNotInChineseInput("weekFreq" "#htmlEscape($!{basPharmacyFreq.weekFreq})" " id='weekFreq' maxlength='20' autocomplete='off' class='layui-input'")</div>
+			</div>
+		</div>
+		
+		<div class="layui-form-item">
+		<div class="layui-inline">
+                <label class="layui-form-label">排序序号 </label>
+                <div class="layui-input-inline">#formNotInChineseInput("sort" "$!{basPharmacyFreq.sort}" " id='sort' maxlength='20' autocomplete='off' class='layui-input'")</div>
+            </div>
+			#if(${basPharmacyFreq})
+			<div class="layui-inline">
+				<label class="layui-form-label">#requiredTag()是否有效</label>
+				<div class="layui-input-block">#formRadioGroup("validFlag" "$!{basPharmacyFreq.validFlag}" ${dicData.dicYesNo} "")</div>
+			</div>
+			#end
+		</div>
+		<div class="layui-form-item">
+			<div class="layui-inline">
+				<label class="layui-form-label">备注</label>
+				<div class="layui-input-inline">
+					<div class="layui-input-inline " style="width: 444px;">#formTextarea("remark" "#htmlEscape($!{basPharmacyFreq.remark})" "id='note' class='layui-textarea' maxlength='50' placeholder='请输入内容，字数最多50字'")</div>
+				</div>
+			</div>
+		</div>
+		<div class="layui-form-item layui-hide">
+			<input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+		</div>
+	</div>
+	#parse("./common/pageJs.vm") #parse("./bas/basPharmacyFreq/basPharmacyFreqEdit.js.vm")
+</body>
+</html>

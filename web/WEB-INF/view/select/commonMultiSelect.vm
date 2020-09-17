@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>模板编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <!-- 页面js -->
+    #parse("./common/common.js.vm") 
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+    <style>
+        .form-horizontal .form-group .red { color: #ff2222;}
+    </style>
+      
+    
+    <script type="text/javascript">
+        var zTreeObj, setting = {
+            view : {
+                selectedMulti : false
+            },
+            check: {
+                enable: true,
+                chkStyle: "checkbox",
+                chkboxType: {"Y": "", "N": ""}
+            },
+            async : {
+                enable : true,
+                url : "../ward/getDepTree.do",
+                //url : "../sysorg/multiSelectOrg.do?selectedIds=$!{selectedIds}",
+                dataType : "json",
+                autoParam : [ "id" ],
+                type : "POST"
+            },
+            callback : {
+                onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+                    if(treeNode == undefined){
+                        treeNode = zTreeObj.getNodeByTId("tree_1");
+                    }
+                    zTreeObj.selectNode(treeNode, false, true);
+                    if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                        zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                    }
+
+                    //only first time load tree includeRoot = true ,after set false
+                    zTreeObj.setting.async.otherParam["includeRoot"] = false;
+
+                },
+                onClick: function(event, treeId, treeNode) {
+                    if (treeNode) {
+                        var treeObj = $.fn.zTree.getZTreeObj("commonTree");
+                        treeObj.selectNode(treeNode, false, true);
+                        if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                            treeObj.expandNode(treeNode, true, false, true, true);
+                        }
+                    }
+                },
+                onCheck: function (event, treeId, treeNode) {
+                    console.log(treeNode);
+                    var selectedUnitOrgIds = getSelectedUnitOrgIds();
+                    if (treeNode.object.unitOrgId == treeNode.object.orgId) {
+                        common.alertCall("不能选择单位！", 2, function (){
+                            var treeObj = $.fn.zTree.getZTreeObj("commonTree");
+                            treeNode.checked = false;
+                            treeObj.updateNode(treeNode);
+                        });
+                        return;
+                    }
+                    if (selectedUnitOrgIds != ",," && selectedUnitOrgIds.indexOf("," + treeNode.object.unitOrgId + ",") < 0) {
+                        common.alertCall("当前选择部门与已选择的部门不在同一单位，不能选择！", 2, function (){
+                            var treeObj = $.fn.zTree.getZTreeObj("commonTree");
+                            treeNode.checked = false;
+                            treeObj.updateNode(treeNode);
+                        });
+                        return;
+                    }
+                    var selectedIds = getSelectedIds();
+                    if (selectedIds.indexOf("," + treeNode.id + ",") > -1) {
+                        $("#" + treeNode.id).remove();
+                        selectedIds = selectedIds.replace(treeNode.id + ",", "");
+                        $("#selectedIds").val(selectedIds);
+                    } else {
+                        var nodeHtml = "<li id='" + treeNode.id + "' unitOrgId='" + treeNode.object.unitOrgId + "'>" + treeNode.name + "</li>";
+                        $("#selected").append(nodeHtml);
+                        $("#selectedIds").val(selectedIds + treeNode.id + ",");
+                    }
+                }
+            }
+        };
+
+        function getSelectedIds() {
+            var selectedIds = [];
+            $("#selected li").each(function(index){
+                selectedIds.push($(this).attr("id"));
+            })
+            return "," + selectedIds.join(",") + ",";
+        }
+
+        //用于部门多选时只能选择同单位下的部门
+        function getSelectedUnitOrgIds() {
+            var selectedUnitOrgIds = [];
+            $("#selected li").each(function(index){
+                selectedUnitOrgIds.push($(this).attr("unitOrgid"));
+            })
+            return "," + selectedUnitOrgIds.join(",") + ",";
+        }
+
+        $(document).ready(function() {
+            zTreeObj = $.fn.zTree.init($("#commonTree"), setting, []);
+        });
+
+        $(function () {
+            // 确定
+            $('#btn_confirm').click(function () {
+                var nodes = zTreeObj.getCheckedNodes(true);
+                console.log(nodes);
+                #if($callBackFun)
+                    parent.$!{callBackFun}(nodes);
+                #end
+                $('#btn_cancel').click();
+            });
+            // 取消
+            $('#btn_cancel').click(function () {
+                // 关闭窗口
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+        });
+    </script>
+</head>
+<body class="gray-bg">
+<div class="wrapper wrapper-content full-height">
+    #formHiddenInput("selectedIds" ",$!{selectedIds}," "id='selectedIds'")
+    <div class="col-sm-6 p-l-none full-height">
+        <div class="ibox float-e-margins m-b-none full-height">
+            <div class="ibox-content full-height-scroll" style="height: calc(100% - 50px)">
+                <div>
+                    <ul id="commonTree" class="ztree"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 p-l-none full-height full-height-scroll" style="height: calc(100% - 50px)">
+        <ul id="selected">
+            #foreach($_selectedObject in $selectedObjects)
+                <li id="$!{_selectedObject.id}">$!{_selectedObject.name}</li>
+            #end
+        </ul>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button id="btn_confirm" type="button" class="btn  btn-success">
+            <i class="fa fa-check"></i> <span>确定</span>
+        </button>
+        &nbsp;
+        <button id="btn_cancel" type="button" class="btn btn-danger">
+            <i class="fa fa-close"></i> <span>取消</span>
+        </button>
+    </div>
+</div>
+</body>
+</html>

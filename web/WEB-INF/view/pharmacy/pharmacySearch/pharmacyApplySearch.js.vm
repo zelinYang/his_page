@@ -1,0 +1,188 @@
+<script>
+	var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');//产地
+	var dicMedicineVendor = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineVendor)');//供应商
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');//供应商
+	var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');//供应商
+	var medicineDosage = JSON.parse('$dicTools.changeMapToJson($dicData.medicineDosage)');//供应商
+	var dicDrugReportUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugReportUsage)');// 报告用药
+	var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');// 科室
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');//
+	var templateTr = $('#itemList tr:last').prop("outerHTML");
+	layui.use(['table', 'element', 'laydate', 'form', 'util'], function () {
+		var table = layui.table, util = layui.util;
+		var form = layui.form;
+
+		var $ = layui.jquery, element = layui.element, laydate = layui.laydate;
+		//按日期范围查询
+		laydate.render({
+			elem: '#pharmacyInDateSearch',trigger: 'click', range: true, done: function (value, date, endDate) {
+
+			}
+		});
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 500//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onopen_end: refreshTable
+			});
+		}
+
+		form.on('switch(pharmacyInFlagSwitch)', function (data) {
+			if (data.elem.checked) {
+				$('#pharmacyInFlag').val('1');
+			} else {
+				$('#pharmacyInFlag').val('0');
+			}
+			$('#btn_search').click();
+		});
+
+		//页面初始化
+		$(function() {
+			initLayout();
+		});
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+		function refreshTable() {
+			table.reload('mainTable',{
+				where: getQueryParams()
+			});
+		}
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['pharmacyInDateSearch']);
+			return $.extend({
+				pharmacyInDateBegin: '',
+				pharmacyInDateEnd: '',
+				pharmacyInFlag: ''
+			}, queryForm);
+		}
+
+		var mainTable = table.render($.extend(basePageTable, {
+			elem: '#mainTable'
+			, height: getLeftTableHeight()
+			, url: contextPath + '/pharmacy/pharmacyApplyListData.jo' //数据接口
+			, where: getQueryParams()
+			, id: 'mainTable'
+			, cols: [[ //表头
+				{
+					type: 'radio', fixed: 'left'
+				}, {
+					field: 'pharmacyName',
+					title: '药房名称',
+					width: 120,
+					fixed: 'left'
+				}, {
+					field: 'operUserName',
+					title: '操作人姓名',
+					width: 120
+				}, {
+					field: 'pharmacyInDate',
+					title: '申请日期',
+					templet: function (res) {
+						return layui.util.toDateString(res.pharmacyInDate, 'yyyy-MM-dd')
+					},
+					width: 120
+
+				}, {
+					field: 'remark',
+					title: '备注'
+				}
+			]]
+		}));
+		var itemTable = table.render($.extend(singlePageTable, {
+			elem: '#itemTable'
+			, height: getRightTableHeight()
+			, data: []
+			, cols: [[ //表头
+				{type: 'numbers', fixed: 'left'}
+				, {field: 'medicineName', title: '药品通用名称', minWidth: 200, fixed: 'left'}
+				, {field: 'pharmacyName', title: '药房名称', width: 80}
+				, {field: 'producingAreaName', title: '产地名称', width: 150}
+				, {field: 'applyCount', title: '申请数量', width: 80}
+				, {field: 'medicineSpec', title: '药品规格', width: 80}
+				, {
+					field: 'medicineUnit', title: '药品单位', width: 80, templet: function (d) {
+						return dicDrugNumUnit[d.medicineUnit] || "";
+					}
+				}
+				, {field: 'medicineDosage', title: '药品剂量', width: 80}
+				, {
+					field: 'dosageForm', title: '药品剂型', width: 200, templet: function (d) {
+						return dicDosageForm[d.dosageForm] || "";
+					}
+				}
+				, {field: 'drugstoreName', title: '出库药库/耗材库名称', width: 150}
+
+			]]
+		}));
+
+		//监听行单击事件（单击事件为：row）
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var data = obj.data;
+			$('#editForm').find('input, select').each(function () {
+				var name = $(this).attr('name');
+				if (!data[name]) {
+					$(this).val('');
+					return;
+				}
+				if (name && data[name]) {
+					if (name === 'pharmacyInDate') {
+						$(this).val(new Date(data[name]).format('yyyy-MM-dd'));
+					} else {
+						$(this).val(data[name]);
+					}
+				}
+			});
+			var pharmacyApplyId = data.pharmacyApplyId;
+			table.reload('itemTable', {
+				where: {pharmacyApplyId: pharmacyApplyId}
+				, url: '../pharmacy/pharmacyApplyItemPageData.jo' //数据接口
+				,height: getRightTableHeight()
+			});
+			form.render();
+		});
+
+		// 获取表格高度
+		function getLeftTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		function getRightTableHeight() {
+			return ($('body').height() - $("#editForm").height() - 10);
+		}
+
+		$(window).resize(function () {
+			table.reload('mainTable', {
+				height: getLeftTableHeight()
+			})
+		})
+
+	});
+</script>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>点击区域</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th><span>控件标签</span></th>
+            <th><span>调用方法名</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="labelName" placeholder="请输入控件标签"></td>
+            <td><input type="text" id="functionName" placeholder="请输入调用方法名"></td>
+        </tr>
+        <tr>
+            <th><span>初始化字段</span></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="initField" placeholder="请输入初始化字段"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span></th>
+            <th><span></span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1" selected="selected">编辑模式</option>
+                    <option value="0">只读模式</option>
+                </select>
+            </td>
+            <td>
+                <select id="ctrlType">
+                    <option value="1">左右模式</option>
+                    <option value="2">上下模式</option>
+                    <option value="3">流式</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="clickFlag" type="checkbox"/> 是否点击 </label>
+            </td>
+            <td style="background-color: white;">
+
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    /*
+          section运行时结构：
+          <div class="sde-ctrl sde-section" contenteditable="false" sde-type="section" id="section1" sde-model="%7B%22mode%22%3A%22EDITOR%22%2C%22originalmode%22%3A%22EDITOR%22%7D">
+            <p contenteditable="true" class="sde-value">
+              内容
+            </p>
+          </div>
+          其中新建控件时必须满足结构：
+          <div class="sde-ctrl sde-section" contenteditable="false" sde-type="section" id="section1">
+            <p contenteditable="true" class="sde-value">
+              内容
+            </p>
+          </div>
+          其余内容会通过insertControl命令进行创建。
+          注意：此时sde-value必须是P标签。
+          */
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            return rgbStr;
+        }
+
+        var thePlugins = 'miniclickarea',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id')).attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#labelName').val(opt.labelName);
+                $('#functionName').val(opt.functionName);
+                $('#initField').val(opt.initField);
+                $('#editModeFlag').val(opt.mode);
+                $('#ctrlType').val(opt.ctrlType);
+                $G('requiredFlag').checked = opt.required === 1;
+                $G('saveFlag').checked = opt.saveFlag === 1;
+                $G('clickFlag').checked = opt.clickFlag === 1;
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.labelName = $('#labelName').val();
+            newOpt.functionName = $('#functionName').val();
+            newOpt.initField = $('#initField').val();
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.clickFlag = $G('clickFlag').checked ? 1 : 0;
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.ctrlType = $('#ctrlType').val();
+            newOpt.type = 'clickarea';
+            if (!!domCtrl) {
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $('#ctrlId').val());
+                domCtrl.className = 'emr-ctrl emr-section' + (newOpt.required? ' ctrl-required': '');
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl emr-section' + (newOpt.required? ' ctrl-required': '');
+                //修改
+                ctrl.setOpt(newOpt);
+                var childs = domCtrl.childNodes;
+                for(var i = childs .length - 1; i >= 0; i--) {
+                    domCtrl.removeChild(childs[i]);
+                }
+                generateCtrl(domCtrl, newOpt);
+                window.parent.document.getElementById("ueditor_0").contentWindow.refreshListener();
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                console.log(newOpt);
+                domCtrl = UE.dom.domUtils.createElement(document, 'div', {
+                    class: 'emr-ctrl emr-section' + (newOpt.required? ' ctrl-required': ''),
+                    contenteditable: false,
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'clickarea',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                generateCtrl(domCtrl, newOpt);
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt)
+            }
+            UE.plugins[thePlugins].domListener();
+        };
+
+        function generateCtrl(domCtrl, newOpt) {
+            var domValue = UE.dom.domUtils.createElement(document, 'div', {
+                class: 'emr-value emr-label' + (newOpt.ctrlType === '1'? newOpt.labelName.length: ''),
+                contenteditable: newOpt.mode? true: false,
+            });
+            if (newOpt.labelName) {
+                switch (newOpt.ctrlType) {
+                    case '1':
+                        var pDom = UE.dom.domUtils.createElement(document, 'p', {});
+                        var labelCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                            style: 'float: left;',
+                            class: 'emr-label',
+                            contenteditable: false,
+                            'emr-type': 'label'
+                        });
+                        console.log(newOpt.labelName.replace(/@/g, '&nbsp;&nbsp;'));
+                        labelCtrl.innerHTML = '<b>' + newOpt.labelName.replace(/@/g, '&nbsp;&nbsp;') + '</b>';
+                        labelCtrl.style.color = newOpt.fontColor;
+                        labelCtrl.style.backgroundColor = newOpt.backgroundColor;
+                        domValue.append(labelCtrl);
+                        pDom.innerHTML = '<br>';
+                        domValue.append(pDom);
+                        break;
+                    case '2':
+                        var pDomReadonly = UE.dom.domUtils.createElement(document, 'p', {
+                            contenteditable: false
+                        });
+                        var labelCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                            class: 'emr-label',
+                            contenteditable: false,
+                            'emr-type': 'label'
+                        });
+                        var pDomEdit = UE.dom.domUtils.createElement(document, 'p', {});
+                        labelCtrl.innerHTML = '<b>' + newOpt.labelName.replace(/@/g, '&nbsp;&nbsp;') + '</b>';
+                        labelCtrl.style.color = newOpt.fontColor;
+                        labelCtrl.style.backgroundColor = newOpt.backgroundColor;
+                        pDomReadonly.append(labelCtrl);
+                        domValue.append(pDomReadonly);
+                        pDomEdit.innerHTML = '<br>';
+                        domValue.append(pDomEdit);
+                        break;
+                    case '3':
+                        var labelCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                            style: 'float: left;',
+                            class: 'emr-label',
+                            contenteditable: false,
+                            'emr-type': 'label'
+                        });
+                        var pDomEdit = UE.dom.domUtils.createElement(document, 'p', {});
+                        labelCtrl.innerHTML = '<b>' + newOpt.labelName.replace(/@/g, '&nbsp;&nbsp;') + '</b>';
+                        labelCtrl.style.color = newOpt.fontColor;
+                        labelCtrl.style.backgroundColor = newOpt.backgroundColor;
+                        domValue.append(labelCtrl)
+                        pDomEdit.innerHTML = '<br>';
+                        domValue.append(pDomEdit);
+                        break;
+                }
+            } else {
+                // domValue.innerHTML = newOpt.desc;
+            }
+            domCtrl.appendChild(domValue);
+            domValue.style.color = newOpt.fontColor;
+            domValue.style.backgroundColor = newOpt.backgroundColor;
+        }
+    })(UE);
+</script>
+</body>
+
+</html>

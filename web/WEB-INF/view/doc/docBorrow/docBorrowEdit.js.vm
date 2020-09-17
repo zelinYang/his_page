@@ -1,0 +1,63 @@
+
+<script>
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        autocomplete : 'modules/autocomplete'
+    }).use([ 'form', 'autocomplete','layer' ], function() {
+        var $ = layui.$, form = layui.form, autocomplete = layui.autocomplete;
+        var layer =layui.layer;
+        common.verify(form);
+        form.verify({
+            disease : function(value) {
+                if (!value) {
+                    setTimeout(function() {
+                        $("#diseaseName").addClass('layui-form-danger').focus();
+                    }, 50);
+                    return '请选择正确的选项';
+                }
+            }
+        })
+        // 根据诊断/疾病名称查询icd
+        autocomplete.render({
+            cache : false,
+            searchField : 'keyWord',
+            elem : $('#diseaseName')[0],
+            url : '../basDisease/basDiseaseListData.jo?pageSize=7',
+            template_val : '{{d.diseaseName}}',
+            template_txt : '{{d.diseaseName}} （{{d.diseaseIcdTcd}}）',
+            onselect : function(obj) {
+                searchCall(obj);
+            }
+        });
+        //清除值
+        $("#diseaseName").on('input propertychange', function() {
+            $("#diseaseIcdTcd").val('');
+            $("#diseaseId").val('');
+        })
+        //选中时执行的callback事件，会返回当前选中项的数据
+        function searchCall(obj) {
+            $("#diseaseIcdTcd").val(obj.diseaseIcdTcd);
+            $("#diseaseId").val(obj.diseaseId);
+        }
+        
+        form.on('submit(btn_save)', function(data) {
+            var docBorrowParams = data.field; //获取提交的字段
+
+            //提交 Ajax 成功后，静态更新表格中的数据
+            common.requestServer(contextPath + '/doc/saveDocBorrowApply.jo', docBorrowParams, function(result) {
+                if (result.code == "0") {
+                    common.msgSuccess("保存成功。");
+                    parent.$('#btn_query').click();
+                    location.reload()
+                    for(var i=1;i<10000;i++){
+                        parent.layer.close(i)
+                    }
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+
+    })
+</script>

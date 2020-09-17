@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊病历处方</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/recipe/recipeCoalition.css.vm")
+    #parse("./outpatient/recipe/recipeCoalition.js.vm")
+    <link rel="stylesheet" href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+</head>
+
+<body class="white-bg">
+<form class="layui-form" id="queryForm" style="padding: 5px;" >
+    <div class="main full-height-scroll">
+        #if($recipeList && $recipeList.size() > 0 )
+        <table class="layui-table">
+            <tbody>
+            #foreach($recipe in $recipeList)
+            <tr recipeId="$recipe.recipeId">
+                <th colspan="4">
+                    <div class="title">处方$!{velocityCount}</div>
+                    <!--  <span class="diagnosis">$!recipe.diagnosisContent</span> -->
+                </th>
+            </tr>
+            #set($recipeNum = $!{velocityCount})
+            #set( $recipeItemList = $recipeItemMap.get($recipe.recipeId))
+            #foreach($recipeItem in $recipeItemList)
+            <tr forRecipeId="$recipe.recipeId">
+                <td>
+                    <input type="checkbox" name="recipeItemId" value="$!recipeItem.recipeItemId"
+                           lay-filter="recipeItemId_$!recipeItem.recipeItemId" lay-skin="primary">
+                </td>
+                <td>$!recipeItem.orderName [$recipeItem.medicineSpec] $recipeItem.dosage #lookUpDict($dicData.dicDrugNumUnitDosageUnit $recipeItem.dosageUnit) ， $recipeItem.orderDay 天  ，$recipeItem.giveTotalQuantity #lookUpDict($dicData.dicDrugNumUnit $recipeItem.giveTotalQuantityUnit)， #lookUpDict($dicData.dicPharmacy $recipe.pharmacyId)</td>
+                ##                                    <td>#lookUpDict($dicData.dicPharmacy $recipe.pharmacyId) </td>
+                <td><div class="oprate" recipe-num="$!{recipeNum}" recipeItemId="$!recipeItem.recipeItemId" ><i class="layui-icon layui-icon-edit"></i></div></td>
+
+            </tr>
+            #end<!-- for2 -->
+            #set( $recipeItemList = '')
+            #set($recipeDiagnosisList = $recipeDiagnosisListMap.get($recipe.recipeId))
+            <tr recipeId="$recipe.recipeId">
+                <td colspan="4">
+                    <div  calss="ralateDiagnosis" ><span class="f-w-b">关联诊断：</span>
+                        #foreach($diagnose in $outpatientDiagnoseList)
+                        #set($checkDiagnose = '')
+                        #foreach($recipeDiagnosis in $recipeDiagnosisList)<!-- 回显已关联的诊断 -->
+                        #if($diagnose.diagnosisId == $recipeDiagnosis.diagnosisId )
+                        #set($checkDiagnose = 'checked')
+                        #end
+                        #end
+                        <input type="checkbox"  name="diagnosisId" value="$!diagnose.diagnosisId" $checkDiagnose lay-filter="diagnosisId" lay-skin="primary">
+                        <span class="">$!diagnose.diseaseDiagnosisName</span>
+                        #end
+                    </div>
+                </td>
+            </tr>
+            #set( $recipeDiagnosisList = '')
+            #end<!-- for1 -->
+            </tbody>
+        </table>
+
+        #else
+        <div>
+            暂无处方数据
+        </div>
+        #end
+    </div>
+</form>
+<blockquote class="layui-elem-quote layui-quote-nm" id="tips">
+    <i class="layui-icon layui-icon-tips"></i>
+    点击医嘱右边的铅笔图标，选择目标处方，将该组医嘱合并进目标处方里，勾选复选框，将多组医嘱拆分至新处方单；同组的处方不能拆分，进行合并拆分会将整组处方一起处理。
+</blockquote>
+<!-- 底部按钮栏  -->
+<div class="text-center p-t-xs btn_gorup" id="refreshBtn">
+    <button class="layui-btn layui-btn-sm" type="button" id="refresh_recipe" onclick="refreshPage();">刷新</button>
+</div>
+</body>
+</html>

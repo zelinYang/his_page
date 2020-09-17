@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>${SessionSysPortal.appTitle}-收费系统-门诊收费-收费退费查询-退费</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #set($path = $!contextPath)
+	<style>
+		.layui-tab-item { height: 100%;}
+		.layui-tab-card { height: 100%; border-width: 0; margin: 0; border-radius: 0; box-shadow: initial; background: #fff;}
+		.layui-tab-content {height: calc(100% - 60px); padding: 10px 0 0}
+		.layui-tab-title.btn { padding: 10px; margin-left: 0}
+	</style>
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<form class="layui-form" id="queryForm" >
+			<div class="layui-row-query search-term">
+				<div class="layui-form-item">
+					#formHiddenInput("outpatientFeeId" "$!{outpatientFee.outpatientFeeId}" "id='outpatientFeeId'")
+					<div class="layui-inline">
+						<label class="layui-form-label">费用名称</label>
+						<div class="layui-input-inline">
+							#formTextInput("chargeName" "" "class='layui-input' id='q_chargeName' autocomplete='off' maxlength='40' ")
+						</div>
+					</div>
+
+					<div class="layui-inline layui-btn-group">
+						<button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+						<button type="reset" id="btn_reset" class="layui-btn layui-btn-sm" lay-tips="刷新"><i
+								class="layui-icon layui-icon-refresh"></i></button>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label">患者姓名</label>
+						<div class="layui-input-inline">
+							#formTextInput("patientName" "$!{outpatientFee.patientName}" "class='layui-input' id='patientName' readonly ")
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label">退费金额</label>
+						<div class="layui-input-inline">
+							#formTextInput("refundAmount" "" "class='layui-input' id='refundAmount' readonly ")
+						</div>
+					</div>
+					<div class="layui-inline">
+						<label class="layui-form-label">发票号码</label>
+						<div class="layui-input-inline">
+							#formTextInput("feeBillNo" "$!{feeBillNo}" "class='layui-input' id='feeBillNo' readonly ")
+						</div>
+					</div>
+					<div class="layui-inline layui-btn-group">
+						<button type="button" id="all_refund" class="layui-btn layui-btn-sm"><span>全退</span></button>
+						<button type="button" id="refund" class="layui-btn layui-btn-sm"><span>退费</span></button>
+						<button type="button" id="re_print" class="layui-btn layui-btn-sm"><span>重打</span></button>
+					</div>
+				##				<div class="layui-inline m-l-lg">
+				##					<button type="button" id="refund" class="layui-btn layui-btn-sm"><span>退费</span></button>
+				##				</div>
+				</div>
+			</div>
+		</form>
+		<div class="layui-row layui-col-space10">
+			<div class="layui-bg-white">
+				<table id="feeItemTable" lay-filter="feeItemTable"></table>
+			</div>
+		</div>
+	</div>
+</div>
+	#parse("./outpatient/outpatientFee/outpatientFeeBack.js.vm")<!-- 页面js -->
+</body>
+</html>

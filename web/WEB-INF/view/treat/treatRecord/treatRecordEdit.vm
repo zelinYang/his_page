@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+    <form class="layui-form" lay-filter="" id="treatRecordForm" style="padding: 20px 30px 0 0;">
+        #formHiddenInput("treatReportId" "$!{treatRecord.treatReportId}" " id='treatReportId'")
+        #formHiddenInput("treatApplyId" "$!{treatRecord.treatApplyId}" " id='treatApplyId'")
+        #formHiddenInput("inhospitalId" "$!{treatRecord.inhospitalId}" " id='inhospitalId'")
+        #formHiddenInput("orderId" "$!{treatRecord.orderId}" " id='orderId'")
+        #formHiddenInput("registerId" "$!{treatRecord.registerId}" " id='registerId'")
+        #formHiddenInput("patientId" "$!{treatRecord.patientId}" " id='patientId'")
+        #formHiddenInput("patientName" "$!{treatRecord.patientName}" " id='patientName'")
+        #formHiddenInput("visitCardNo" "$!{treatRecord.visitCardNo}" " id='visitCardNo'")
+        #formHiddenInput("healthCard" "$!{treatRecord.healthCard}" " id='healthCard'")
+        #formHiddenInput("patientIdCard" "$!{treatRecord.patientIdCard}" " id='patientIdCard'")
+        #formHiddenInput("socialSecurityCard" "$!{treatRecord.socialSecurityCard}" " id='socialSecurityCard'")
+        #formHiddenInput("treatDicTypeId" "$!{treatRecord.treatDicTypeId}" " id='treatDicTypeId'")
+        #formHiddenInput("treatDicCode" "$!{treatRecord.treatDicCode}" " id='treatDicCode'")
+        #formHiddenInput("cureBodyPart" "$!{treatRecord.cureBodyPart}" " id='cureBodyPart'")
+        #formHiddenInput("therapyMethod" "$!{treatRecord.therapyMethod}" " id='therapyMethod'")
+        #formHiddenInput("therapyDosage" "$!{treatRecord.therapyDosage}" " id='therapyDosage'")
+        #formHiddenInput("therapyFrequency" "$!{treatRecord.therapyFrequency}" " id='therapyFrequency'")
+        #formHiddenInput("therapyNote" "$!{treatRecord.therapyNote}" " id='therapyNote'")
+        #formHiddenInput("validFlag" "$!{treatRecord.validFlag}" " id='validFlag'")
+        #formHiddenInput("therapyAppointTime" "$!{treatRecord.therapyAppointTime}" " id='therapyAppointTime'")
+##        <div class="layui-form-item">
+##            <div class="layui-inline">
+##                <label class="layui-form-label">#requiredTag()类型</label>
+##                <div class="layui-input-inline">#formTextInput("dicType" "#lookUpDict($dicData.dicDicType $!{basDicType.dicType})" " id='dicType' readonly='true' lay-verify='required' autocomplete='off' placeholder='' class='layui-input unique'")</div>
+##            </div>
+##            <div class="layui-inline">
+##                <label class="layui-form-label">#requiredTag()类型</label>
+##                <div class="layui-input-inline">#formTextInput("dicType" "" " id='dicType' readonly='true' lay-verify='required' autocomplete='off' placeholder='' class='layui-input unique'")</div>
+##            </div>
+##        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()治疗时间</label>
+                <div class="layui-input-inline">
+                    <input type="text" value="$!date.format('yyyy-MM-dd HH:mm:ss', $!treatRecord.therapyTime)" class="layui-input" name="therapyTime" id="therapyTime">
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()治疗用时</label>
+                <div class="layui-input-inline">#formNotInChineseInput("therapyTotalTime" "$!{treatRecord.therapyTotalTime}" " lay-verify='required' lay-verify='required' maxlength='24' autocomplete='off' class='layui-input unique' ")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text " >
+            <label class="layui-form-label">#requiredTag()治疗措施</label>
+            <div class="layui-input-inline " style="width: 462px;">#formTextarea("treatMeasures" "#htmlEscape($!{treatRecord.treatMeasures})" "id='treatMeasures' class='layui-textarea' ")</div>
+        </div>
+        <div class="layui-form-item layui-form-text " style="margin-top: 5px">
+            <label class="layui-form-label">#requiredTag()治疗反应</label>
+            <div class="layui-input-inline " style="width: 462px;">#formTextarea("therapyReaction" "#htmlEscape($!{treatRecord.therapyReaction})" "id='therapyReaction' class='layui-textarea' ")</div>
+        </div>
+        <div class="layui-form-item layui-form-text " style="margin-top: 5px">
+            <label class="layui-form-label">#requiredTag()治疗结果</label>
+            <div class="layui-input-inline " style="width: 462px;">#formTextarea("therapyResult" "#htmlEscape($!{treatRecord.therapyResult})" "id='therapyResult' class='layui-textarea' ")</div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否已完成</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("treatFlag" "$!{treatRecord.treatFlag}" ${dicData.dicYesNo} "")
+            </div>
+        </div>
+
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+        </div>
+    </form>
+    #parse("./treat/treatRecord//treatRecordEdit.js.vm")
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-table td, .layui-table th {padding: 5px;}
+</style>
+</head>
+<body>
+    <div class="layui-col-xs12 full-height">
+        <div class="layui-row white-bg p-t-xs">
+            <form class="layui-form" action="">
+                <div class="layui-input-block m-l-sm m-r-sm">
+                    #formTextInput("clinicPathName" "" "id='clinicPathName' class='layui-input' placeholder='请输入路径名称' maxLength='50'")
+                </div>
+            </form>
+        </div>
+        <div class="layui-row white-bg" style="height: calc(100% - 20px);">
+            #formHiddenInput("" "$!inhospitalId" "id='inhospitalId'")
+            <table id="validPathList" lay-filter="validPathList" class="layui-hide"></table>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['table', 'form', 'layer'], function(){
+    layer = layui.layer;
+    var table = layui.table, form = layui.form;
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/pathway/validPathPageJson.jo';
+    var tablePathList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'validPathList',
+        elem: '#validPathList', 
+        height: 'full-40',
+        cols: [[
+            {field: 'clinicPathId', type:'radio', width:50},
+            {field:'clinicPathName', title: '路径名称'},
+            {field:'clinicPathVersion', title: '版本'}
+          
+        ]], 
+        page: {layout: ['prev', 'page', 'next']},
+        done: function (){
+            // 去掉表格头部的全选及取消全选功能
+            common.removeHeadCheckbox('clinicPathId');
+        }
+      })
+    );
+
+    // 刷新列表
+    $('#btn_refresh').click(function (){
+        tablePathList.reload({url: tableUrl, where: {}});
+    });
+
+    // 关键字检索
+    $('#clinicPathName').on('input propertychange', function (){
+        tablePathList.reload({url: tableUrl, page: {curr: 1}, where: {keyWord: $(this).val()}});
+    });
+
+    //监听复选框
+    table.on('radio(validPathList)', function(obj){
+        if (obj.checked) {
+            common.confirm('确定要要导入该路径吗?', function (){
+                var params = {inhospitalId: $('#inhospitalId').val(), clinicPathId: obj.data.clinicPathId};
+                common.requestServer(contextPath + '/clinic/saveImportPatientPath.jo', params, function (result){
+                    if (result.code === '0') {
+                        common.msg('导入成功', 1, function (){
+                            var index = parent.layer.getFrameIndex(window.name);
+                            parent.layer.close(index); 
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        };
+    });
+
+});
+</script>
+</html>

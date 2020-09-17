@@ -1,0 +1,433 @@
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<!-- 单选列表 -->
+<script type="text/html" id="radioTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="radio" name="{{d.name}}" lay-filter="{{d.filter}}" value="{{val}}" {{val== d.value ? 'checked' : ''}}
+    title="{{key}}" {{d.attr}}>
+    {{# }) }}
+</script>
+<!--下拉列表-->
+<script type="text/html" id="selectTpl">
+    <select name="{{d.name}}" lay-filter="{{d.filter}}" lay-search>
+        <option value=""></option>
+        {{# layui.each(d.data, function(val, key){ }}
+        <option value="{{val}}" {{val== d.value ?
+        'selected' : ''}}>{{key}}</option>
+        {{# }) }}
+    </select>
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var SEX_FLAG_UNLIMITED = "$!{CONST.AppConstants.SEX_FLAG_UNLIMITED}";
+    var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+    var dicWardBedLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicWardBedLevel)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl;
+
+        common.verify(form);
+
+        //清空分类
+        $('.caller-icon').click(function () {
+            $("#q_keyWord").val("");
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            //执行重载
+            table.reload('inpatientWardOfficeListGrid', {where: {keyWord: $("#q_keyWord").val()}});
+        })
+
+        // 新增病区按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/inpatient/wardEdit.do', '新增病区', {
+                area: ['90%', '90%'],
+                scroll: true
+            });
+        })
+
+        //表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#inpatientWardOfficeListGrid',
+            url: contextPath + '/inpatient/inpatientWardOfficeListData.jo',
+            height: 'full-60'
+            , parseData: function (res) { //res 即为原始返回的数据
+                //设置选择
+                var inpatientWardOffice = res.data.find(function (x) {
+                    return x.officeId == $("#inpatientWardOfficeId").val();
+                });
+                if (inpatientWardOffice) {
+                    inpatientWardOffice.LAY_CHECKED = true;
+                }
+                return res;
+            },
+            cols: [[{
+                type: 'radio',
+            }, {
+                title: '病区',
+                minWidth: 100,
+                templet: function (d) {
+                    return d.inpatientWard.wardName
+                }
+            }, {
+                title: '科室',
+                minWidth: 100,
+                templet: function (d) {
+                    return d.officeOrg.name;
+                }
+            }]],
+            done: function () {
+                //首次执行
+                if (!this.first) {
+                    this.elem.next('.layui-table-view').find('.layui-table-main :radio[lay-type="layTableRadio"]:checked').next('.layui-form-radio').click();
+                    this.first = true;
+                }
+            }
+        }));
+
+        //赋值表单
+        function setFormData(data) {
+            data.wardName = data.inpatientWard.wardName;
+            data.wardId = data.inpatientWard.wardId;
+            data.wardOfficeName = data.officeOrg.name;
+            data.inpatientWardOfficeId = data.officeId;
+            form.val("inpatientWardBedForm", data);
+            //病区床位列表
+            table.reload('inpatientWardBedListGrid', {
+                url: contextPath + '/inpatient/wardBedListData.jo?inpatientWardOfficeId=' + data.officeId +'&wardId=' + data.wardId, //接口
+            });
+            $("#submitFlag").val('');
+            form.render();
+        }
+
+        //单击行
+        table.on('row(inpatientWardOfficeListGrid)', function (obj) {
+            var data = obj.data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            obj.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+            //未提交
+            if ($("#submitFlag").val()) {
+                layui.layer.confirm("数据发生变化，需要保存吗？", {
+                    btn: ['保存', '不保存', '取消']
+                }, function (index) {
+                    $("#btn_save").click();
+                    layer.close(index);
+                }, function (index) {
+                    setFormData(data);
+                    layer.close(index);
+                });
+            } else {
+                setFormData(data);
+            }
+        });
+
+        //新增床号
+        function renderWardBedAdd() {
+            if (!$('#inpatientWardOfficeId').val()) {
+                $("#btn_add_wardBed").click(function () {
+                    common.msg('请先选择病区科室', 0);
+                    return;
+                }).addClass('layui-btn-disabled');
+                return;
+            }
+            $("#btn_add_wardBed").click(function () {
+                var inpatientWardBeds = table.cache['inpatientWardBedListGrid'].filter(function (item) {
+                    return item.length != 0;
+                });
+                var inpatientWardBed = $.extend({
+                    wardRoomNo: '',
+                    wardBedNo: '',
+                    bedFee: '0',
+                    icuFee: '0',
+                    sexFlag: SEX_FLAG_UNLIMITED,
+                    wardBedLevel: ''
+                }, inpatientWardBeds.slice(-1)[0]);
+                inpatientWardBed.wardBedId = '';//复制最后一行，设置主键为空
+                if (inpatientWardBed && inpatientWardBed.wardBedNo && RegExp(/\d/g).test(inpatientWardBed.wardBedNo)) {
+                    //最后连续数字自增1
+                    var lastwardBedNo = inpatientWardBed.wardBedNo.toString().match(/\d{1,}/g).slice(-1)[0];
+                    inpatientWardBed.wardBedNo = inpatientWardBed.wardBedNo.replace(new RegExp("(.*)" + lastwardBedNo), '$1' + layui.util.digit(Number(lastwardBedNo) + 1, lastwardBedNo.length));
+                }
+                inpatientWardBeds.push(inpatientWardBed);
+                table.reload('inpatientWardBedListGrid', {
+                    url: '', //接口
+                    data: inpatientWardBeds,
+                });
+                var tbView = $('#inpatientWardBedListGrid').next('.layui-table-view');
+                //最后一行首个单元格编辑状态
+                tbView.find('.layui-table-main tr:last td[data-edit="text"]:first').click().closest('tr').addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            });
+        }
+
+        table.render($.extend({}, basePageTable, {
+            elem: '#inpatientWardBedListGrid',
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            page: false,
+            limit: 100000,
+            data: [],
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_wardBed" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'wardRoomNo',
+                    title: '#requiredTag()房间号',
+                    edit: 'text'
+                }, {
+                    field: 'wardBedNo',
+                    title: '#requiredTag()床位号',
+                    edit: 'text'
+                }, {
+                    field: 'bedFee',
+                    title: '#requiredTag()病床费用',
+                    sort: true,
+                    width: 80,
+                    edit: 'text',
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    field: 'icuFee',
+                    title: '#requiredTag()ICU费用',
+                    sort: true,
+                    width: 80,
+                    edit: 'text',
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    title: '#requiredTag()性别限制',
+                    event: 'sexFlag',
+                    width: 180,
+                    templet: function (d) {
+                        return laytpl($('#radioTpl').html()).render({
+                            name: 'sexFlag' + d.LAY_TABLE_INDEX,
+                            filter: 'sexFlag',
+                            value: d.sexFlag,
+                            data: dicSexLimit,
+                            attr: 'lay-verify="reqRedio" check-msg="请选择性别限制"'
+                        });
+                    }
+                }, {
+                    title: '床位级别',
+                    event: 'wardBedLevel',
+                    width: 150,
+                    templet: function (d) {
+                        return laytpl($('#selectTpl').html()).render({
+                            filter: 'wardBedLevel',
+                            value: d.wardBedLevel,
+                            data: dicWardBedLevel
+                        });
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                }]]
+            , done: function (res) {
+                renderWardBedAdd();
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        table.on('edit(inpatientWardBedListGrid)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+                , field = obj.field; //得到字段
+            $(this).siblings().removeClass('layui-table-cell-danger');
+            $("#submitFlag").val('0');//未提交
+            switch (obj.field) {
+                case 'wardRoomNo':
+                    var maxLength = 10;//最大字节长度
+                    var byteLength = value.replace(/[^ -~]/g, 'AA').length;//字节长度
+                    if (byteLength > maxLength) {
+                        var excessSize = (byteLength - maxLength);//超出字符数
+                        common.msg('已超出' + excessSize + '字符', 0);
+                        var oldValue = $(this).prev().text()//得到修改前的值
+                        $(this).val(oldValue);
+                        obj.update({[field]: oldValue});
+                    }
+                    break;
+                case 'wardBedNo':
+                    var inpatientWardBeds = table.cache['inpatientWardBedListGrid'].filter(function (x) {
+                        return x.wardBedNo && x.wardBedNo == value;
+                    });
+                    if (inpatientWardBeds.length > 1) {
+                        common.msg("床位号重复请修改！", 0);
+                        var oldValue = $(this).prev().text()//得到修改前的值
+                        $(this).val(oldValue);
+                        obj.update({[field]: oldValue});
+                    }
+                    var maxLength = 20;//最大字节长度
+                    var byteLength = value.replace(/[^ -~]/g, 'AA').length;//字节长度
+                    if (byteLength > maxLength) {
+                        var excessSize = (byteLength - maxLength);//超出字符数
+                        common.msg('已超出' + excessSize + '字符', 0);
+                        var oldValue = $(this).prev().text()//得到修改前的值
+                        $(this).val(oldValue);
+                        obj.update({[field]: oldValue});
+                    }
+                    break;
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(inpatientWardBedListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            $("#submitFlag").val('0');//未提交
+            var that = this;
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    break;
+                case 'sexFlag':
+                    obj.update({
+                        'sexFlag': $(obj.tr).find(':radio[lay-filter="sexFlag"]:checked').val()
+                    });
+                    break;
+                case 'wardBedLevel':
+                    //选择床位等级
+                    form.on('select(wardBedLevel)', function (data) {
+                        obj.update({
+                            'wardBedLevel': $(obj.tr).find('select[lay-filter="wardBedLevel"]').val()
+                        })
+                    });
+                    break;
+            }
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#inpatientWardBedForm .layui-form-item').height() - 100;
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ');
+                that.height = heightCallback();
+                table.resize();
+            }).resize();
+        }
+
+        table.resize();
+        //自定义验证规则
+        form.verify({
+            inpatientWardBedListGrid: function () {
+                var flag = true;
+                $.each(table.cache['inpatientWardBedListGrid'], function (index, wardbed) {
+                    if (!$.isArray(wardbed) && ('' === wardbed.wardBedNo)) {
+                        //显示红色边框
+                        $('#inpatientWardBedListGrid + .layui-table-view .layui-table-main')
+                            .find('td[data-field="wardRoomNo"],td[data-field="wardBedNo"],td[data-field="bedFee"],td[data-field="icuFee"]').children('.layui-table-cell:empty').addClass('layui-table-cell-danger');
+                        flag = false;
+                        return false;
+                    }
+                });
+                if (!flag) {
+                    return "必填项不能为空"
+                }
+
+                var repeatFlag = $('#inpatientWardBedListGrid + .layui-table-view .layui-table-main')
+                    .find('td[data-field="wardBedNo"]').children('.layui-table-cell').filter(function (index) {
+                        var text = $(this).text();
+                        return $(this).closest('tr').siblings().find(".layui-table-cell:contains('" + text + "')").filter(function () {
+                            return $(this).text() == text;
+                        }).length > 0;
+                    }).addClass('layui-table-cell-danger').length > 0;
+                if (repeatFlag) {
+                    return "床位号列不能重复";
+                }
+            }
+        })
+
+        //提交表单
+        function saveInpatientWardBed() {
+            var params = common.serializeObject($('#inpatientWardBedForm'));
+            //病区床位
+            params.inpatientWardBedEditInfoList = $.map(table.cache['inpatientWardBedListGrid'], function (item) {
+                if (!$.isArray(item)) return $.extend(item, params);
+            });
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/inpatient/saveWardBeds.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    $("#submitFlag").val('');
+                    common.msg('保存成功。', 1, function () {
+                        //重载病区床位列表
+                        table.reload('inpatientWardBedListGrid', {
+                            url: contextPath + '/inpatient/wardBedListData.jo?inpatientWardOfficeId=' + $("#inpatientWardOfficeId").val() +'&wardId=' + $("#wardId").val(), //接口
+                        });
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveInpatientWardBed()
+            return false
+        })
+
+        // 关闭窗口
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            $('#btn_query', window.parent.document).click()
+        })
+
+        /*
+        *编辑数据表格，键盘快捷键方法。
+        *可跳过无编辑属性的列
+        *tab 右边一个单元格
+        *shift + tab 左边一个单元格
+        *enter 下一行的单元格
+        *shift + enter 上一行的单元格
+        */
+        $(document).on('keydown keyup', '.layui-input',
+            function (event) {
+                var td = $(this).parent('td'),
+                    index = td.index(),
+                    tr = td.parent('tr'),
+                    isShift = $(document).data('shift'),
+                    isKeydown = (event.type == "keydown");
+                switch (event.key) {
+                    case "Shift":
+                        $(document).data('shift', isKeydown);
+                        break;
+                    case "Tab":
+                        event.preventDefault();
+                        isKeydown && td[isShift ? 'prevAll' : 'nextAll']('[data-edit="text"]:first').click();
+                        break;
+                    case "Enter":
+                        isKeydown && tr[isShift ? 'prev' : 'next']().children('td').eq(index).click();
+                        break;
+                }
+            })
+    })
+</script>

@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+    <style>
+        @media screen and (max-width: 768px){
+            #queryForm .layui-input-inline{width: 110px}
+        }
+    </style>
+
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-col-sm5 layui-col-xs5">
+            <div class="layui-bg-white layui-form" >
+                <div class="layui-row-query">
+                    <div class="layui-form-item search-term" id="queryForm">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">入库单号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("drugstoreInId" "" " id='q_dicTypeName' class='layui-input' autocomplete='off' maxlength='50' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">生产厂家</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("producingAreaId" "$!{command.producingAreaId}" ${dicData.dicProducingArea} "" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button  id="search" class="layui-btn layui-btn-sm" title="搜索"> <i class="layui-icon layui-icon-search "></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <table id="RKZB" class="layui-table-tabs m-n" lay-filter="RKZB"></table>
+        </div>
+
+        <div class="layui-col-sm7 layui-col-xs7">
+			<div class="layui-bg-white m-l-sm p-sm">
+                <fieldset class="layui-elem-field layui-field-title">
+                    <legend>厂家采购明细</legend>
+                </fieldset>
+                <div class="layui-form-item search-term p-t-sm">
+                <div class="layui-inline">
+                    <label class="layui-form-label wd-100">按药品名称查找</label>
+                    <div class="layui-input-inline">
+                        <input class="layui-input"  id="demoReload1" autocomplete="off" >
+                    </div>
+                </div>
+				<div class="layui-inline">
+                    <button  id="searchBy" class="layui-btn layui-btn-sm" title="搜索"> <i class="layui-icon layui-icon-search "></i></button>
+                </div></div>
+                <!-- 明细表tab -->
+                <div id="tab-hide" class="layui-bg-white">
+                    <div class="layui-tab" lay-filter="demo" lay-allowclose="true">
+                        <ul class="layui-tab-title" >
+
+                        </ul>
+                        <div class="layui-tab-content ">
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+<!--主表监听器-->
+<script>
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    // $(document).ready(function(){
+    //     $("#btn_searchItem").click(function(){
+    //         $('#test-hide').removeClass('layui-hide').toggle();
+    //         $('#tab-hide').removeClass('layui-hide').toggle();
+    //     });
+    //
+    // });
+
+    layui.use(['table','element'],function(){
+        var table = layui.table,
+            $ = layui.jquery,
+            element = layui.element;
+
+		// 获取表格高度
+		function getTableHgt() {
+			return ($('body').height() - $('#queryForm').height() - 26)
+		}
+		// 重置表格高度
+		$(window).resize(function () {
+			var height = getTableHgt();
+			table.reload('RKZB', {
+				height: height
+			})
+		});
+
+        var pharmacyTable = table.render($.extend(basePageTable,{
+            elem: '#RKZB'
+            ,height: getTableHgt()
+            // ,width:860
+            ,url: '../drugstore/drugstoreInItemListData.jo' //数据接口
+            ,id:'RKZB'
+            ,cols: [[ //表头
+
+                      {  title : '序号',
+                         type : 'numbers',
+                         fixed:'left'
+                           }
+                ,{field: 'drugstoreInId', title: '入库单号', width:280}
+                ,{
+                    field : 'producingAreaName',
+                    title : '生产厂家',
+                    width: 160
+                },{
+                    field: 'expireDate',
+                    title: '验收日期 ',
+                    width:210,
+                    templet: function(res){
+                        return layui.util.toDateString(res.expireDate, 'yyyy-MM-dd')
+                    }
+                }
+            ]]
+        }));
+
+
+        $('#search').on('click', function(){
+            var demoReload = $("#demoReload");
+            //执行重载
+
+            pharmacyTable.reload({
+                page: {
+                    curr: 1 //重新从第一页开始
+                },
+                where: {
+                    pharmacyName:demoReload.val()
+                }
+
+            });
+        });
+
+        //监听行单击事件（单击事件为：row）
+        table.on('row(RKZB)', function(obj){
+            var data = obj.data;
+
+            var has_id = 0;
+
+            $(".layui-tab-title>li").each(function () {
+                console.log($(this).attr("lay-id") + '----' + data.producingAreaId);
+                if ($(this).attr("lay-id") == data.medicineVendorId) {
+                    has_id = 1;
+                }
+            });
+            console.log("has_id="+has_id);
+            if(has_id == 1){
+                $("#layui-tab-title").hide();
+                element.tabChange('demo', data.producingAreaId);
+            }else{
+                element.tabAdd('demo', {
+                    title:data.producingAreaName
+                    , content:
+                            "<div class='layui-tab-item layui-show'>" +
+                            "   <div style='padding: 0px 0px'>" +
+                            "       <table id='RKMX" + data.producingAreaId + "' class='layui-table'></table>" +
+                            "   </div>" +
+                            "</div>"
+                    , id: data.producingAreaId //使用规定好的id
+
+                });
+                element.tabChange('demo', data.producingAreaId);
+            }
+
+            var f1 =data.producingAreaId;
+            console.log($('#RKMX' + f1));
+
+            var pharmacyMXTable = table.render({
+                elem: '#RKMX' + f1
+                ,height: 'full-186'
+                // ,width:1500
+                ,page:true
+                ,url: '../drugstore/drugstoreInItemListData.jo?producingAreaId='+data.producingAreaId //数据接口pharmacyInId
+                ,cols: [[ //表头
+                    {field: 'medicineName', title: '药品通用名称', width:200},
+                    {
+                        field : 'medicineSpec',
+                        width: 120,
+                        title : '规格'
+                    },
+                    {
+                        field : 'medicineUnit',
+                        title : '单位',
+                        templet: function (row) {
+                            return dicDrugNumUnit[row.medicineUnit] || '';
+                        }
+                    },
+                    {
+                        field : 'inCount',
+                        title : '数量',
+                        width: 115
+
+                    },/*
+                    {
+                        field : 'producingAreaName',
+                        title : '生产厂家',
+                        width: 140
+                    },  */
+                    {
+                        field : 'buyPrice',
+                        title : '进货价格',
+                        align : 'right',
+                        width: 160,
+                        totalRow: true
+                    },
+                    {
+                        field : 'buyTotalSum',
+                        title : '进货金额',
+                        align : 'right',
+                        totalRow: true,
+                        width: 160
+                    },
+                    {
+                        field : 'medicineVendorName',
+                        title : '供应公司',
+                        width: 160
+                    },
+                     {
+                        field : 'expireDate',
+                        title : '验收日期',
+                        width: 160,
+                        templet: function (row) {
+                            return layui.util.toDateString(row.expireDate,'yyyy-MM-dd');
+                        }
+
+                    },
+
+
+                ]]
+            });
+            $('#searchBy').on('click', function(){
+                var demoReload = $("#demoReload1");
+                //执行重载
+                console.log("bb")
+                pharmacyMXTable.reload({
+                    page: {
+                        curr: 1 //重新从第一页开始
+                    },
+                    where: {
+                        medicineName:demoReload.val()
+                    }
+
+                });
+            });
+            // //Hash地址的定位
+            // var layid = location.hash.replace(/^#test=/, '');
+            // element.tabChange('test', layid);
+            //
+            // element.on('tab(test)', function(elem){
+            //     location.hash = 'test='+ $(this).attr("lay-id");
+            // });
+
+            // layer.alert(JSON.stringify(data), {
+            //     title: '当前行数据：'
+            // });
+
+
+            //标注选中样式
+            // obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+    });
+</script>
+
+</html>

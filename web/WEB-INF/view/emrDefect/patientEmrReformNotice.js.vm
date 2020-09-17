@@ -1,0 +1,187 @@
+<script>
+    //整改状态字典
+    var dicReformStatus = JSON.parse('$dicTools.changeMapToJson($dicData.dicReformStatus)');
+    
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$,form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var params = $.extend({
+            	receiverId : "${currentUser.userId}"
+            	,patientName : ""
+            	,senderName : ""
+                ,validFlag : "$!{CONST.AppConstants.YES_FLAG}"
+            }, common.serializeObject($('#queryForm')));
+            return params;
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('reformListGrid', {
+                where: queryParams
+            })
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 21)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('reformListGrid', {
+                height: height
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(reformListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open('$contextPath' + '/emrdefect/patientEmrReformReport.do?patientEmrReformId=' + row.patientEmrReformId, row.senderName, {
+                        area: ['80%', '80%'],
+                        btn : [ '提交报告' ],
+                        yes : function(index, layero) {
+                            reportReformCallback(index, layero);
+                        }
+                    })
+                    break;
+            }
+        })
+
+        //填写整改报告的回调函数
+        function reportReformCallback(index, layero) {
+            var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_report_reform', submit = layero.find('iframe').contents().find('#' + submitID);
+            //监听提交
+            iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                if ("" == data.form.reformMeasure.value) {
+                    common.alert("请填写整改情况", "2");
+                    return;
+                }
+                var url = contextPath + '/emrdefect/savePatientEmrReformReport.jo', params = data.field, msg = "提交整改报告成功";
+                common.requestServerHandler(url, params, msg, function (result) {
+                    layer.close(index); //关闭弹层
+                    table.reload('reformListGrid', {
+                        where: queryParams
+                    })
+                })
+            });
+            submit.trigger('click');
+        }
+        
+        //挂号记录表列表
+        table.render($.extend(basePageTable, {
+            elem : '#reformListGrid',
+            height : getTableHgt(),
+            url : contextPath + '/emrdefect/patientEmrReformAndPatientListData.jo',
+            where :getQueryParams() ,
+            parseData: function(res) {
+                var dataList = res.data;
+                var returnList = new Array();
+                for (var i = 0; i < dataList.length ; i++) {
+                    var reform = dataList[i][0];
+                    var inpatient = dataList[i][1]
+                    $.extend(reform, inpatient);
+                    returnList.push(reform);
+                }
+                return {
+                    "code" : "$!{CONST.AppConstants.RESULT_SUCCESS_CODE}",
+                    "msg" : "$!{CONST.AppConstants.RESULT_SUCCESS_MSG}",
+                    "count" : res.data.totalSize,
+                    "data" : returnList
+                };
+            },
+            cols : [[{
+                type : 'numbers'
+            }
+            ,{
+                field : 'patientName',
+                title : '患者姓名',
+                width : 70
+            }
+            ,{
+                field : 'inhospitalDate',
+                title : '入院时间',
+                width : 150,
+                templet: function (row) {
+                    return util.toDateString(row.inhospitalDate);
+                }
+            }
+            ,{
+                field : 'outhospitalDate',
+                title : '离院时间',
+                width : 150,
+                templet: function (row) {
+                    return util.toDateString(row.sendTime);
+                }
+            }
+            ,{
+                field : 'senderName',
+                title : '发送人姓名',
+                width : 70
+            }
+            ,{
+                field : 'sendTime',
+                title : '发送时间',
+                width : 150,
+                templet: function (row) {
+                    return util.toDateString(row.sendTime);
+                }
+            }
+            ,{
+                field : 'reformContent',
+                title : '整改内容'
+            }
+            ,{
+                field : 'officeConfirmTime',
+                title : '整改时间',
+                width : 150,
+                templet: function (row) {
+                    if (null != row.officeConfirmTime) {
+                        return util.toDateString(row.sendTime);
+                    } else {
+                        return "";
+                    }
+                }
+            }
+            ,{
+                field : 'reformStatus',
+                title : '整改状态',
+                width : 100,
+                fixed: 'right',
+                templet: function (row) {
+                    if (null != row.reformStatus) {
+                        return null != dicReformStatus[row.reformStatus] ? dicReformStatus[row.reformStatus] : "";
+                    } else {
+                        return "";
+                    }
+                }
+            }
+            ,{
+                title: '操作',
+                width: 50,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operatebar'
+            }
+            ]]
+        }));
+    });
+  </script>
+
+<script type="text/html" id="operatebar">
+{{# if (d.reformStatus != "$!{CONST.AppConstants.REFORM_STATUS_DONE}") { }}
+    <a class="layui-btn layui-btn-xs " lay-tips="填写整改报告" lay-event="btn_edit"><i class="layui-icon"></i></a>
+{{# } }}
+</script>
+
+

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-住院医生-离院患者</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        /*工具栏图标大小*/
+        td[lay-event="open"] i.fa {
+            font-size: 18px;
+        }
+        td[lay-event="open"] i.fa {
+            font-size: 18px;
+        }
+        .layui-table { margin: 0;}
+    </style>
+</head>
+<body class="white-bg">
+<div class="layui-fluid ">
+    <!--搜索条件 结束-->
+    <div class=" layui-hide">
+        <input type="button" id="btn_query" value="查询">
+    </div>
+    <!--列表 begin-->
+    <!-- 列表表格 工具栏-->
+    <script type="text/html" id="operateFormatter">
+        <a class="" ><i class="iconfont icon-shou"></i></a>
+    </script>
+    <!-- 性别 -->
+    <script type="text/html" id="sexTpl">
+        <span class="layui-badge {{d.patientSex == 1 ? 'layui-bg-blue' : (d.patientSex == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{ dicSex[d.patientSex] || '' }}</span>
+    </script>
+    <!-- 列表表格 工具栏 结束-->
+    <!-- 列表表格 begin -->
+    <table id="leaveHospitalPatientListGrid" lay-filter="leaveHospitalPatientListGrid"></table>
+    <!--  列表表格 end -->
+    <!--列表end-->
+</div>
+<!-- 本页面js -->
+
+<script>
+    var BED_USAGE_NULL = '$!{CONST.AppConstants.BED_USAGE_NULL}';
+    var OUTHOSPITAL_FLAG = "$!{CONST.AppConstants.OUTHOSPITAL_FLAG}";
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)');
+    var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var param = parent.getQueryParam();
+            param.inhospitalStateFlag = OUTHOSPITAL_FLAG;//离院状态
+            return param;
+        }
+
+        function openDbClickBed(data){
+            parent.openLeaveHospital(data.inhospitalId, data.patientName);
+        }
+
+        /*离院患者列表*/
+        table.render($.extend(basePageTable, {
+            elem: '#leaveHospitalPatientListGrid',
+            height: 'full-10',
+            url: contextPath + '/inpatient/inpatientInhospitalJsonList.jo',
+            where: getQueryParams(),
+            cols: [[{
+                fixed: true,
+                align: 'center',
+                width: 60,
+                templet: '#operateFormatter',
+                event: 'open'
+            }, {field: 'currentBedNo', title: '床位号', width: 105, sort: true, fixed: true}, {
+                field: 'patientName',
+                title: '姓名',
+                width: 90,
+                sort: true,
+                fixed: true
+            }, {field: 'inhospitalNo', title: '住院号', width: 180}, {
+                field: 'inhospitalState',
+                title: '状态',
+                width: 100,
+                templet: function (row) {
+                    if (row.inhospitalState) {
+                        if (row.inhospitalState == "0" || row.inhospitalState == "1" || row.inhospitalState == "3") {
+                            return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                        } else {
+                            return dicInhospitalState[row.inhospitalState];
+                        }
+                    } else {
+                        return ""
+                    }
+                }
+            }, {
+                field: 'nurseLevel', title: '护理级别', width: 90, templet: function (row) {
+                    return dicNurseLevel[row.nurseLevel] || '';
+                }
+            }, {
+                field : 'healthCard',
+                title : '电子健康卡',
+                minWidth : 160,
+            }, {
+                field : 'socialSecurityCard',
+                title : '医保号',
+                minWidth : 160,
+            }, {field: 'visitCardNo', title: '就诊卡号', width: 180}, {
+                field: 'patientIdCard',
+                title: '身份证号',
+                width: 180
+            }, {
+                field: 'patientSex', title: '性别', width: 100, templet: '#sexTpl'
+            }, {field: 'patientAgeYear', title: '年龄', width: 80}, {
+                field: 'inhospitalDate',
+                title: '入院日期',
+                width: 180,
+                sort: true,
+                templet: function (row) {
+                    return row.inhospitalDate ? util.toDateString(row.inhospitalDate) : '';
+                }
+            },{
+                field : 'outhospitalDate',
+                title : '离院时间',
+                width : 200,
+                templet :function (row) {  return row.outhospitalDate ? util.toDateString(row.outhospitalDate) : ''; }
+            },  {
+                field : 'patientMedicalNo',
+                title : '病案号',
+                width : 150,
+            }, {
+                field : 'currentCondition',
+                title : '病情',
+                width : 130,
+                templet :function (row) { if (row.currentCondition) return dicPatientCondition[row.currentCondition]; else return ""}
+            }, {
+                field : 'bedDoctorName',
+                title : '管床医生',
+                width: 80
+            }]], done:function () {
+
+            }
+        }))
+
+        //表格双击事件 详情
+        table.on('rowDouble(leaveHospitalPatientListGrid)', function (obj) {
+            openDbClickBed(obj.data)
+        })
+
+        //监听行工具事件
+        table.on('tool(leaveHospitalPatientListGrid)', function(obj){
+            var layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === "open") {
+                openDbClickBed(obj.data)
+            }
+        });
+
+    })
+</script>
+</body>
+</html>

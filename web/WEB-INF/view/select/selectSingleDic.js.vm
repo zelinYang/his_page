@@ -1,0 +1,94 @@
+<script>
+  $(document).ready(function () {
+	    
+	    // 查询按钮
+	    $('#btn_query_dic').click(function (){
+	        var queryParams = common.serializeObject($('#basDic_queryForm'));
+	        var options = {url: '../basDic/basDicListData.jo', silent: false, query: queryParams};
+	        $('#basDicListGrid').bootstrapTable('refresh', options); 
+	    });
+	
+	 // 清空按钮
+	    $('#btn_clean_dic').click(function (){
+	        common.cleanForm('basDic_queryForm');
+	        $('#dicTypeId').val('');
+	    });
+
+
+	  //字典表表列表
+        $('#basDicListGrid').bootstrapTable(
+            $.extend(baseTable, {
+                url : "../basDic/basDicListData.jo",
+                queryParams : function (params){
+                    var requestParams = common.serializeObject($('#basDic_queryForm'));
+                    requestParams.pageSize = params.pageSize;
+                    requestParams.pageNumber = params.pageNumber;
+                    return requestParams;
+                },
+                columns : [
+                {checkbox : true} ,
+                {
+                    field : 'dicTypeName',
+                    title : '字典域'
+                },
+                {
+                    field : 'name',
+                    title : '字典名称'
+                },
+                {
+                    field : 'code',
+                    title : '字典编码'
+                },
+               /*  {
+                    field : 'validFlag',
+                    title : '是否有效'
+                    ,formatter: function (value, row, index) {
+                        var checked = ((value == "1") ? "checked" : "");
+                        return '<input type="checkbox" ' + checked + ' data-id="' + row.dicId + '" name="switch" value="' + value + '" />';
+                    }
+                }  */    
+                ],
+                /* onDblClickRow : function (row, element){
+                    $('#basDicListGrid').bootstrapTable('check',element.attr('data-index'));
+                    common.open('$contextPath' + '/basDic/basDicShow.do?dicId=' + row.dicId, '字典表详情', {area:['85%','85%']});
+                },
+                onLoadSuccess : function(){
+                     resizeBasDic();
+                    // 初始化是否使用的开关
+                    $('input[name="switch"]').each(function (){
+                        var switchery_3 = new Switchery(this, {});
+                    });
+                    
+                    // 监听是否使用开关点击事件
+                    $('.switchery').click(function (){
+                        var curEle = $(this).prev();
+                        if (curEle.attr('data-id') && (curEle.val() == "0" || curEle.val() == "1" )) {
+                            var validFlag = ((curEle.val() == "1") ? "0" : "1");
+                            updateValidFlag(curEle.attr('data-id'), validFlag);
+                        }
+                    });
+                }
+            } */
+            onClickRow : function (row, element){
+                if (parent.selectSingleEventBack && typeof(parent.selectSingleEventBack) == "function") {
+                    parent.selectSingleEventBack(row);
+                    // 关闭窗口
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                }
+            },
+            onLoadSuccess : function(){
+                var height = ($('#basDicTypeListGrid').parents("body").height() - $('#basDicType_queryForm').parents(".ibox").first().height()  - 130);
+                $('#basDicTypeListGrid').bootstrapTable('resetView', {height: height}); 
+            }
+        }
+            )//extends
+          );//bootstapTable
+    });//document.ready() event function
+
+ 
+    $(window).resize(function() { 
+    	var height = ($('#basDicListGrid').parents("body").height() - $('#basDic_queryForm').parents(".ibox").first().height() - 130);
+        $('#basDicListGrid').bootstrapTable('resetView', {height: height}); 
+    })
+</script>

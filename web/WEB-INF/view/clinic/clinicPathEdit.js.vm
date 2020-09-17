@@ -1,0 +1,511 @@
+<script>
+	var firstClick = true;
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicEmrParting = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrParting)');
+	var dicInpatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientCondition)');
+	var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+	var dicPathStageType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathStageType)');
+	var autocomplete;
+	var clinicPathId = '$!{clinicPathId}';
+	var copyClinicPathId = '$!{copyClinicPathId}';
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'table', 'autocomplete'], function () {
+		var form = layui.form, element = layui.element, table = layui.table;
+		autocomplete = layui.autocomplete;
+		var $ = layui.$;
+		var selectedApplicableDisease = '';
+		var selectedReceivingDisease = '';
+		var selectedOrg = '';
+		var orgNameTable, stageTable, activityTable;
+		var curTr;
+		var tabFlag = '0';
+		var clinicPathStageId;
+		form.render('select');
+
+		$(function () {
+			console.log(clinicPathId);
+			if (clinicPathId || copyClinicPathId) {
+				showData(clinicPathId || copyClinicPathId);
+			}
+			if ($('input[name=ispay]').is('checkbox')) {
+				$(".singleDisease").show();
+			}
+		});
+
+		//监听导航菜单点击事件
+		element.on('tab(inSettNav)', function(elem){
+			var layId = $(this).attr('lay-id');
+			var href = $(this).attr('href');
+			var patient = $(this).attr('patient');
+
+			if (href) {
+				url = href; //使用已有的url
+				reqIframe(layId,url);
+			}
+
+		});
+
+		//iframe请求页
+		function reqIframe(layId,url,force) {
+			var destIframe = $('div[lay-id="'+layId+'"] iframe');
+			if(!destIframe.attr('src') || force) {
+				destIframe.attr('src',url);
+			}
+		}
+
+		form.on('checkbox(singleDiseaseFlag)', function(data){
+			if (data.elem.checked) {
+				$(".singleDisease").show();
+			} else {
+				$(".singleDisease").hide();
+			}
+		});
+
+		function showData(clinicPathId) {
+			common.post(contextPath + '/clinic/clinicPathInfo.jo', {clinicPathId: clinicPathId}, function (result){
+				console.log(result);
+				if (!copyClinicPathId) {
+					$('#clinicPathId').val(result.data.clinicPath.clinicPathId);
+				}
+				$('#clinicPathName').val(result.data.clinicPath.clinicPathName);
+				$('#clinicPathParting').val(result.data.clinicPath.clinicPathParting);
+				$('#clinicPathDesc').val(result.data.clinicPath.clinicPathDesc);
+				$('#inpatientCondition').val(result.data.clinicPath.inpatientCondition);
+				$('#sexFlag').val(result.data.clinicPath.sexFlag);
+				$('#ageStart').val(result.data.clinicPath.ageStart);
+				$('#ageEnd').val(result.data.clinicPath.ageEnd);
+				$('#ageUnit').val(result.data.clinicPath.ageUnit);
+				$('#clinicPathGroup').val(result.data.clinicPath.clinicPathGroup);
+				$("input:radio[name=pathFlag][value=" + result.data.clinicPath.pathFlag + "]").attr("checked",true);
+				if (result.data.clinicPath.pathFlag === '0') {
+					$("#selectOrg").show();
+				}
+				if (result.data.clinicPath.pathFlag === '1') {
+					$('#selectOrg').hide();
+				} else {
+					if (!orgNameTable) {
+						generateOrgTable();
+					}
+				}
+				$('#inputPathDay').val(result.data.clinicPath.inputPathDay);
+				$('#surgerPutOff').val(result.data.clinicPath.surgerPutOff);
+				$('#hospitalStayDay').val(result.data.clinicPath.hospitalStayDay);
+				$('#hospitalStayRange').val(result.data.clinicPath.hospitalStayRange);
+				$('#estimatedCost').val(result.data.clinicPath.estimatedCost);
+				$('#pathDiseaseId').val(result.data.clinicPath.pathDiseaseId);
+				$('#pathDiseaseName').val(result.data.clinicPath.pathDiseaseName);
+				$('#pathDiseaseIcdTcd').val(result.data.clinicPath.pathDiseaseIcdTcd);
+				if (result.data.clinicPath.allowNormalFinishFlag === '1') {
+					$('#allowNormalFinishFlag').attr('checked', 'checked');
+				}
+				if (result.data.clinicPath.singleDiseaseFlag === '1') {
+					$('#singleDiseaseFlag').attr('checked', 'checked');
+					$(".singleDisease").show();
+				}
+				if (result.data.clinicPath.auditFlag === '1' || result.data.clinicPath.auditFlag === '2') {
+					$('.save-button').find('button').hide();
+				}
+				table.reload('inputDiseaseTable', {
+					data: result.data.inputDiseaseList
+				});
+				table.reload('jumpDiseaseTable', {
+					data: result.data.jumpDiseaseList
+				});
+				if (result.data.clinicPathOfficeList) {
+					table.reload('orgNameTable', {
+						data: result.data.clinicPathOfficeList
+					});
+				}
+				form.render();
+			});
+		}
+
+		form.on('submit(btn_save)', function (data) {
+			var field = data.field; //获取提交的字段
+			$.extend(field, getFieldValue());
+			if (!field.inputDiseaseIdStr) {
+				common.alert('请选择进入路径病种', 2);
+				return;
+			}
+			field.auditFlag = '0';
+			common.confirm('确认保存吗？', function () {
+				saveClinicPath(field);
+			})
+		});
+
+		form.on('submit(btn_submit)', function (data) {
+			var field = data.field; //获取提交的字段
+			$.extend(field, getFieldValue());
+			if (!field.inputDiseaseIdStr) {
+				common.alert('请选择进入路径病种', 2);
+				return;
+			}
+			field.auditFlag = '1';
+			common.confirm('提交审核后将不能修改，确认提交审核吗？', function () {
+				saveClinicPath(field);
+			})
+		});
+
+		function saveClinicPath(field) {
+			$.post(contextPath + "/clinic/saveClinicPath.jo", field, function (result) {
+				if (result.code === "0") {
+					common.msg("保存成功!", 1, function () {
+						var url = location.href;
+						var index = url.indexOf('?');
+						if (index < 0) {
+							location.href = url + '?clinicPathId=' + result.data.clinicPathId;
+						} else {
+							location.href = url.substring(0, index) + '?clinicPathId=' + result.data.clinicPathId;
+						}
+						$('iframe[src="/cloud_his/clinic/clinicPathList.do"]', parent.document).contents().find('#btn_query').click();
+					});
+				} else {
+					common.alert(result.msg, 0);
+				}
+			}, "json");
+		}
+
+		var inputDiseaseTable = table.render({
+			data: [],
+			id: 'inputDiseaseTable',
+			elem: '#inputDiseaseTable',
+			height: 200,
+			cols: [[
+				{field: 'diseaseIcdTcd', title: '编码', width: 150},
+				{field: 'diseaseName', title: '名称'},
+				{fixed: 'right', title:'操作', toolbar: '#delBar', width:50}
+			]],
+			page: false,
+			limit : 20,
+			request: {
+				pageName: 'pageNumber',
+				limitName: 'pageSize'
+			},
+			done: function () {
+
+			}
+		});
+		var jumpDiseaseTable = table.render({
+			data: [],
+			id: 'jumpDiseaseTable',
+			elem: '#jumpDiseaseTable',
+			height: 200,
+			cols: [[
+				{field: 'diseaseIcdTcd', title: '编码', width: 150},
+				{field: 'diseaseName', title: '名称'},
+				{fixed: 'right', title:'操作', toolbar: '#delBar', width:50}
+			]],
+			page: false,
+			limit : 20,
+			request: {
+				pageName: 'pageNumber',
+				limitName: 'pageSize'
+			},
+			done: function () {
+
+			}
+		});
+		table.on('row(inputDiseaseTable)', function (obj) {
+			selectedApplicableDisease = obj.tr;
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.inputDiseaseTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function(i, item){
+				if(index === i){
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+		});
+		table.on('row(jumpDiseaseTable)', function (obj) {
+			selectedReceivingDisease = obj.tr;
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.jumpDiseaseTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function(i, item){
+				if(index === i){
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+		});
+
+		form.on('radio(pathFlag)', function(data){
+			if (data.value === '1') {
+				$('#selectOrg').hide();
+			} else {
+				$('#selectOrg').show();
+				if (!orgNameTable) {
+					generateOrgTable();
+				}
+			}
+		});
+
+		//监听行工具事件
+		table.on('tool(mainTable)', function(obj){
+			if (obj.event === 'del'){
+				layer.confirm('确定删除这条数据吗？', function(index){
+					common.post(contextPath + '/clinic/deleteClinicPath.jo', {clinicPathId: obj.data.clinicPathId}, function (result){
+						table.reload('mainTable'); //数据刷新
+						layer.close(index);
+					});
+				});
+			}
+		});
+		table.on('tool(inputDiseaseTable)', function(obj){
+			if (obj.event === 'del'){
+				layer.confirm('确定删除这条数据吗？', function(index){
+					obj.del();
+					updateTableData('inputDiseaseTable');
+					layer.close(index);
+				});
+			}
+		});
+		table.on('tool(jumpDiseaseTable)', function(obj){
+			if (obj.event === 'del'){
+				layer.confirm('确定删除这条数据吗？', function(index){
+					obj.del();
+					updateTableData('jumpDiseaseTable');
+					layer.close(index);
+				});
+			}
+		});
+		table.on('tool(orgNameTable)', function(obj){
+			if (obj.event === 'del'){
+				layer.confirm('确定删除这条数据吗？', function(index){
+					obj.del();
+					updateTableData('orgNameTable');
+					layer.close(index);
+				});
+			}
+		});
+		function updateTableData(tableId) {
+			var tableData = table.cache[tableId];
+			console.log(tableData);
+			for (var i = 0; i < tableData.length; i++) {
+				if (JSON.stringify(tableData[i]) === '[]') {
+					tableData.splice(i, 1);
+				}
+			}
+			table.reload(tableId, {
+				data: tableData
+			});
+		}
+
+		//病种名称
+		$('input[name="diseaseName"], input[name="pathDiseaseName"]').each(function () {
+			bindDiseaseSearch(this);
+		})
+		//科室名称
+		$('input[name="orgName"]').each(function () {
+			bindOrgSearch(this);
+		});
+
+		// 绑定病种检索
+		function bindDiseaseSearch(elem) {
+			// 检索病种
+			var diseacs =autocomplete.render({
+				cache: false,
+				method: 'post',
+				searchField: 'keyWord',
+				elem: elem,
+				url: contextPath + '/basDisease/basDiseaseListData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+				template_val: '{{d.diseaseName}}',
+				template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{dicDiseaseTypeFlag[d.diseaseTypeFlag]}}</span>&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{d.diseaseIcdTcd}}</strong>&nbsp;&nbsp;&nbsp;{{d.diseaseName}}',
+				onselect: function (obj) {
+					var tableId = $(elem).parent().find('table').prop('id');
+					if (tableId) {
+						var tableData = table.cache[tableId];
+						tableData.push({
+							'diseaseId': obj.diseaseId,
+							'diseaseName': obj.diseaseName,
+							'diseaseIcdTcd': obj.diseaseIcdTcd
+						});
+						table.reload(tableId, {
+							data: tableData
+						});
+						$(elem).val('');
+						form.render();
+					} else {
+						$(elem).parent().find('input[name=pathDiseaseId]').val(obj.diseaseId);
+						$(elem).parent().find('input[name=pathDiseaseIcdTcd]').val(obj.diseaseIcdTcd);
+					}
+				}
+			});
+
+		}
+		// 绑定部门检索
+		function bindOrgSearch(elem) {
+			// 检索病种
+			var diseacs =autocomplete.render({
+				cache: false,
+				method: 'post',
+				searchField: 'keyWord',
+				elem: elem,
+				url: contextPath + '/org/sysOrgListData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+				template_val: '{{d.name}}',
+				template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{d.orgId}}</span>&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{d.orgCode}}</strong>&nbsp;&nbsp;&nbsp;{{d.name}}',
+				onselect: function (obj) {
+					var tableId = $(elem).parent().find('table').prop('id');
+					var tableData = table.cache[tableId];
+					tableData.push({
+						'relateOfficeId': obj.orgId,
+						'relateOfficeName': obj.name
+					});
+					table.reload(tableId, {
+						data: tableData
+					});
+					$(elem).val('');
+					form.render();
+				}
+			});
+
+		}
+
+		function generateOrgTable() {
+			orgNameTable = table.render({
+				data: [],
+				id: 'orgNameTable',
+				elem: '#orgNameTable',
+				height: 200,
+				cols: [[
+					{field: 'relateOfficeId', title: 'ID', width: 150},
+					{field: 'relateOfficeName', title: '名称'},
+					{fixed: 'right', title:'操作', toolbar: '#delBar', width:50}
+				]],
+				page: false,
+				limit : 20,
+				request: {
+					pageName: 'pageNumber',
+					limitName: 'pageSize'
+				},
+				done: function () {
+
+				}
+			});
+
+			//点击选择
+			table.on('row(orgNameTable)', function (obj) {
+				selectedOrg = obj.tr;
+				obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+				obj.tr.find('input[lay-type="layTableRadio"]').prop("checked",true);
+				var index = obj.tr.data('index');
+				var thisData = table.cache.orgNameTable;//tableName 表名
+				//重置数据单选属性
+				layui.each(thisData, function(i, item){
+					if(index === i){
+						item.LAY_CHECKED = true;
+					} else {
+						delete item.LAY_CHECKED;
+					}
+				});
+				form.render('radio');
+			});
+		}
+
+		$('#btn_path_edit').click(function () {
+			tabFlag = '0';
+		});
+		$('#btn_path_draft').click(function () {
+			tabFlag = '1';
+			var clinicPathId = $('#clinicPathId').val();
+			console.log(clinicPathId);
+			if (!clinicPathId) {
+				$('#btn_path_edit').click();
+				return;
+			}
+			generateStageTable(clinicPathId);
+			//电子病历模板
+			$('input[name="emrTlpName"]').each(function () {
+				bindEmrSearch(this);
+			});
+		});
+
+		// 绑定部门检索
+		function bindEmrSearch(elem) {
+			// 检索病种
+			var emr = autocomplete.render({
+				cache: false,
+				method: 'post',
+				searchField: 'keyWord',
+				elem: elem,
+				url: contextPath + '/emrTlp/emrTlpPageData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+				template_val: '{{d.emrTlpName}}',
+				template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{d.emrTlpId}}</span>&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{d.emrTlpVersion}}</strong>&nbsp;&nbsp;&nbsp;{{d.emrTlpName}}',
+				onselect: function (obj) {
+					var tableData = table.cache['emrTlpTable'];
+					tableData.push({
+						'emrTlpId': obj.emrTlpId,
+						'emrTlpName': obj.emrTlpName
+					});
+					table.reload('emrTlpTable', {
+						data: tableData
+					});
+					$(elem).val('');
+					form.render();
+				}
+			});
+
+		}
+
+		function getFieldValue() {
+			var data = {};
+			var pathFlag = $('input[name="pathFlag"]:checked').val();
+			if (pathFlag === '0') {
+				var orgData = table.cache['orgNameTable'];
+				var orgIds = [];
+				for (var i = 0; i < orgData.length; i++) {
+					orgIds.push(orgData[i].relateOfficeId);
+				}
+				data['orgIdsStr'] = orgIds.join(',');
+			}
+			var inputDiseaseData = table.cache['inputDiseaseTable'];
+			var inputDiseaseIds = [];
+			for (var i = 0; i < inputDiseaseData.length; i++) {
+				inputDiseaseIds.push(inputDiseaseData[i].diseaseId);
+			}
+			data['inputDiseaseIdStr'] = inputDiseaseIds.join(',');
+			var jumpDiseaseData = table.cache['jumpDiseaseTable'];
+			var jumpDiseaseIds = [];
+			for (var i = 0; i < jumpDiseaseData.length; i++) {
+				jumpDiseaseIds.push(jumpDiseaseData[i].diseaseId);
+			}
+			data['jumpDiseaseIdStr'] = jumpDiseaseIds.join(',');
+			if ($('#singleDiseaseFlag').prop("checked")) {
+				data['singleDiseaseFlag'] = '1';
+			} else {
+				data['singleDiseaseFlag'] = '0';
+			}
+			if ($('#allowNormalFinishFlag').prop("checked")) {
+				data['allowNormalFinishFlag'] = '1';
+			} else {
+				data['allowNormalFinishFlag'] = '0';
+			}
+			return data;
+		}
+
+		// 获取表格高度
+		function getMainTableHeight() {
+			return ($('body').height() - 20);
+		}
+		// 获取表格高度
+		function getOtherTableHeight() {
+			return ($('body').height() - 60);
+		}
+		$(window).resize(function () {
+			table.reload('mainTable',{
+				height:getMainTableHeight()
+			})
+		})
+	});
+
+</script>

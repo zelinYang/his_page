@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}-发票作废表管理</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+</head>
+
+<body class="white-bg">
+    <form id="billCancelForm" class="form-horizontal full-height-scroll">
+        <!-- 表单 开始 -->
+        <div class="table-content">
+            <input type="hidden" id="submitFlag" >
+            #formHiddenInput("billCancelId" "$!{billCancel.billCancelId}" " id='billCancelId' ")
+
+            <div class="form-group">
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()发票领用ID</label>
+                <div class="col-sm-3 p-r-none">
+                    #formIntInput("billRecipientId" $!{billCancel.billRecipientId} " id='billRecipientId' maxlength='255' adapter='required' required-msg='请填写发票领用ID' class='form-control'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()作废人</label>
+                <div class="col-sm-3 p-r-none">
+                    #formIntInput("cancelPersonId" $!{billCancel.cancelPersonId} " id='cancelPersonId' maxlength='255' adapter='required' required-msg='请填写作废人' class='form-control'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()作废人</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("cancelPersonName" "#htmlEscape($!{billCancel.cancelPersonName})" " id='cancelPersonName' maxlength='10' adapter='required' required-msg='请填写作废人' class='form-control'")
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">作废原因</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("cancelReason" "#htmlEscape($!{billCancel.cancelReason})" " id='cancelReason' maxlength='100' class='form-control'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">作废时间</label>
+                <div class="col-sm-3 p-r-none">
+                    #formLayDateInput("cancelTime" $!{billCancel.cancelTime} " maxlength='10' class='form-control layer-date' ")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()医疗机构</label>
+                <div class="col-sm-3 p-r-none">
+                    #formIntInput("hospitalId" $!{billCancel.hospitalId} " id='hospitalId' maxlength='255' adapter='required' required-msg='请填写医疗机构' class='form-control'")
+                </div>
+            </div>
+            <div class="form-group">
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()起始号</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("startNum" "#htmlEscape($!{billCancel.startNum})" " id='startNum' maxlength='10' adapter='required' required-msg='请填写起始号' class='form-control'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">结束号</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("endNum" "#htmlEscape($!{billCancel.endNum})" " id='endNum' maxlength='10' class='form-control'")
+                </div>
+            </div>
+
+
+        </div>
+        <!-- 表单 结束 -->
+    </form>
+    <div class="tool-bottom-fixed">
+        <button id="btn_save" type="button" class="btn btn-outline btn-primary"><i class="fa fa-clone"></i> 保存</button>
+    </div>
+</body>
+
+#parse("./bill/billCancel/billCancelEdit.js.vm")
+</html>

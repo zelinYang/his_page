@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle} 临床一体化平台</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style>
+        .member-left {
+            position: absolute;
+            top: 50px;
+            left: 0;
+        }
+    </style>
+</head>
+<body class="layui-layout-body">
+
+<div id="LAY_app">
+    <div class="tab layui-hide">
+        <a id="mainTabMenu" lay-href="">tab弹框链接</a>
+    </div>
+    <div class="layui-layout layui-layout-admin">
+        <!-- 头部区域 -->
+        <div class="layui-header">
+            <div class="layui-logo-img">
+                #* <cite> --- <span id="modeName"></span></cite>*#
+            </div>
+
+            <ul class="layui-nav layui-layout-right" lay-filter="layadmin-layout-right">
+
+                <li class="layui-nav-item" lay-unselect>
+                    <a href="javascript:;" layadmin-event="fullscreen" title="全屏/半屏切换">
+                        <i class="layui-icon layui-icon-screen-full"></i>
+                    </a>
+                </li>
+                <!--<li class="layui-nav-item layui-hide-xs" lay-unselect>
+                    <a href="javascript:;" layadmin-event="refresh" title="刷新">
+                        <i class="layui-icon layui-icon-refresh-3"></i>
+                    </a>
+                </li>-->
+                <li class="layui-nav-item " lay-unselect="">
+                    <a href="javascript:;">
+                        $!{currentUser.unitOrgName}
+                    </a>
+                </li>
+                <li class="layui-nav-item layui-hide-xs" lay-unselect>
+                    <a href="javascript:;" style="padding-right: 20px;">
+                        <cite>$!{currentUser.name}</cite>
+                    </a>
+                    <dl class="layui-nav-child">
+                        <dd><a lay-href="sys/info.do">基本资料</a></dd>
+                        <dd><a lay-href="sys/passwordEdit.do">修改密码</a></dd>
+                        <!-- <hr>
+                        <dd layadmin-event="logout" style="text-align: center;"><a>退出</a></dd> -->
+                    </dl>
+                </li>
+                <li class="layui-nav-item " lay-unselect>
+                    <a id="convert" href="javascript:;" layadmin-event="about" class="p-r-n">切换系统 <i
+                            class="layui-icon layui-icon-more-vertical"></i></a>
+                </li>
+                <li class="layui-nav-item" lay-unselect>
+                    <a href="javascript:void(0);" onclick="quitSystem()" title="安全退出">
+                        <i class="layui-icon iconfont icon-logout"></i>
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 左侧边菜单 -->
+        <div class="member-left full-height layui-hide">
+            <div class="tab_page_menu">
+                <ul id="rootMenu"></ul>
+            </div>
+            <div id="searchMenuContainer">
+                <div class="searchMenu layadmin-flexible" lay-unselect>
+                    <input id="searchMenu" type="text" class="inputMenu" placeholder="菜单搜索">
+                    <span layadmin-event="flexible">
+                        <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
+                    </span>
+                </div>
+                <div id="leftMenu" class="tab_box"></div>
+                <!--菜单搜索层-->
+                <dl class="searchMenu-lay">
+                </dl>
+            </div>
+
+        </div>
+
+        <!-- 页面标签卡 -->
+        <div class="layadmin-pagetabs main-pages" id="LAY_app_tabs">
+            <div class="layui-icon layadmin-tabs-control layui-icon-prev" layadmin-event="leftPage"></div>
+            <div class="layui-icon layadmin-tabs-control layui-icon-next" layadmin-event="rightPage"></div>
+            <div class="layui-icon layadmin-tabs-control layui-icon-down">
+                <ul class="layui-nav layadmin-tabs-select" lay-filter="layadmin-pagetabs-nav">
+                    <li class="layui-nav-item" lay-unselect>
+                        <a href="javascript:;"></a>
+                        <dl class="layui-nav-child layui-anim-fadein">
+                            <dd layadmin-event="closeThisTabs"><a href="javascript:;">关闭当前标签页</a></dd>
+                            <dd layadmin-event="closeOtherTabs"><a href="javascript:;">关闭其它标签页</a></dd>
+                            <dd layadmin-event="closeAllTabs"><a id="closeAllTabs" href="javascript:;">关闭全部标签页</a></dd>
+                        </dl>
+                    </li>
+                </ul>
+            </div>
+            <div class="layui-tab" lay-unauto lay-allowClose="true" lay-filter="layadmin-layout-tabs">
+                <ul class="layui-tab-title" id="LAY_app_tabsheader">
+                    <!-- <li lay-id="home" lay-attr="" id="home" class="layui-this">医生桌面</li> -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- 主体内容 -->
+        <div class="layui-body main-pages" id="LAY_app_body">
+            <div class="layadmin-tabsbody-item layui-show">
+                <iframe src="" frameborder="0" class="layadmin-iframe"></iframe>
+            </div>
+        </div>
+
+        <!-- 辅助元素，一般用于移动设备下遮罩 -->
+        <div class="layadmin-body-shade" layadmin-event="shade"></div>
+
+        <!--右侧边栏开始-->
+        <div id="right-sidebar" style="float: right;z-index: 999999;width: 500px;margin-top: 150px; display: none;">
+            <!-- 系统菜单 -->
+            <ul id="rightMenu" class="right-nav">
+                #set($rootMenu = $!sysMenuData.get("sys$!defaultSysType"))
+                #if("$!rootMenu.children" != "")
+                    #set($href = "")
+                    #foreach($root in $!rootMenu.children)
+                        #if("$!root.href" != "")
+                            #set($href = $!root.href)
+                        #else
+                            #set($href = "")
+                        #end
+                        <li>
+                            <a onclick="javascript:void(0);" id="menu_$!root.id" fun-id="$!root.id"
+                               data-menu='$!dicTools.changeMapToJson($!root)' data-href="$!href">
+                                <i class="$!root.icon"></i> <span>$!root.text </span>
+                            </a>
+                        </li>
+                    #end
+                #end
+            </ul>
+        </div>
+        <!--右侧边栏开始 end-->
+    </div>
+</div>
+    #parse("./common/pageJs.vm")
+<script>
+    var menuData;//当前点击菜单数据
+    var desktop;
+    var buildLeftMenu;
+    //2500=收费系统，2501=预约挂号，2502=门诊医生
+    var hideModuleId = ['2500', '2501', '2502'];//2502
+    var medicalDocMenuId = '3882' //医疗文书菜单主键
+    // 在主页打开tab选项卡
+    function openTabMenu(opt) {
+        $('#mainTabMenu').attr('lay-href', opt.href);
+        $('#mainTabMenu').attr('data-id', opt.index);
+        $('#mainTabMenu').text(opt.title);
+        $('#mainTabMenu').click();
+    }
+
+    function quitSystem() {
+        layer.confirm('是否确认退出系统?', {icon: 0, title: '提示'}, function (index) {
+            window.location.href = '$contextPath/logout.action';
+            layer.close(index);
+        });
+    }
+
+    function systemNoAccess() {
+        layer.confirm('当前用户无授权模块，请联系管理员授权！', {icon: 0, closeBtn: 0, title: '提示', btn: ['退出系统']}, function (index) {
+            window.location.href = '$contextPath/logout.action';
+            layer.close(index);
+        });
+    }
+
+    layui.config({
+        base: '$contextPath/resource/layuiadmin/',
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['index', 'element'], function () {
+        var element = layui.element;
+        buildLeftMenu = function (menuObj) {
+            menuData = menuObj
+
+            menu = $.parseJSON(menuObj);
+            $('#closeAllTabs').trigger("click");
+            $('#modeName').html(menu.text);
+
+            var container = $('#side-menu');
+            container.html('');
+
+            if (menu.children && !menu.href) {
+                buildMenu(menu.children)
+
+                $('.layadmin-pagetabs').removeClass('layadmin-pagetabs-left-no');
+                $('.layui-layout-admin .layui-body').removeClass('layui-body-left-no');
+                $('.member-left').removeClass('layui-hide');//显示左侧菜单
+                $('#LAY_app_tabs').removeClass('layui-hide');
+                $('.layui-side').removeClass('layui-hide');
+                $('#LAY_app_body').removeClass('layui-body-min-top');
+
+                // 打开第一选项卡
+                $(".tab_page_menu ul li:first").click();
+            } else {
+                var menuDataArr = [];
+                menuDataArr.push(menu);
+                buildMenu(menuDataArr)
+
+                $('.layadmin-pagetabs').addClass('layadmin-pagetabs-left-no');
+                $('.layui-layout-admin .layui-body').addClass('layui-body-left-no');
+                $('.member-left').addClass('layui-hide');//隐藏左侧菜单
+                //$('#LAY_app_tabs').addClass('layui-hide');
+                //$('#LAY_app_body').addClass('layui-body-min-top');
+
+                //需要隐藏的模块
+                if (hideModuleId.contains(menu.id)) {
+                    $('#LAY_app_tabs').addClass('layui-hide');
+                    $('#LAY_app_body').addClass('layui-body-min-top');
+                    $('.layui-side').addClass('layui-hide');
+                } else {
+                    $('#LAY_app_tabs').removeClass('layui-hide');
+                    $('#LAY_app_body').removeClass('layui-body-min-top');
+                }
+
+                var opt = {href: menu.href, title: menu.text}
+                openTabMenu(opt)//打开新标签页
+            }
+            if ($('#LAY_app_flexible').hasClass('layui-icon-spread-left')) {
+                $('#LAY_app_flexible').click();//展示左侧菜单
+            }
+            //关闭遮罩(隐藏右侧弹出内容)
+            $('.layui-layer-shade').trigger("click");
+        }
+
+        function buildMenu(data) {
+            var html = [];
+            var tabContent = [];
+            $.each(data, function (i, r) {
+                html.push('<li id="' + r.id + '" ' + (r.children === undefined || 'data-menu=' + JSON.stringify(r.children).replace(/\s+/g, "@")) + '><span><i class="' + r.icon + '"></i><p>' + r.text + '</p></span></li>');
+                tabContent.push('<div class="container_page full-height-scroll"><ul id="leftMenu_' + i + '" class="layui-nav layui-nav-tree layui-inline side-tree" style=""></ul></div>');
+            });
+            $('#rootMenu').html(html.join(''));
+            $('#leftMenu').html(tabContent.join(''));
+
+            /*跟菜单页选项卡切换监听*/
+            $(".tab_page_menu ul li").click(function () {
+                var index = $(".tab_page_menu ul li").index(this);
+                $(this).addClass("selected").siblings().removeClass("selected");
+                $(".tab_box .container_page").eq(index).addClass("selected").siblings().removeClass("selected");
+
+                // 菜单数据
+                var menuHtml = [];
+                var hasChild = false; // 标识是否有子菜单
+                var strData = $(this).attr('data-menu');
+                var data = (strData === undefined ? {} : JSON.parse(strData));
+                $.each(data, function (i, r) {
+                    var href = r.href ? contextPath + "/" + r.href : '';
+                    var path = href.split('?');
+
+                    menuHtml.push('<li id="' + r.id + '" class="layui-nav-item">');
+                    menuHtml.push('<a id="' + r.id + '" href="javascript:void(0);" title="' + r.text + (href ? '" lay-href="' + href : '') + '"><i class="' + (r.icon && r.icon.replace('@', ' ')) + '"></i><span>' + r.text + '</span></a>');
+                    if (r.children && r.children.length > 0) {
+                        hasChild = true;
+                        menuHtml.push('<dl class="layui-nav-child">');
+                        $.each(r.children, function (j, v) {
+                            href = v.href ? contextPath + "/" + v.href : '';
+                            menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.text + (href ? '" lay-href="' + href : '') + '">' + v.text + '</a></dd>');
+                        });
+                        menuHtml.push('</dl>');
+                    }
+                    menuHtml.push('</li>');
+                });
+                $('#leftMenu_' + index).html(menuHtml.join(''));
+                // 重新渲染菜单标签元素
+                element.render();
+
+                if (hasChild) {
+                    // 监听左边树型菜单展开和收缩
+                    $('#leftMenu li.layui-nav-item').click(function () {
+                        $('#leftMenu li.layui-nav-item').each(function () {
+                            $(this).removeClass('layui-nav-itemed');
+                        });
+                        $(this).addClass('layui-nav-itemed');
+                    });
+                    // 默认打开第一个树型菜单
+                    $('#leftMenu li.layui-nav-item:first').click();
+                } else {
+                    //无子菜单 打开首个菜单
+                    $('#leftMenu li.layui-nav-item:first a').click();
+                }
+            });
+
+            // 打开第一选项卡
+            //$(".tab_page_menu ul li:first").click();
+
+            // 监听检索菜单
+            $('#searchMenu').bind('input propertychange', function () {
+                var html = [];
+                var value = $(this).val();
+                $("dl.searchMenu-lay").html('');
+                if (!value) {
+                    return;
+                }
+                $.each(menu, function (i, m) {
+                    var rootId = m.id;
+                    if (!m.children) {
+                        return true;
+                    }
+                    $.each(m.children, function (j, c) {
+                        var reg = RegExp("^.*" + value + ".*$");
+                        if (reg.test(c.text)) {
+                            var selector = (c.href ? 'a#' : "li#") + c.id;
+                            html.push('<dd pId="' + rootId + '" id="' + selector + '" ><a href="javascript:void(0);">' + c.text + '</a></dd>');
+                        }
+                        if (!c.children) {
+                            return true;
+                        }
+                        $.each(c.children, function (k, v) {
+                            var reg = RegExp("^.*" + value + ".*$");
+                            if (reg.test(v.text)) {
+                                html.push('<dd pId="' + rootId + '" id="a#' + v.id + '"><a href="javascript:void(0);">' + v.text + '</a></dd>');
+                            }
+                        });
+                    });
+                });
+                $("dl.searchMenu-lay").html(html.join(''));
+                $("dl.searchMenu-lay > dd").click(function () {
+                    var pId = $(this).attr('pId');
+                    var menuId = $(this).attr('id');
+                    $('li#' + pId).click();
+                    $(menuId).click();
+                    $("dl.searchMenu-lay").hide();
+                });
+                $("dl.searchMenu-lay").show();
+            });
+        }
+
+        $('#searchMenuContainer').mouseleave(function () {
+            $("dl.searchMenu-lay").html('');
+            $("dl.searchMenu-lay").hide();
+        });
+
+        //进入菜单界面
+        function enter() {
+            //默认第一个菜单
+            // var firstMenu = $("#rightMenu").find('li:first').find("a:first");
+            var firstMenu = $("#rightMenu").find('li:eq(0)').find("a:first");
+            var menuData = firstMenu.attr('data-menu');
+            if (undefined == menuData) {
+                systemNoAccess();
+                return false;
+            }
+            buildLeftMenu(menuData);
+        }
+
+        //执行
+        enter();
+    });
+
+</script>
+    #* session refresh start *#
+<script>
+    $(function () {
+        //5分钟刷新一次session
+        var time = 5 * 59 * 1000;
+        var interval;
+
+        //alert("time:" + time);
+        function run() {
+            interval = setInterval(fun, time);
+        }
+
+        jQuery(document).ready(function () {
+            if (window.history && window.history.pushState) {
+                $(window).on('popstate', function () {
+                    layer.confirm('是否确认退出系统?', {icon: 0, title: '提示'}, function (index) {
+                        window.location.href = '$contextPath/logout.action';
+                        layer.close(index);
+                    });
+                    /// 当点击浏览器的 后退和前进按钮 时才会被触发，
+                    window.history.pushState('forward', null, '');
+                    window.history.forward(1);//当前页 ,
+                });
+            }
+            //在ie中必须有这两行
+            window.history.pushState('forward', null, '');
+            window.history.forward(1);
+        });
+
+        function fun() {
+            $.ajax({
+                type: 'get',
+                dataType: "json",
+                async: false,
+                url: '${sessionRefreshUrl}?isDebug=true',
+                success: function (data) {
+                }
+            });
+        };
+        run();
+    });
+</script>
+    #* session refresh end *#
+</body>
+</html>
+
+

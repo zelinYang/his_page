@@ -1,0 +1,161 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+
+    var ORDER_TYPE_INJECTION_MEDICINE = "$!{CONST.AppConstants.ORDER_TYPE_INJECTION_MEDICINE}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+
+    //挂号类型
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+    /**父页面的菜单点击要注意清空和修改操作、子页面休息修改保存，也会更新此信息**/
+        //全局对象=grobalModel： {patientId:'患者id',registerId:'挂号记录ID',outpatientId:'门诊就诊ID',urgencyFlag:'急诊标识'}
+    var grobalModel = {patientId:'',registerId:'',outpatientId:'',urgencyFlag:0,recipeId:''}
+    var grobalModels = [];
+
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laydate', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laydate = layui.laydate, util = layui.util;
+        var element = layui.element;
+
+        // 获取表格高度
+        function getPatientTableHgt() {
+            return ($('body').height() - $('#patient_queryForm').height() - $('.layui-tab-title.btn').height() - 50);
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('patientGeneralListGrid', {
+                where: queryParams
+            });
+        })
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('patient_queryForm');
+            $("#region_breadcrumb").html('');
+        })
+
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var params = {
+                exeOfficeId: '',
+                visitCardNo: '',
+                patientName: '',
+                registerTimeBegin: '',
+                registerTimeEnd: '',
+                doctorOrderType: ORDER_TYPE_INJECTION_MEDICINE
+            };
+            return $.extend(params, common.serializeObject($('#patient_queryForm')));
+        }
+
+        //表格设置 普通患者
+        table.render($.extend({}, basePageTable, {
+            elem: '#patientGeneralListGrid',
+            height: getPatientTableHgt(),
+            url: contextPath + '/outpatient/recipeItemPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'checkbox'
+            }, {
+                field: 'exeOfficeName',
+                title: '科室',
+                minWidth: 110
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 90
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                width: 60,
+                templet: '#sexTpl'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号',
+                minWidth: 180
+            }, {
+                field: 'registerTime',
+                title: '就诊时间',
+                width: 140,
+                templet: function (row) {
+                    return util.toDateString(row.registerTime, 'yyyy-MM-dd HH:mm');
+                }
+            }]]
+        }));
+        //普通患者复选框事件
+        table.on('checkbox(patientGeneralListGrid)', function(obj){
+            var checkStatus = table.checkStatus('patientGeneralListGrid')
+                ,data = checkStatus.data; //获取选中的数据
+            if(data.length === 0){
+                grobalModel = {};
+                return;
+            }
+            var recipeItemIds = $.map(data, function (item) {
+                return item.recipeItemId
+            })
+            grobalModels=data
+
+           /* grobalModel = data[0]
+            //$('.layui-tab[lay-filter="outpatientNurseNav"] > .layui-tab-title li.layui-this').click();
+            var url = "../emr/commonEmrTemplate.do?emrTlpId=921&view=patient/emr/commonEmrPreview&showBtn=0";
+            $("#tmpPreview").attr('src',url + (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel)).load(function () {
+                common.closeLoad();
+                console.log($(this).find('iframe').contents().find('iframe').contents().find('body'))
+            });*/
+        });
+
+        //普通患者监听行单击事件
+        table.on('row(patientGeneralListGrid)', function (obj) {
+            var row = obj.data;
+            grobalModel = row;
+            $('.layui-tab[lay-filter="outpatientNurseNav"] > .layui-tab-title li.layui-this').click();
+        });
+
+        //监听导航菜单点击事件
+        element.on('tab(outpatientNurseNav)', function(elem){
+            var layId = $(this).attr('lay-id');
+            var href = $(this).attr('href');
+            if (!grobalModel.registerId) {
+                common.msg('请选择患者！', 0);
+                return;
+            }
+            switch(layId) {
+                default:
+                    reqIframe(layId, href);
+            }
+        });
+
+        //iframe请求页
+        function reqIframe(layId,url) {
+            var destIframe = $('div[lay-id="'+layId+'"] iframe');
+            common.openLoad();
+            destIframe.attr('src',url + (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel)).load(function () {
+                common.closeLoad();
+            });
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+        })
+    })
+</script>

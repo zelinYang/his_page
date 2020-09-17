@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-收费系统-挂号列表-历史挂号</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="register_queryForm" class="layui-form">
+          <div class="layui-row-query search-term">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">挂号类型</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectSearch("registerType" "" $!{dicData.dicRegisterType} "lay-search")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">就诊科室</label>
+                    <div class="layui-input-inline">
+                        <div id="visitOfficeIds" style="height: 30px;"></div>
+                    </div>
+                </div>
+              <div class="layui-inline">
+                <label class="layui-form-label">就诊医生</label>
+                <div class="layui-input-inline">
+                    #formTextInput("visitDoctorName" "" "id='q_visitDoctorName' maxlength='10'
+                        autocomplete='off' class='layui-input' ")
+                </div>
+              </div>
+              <div class="layui-inline">
+                <label class="layui-form-label">挂号日期</label>
+                <div class="layui-input-inline wd-100">
+                    #formLayDateInput("registerTimeBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                </div>
+                <div class="layui-form-mid">至</div>
+                <div class="layui-input-inline wd-100">
+                    #formLayDateInput("registerTimeEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                </div>
+              </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline wd-220">
+                        #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+                    </div>
+                </div>
+              <div class="layui-inline layui-btn-group">
+                <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+              </div>
+            </div>
+          </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 工具栏-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="registerListGrid" lay-filter="registerListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./outpatient/register/registerListHistory.js.vm")
+</body>
+</html>

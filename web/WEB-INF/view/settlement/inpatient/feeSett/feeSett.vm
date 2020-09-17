@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>患者缴款记录</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+##        #parse("./settlement/inpatient/feeSett/feeSett.css.vm")<!-- 页面js -->
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style type="text/css">
+
+        .inpatient {
+            border-bottom: 1px solid #e1e1e1;
+            padding-bottom: 7px;
+            margin-bottom: 6px;
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .inpatient span.n {
+            margin: 2px 10px 2px 50px;
+        }
+
+        .btn-m button {
+            margin-left: 30px !important;
+        }
+
+        .layui-elem-field legend {
+            font-size: 14px;
+            font-weight: bolder;
+        }
+
+    </style>
+</head>
+<body class="white-bg">
+<div class="main full-height layui-form" style="padding: 10px;">
+    <!-- 押金信息 -->
+    <div class="payInTab" style="width: 45%;height: 100%;float: left;">
+        <form id="payInFrom" class="layui-form">
+            #formHiddenInput("inhospitalId" "$!inhospital.inhospitalId" "id='inhospitalId'")
+        </form>
+        <table id="payInTab" lay-filter="payInTab"></table>
+    </div>
+
+    <div class="feeTab"
+         style="width: calc(55% - 20px);height: calc(100% - 20px);float: right;background-color: #f5f6f7;border-left: 1px solid #e6e6e6; ">
+        <p style="text-align: right;font-size: 16px;height: 40px;">
+            <span style="margin: 11px 15px;float: right;">发票号:10055</span>
+        </p>
+        <div class="inpatient">
+            <span class="n">住院号:</span>
+            <span class="v">$!inhospital.inhospitalId</span>
+            <span class="n">姓名:</span>
+            <span class="v">$!inhospital.patientName</span>
+            <span class="n">性质:</span>
+            <span class="v">#lookUpDict($!dicData.dicPatientKind $!inhospital.patientKind)</span>
+        </div>
+        <fieldset class="layui-elem-field">
+            <legend>结算金额</legend>
+            <div class="layui-field-box">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">总费用</label>
+                        <div class="layui-inline wd-120">
+							<input type="number" id="actualChargeAmount" name="actualChargeAmount" value="$!settlement.actualChargeAmount" class="layui-input" readonly>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">预交款</label>
+                        <div class="layui-inline wd-120">
+							<input type="number" id="totalPrepaySum" name="totalPrepaySum" value="$!settlement.totalPrepaySum" class="layui-input" readonly>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">应退</label>
+                        <div class="layui-inline wd-120">
+                            #set($cutSettlementSum = $!{settlement.cutSettlementSum} * -1)
+							<input type="number" id="cutSettlementSum" name="cutSettlementSum" value="#if($!settlement.cutSettlementSum < 0)$!cutSettlementSum#end" class="layui-input" readonly>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="layui-elem-field">
+            <legend>收费金额</legend>
+            <div class="layui-field-box" id="feeEdit">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">现金金额</label>
+                        <div class="layui-inline wd-120">
+							<input type="number" id="actualCharge" name="actualCharge" value="" class="layui-input">
+                        </div>
+                    </div>
+##                    <div class="layui-inline">
+##                        <label class="layui-form-label">转账金额</label>
+##                        <div class="layui-inline wd-120">
+##                            #formTextInput("" "" "id='' class='layui-input' ")
+##                        </div>
+##                    </div>
+##                    <div class="layui-inline">
+##                        <label class="layui-form-label">支票号码</label>
+##                        <div class="layui-input-block">
+##                            #formTextInput("" "" "id='' class='layui-input' ")
+##                        </div>
+##                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">缴费方式</label>
+                        <div class="layui-input-block">
+                            #formRadioGroup("selfPayInWay" "$!{CONST.AppConstants.PAY_IN_WAY_CASH}" ${dicData.dicOutPayInWay} "lay-filter='selfPayInWay'")
+                        </div>
+                    </div>
+                    <div class="layui-inline payCode">
+                        <label class="layui-form-label">付款码</label>
+                        <div class="layui-input-inline" style="width: 200px;">
+                            #formTextInput("QRCode" "" "class='layui-input' id='QRCode' autocomplete='off'")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </fieldset>
+        <fieldset class="layui-elem-field">
+            <legend>找回金额</legend>
+            <div class="layui-field-box" id="refundEdit">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">现金退款</label>
+                        <div class="layui-inline wd-120">
+							<input type="number" id="changeCharge" name="changeCharge" value="" class="layui-input">
+                        </div>
+                    </div>
+##                    <div class="layui-inline">
+##                        <label class="layui-form-label">转账待退</label>
+##                        <div class="layui-inline wd-120">
+##                            #formTextInput("" "" "id='' class='layui-input' ")
+##                        </div>
+##                    </div>
+##                    <div class="layui-inline">
+##                        <label class="layui-form-label">转账账号</label>
+##                        <div class="layui-input-block">
+##                            #formTextInput("" "" "id='' class='layui-input' ")
+##                        </div>
+##                    </div>
+                </div>
+            </div>
+        </fieldset>
+
+        <div class="layui-form-item btn-m" style="margin: 20px 0px;text-align: center;">
+##            <button id="fee_upload" class="layui-btn layui-btn-sm m-l-lg" type="button">费用上传</button>
+##            <button id="btn_prefeeSett" class="layui-btn layui-btn-sm m-l-lg" type="button">预结算</button>
+##            <button id="btn_feeSett" class="layui-btn layui-btn-sm m-l-lg" type="button">医保结算</button>
+            <button type="button" class="layui-btn layui-btn-sm" id="btn_quotedPrice">报  价</button>
+            <button type="button" class="layui-btn layui-btn-sm" id="btn_smallChange">找  零</button>
+            <button id="btn_feeSett" class="layui-btn layui-btn-sm layui-btn-danger" type="button">确  定</button>
+            <button id="btn_cancel" class="layui-btn layui-btn-sm m-l-lg" type="button">取  消</button>
+        </div>
+    </div>
+</div>
+    #parse("./settlement/inpatient/feeSett/feeSett.js.vm")
+</body>
+</html>     
+        

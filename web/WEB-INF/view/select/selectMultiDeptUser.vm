@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>用户多选界面</title>
+    #parse("./common/pageCss.vm")
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+
+    <style type="text/css">
+    body{background-color: #ececec}
+     .u-select{ border-bottom: 1px solid #e1e1e1; width: 100px; margin: 2px; }
+    .main{height: calc(100% - 41px)}
+
+    .u-select.span {
+        padding-right: 7px;
+    }
+     i.layui-icon.layui-unselect.li-close:hover {
+        border-radius: 50%;
+        background-color: #FF5722;
+        color: #fff;
+    }
+    i.layui-icon.layui-unselect.li-close {
+        font-size: 12px;
+    }
+    </style>
+</head>
+<body>
+    <div class="layui-content-wrapper main">
+        <!-- 机构树 -->
+        <div class="layui-card full-height fl" style="width: calc(100% - 205px);margin-bottom: 0;">
+            <div class="layui-card-body" style="height: calc(100% - 20px);">
+                <div class="white-bg full-height-scroll p-t-xs fl" id="orgTreeDiv" style="width: 210px;border-right: 1px solid #e1e1e1;">
+                    <ul id="orgTree" class="ztree"></ul>
+                </div>
+                <!-- 用户列表 -->
+                <div class="white-bg fr" style="width: calc(100% - 215px)" >
+                    <!--搜索条件 开始-->
+                    <form id="sysUser_queryForm" class="layui-form">
+                        #formHiddenInput("orgId" "" "id='orgId'")
+                        #formHiddenInput("userAttributeId" "$!{sysUserQueryInfo.userAttributeId}" "id='userAttributeId'")
+                        <div class="layui-row-query">
+                            <div class="layui-form-item change-inline-marginbottom">
+                                <div class="layui-inline">
+                                    <div class="layui-input-inline wd-220">
+                                        <input type="text" name="keyWord" value="" class="layui-input" id="q_keyWord" autocomplete="off" maxlength="40" placeholder="账号/姓名">
+                                    </div>
+                                </div>
+                                <div class="layui-inline ">
+                                    <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                                        <i class="layui-icon layui-icon-search "></i>
+                                    </button>
+                                </div>
+                                <div class="layui-inline ">
+                                    <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                                        <i class="iconfont icon-qingchu"></i>
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </form>
+                    <!--搜索条件 结束-->
+                    <table id="userList" lay-filter="userList" class="layui-hide"></table>
+                </div>
+            </div>
+        </div>
+        <!--医生列表-->
+        <div class="white-bg full-height fr" style="width: 200px;">
+            <div class="layui-card full-height">
+                <div class="layui-card-header">已选 <span id="userCount"></span></div>
+                <div id="userSelectList" class="layui-card-body" style="height: calc(100% - 53px);overflow: auto;">
+                    <!-- <div class="u-select">张三</div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="tool-bottom-fixed btn_gorup">
+        <button  class="layui-btn layui-btn-sm callBack" type="button">确定</button>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <button  class="layui-btn layui-btn-sm closeWin" type="button">关闭</button>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicSysDuty = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysDuty)');
+var dicSysUserAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUserAttribute)');
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['element', 'dtree', 'table'], function(){
+    var element = layui.element, dtree = layui.dtree, table = layui.table;
+    // 初始化左边树型
+    /*var dtreeObj = dtree.render({
+        dot:false,
+        initLevel: 1,
+        elem: "#orgTree",
+        url: contextPath + "/sys/getOrgDtree.jo",
+    });
+
+    // 监听树型节点点击事件
+    dtree.on("node('orgTree')" ,function(obj){
+        var curNode = JSON.parse(obj.param.basicData);
+        if (!curNode.orgId) {
+            common.msg('机构编号无效', function (){});
+            return ;
+        }
+        // 加载用户列表
+        tableList.reload({url: tableUrl, where: {orgId: curNode.orgId}});
+    });*/
+// 初始化树形分类
+    var zTreeObj, setting = {
+        view : {
+            selectedMulti : false
+        },
+        async : {
+            enable : true,
+            url : "../sys/getDepTree.jo",
+            dataType : "json",
+            autoParam : [ "id" ],
+            type : "POST"
+        },
+        callback : {
+            onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+                if(treeNode == undefined){
+                    treeNode = zTreeObj.getNodeByTId("tree_1");
+                }
+                zTreeObj.selectNode(treeNode, false, true);
+                if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+            },
+            onClick: function(event, treeId, treeNode) {
+                if (treeNode) {
+                    $("#orgId").val(treeNode.orgId);
+                    $('#btn_query').click();
+                }
+            },
+            onCheck: function (event, treeId, treeNode) {
+                console.log(treeNode);
+                var functionIds = $("#functionIds").val();
+                console.log(functionIds);
+                console.log("," + treeNode.id + ",");
+                if (functionIds.indexOf("," + treeNode.id + ",") > -1) {
+                    $("#" + treeNode.id).remove();
+                    functionIds = functionIds.replace(treeNode.id + ",", "");
+                    $("#functionIds").val(functionIds);
+                } else {
+                    var nodeHtml = "<li id='" + treeNode.id + "'>" + treeNode.name + "</li>";
+                    $("#selected").append(nodeHtml);
+                    $("#functionIds").val(functionIds + treeNode.id + ",");
+                }
+            }
+        }
+    };
+// 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            orgId :'',
+            account: '',
+            name: '',
+        }, common.serializeObject($('#sysUser_queryForm')))
+    }
+
+    //回车触发查询
+    $("#q_keyWord").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query').click();
+            return false;
+        }
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+        var queryParams = getQueryParams();
+        // 加载用户列表
+        table.reload('userList', {page: {curr: 1},
+            where: queryParams ,
+        })
+
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('sysUser_queryForm')
+    })
+    zTreeObj = $.fn.zTree.init($("#orgTree"), setting, []);
+    var curRows;
+    // 路径分页列表
+    var tableUrl = contextPath + '/sys/selectSysUserPageData.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'userList',
+        elem: '#userList',
+        height: 'full-113',
+        page: true,
+        where: getQueryParams(),
+        cols: [[
+            {type: 'checkbox'},
+            {field: 'userId', title: '用户id',hide:true},
+            {field: 'account', title: '账号'},
+            {field:'name', title: '姓名'},
+            {field:'name', title: '科室',templet: function (row) {
+                    return $.map(row.sysOrgList || [], function (sysOrg) {
+                        return sysOrg.name || ''
+                    }).toString();
+            }},
+            {field:'dutyId', title: '职务', templet : function (row) {
+                return dicSysDuty[row.dutyId] || '';
+            }},
+            {field:'userAttributeId', title: '用户属性', templet :function (row) {
+                  return  dicSysUserAttribute[row.userAttributeId] || '';
+             }}
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+           curRows = res.data;
+        }
+    }));
+
+
+    //obj= checkbox 点击调用的 参数
+    function checkUser(obj) {
+        if (obj.type == 'one') {
+            //单选按钮选择或者移除医生
+
+            if (obj.checked) {
+                var userItemDiv = $('<div class="u-select"></div>');
+                userItemDiv.html('<span>'+ obj.data.name +'</span><i class="layui-icon layui-unselect li-close">ဆ</i>')
+                userItemDiv.attr('userId',obj.data.userId);
+                userItemDiv.attr('dutyName', dicSysDuty[obj.data.dutyId]? dicSysDuty[obj.data.dutyId]: '');
+                $('#userSelectList').append(userItemDiv);
+            } else {
+                var userItemDiv = $('#userSelectList').find('[userId="'+obj.data.userId+'"]');
+                userItemDiv.remove();
+            }
+        } else {
+            //全选按钮 新增或者移除医生
+            if (obj.checked) {
+                $(curRows).each(function(index, row) {
+                    var userItemDiv = $('#userSelectList').find('[userId="'+row.userId+'"]');
+                    if (userItemDiv.length == 1) {
+                        return true;
+                    }
+
+                    var userItemDiv = $('<div class="u-select"></div>');
+                    userItemDiv.html('<span>'+ row.name +'</span><i class="layui-icon layui-unselect li-close">ဆ</i>')
+                    userItemDiv.attr('userId',row.userId);
+                    userItemDiv.attr('dutyName', dicSysDuty[row.dutyId]? dicSysDuty[row.dutyId]: '');
+                    $('#userSelectList').append(userItemDiv);
+                });
+            } else {
+                $(curRows).each(function(index, row) {
+                    var userItemDiv = $('#userSelectList').find('[userId="'+row.userId+'"]');
+                    if (userItemDiv.length == 1) {
+                        userItemDiv.remove();
+                    }
+
+                });
+            }
+        }
+        //移除已选
+        $('.u-select .li-close').click(function () {
+            var userElem = $(this).parents('.u-select');
+            var userId = userElem.attr("userId");
+            //取消表格复选框选中
+            $('#userList + .layui-table-view td[data-field="userId"] > .layui-table-cell').filter(function () {
+                return $(this).text() == userId;
+            }).parents('tr').find(':checked[name="layTableCheckbox"]:checked').next().click();
+            userElem.remove();
+        })
+
+        //选择总人数
+        var userCount = $('#userSelectList>div').length;
+        $('#userCount').html( userCount + '人');
+    }
+    table.on('checkbox(userList)', function(obj){
+        checkUser(obj);//复选框选择医生
+    });
+
+    function getSelectUser() {
+        var data = {};
+        var idArr = [];
+        var nameArr = [];
+        $('#userSelectList .u-select').each(function(index) {
+            var elem = $(this);
+            idArr.push($(this).attr('userId'));
+            nameArr.push($(this).attr('dutyName') + $(this).children('span').html());
+        });
+        data.name = nameArr.join(',');
+        data.userId = idArr.join(',');
+        return data;
+    }
+
+    function callBack(){
+        if (parent.selectMultiUserCall && typeof(parent.selectMultiUserCall) == 'function') {
+            parent.selectMultiUserCall(getSelectUser());
+        }
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    }
+
+    winClose = function() {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    }
+
+    //页面初始化
+    $(document).ready(function() {
+        $('.closeWin').click(function() {
+            winClose();
+        });
+        $('.callBack').click(function() {
+            callBack();
+        });
+    });
+
+});
+</script>
+</html>

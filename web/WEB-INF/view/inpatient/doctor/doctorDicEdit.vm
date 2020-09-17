@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+</head>
+<body class="white-bg">
+    <form class="layui-form" lay-filter="patientForm" id="patientForm">
+        #formHiddenInput("doctorDicId" "$!doctorDic.doctorDicId" "")
+        <div class="layadmin-maillist-fluid p-t-sm">
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">#requiredTag()常用短语</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formTextInput("doctorDicContent" "#htmlEscape($!doctorDic.doctorDicContent)" "class='layui-input' maxlength='200' lay-verify='required' placeholder='请输入常用短语'")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">#requiredTag()医嘱类型</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formSingleSelectFirstNone("doctorOrderType" "$!doctorDic.doctorOrderType" $!dicData.dicDoctorOrderType "lay-filter='doctorOrderType' placeholder='请输入医嘱类型' lay-verify='required'" "")
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-row p-xs">
+                <div class="layui-block">
+                    <label class="layui-form-label">排序码</label>
+                    <div class="layui-input-block p-r-sm">
+                        #formIntZeroInput("sort" "$!doctorDic.sort" "class='layui-input' maxlength='5' lay-verify='required' placeholder='请输入排序码'")
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_save" lay-submit lay-filter="btn_save" class="layui-btn layui-btn-sm"> 保 存 </button>
+        </div>
+    </form>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form'], function(){
+    var laydate = layui.laydate, form = layui.form;
+
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+        common.requestServer(contextPath + '/inpatient/saveDoctorDic.jo', data.field, function (result){
+            if (result.code == "0") {
+                common.msg("保存成功。", 1, function (){
+                    $('#btn_refresh', window.parent.document).click();
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+});
+
+</script>
+</html>
+

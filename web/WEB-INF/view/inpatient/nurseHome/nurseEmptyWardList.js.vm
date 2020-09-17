@@ -1,0 +1,72 @@
+<script>
+    var BED_USAGE_NULL = "$!{CONST.AppConstants.BED_USAGE_NULL}";
+    var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+    var dicWardBedLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicWardBedLevel)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var params = $.extend({
+                bedUsageFlag: BED_USAGE_NULL
+            }, common.serializeObject($('#inpatientInhospital_queryForm')),parent.getQueryParam());
+            params.wardBedNo = params.currentBedNo;//查询未分配床位
+            params.wardId = params.currentWardId;//查询未分配床位
+            return params;
+        }
+
+
+        /*病床*/
+        table.render($.extend(basePageTable, {
+            elem: '#inpatientInhospitalGrid',
+            height: 'full-10',
+            cellMinWidth: 80,
+            url: contextPath + '/inpatient/wardBedListData.jo',
+            where: getQueryParams(),
+            cols: [[ {
+                field: 'wardBedNo',
+                title: '床位号'
+            }, {
+                field: 'wardRoomNo',
+                title: '房间号'
+            }, {
+                field: 'wardOfficeName',
+                title: '科室'
+            }, {
+                field: 'wardName',
+                title: '病区'
+            }, {
+                field: 'bedFee',
+                title: '病床费用'
+            }, {
+                field: 'icuFee',
+                title: 'ICU费用'
+            }, {
+                field: 'wardBedLevel',
+                title: '床位级别',templet: function (d) {
+                    return dicWardBedLevel[d.wardBedLevel] || '';
+                }
+            }, {
+                field: 'sexFlag',
+                title: '性别限制',
+                width: 100,
+                templet: '#sexFlagTpl'
+            }]], done:function () {
+
+            }
+        }))
+
+        //监听行单击事件
+        table.on('row(inpatientInhospitalGrid)', function(obj){
+            var data = obj.data;
+            parent.listenerRow(data);
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+    })
+</script>

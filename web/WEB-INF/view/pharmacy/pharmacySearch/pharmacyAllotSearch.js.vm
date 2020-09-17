@@ -1,0 +1,228 @@
+<script>
+	var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');//产地
+	var dicMedicineVendor = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineVendor)');//供应商
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');//供应商
+	var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');//供应商
+	var medicineDosage = JSON.parse('$dicTools.changeMapToJson($dicData.medicineDosage)');//供应商
+	var dicDrugReportUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugReportUsage)');// 报告用药
+	var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');// 科室
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');//
+	var templateTr = $('#itemList tr:last').prop("outerHTML");
+
+	layui.use(['table', 'element', 'laydate', 'form', 'util'], function () {
+		var table = layui.table, util = layui.util;
+		var form = layui.form;
+
+		var $ = layui.jquery, element = layui.element, laydate = layui.laydate;
+		//按日期范围查询
+		laydate.render({
+			elem: '#applyDateSearch',trigger: 'click', range: true, done: function (value, date, endDate) {
+
+			}
+		});
+		initLayout = function () {
+			$('#container').layout({
+				west__size: 500//pane的大小
+				, togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				, togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				, spacing_open: 8//边框的间隙
+				, maskIframesOnResize: ".resizeiframe"
+				, onopen_end: refreshTable
+			});
+		}
+
+		//页面初始化
+		$(function () {
+			initLayout();
+		});
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+		function refreshTable() {
+			table.reload('mainTable', {
+				where: getQueryParams()
+			});
+		}
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['applyDateSearch']);
+			return $.extend({
+				pharmacyId: '',
+				perStockFlags: '',
+				perStockTimeBegin: '',
+				perStockTimeEnd: '',
+				exeFlag: ''
+			}, queryForm);
+		}
+
+		var mainTable = table.render($.extend(basePageTable, {
+			elem: '#mainTable'
+			, height: getLeftTableHeight()
+			, url: '../pharmacy/pharmacyAllotPageData.jo' //数据接口
+			, where: getQueryParams()
+			, cols: [[ //表头
+				{type: 'radio', fixed: 'left'}
+				, {field: 'applyPharmacyName', title: '申请药房', width: 110}
+				, {
+					field: 'applyDate', title: '申请时间', width: 90,
+					templet: function (res) {
+						return res.applyDate ? util.toDateString(res.applyDate, 'yyyy-MM-dd') : '';
+					}
+				}
+				, {field: 'allotOutHospitalName', title: '目标医院', width: 110}
+				, {field: 'allotOutPharmacyName', title: '目标药房', width: 110}
+				, {
+					field: 'submitFlag'
+					, title: '提交状态'
+					, width: 80
+					, templet: function (res) {
+						return res.submitFlag === '1' ? '提交' : '未提交';
+					}
+				}
+				, {
+					field: 'allotOutFlag'
+					, title: '出库状态'
+					, width: 80
+					, templet: function (res) {
+						return res.allotOutFlag === '1' ? '出库' : '未出库';
+					}
+				}
+				, {
+					field: 'allotOutDate',
+					title: '出库日期',
+					width: 90,
+					templet: function (res) {
+						return res.allotOutDate ? util.toDateString(res.allotOutDate, 'yyyy-MM-dd') : '';
+					}
+				}
+				, {
+					field: 'allotInFlag'
+					, title: '入库状态'
+					, width: 80
+					, templet: function (res) {
+						return res.allotInFlag === '1' ? '入库' : '未入库';
+					}
+				}
+				, {
+					field: 'allotInDate',
+					title: '入库日期',
+					width: 90,
+					templet: function (res) {
+						return res.allotInDate ? util.toDateString(res.allotInDate, 'yyyy-MM-dd') : '';
+					}
+				}
+				, {field: 'operUserName', title: '操作人姓名', width: 80}
+				, {field: 'remark', title: '备注', width: 150}
+			]]
+		}));
+		var itemTable = table.render($.extend(singlePageTable, {
+			elem: '#itemTable'
+			, height: getRightTableHeight()
+			, data: []
+			, cols: [[ //表头
+				{type: 'numbers', fixed: 'left'}
+				, {field: 'medicineName', title: '药品通用名称', width: 200}
+				, {field: 'producingAreaName', title: '产地名称', width: 120, sort: true}
+
+				, {field: 'stockCount', title: '账面数量', width: 80}
+				, {field: 'actualCount', title: '实盘数量', width: 80}
+				, {
+					field: 'expireDateBegin',
+					title: '药品效期',
+					width: 120,
+					templet: function (res) {
+						return layui.util.toDateString(res.expireDateBegin, 'yyyy-MM-dd')
+					}
+				}
+
+				, {field: 'medicineSpec', title: '药品规格', width: 150}
+				, {
+					field: 'drugstoreUnit', title: '药品单位', width: 80, templet: function (row) {
+						return dicDrugNumUnit[row.drugstoreUnit] || '';
+					}
+				}
+				, {field: 'buyPrice', title: '进货价格', width: 80}
+				, {field: 'tradePrice', title: '批发价', width: 80}
+				, {field: 'retailSum', title: '零售金额', width: 80}
+				, {field: 'retailPrice', title: '零售价', width: 80}
+				, {field: 'tradeSum', title: '批发金额 ', width: 80}
+				, {field: 'remark', title: '备注 ', width: 120}
+
+			]]
+		}));
+
+		//监听行单击事件（单击事件为：row）
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var sum = 0;
+			var data = obj.data;
+			$('#editForm').find('input, select').each(function () {
+				var name = $(this).attr('name');
+				if (!data[name]) {
+					$(this).val('');
+					return;
+				}
+				if (name && data[name]) {
+					if (name === 'applyDate' || name === 'allotOutDate' || name === 'allotInDate') {
+						$(this).val(new Date(data[name]).format('yyyy-MM-dd'));
+					} else {
+						if (name === 'submitFlag') {
+							$(this).val(data[name] === '1'? '提交': '未提交');
+						} else if (name === 'allotOutFlag') {
+							$(this).val(data[name] === '1'? '出库': '未出库');
+						} else if (name === 'allotInFlag') {
+							$(this).val(data[name] === '1'? '入库': '未入库');
+						} else {
+							$(this).val(data[name]);
+						}
+					}
+				}
+			});
+			var pharmacyAllotId = data.pharmacyAllotId;
+			table.reload('itemTable', {
+				where: {pharmacyAllotId: pharmacyAllotId}
+				, url: '../pharmacy/pharmacyAllotItemPageData.jo' //数据接口
+				, height: getRightTableHeight()
+			});
+			form.render();
+		});
+
+		// 获取表格高度
+		function getLeftTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		function getRightTableHeight() {
+			return ($('body').height() - $("#editForm").height() - 10);
+		}
+
+		$(window).resize(function () {
+			table.reload('mainTable', {
+				height: getLeftTableHeight()
+			})
+		})
+
+	});
+</script>

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>采购入库</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .layui-table td {
+            padding: 2px 3px;
+        }
+        #recipeTotalPrice {
+            maggin-left: 10px;
+        }
+        #recipeTotalPriceValue {
+            color: red;
+        }
+        .layui-form-label {
+            width: 70px;
+        }
+        .layui-form-item .layui-input-inline {
+            width: 150px;
+            margin-right: 0;
+        }
+        .layui-table-body{
+            height: calc(100% - 55px);
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .layui-bg-white.full-height{overflow-y: auto;-webkit-overflow-scrolling: touch;}
+            /*.layui-table-body{*/
+            /*    height: calc(100% - 125px);*/
+            /*}*/
+        }
+        @media (max-width: 768px) {
+            .layui-form-item .layui-input-inline{width: 120px;}
+        }
+    </style>
+</head>
+
+<body class="overflow-y-h overflow-x-h">
+    <form class="layui-form layui-bg-white" id="queryForm">
+        <div class="layui-row-query">
+            <div class="layui-form-item search-term ">
+                <div class="layui-inline">
+                    <label class="layui-form-label">入库单号</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("goodsBillNo" "" "id='queryGoodsBillNo' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">发票号</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("invoiceNum" "" "id='queryInvoiceNum' class='layui-input' ")
+                            ##                                #formSingleSelect("aimPharmacyId" "1" $!dicData.dicPharmacy "id='aimPharmacyId' lay-filter='aimPharmacyId' class='layui-input' " "" )
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button class="layui-btn  layui-btn-sm " id="btn_query" type="button"><i class="layui-icon layui-icon-search "></i></button>
+                    <button class="layui-btn layui-btn-sm " type="reset" id="btn_freshen" style="margin-left: auto;"><i class="layui-icon layui-icon-refresh"></i></button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+	<div class="layui-row layui-col-space10">
+        <div class="layui-col-md4 layui-col-sm4 layui-col-xs4">
+            <!-- 数据表格 -->
+            <table id="drugstoreInList" lay-filter="drugstoreInList"></table>
+        </div>
+        <div class="layui-col-md8 layui-col-sm8 layui-col-xs8 full-height" id="drugstoreInItemDiv" style="display: none;">
+            <div class="layui-bg-white full-height">
+                <form class="layui-form" action="" id="drugstorein">
+                    #formHiddenInput("purchasePlanId" "" "id='purchasePlanId'")
+                    #formHiddenInput("drugstoreInId" "" "id='drugstoreInId'")
+					<div class="layui-form-item search-term m-b-sm p-t-sm">
+                        <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()入库方式</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("drugstoreInWay" "1" $!dicData.dicDrugstoreInWay " class='layui-input' autocomplete='off' "  "购入方式")
+                        </div>
+                    </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()供货商&nbsp;</label>
+                            <div class="layui-input-inline">
+                                #formHiddenInput("medicineVendorId" "" "id='medicineVendorId'")
+                                #formTextInput("medicineVendorName" "" "id='medicineVendorName' lay-verify='required' autocomplete='off' class='layui-input' placeholder='供货商'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">购入方式</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("billFlag" "0" $!dicData.dicBillFlag "id='billFlag' class='layui-input' autocomplete='off' "  "购入方式")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()药库/耗材库</label>
+                            <div class="layui-input-inline">
+                                #formHiddenInput("drugstoreName" "" "id='drugstoreName'")
+                                #formSingleSelectFirstNone("drugstoreId" "" $!dicData.dicDrugstoreId "id='drugstoreId' class='layui-input' autocomplete='off' lay-verify='required' " "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()入库单号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("goodsBillNo" "" "id='goodsBillNo' autocomplete='off' lay-verify='required' class='layui-input' placeholder='入库单号'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()主管姓名</label>
+                            <div class="layui-input-inline">
+                                #formHiddenInput("manageUserName" "" "id='manageUserName'")
+                                #formSingleSelectFirstNone("manageUserId" "" $!dicData.dicSysUser "id='manageUserId' class='layui-input' autocomplete='off' lay-filter='manageUserId' lay-verify='required' " "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()采购日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("buyDate" "$!date.format('yyyy-MM-dd', $!item.buyDate)" "id='buyDate' class='layui-input' readOnly autocomplete='off'") ##有效期
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()发票号&nbsp;</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("invoiceNum" "" "id='invoiceNum' autocomplete='off' lay-verify='required' class='layui-input' placeholder='发票号'")
+                            </div>
+                        </div>
+#*
+                        <div class="layui-inline">
+                            <label class="layui-form-label">附单据数</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("receiptSheetCount" "" "id='receiptSheetCount' autocomplete='off' class='layui-input'")
+                            </div>
+                        </div>
+*#
+                    </div>
+                </form>
+                <div class="" onkeyup="onEnter()" id="drugstoreInItemTable">
+                    <div class="layui-table-body">
+                        <table id='topTable' class="layui-table layui-table-input m-t-n" style="min-width: 3000px; margin-bottom: -10px;">
+                            <thead>
+                            <tr>
+                                <th style="min-width: 150px">药品名称</th>
+                                <th width="130">规格</th>
+                                <th width="130">批号</th>
+                                <th width="160">有效期</th>
+                                <th width="120">库位编码</th>
+                                <th style="min-width: 120px">产地</th>
+                                <th width="100">计划数</th>
+                                <th width="100">入库数</th>
+                                <th width="100">合格数</th>
+                                <th width="120">药品单位</th>
+                                <th width="120">药品剂量</th>
+                                <th width="120">剂量单位</th>
+                                <th width="150">药品剂型 </th>
+                                <th width="120">最小单位</th>
+                                <th width="120">最小包装</th>
+                                <th width="120">进货价</th>
+                                <th width="120">进货金额</th>
+                                <th width="120">批发价</th>
+                                <th width="120">批发金额</th>
+                                <th width="120">零售价</th>
+                                <th width="120">零售金额</th>
+                            </tr>
+                            </thead>
+##                            </table>
+##                            <table id='listTable' class="layui-table layui-table-input m-t-n" style="min-width: 3000px;">
+                            <tbody id="itemList">
+                            <tr>
+                                <td style="min-width: 150px">
+                                    #formHiddenInput("medicineId" "" "")
+                                    #formHiddenInput("purchasePlanItemId" "" "")
+                                    #formHiddenInput("drugstoreInId" "" "")
+                                    #formHiddenInput("pharmacyUnit" "" "")
+                                    #formHiddenInput("hospitalId" "$!item.hospitalId" "")
+                                    #formTextInput("medicineName" "#htmlEscape($!item.medicineName)" " class='layui-input' autocomplete='off' ")
+                                </td>
+                                <td>
+                                    #formTextInput("medicineSpec" "#htmlEscape($!item.medicineSpec)"
+                                        "maxlength='5' class='layui-input' autocomplete='off' ") ##规格
+                                </td>
+                                <td>
+                                    #formTextInput("batchNum" "#htmlEscape($!item.batchNum)"
+                                        "maxlength='20' class='layui-input' autocomplete='off' ") ##批号
+                                </td>
+                                <td>
+                                    #formTextInput("expireDate" "$!date.format('yyyy-MM-dd', $!item.expireDate)" " class='layui-input' readOnly autocomplete='off'") ##有效期
+                                </td>
+                                <td>
+                                    #formHiddenInput("drugstoreStorageCode" "" "")
+                                    #formSingleSelectFirstNone("drugstoreStorageId" "" $dicData.dicDrugstoreStorage " lay-filter='drugstoreStorageId' class='layui-input' autocomplete='off' " "")##库位编码
+                                </td>
+                                <td style="min-width: 120px">
+                                    #formHiddenInput("producingAreaId" "" "")
+                                    #formTextInput("producingAreaName" "" "maxlength='5' class='layui-input' autocomplete='off' ")   ##药品产地
+                                </td>
+                                <td>
+                                    #formIntZeroInput("planQuantity" "" "maxlength='10' class='layui-input' autocomplete='off' ")  ##计划数
+                                </td>
+                                <td>
+                                    #formIntZeroInput("inCount" "$!item.inCount" "maxlength='10' class='layui-input' autocomplete='off' ")  ##入库数
+                                </td>
+                                <td>
+                                    #formIntZeroInput("qualifiedCount" "$!item.qualifiedCount" "maxlength='10' class='layui-input' autocomplete='off' ")  ##合格数
+                                </td>
+                                <td>
+                                    #formSingleSelectFirstNone("medicineUnit" "" $dicData.dicDrugNumUnit "class='layui-input' autocomplete='off' " "") ## 药品单位
+                                </td>
+                                <td>
+                                    #formTextInput("medicineDosage" "#htmlEscape($!item.medicineDosage)" "maxlength='5' class='layui-input' autocomplete='off' ")  ##药品剂量
+                                </td>
+                                <td>
+                                    #formSingleSelectFirstNone("dosageUnit" "" $dicData.dicDrugNumUnit "class='layui-input' autocomplete='off' " "") ## 剂量单位
+                                </td>
+                                <td>
+                                    #formSingleSelectFirstNone("dosageForm" "" $dicData.dicDosageForm "class='layui-input' autocomplete='off' " "") ## 药品剂型
+                                </td>
+                                <td>
+                                    #formSingleSelectFirstNone("minMedicineUnit" "" $dicData.dicDrugNumUnitDosageUnit "class='layui-input' autocomplete='off' " "") ## 最小单位
+                                </td>
+                                <td>
+                                    #formIntZeroInput("minMedicinePack" "$!item.minMedicinePack" "maxlength='10' class='layui-input' autocomplete='off' ")  ##最小包装
+                                </td>
+                                <td>
+                                    #formHiddenInput("purchasePrice" "" "") ## 建议进货价
+                                    #formFloLenInput("buyPrice" "$!item.buyPrice" 8 "maxlength='10' targetSum='buyTotalSum' class='layui-input' autocomplete='off' ") ## 进货价
+                                </td>
+                                <td>
+                                    #formFloLenInput("buyTotalSum" "$!item.buyTotalSum" 8 "maxlength='10' class='layui-input' autocomplete='off' ") ## 进货金额
+                                </td>
+                                <td>
+                                    #formFloLenInput("tradePrice" "$!item.tradePrice" 8 "maxlength='10' targetSum='tradeSum' class='layui-input' autocomplete='off' ") ## 批发价
+                                </td>
+
+                                <td>
+                                    #formFloLenInput("tradeSum" "$!item.tradeSum" 8 "maxlength='10' class='layui-input' autocomplete='off' ") ## 批发金额
+                                </td>
+                                <td>
+                                    #formFloLenInput("retailPrice" "$!item.retailPrice" 8 "maxlength='10' targetSum='retailSum' class='layui-input' autocomplete='off' ") ## 零售价
+                                </td>
+                                <td>
+                                    #formFloLenInput("retailSum" "$!item.retailSum" 8 "maxlength='10' class='layui-input' autocomplete='off' ") ## 零售金额
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="display: flex;justify-content: space-between;">
+                        <div id="test1"></div>
+                        <div class="p-sm" >
+                            <a class="recipeTotalPrice p-r-lg" >总金额：￥<span class="recipeTotalPriceValue" id="feeAmount">0.00</span></a>
+                            <button type="button" id="btn_send" class="layui-btn layui-btn-sm layui-btn-normal" lay-submit lay-filter="btn_save"><span>确认</span></button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    #parse("./drugstore/drugstorein/purchasingPlan.js.vm")
+
+    </script>
+</body>
+</html>

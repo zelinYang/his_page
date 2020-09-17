@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>病历审阅</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #set($path = $!contextPath)
+    <style>
+        .text-v{padding-top: 5px;}
+        .p-option button{margin-top: 7px;}
+        .dic-name{ color:  red;}
+        .ztree li a.curSelectedNode { background-color: #f5f7f7; border: 1px #dedede solid; }
+        .layui-icon.blue:hover{color: #6cbbd4;} 
+    </style>
+</head>
+
+<body >
+
+<div class="patientinfo" style="padding: 12px 10px 5px; background-color: #fff;margin-bottom: 5px;float: left; width: calc(100% - 20px);">
+
+    <div class="p-option" style="width: 80px;float: left">
+        <button class="layui-btn layui-btn-sm" id="btn_selectInpatient">切换患者</button>
+    </div>
+    <div class="p-info" style="width: calc(100% - 85px);float: right">
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">科室：</label>
+                <div class="layui-inline  text-v inhospitalOfficeName"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">姓名：</label>
+                <div class="layui-inline  text-v patientName"></div>
+            </div>
+
+            <div class="layui-inline">
+                <label class="layui-form-label">性别：</label>
+                <div class="layui-inline  text-v patientSex"></div>
+            </div>
+
+            <div class="layui-inline">
+                <label class="layui-form-label">年龄：</label>
+                <div class="layui-inline  text-v"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">床号：</label>
+                <div class="layui-inline  text-v currentBedNo"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">住院号：</label>
+                <div class="layui-inline  text-v inhospitalId"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">病情：</label>
+            </div>
+
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">管床医师：</label>
+                <div class="layui-inline  text-v bedDoctorName"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">质控次数：</label>
+                <div class="layui-inline  text-v"></div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width:105px;">最后质控时间：</label>
+                <div class="layui-input-inline input-inline-long text-v" style="width:138px;"></div>
+            </div>
+
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width:100px;">最后质控人：</label>
+                <div class="layui-inline  text-v"></div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+<div id="container" style="height: calc(100% - 95px);">
+    <div class="ui-layout-west" >
+        <div class="layui-card n-shadow" style="height: 55%;margin-bottom: 2px;">
+            <div class="layui-card-header t-line">病历列表#cardDisplayHover</div>
+            <div class="layui-card-body" style="height: calc(100% - 45px);">
+                <div class="layui-tab layui-tab-card blod b-n m-t-n m-b-n full-height">
+                    <ul class="layui-tab-title btn" style="margin: 10px 2px  5px 10px;">
+                        <li tab="payHandle" class="layui-this" >新增项目</li>
+                        <li tab="payInRecord" class="visitOffice">医生已确认</li>
+                        <li tab="payedRecip">质控已确认</li>
+                    </ul>
+
+                    <div class="layui-tab-content" style="height: calc(100% - 45px)">
+                        <div tab="payHandle" class="layui-tab-item full-height layui-show full-height-scroll"  >
+                            <ul id="emrTypeTree" class="ztree white-bg full-height"></ul>
+                        </div>
+                        <div tab="payInRecord" class="layui-tab-item full-height ">
+                            <iframe src="$path/inpatient/payInRecord.do" #iframeAttr></iframe>
+                        </div>
+                        <div tab="payedRecip" class="layui-tab-item full-height ">
+                            <iframe src="$path/inpatient/payedRecip.do" #iframeAttr></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card n-shadow" style="height:calc(45% - 5px)">
+            <div class="layui-card-header t-line">缺陷列表#cardDisplayHover</div>
+            <div class="layui-card-body" style="height: calc(100% - 45px);">
+                <div class="layui-tab layui-tab-card blod b-n m-t-n m-b-n full-height">
+                    <ul class="layui-tab-title btn" style="margin: 10px 2px  5px 10px;">
+                        <li tab="patientEmrDefect" class="layui-this" >病历缺陷</li>
+                        <li tab="payInRecord" class="visitOffice">审阅记录</li>
+                        <li tab="payedRecip">缺陷汇总</li>
+                    </ul>
+
+                    <div class="layui-tab-content" style="height: calc(100% - 48px)">
+                        <div tab="patientEmrDefect" class="layui-tab-item full-height layui-show">
+                            <iframe src="$path/patient/patientemrDefect.do" #iframeAttr></iframe>
+                        </div>
+                        <div tab="payInRecord" class="layui-tab-item full-height ">
+                            <iframe src="$path/inpatient/payInRecord.do" #iframeAttr></iframe>
+                        </div>
+                        <div tab="payedRecip" class="layui-tab-item full-height ">
+                            <iframe src="$path/inpatient/payedRecip.do" #iframeAttr></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div><!--east  -->
+    <div class="layui-form ui-layout-center">
+        <div class="main full-height">
+            <!-- 中间导航nav -->
+            <div class="docBorrow full-height" id="component-tabs">
+                <div class="layui-tab layui-tab-card blod white-bg inSettNav" style="height: calc(100% - 12px);margin: 0;"
+                     lay-filter="inSettNav" lay-allowclose="">
+                    <!-- 主页导航名称 -->
+                    <ul class="layui-tab-title highlight">
+                        <li lay-id="inhospitalReg" href="$path/inpatient/inhospitalRegisterList.do" class="layui-this">病历审阅</li>
+                    </ul>
+
+                    <!-- 导航内容 根据index对应li -->
+                    #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+                    #set($layclass = 'class="layui-tab-item full-height"')
+                    <div class="layui-tab-content" style="height: calc(100% - 42px);">
+                        <div lay-id="inhospitalReg" class="layui-tab-item layui-show full-height" >
+                            <iframe targetSrc="$!contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&showBtn=0&emrTlpId=VemrTlpId&&patientId=VpatientId&patientHospitalEmrId=VpatientHospitalEmrId"
+                                    id="emrIframe" width="100%" height="100%" frameborder="0" scrolling="no" ></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 中间导航nav end -->
+
+        </div> <!-- main  -->
+    </div><!-- center -->
+</div>
+#parse("./doc/docBorrow/docBorrowMaster.js.vm")
+</body>
+</html>

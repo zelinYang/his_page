@@ -1,0 +1,240 @@
+<script>
+    var NO_FLAG = '$!{CONST.AppConstants.NO_FLAG}';
+    var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}';
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)')
+    //患者证件类型
+    var dicPatientIdType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientIdType)')
+    //监护人证件类型
+    var dicEduDegree = JSON.parse('$dicTools.changeMapToJson($dicData.dicEduDegree)')
+    //患者类别
+    var dicPatientClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientClassify)')
+    //人员类型
+    var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)')
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#patient_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                patientSex: '',
+                patientBirthBegin: '',
+                patientBirthEnd: '',
+                patientClassifys: '',
+                keyWord: '',
+                validFlag: NO_FLAG
+            }, common.serializeObject($('#patient_queryForm')));
+        }
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('patientListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('patient_queryForm');
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#patientListGrid',
+            url: contextPath + '/patient/patientListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field : 'healthCard',
+                title : '电子健康卡',
+                minWidth : 160,
+                fixed : 'left'
+            }, {
+                field : 'socialSecurityCard',
+                title : '医保号',
+                minWidth : 160,
+                fixed : 'left'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号',
+                minWidth: 180,
+                fixed: 'left'
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 90,
+                fixed: 'left'
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                templet: '#sexTpl'
+            }, {
+                field: 'patientBirth',
+                title: '出生日期',
+                minWidth: 105,
+                templet: function (row) {
+                    return util.toDateString(row.patientBirth, 'yyyy-MM-dd');
+                }
+            }, {
+                field: 'patientAge',
+                title: '年龄',
+                minWidth: 90
+            }, {
+                field: 'patientClassify',
+                title: '患者类型',
+                minWidth: 90,
+                templet: function (row) {
+                    return dicPatientClassify[row.patientClassify] || ''
+                }
+            }, {
+                field: 'patientIdType',
+                title: '证件类型',
+                minWidth: 150,
+                templet: function (row) {
+                    return dicPatientIdType[row.patientIdType] || ''
+                }
+            }, {
+                field: 'patientIdCard',
+                title: '证件号码',
+                minWidth: 180
+            }, {
+                field: 'patientAddr',
+                title: '现居住地',
+                minWidth: 180
+            }, {
+                field: 'eduDegree',
+                title: '文化程度',
+                minWidth: 90,
+                templet: function (row) {
+                    return dicEduDegree[row.eduDegree] || ''
+                }
+            }, {
+                field: 'patientAttribute',
+                title: '人员类型',
+                minWidth: 90,
+                templet: function (row) {
+                    return dicPatientAttribute[row.patientAttribute] || ''
+                }
+            }, {
+                field: 'patientPhone',
+                title: '患者电话',
+                minWidth: 120
+            }, {
+                field: 'bankCardNo',
+                title: '银行卡号',
+                minWidth: 180
+            }, {
+                field: 'socialSecurityNo',
+                title: '医保号',
+                minWidth: 90
+            }, {
+                field: 'guardName',
+                title: '监护人姓名',
+                minWidth: 100
+            }, {
+                field: 'guardIdCard',
+                title: '监护人证件号码',
+                minWidth: 180
+            }, {
+                field: 'inhospitalNo',
+                title: '住院号',
+                minWidth: 90
+            }, {
+                field: 'patientMedicalNo',
+                title: '病案号',
+                minWidth: 90
+            }, {
+                field: 'createTime',
+                title: '办卡时间',
+                minWidth: 130,
+                templet: function (row) {
+                    return util.toDateString(row.createTime, 'yyyy-MM-dd HH:mm');
+                }
+            }, {
+                title: '操作',
+                width: 130,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        //操作栏操作按钮的事件
+        table.on('tool(patientListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    if ($.isFunction(parent.parent.openMenu)) {
+                        parent.parent.openMenu({"id":'patientShow_' + row.patientIndexId,"text":row.patientName + '详情',"href":'/patient/patientEdit.do?patientIndexId=' + row.patientIndexId+ '&optype=show'})
+                    } else {
+                        common.open('$contextPath' + '/patient/patientEdit.do?patientIndexId=' + row.patientIndexId + '&optype=show', row.patientName + '详情', {
+                            area: ['80%', '80%'],
+                            scroll: true
+                        })
+                    }
+                    break;
+                case 'enable':
+                    common.confirm('是否恢复此【' + row.patientName + '】患者的相关信息。', function () {
+                        common.requestServer('$contextPath' + '/patient/updatePatientValidFlag.jo', {
+                                patientIndexIds: row.patientIndexId, validFlag: '$!{CONST.AppConstants.YES_FLAG}'
+                            },
+                            function (result) {
+                                if (result.code == '0') {
+                                    $('#btn_query').click()
+                                } else {
+                                    common.alert(result.msg, 0)
+                                }
+                            })
+                    })
+                    break
+            }
+        });
+
+    })
+</script>
+

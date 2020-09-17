@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-诊室管理-新增</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style type="text/css">
+        .layui-card-body {
+            height: calc(100vh - 100px);
+        }
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+        label.layui-form-label {
+            text-overflow: inherit!important;
+			width: 100px;
+        }
+		.layui-card-body .layui-input-block {
+			margin-left: 120px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-card layui-col-md7 layui-col-xs7">
+                <div class="layui-card-header">诊室信息</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" id="consultingRoomForm" style="padding: 20px 0 0 0;">
+                        <!-- 表单 开始 -->
+                        #formHiddenInput("consultingRoomId" "$!{consultingRoom.consultingRoomId}" " id='consultingRoomId' ") #formHiddenInput("roomDeviceCode" "#htmlEscape($!{consultingRoom.roomDeviceCode})" " id='roomDeviceCode' ")
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()门诊科室</label>
+                                <div class="layui-input-inline">
+                                    #formSingleSelectSearchFirstNone("depId" "$!consultingRoom.depId" $arrangeDutyOfficeMap "id='depId' lay-filter='depId' lay-verify='required' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()诊室名称</label>
+                                <div class="layui-input-inline">#formTextInput("roomName" "#htmlEscape($!{consultingRoom.roomName})" " id='roomName' autocomplete='off' lay-verify='required' maxlength='20' class='layui-input unique'")</div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">诊室电话</label>
+                                <div class="layui-input-inline">#formNotInChineseInput("roomTel" "#htmlEscape($!{consultingRoom.roomTel})" " id='roomTel' autocomplete='off' maxlength='40' class='layui-input'")</div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">按诊室设置收费</label>
+                                <div class="layui-input-block">#formRadioGroup("roomPayFlag" "$!{consultingRoom.roomPayFlag}" ${dicData.dicYesNo} "")</div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">诊室地址</label>
+                            <div class="layui-input-block">#formTextInput("roomLocation" "#htmlEscape($!{consultingRoom.roomLocation})" " autocomplete='off' id='roomLocation' maxlength='50' class='layui-input'")</div>
+                        </div>
+                        <div class="layui-form-item layui-form-text " style="margin-top: 8px;">
+                            <label class="layui-form-label">诊室描述</label>
+                            <div class="layui-input-block ">#formTextarea("roomDescription" "#htmlEscape($!{consultingRoom.roomDescription})" " autocomplete='off' id='roomDescription' class='layui-textarea'
+                                maxlength='150' placeholder='请输入内容，字数最多150字'")
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                        #if(${consultingRoom})
+                        <div class="layui-inline">
+                            <label class="layui-form-label">#requiredTag()是否有效</label>
+                            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{consultingRoom.validFlag}" ${dicData.dicYesNo} "")</div>
+                        </div>
+                        #end
+                        </div>
+                        <div class="tool-bottom-fixed">
+                            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+                        </div>
+                        <!-- 表单 结束 -->
+                    </form>
+                </div>
+            </div>
+            <div class="layui-card layui-col-md5 layui-col-xs5">
+                <div class="layui-card-header">选择医生（已设置职称诊查费）
+                    <div class="layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-normal layui-btn-xs" lay-tips="新增医生" id="btn_add" >
+                            <i class="layui-icon">&#xe654;</i>
+                        </button>
+                    </div>
+                </div>
+                <div class="layui-card-body">
+                    <table id="consultingRoomDoctorListGrid" lay-filter="consultingRoomDoctorListGrid"></table>
+                    <!--  列表表格 end -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+#parse("./outpatient/consultingRoom/consultingRoomEdit.js.vm")
+</body>
+</html>

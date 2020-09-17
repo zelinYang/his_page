@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>组套</title> 
+    #parse("./common/pageCss.vm")   
+    #parse("./common/pageJs.vm")
+</head>
+<style>
+    .main-left {
+        width: 40%;
+        float: left;
+        margin-left: 5px;
+    }
+
+    .main-right {
+        width: calc(60% - 26px);
+        float: right;
+        margin: 5px 0px 0 0;
+    }
+</style>
+<body class="full-height white-bg">
+
+  <div class="layui-row full-height">
+      <!-- 查询表单 -->
+      <form id="examineGroup_queryForm" class="layui-form">
+          <!-- 组套类型，MZZTLX   0住院  1西药 2成药 3草药 4检查 5化验（检验） 6处置 7针剂 1-7都是门诊的组套 -->
+          #formTextInput("orderGroupTypes" "04" " style='display:none;'")
+          <div class="layui-form-item p-t-xs">
+              <div class="layui-inline">
+                  #formTextInput("orderGroupName" "" " maxlength='50' class='layui-input' placeholder='组套检索' ")
+              </div>
+              <div class="layui-inline">
+                  <input type="checkbox" name="commonMedicineFlag" value="1" lay-filter="commonMedicineFlag" title="常用" lay-skin="primary" >
+              </div>
+              <div class="layui-inline">
+                  #formRadioGroup("orderGroupClassify" "3" ${dicData.dicBelongSysType} " lay-filter='orderGroupClassify' ")
+              </div>
+              <button id="btn_query_examineGroup" class="layui-btn layui-btn-sm" type="button"><i class="layui-icon layui-icon-search"></i></button>
+              <button id="btn_import_examineGroupItem" class="layui-btn layui-btn-sm" type="button">导入</button>
+          </div>
+      </form>
+     <!-- 历史处方主信息 -->          
+     <div class="main-left full-height">
+
+         <table id="examineGroupTable" lay-filter="examineGroupTable"></table> <!-- 数据表格 -->
+     </div>
+      
+     <!-- 历史处方明细 -->
+     <div class="main-right layui-hide">
+          <!-- 查询表单 -->
+          <form id="examineGroupItem_queryForm">
+             #formHiddenInput("orderGroupId" "" "id='orderGroupId'")
+          </form>
+          <table id="examineGroupItemTable" lay-filter="examineGroupItemTable"></table> <!-- 数据表格 -->
+     </div>
+     
+  </div><!-- layui-row -->
+
+   #parse("./outpatient/tech/examineGroup.js.vm")<!-- 页面js -->
+</body>
+</html>

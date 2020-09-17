@@ -1,0 +1,220 @@
+<html>
+<head>
+    <title>电子病历模板编辑</title>
+    #parse("./common/layuiCss.vm")
+##    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .col-xs-8 label {
+            margin-top: 8px;
+        }
+        .layui-unselect.layui-form-checkbox span {
+            color: #555;
+        }
+        .layui-unselect.layui-form-checkbox.layui-form-checked span {
+            color: #fff;
+        }
+        #emrTlpForm{padding-top: 10px}
+    </style>
+</head>
+
+<body>
+<form class="layui-form" action="" id="emrTlpForm">
+    #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+    #formHiddenInput("saveAsFlag" "$!{saveAsFlag}" "id='saveAsFlag'")
+    <div class="layui-row">
+        <div class="layui-col-xs6">
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>模板名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="emrTlpName" value="$!emrTlp.emrTlpName" maxlength="50" lay-verify="required" autocomplete="off" placeholder="请输入模板名称" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>模板分类</label>
+                <div class="layui-input-inline">
+                    #formHiddenInput("emrTlpClassifyId" "$!{emrTlp.emrTlpClassifyId}" "id='emrTlpClassifyId'")
+                    <input type="text" id="emrTlpClassifyName" name="emrTlpClassifyName" value="#if($!emrTlp.emrTlpClassifyId)$!{dicData.dicEmrTlpClassify.get($!emrTlp.emrTlpClassifyId.toString())}#end" lay-verify="required" placeholder="请选择模板分类" autocomplete="off" class="layui-input" readonly>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>模板类别</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("emrTlpMode" "$!{emrTlp.emrTlpMode}" $dicData.dicSexLimit "id='emrTlpType' lay-filter='emrTlpMode' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>模板属性</label>
+                <div class="layui-input-inline">
+                    #if($!{emrTlp.emrTlpType})
+                        #set($emrTlpType = $!{emrTlp.emrTlpType})
+                    #else
+                        #set($emrTlpType = "$!{CONST.AppConstants.VISABLE_HOSPITAL}")
+                    #end
+            #formSingleSelectDictionaryCommon("emrTlpType" "$emrTlpType" $dicData.dicBelongSysType "id='emrTlpType' lay-filter='emrTlpType' label='模板属性' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>版本号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="emrTlpVersion" value="$!emrTlp.emrTlpVersion" maxlength="10" lay-verify="required|number" autocomplete="off" placeholder="请输入版本号" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">打印布局</label>
+                <div class="layui-input-block">
+                    #if("$!emrTlp.printType" == "" || "$!emrTlp.printType" == "1")
+                        #set($printType = "1")
+                    #else
+                        #set($printType = "2")
+                    #end
+            #formRadioGroup("printType" "$!printType" ${dicData.dicPrintType} "")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>标准纸张</label>
+                <div class="layui-input-inline">
+            #formSingleSelectDictionaryCommon("printPaperSize" "$!emrTlp.printPaperSize" $dicData.printPaperSizeType "id='printPaperSize' lay-filter='printPaperSize' label='标准纸张' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red">*</span>模板宽度</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="emrTlpWidth" id="emrTlpWidth" value="$!emrTlp.emrTlpWidth" maxlength="50" lay-verify="required" autocomplete="off" placeholder="请输入模板宽度" class="layui-input">
+                </div>
+                <div class="layui-btn-group">
+                    <button type="button" class="layui-btn" style="padding: 0px 6px;" onclick="selectLength(1070)">A3</button>
+                    <button type="button" class="layui-btn" style="padding: 0px 6px;" onclick="selectLength(794)">A4</button>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">模板高度</label>
+                <div class="layui-input-inline">
+                    <input type="number" name="emrTlpHeight" id="emrTlpHeight" value="$!emrTlp.emrTlpHeight" maxlength="50" autocomplete="off" placeholder="请输入模板高度" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">打印字号</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionary("fontSize" "$!emrTlp.fontSize" $dicData.dicFontSize "id='fontSize' lay-filter='emrTlpType' label='打印字号' " "请选择字号")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">是否有效</label>
+                <div class="layui-input-block">
+                    #if("$!emrTlp.validFlag" == "" || "$!emrTlp.validFlag" == "1")
+                        #set($validFlag = 1)
+                    #else
+                        #set($validFlag = 0)
+                    #end
+            #formRadioGroup("validFlag" "$!validFlag" ${dicData.dicYesNo} "")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">备注</label>
+                <div class="layui-input-inline">
+                    <textarea name="remark" placeholder="请输入备注" maxlength="250" class="layui-textarea">$!emrTlp.remark</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs6" id="orgCheckBox" #if("$!emrTlpType" != '2') style="display: none;" #end>
+            <div class="layui-row">
+                <input type="hidden" value="$!emrTlp.officeIdStr" name="officeIdStr" id="officeIdStr"/>
+                #set($officeIdStr = ',' + $!emrTlp.officeIdStr + ',')
+                #foreach($option in $sysOrgList)
+                    #set($orgId = ',' + $option.orgId + ',')
+                    <div class="layui-col-xs4" style="padding-bottom: 5px;">
+                        <input type="checkbox" lay-filter="officeIdStr" value="${option.orgId}" id="officeIdStr_${option.orgId}"  title="${option.name}"
+                            #if($officeIdStr.indexOf($orgId) > -1)
+                           checked="checked"
+                            #end
+                        />
+                    </div>
+                #end
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    var  VISABLE_DEPARTMENT = "$!{CONST.AppConstants.VISABLE_DEPARTMENT}";//科室
+    layui.use(['form', 'element'], function() {
+        var form = layui.form;
+        var element = layui.element;
+        var $ = layui.$;
+        layui.form.render('select');
+
+        form.on('select(emrTlpType)', function(data){
+            if (data.value === VISABLE_DEPARTMENT) {
+                $('#orgCheckBox').show();
+            } else {
+                $('#orgCheckBox').hide();
+            }
+        });
+
+        form.on('checkbox(officeIdStr)', function(data){
+            var officeIdStr = $('#officeIdStr').val();
+            var officeIds = [];
+            var index = 0;
+            if (officeIdStr) {
+                officeIds = officeIdStr.split(',');
+            }
+            console.log(officeIds);
+            console.log(data.elem.checked);
+            for (i = 0; i < officeIds.length; i++) {
+                if (data.value === officeIds[i]) {
+                    index = i;
+                    break;
+                }
+            }
+            if (data.elem.checked) {
+                officeIds.push(data.value);
+            } else {
+                officeIds.splice(index, 1);
+            }
+            $('#officeIdStr').val(officeIds.join(','));
+        });
+        $('#emrTlpClassifyName').click(function () {
+            parent.layer.open({
+                type: 2
+                ,title: '选择病历模板分类'
+                ,content: '../emrTlp/emrTlpClassifySelect.do'
+                ,area: ['300px', '400px']
+                ,btn: ['确定', '取消']
+                ,yes: function(index, layero){
+                    var iframeWindow = parent.window['layui-layer-iframe'+ index]
+                            ,submitID = 'LAY-emr-classify-submit'
+                            ,submit = layero.find('iframe').contents().find('#'+ submitID);
+                    console.log('layui-layer-iframe'+ index);
+                    console.log(iframeWindow.layui);
+                    //监听提交
+                    iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                        var field = data.field; //获取提交的字段
+                        //提交 Ajax 成功后，静态更新表格中的数据
+                        console.log(field);
+                        $('#emrTlpClassifyId').val(field.emrTlpClassifyId);
+                        $('#emrTlpClassifyName').val(field.emrTlpClassifyName);
+                        parent.layer.close(index);
+                    });
+
+                    submit.trigger('click');
+                }
+                ,success: function(layero, index){
+
+                }
+            });
+        });
+    });
+
+    function selectLength(length) {
+        $('#emrTlpWidth').val(length);
+    }
+</script>
+</body>
+</html>

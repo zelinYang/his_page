@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<link rel="stylesheet" href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css">
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</style>
+</head>
+<body>
+
+    <div class="full-height m-n" style="height: calc(100% - 15px);">
+        <div  id="container">
+	        <div class="pane ui-layout-center">
+	            <div class="layui-tab-card full-height m-n">
+	                <form class="layui-form white-bg p-t-xs p-b-xs">
+	                    <div class="layui-inline">
+	                        <label class="layui-form-label">选择模板：</label>
+                            <div class="layui-input-inline" >
+		                        #formSingleSelect("emrTlpId" "$!{emrTlp.emrTlpId}" $!emrTlpMap "id='emrTlpId' lay-filter='emrTlpId'")
+                            </div>	                   
+	                    </div>
+	                </form>
+	                <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 37px); "
+                            class="larry-iframe" src=""></iframe>
+                </div>
+	        </div>
+	        
+	        <div class="ui-layout-south" >
+                <iframe src="../emr/emrTreeTemplate.do"  width="100%" height="100%" scrolling="no" frameborder="0"></iframe>
+            </div>
+	        <!-- <div class="main-interval">
+	           <div class="expend-btn-left layui-hide"> 
+	              <i lay-stope="tabmore"  class="layui-icon layui-icon-left"></i>
+	           </div>
+	           <div class="expend-btn-right"> 
+	              <i lay-stope="tabmore" class="layui-icon layui-icon-right"></i>
+	           </div>
+	        </div>
+        
+	        <div class="main-right">
+	           <div class="main-right-content">
+	               <iframe src="../emrTlp/emrTlpTools.do"  width="100%" height="100%" scrolling="no" frameborder="0"></iframe>
+	           </div>
+	        </div> -->
+	    </div>    
+    </div>
+    
+
+<script>
+layui.use(['element','table','form'],function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    layer = layui.layer;
+    
+    //初始化jqueryLayout
+    $('#container').layout();
+    
+	var inhospitalId = $("#inhospitalId",parent.document).val();
+    var emrTlpId = $("#emrTlpId").val();
+    loadEmrTlp(emrTlpId);
+    
+    form.on('select(emrTlpId)',function(data){
+        loadEmrTlp(data.value);
+    });
+    
+    function loadEmrTlp(emrTlpId){
+        $("#emrEdit").attr("src","../inpatient/assessFirstNursingEdit.do?emrTlpId=" + emrTlpId + "&inhospitalId=" + inhospitalId);
+    }
+    
+});
+
+//导入内容
+function leadingIn(content){
+    console.log(content);
+}
+
+</script>
+</body>
+
+</html>

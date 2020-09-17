@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>病历召回审核</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html"/>
+    <![endif]-->
+    <link href="../../../resource/layuiadmin/layui/css/layui.css" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+
+    <style type="text/css">
+        .xm-select-title, .xm-input {
+            height: 30px !important;
+            min-height: 30px !important;
+        }
+
+        .xm-select-parent .xm-select {
+            padding: 0px !important;
+        }
+    </style>
+    <script src="../../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+    <script src="../../../resource/hplus/js/validate/form-validator.js"></script>
+    <script src="../../../resource/hplus/js/contabs.js?v=12"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+    <script src="../../../resource/layuiadmin/layui/layui.js"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <input type="hidden" name="" value="" id="temp_inhospitalId">
+    <input type="hidden" name="" value="" id="temp_bedNo">
+    <input type="hidden" name="" value="" id="temp_inhospitalNo">
+    <input type="hidden" name="" value="" id="temp_bedUsageFlag">
+
+    <div class="page-top-info layui-bg-white">
+        <form class="layui-form " id="queryForm">
+            <div class="layui-form-item search-term layui-row-query">
+                <div class="layui-inline">
+                    <label class="layui-form-label">召回日期：</label>
+                    <div class="layui-input-inline input-inline-long" style="width:180px;">
+                        <input type="text" name="" value="" class="layui-input layer-date" tag="askTimeBegin,askTimeEnd"
+                               id="askTimeBegin" placeholder="召回日期范围" readonly="" lay-key="100001">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: 100px">召回人姓名：</label>
+                    <div class="layui-input-inline input-inline-long" style="width:180px;">
+                        <input type="text" name="borrowDoctorName" value="" class="layui-input" id="borrowDoctorName">
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button type="button" class="layui-btn layui-btn-sm layui-hide" id="query_btn"><i
+                            class="layui-icon layui-icon-search"></i></button>
+                    <button type="button" class="layui-btn layui-btn-sm " lay-tips="刷新" id="btn_reset"><i
+                            class="layui-icon layui-icon-refresh"></i></button>
+
+                </div>
+                <div class="layui-inline fr p-r-md">
+                    <button type="button" id="agreeBorrow" lay-submit lay-filter="agreeBorrow"
+                            class="layui-btn layui-btn-sm layui-btn-disabled"
+                            disabled btn-type="have">同意借阅
+                    </button>
+
+                    <button type="button" id="returnBorrow" lay-submit lay-filter="returnBorrow"
+                            class="layui-btn layui-btn-sm layui-btn-disabled " disabled btn-type="have"
+                            style="display: none">归 还
+                    </button>
+                    <button type="button" id="unagreeBorrow" lay-submit lay-filter="unagreeBorrow"
+                            class="layui-btn layui-btn-sm layui-btn-disabled"
+                            disabled btn-type="have">不同意
+                    </button>
+                </div>
+            </div>
+
+
+            <!--            <div class="layui-btn-group  m-l-md">-->
+            <!--                <button type="button" class="layui-btn layui-btn-sm layui-hide" id="query_fist"><i-->
+            <!--                        class="layui-icon layui-icon-search" style="font-size:20px"></i></button>-->
+            <!--            </div>-->
+            <!--            <div class="layui-btn-group  m-l-md">-->
+            <!--                <button type="button" class="layui-btn layui-btn-sm layui-hide" id="query_return"><i-->
+            <!--                        class="layui-icon layui-icon-search" style="font-size:20px"></i></button>-->
+            <!--            </div>-->
+
+
+        </form>
+    </div>
+
+
+    <div class="layui-tab m-b-n  layui-bg-white">
+
+        <ul class="layui-tab-title">
+            <li id="btn_assignment" class="layui-this">召回审核</li>
+            <li id="btn_unassignment">已召回查询</li>
+            <li id="btn_returnAssignment">待 回 收</li>
+
+        </ul>
+        <div class="layui-tab-content">
+            <div class="layui-tab-item layui-show">
+                <table class="layui-table m-n " id="docBorrowApply" lay-filter="docBorrowApply"></table>
+
+            </div>
+            <div class="layui-tab-item">
+                <table class="layui-table m-n" id="docBorrowApplyDone" lay-filter="docBorrowApplyDone"></table>
+
+            </div>
+            <div class="layui-tab-item">
+                <table class="layui-table m-n" id="docReturn" lay-filter="docReturn"></table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+</div>
+
+
+</body>
+<script>
+
+
+    layui.config({
+        base: '$contextPath/resource/layuiadmin/'   //静态资源所在路径
+    }).use(['element', 'table', 'form', 'layer', 'laydate', 'util'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var util = layui.util;
+        var formSelects = layui.formSelects
+
+        function getTableHgt(){
+            return ($('body').height() - $('#queryForm').height() - 77)
+        }
+        $(window).resize(function () {
+            table.reload('docBorrowApply',{
+                height: getTableHgt()
+            })
+            table.reload('docBorrowApplyDone',{
+                height: getTableHgt()
+            })
+            table.reload('docReturn',{
+                height: getTableHgt()
+            })
+        })
+
+        $.ajax({
+            type: "POST",
+            url: '../../doc/getSysUser.jo',
+            contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+            data: null,
+            dataType: "json",
+            success: function (data) {
+                $.ajax({
+                    type: "POST",
+                    url: '../../doc/getDicBorrowFlag.jo',
+                    contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+                    data: {"dicMapNames": 'dicBorrowFlag'},
+                    dataType: "json",
+                    success: function (datas) {
+                        console.log(JSON.stringify(datas.dicMap) + "datecc");
+
+                        $.ajax({
+                            type: "POST",
+                            url: '../../doc/getDicBorrowFlag.jo',
+                            contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+                            data: {"dicMapNames": 'dicReturnFlag'},
+                            dataType: "json",
+                            success: function (ReturnFlag) {
+                                var docBorrowApply = table.render($.extend(basePageTable, {
+                                    elem: '#docBorrowApply'
+                                    , url: '../../doc/docBorrowListData.jo' //数据接口
+                                    , page: true //开启分页
+                                    , height: getTableHgt()
+                                    , where: {
+                                        borrowFlag: 2,
+                                        borrowType: 2
+                                    }
+                                    , cols: [[
+                                        {type: 'checkbox', field: 'docBorrowId', fixed: 'left'}
+                                        , {
+                                            field: 'patientMedicalNo',
+                                            title: '病案号',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'patientName',
+                                            title: '病历人姓名',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'borrowDoctorName',
+                                            title: '召回医生名',
+                                            minWidth: 150
+
+                                        }, {
+                                            field: 'borrowPurpose',
+                                            title: '召回用途',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'borrowOfficeId',
+                                            title: '召回所属科室',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return data.data.sysOrg.name;
+                                            }
+
+                                        }, {
+                                            field: 'borrowDate',
+                                            title: '召回日期',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return util.toDateString(d.borrowDate)
+                                            }
+                                        }, {
+                                            field: 'borrowDayNum',
+                                            title: '召回天数',
+                                            minWidth: 150,
+                                        }, {
+                                            field: 'remark',
+                                            title: '召回备注',
+
+
+                                        }, {
+                                            field: 'oughtReturnDate',
+                                            title: '交还日期',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return util.toDateString(d.oughtReturnDate)
+                                            }
+                                        }]]
+                                }))
+                                var docBorrowApplyDone = table.render($.extend(basePageTable, {
+                                    elem: '#docBorrowApplyDone'
+                                    , url: '../../doc/docBorrowListData.jo' //数据接口
+                                    , page: true //开启分页
+                                    , height: getTableHgt()
+                                    , where: {
+                                        borrowFlag: 3,
+                                        borrowType: 2
+
+                                    }
+                                    , cols: [[
+                                        {type: 'checkbox', field: 'docBorrowId', fixed: 'left'}
+                                        , {
+                                            field: 'patientMedicalNo',
+                                            title: '病案号',
+                                            minWidth: 150,
+                                            align: 'center'
+                                        }, {
+                                            field: 'patientName',
+                                            title: '病历人姓名',
+                                            minWidth: 150,
+                                            align: 'center'
+                                        }, {
+                                            field: 'borrowDoctorName',
+                                            title: '召回医生姓名',
+                                            minWidth: 150,
+                                            align: 'center'
+
+                                        }, {
+                                            field: 'borrowPurpose',
+                                            title: '召回用途',
+                                            minWidth: 150,
+                                            align: 'center'
+                                        }, {
+                                            field: 'borrowOfficeId',
+                                            title: '召回所属科室',
+                                            minWidth: 150,
+                                            align: 'center',
+                                            templet: function (d) {
+                                                return data.data.sysOrg.name;
+                                            }
+
+                                        }, {
+                                            field: 'askTime',
+                                            title: '召回日期',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return util.toDateString(d.askTime)
+                                            },
+                                            align: 'center'
+                                        }, {
+                                            field: 'borrowDayNum',
+                                            title: '召回天数',
+                                            minWidth: 150,
+                                        }, {
+                                            field: 'remark',
+                                            title: '召回备注',
+
+
+                                        }, {
+                                            field: 'oughtReturnDate',
+                                            title: '交还日期',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return util.toDateString(d.oughtReturnDate)
+                                            }
+                                        }]]
+                                    , done: function (res) {
+                                        console.log(res.data)
+                                        $.each(res.data, function (index, item) {
+                                            laydate.render({
+                                                elem: '#borrowAgainDateBegin_' + item.docBorrowId
+                                            });
+                                        })
+                                    }
+                                }))
+                                var docReturn = table.render($.extend(basePageTable, {
+                                    elem: '#docReturn'
+                                    , url: '../../doc/docBorrowListData.jo' //数据接口
+                                    , page: true //开启分页
+                                    , height: getTableHgt()
+                                    , where: {
+                                        borrowFlag: 3,
+                                        returnFlag: 0,
+                                        borrowType: 2
+                                    }
+                                    , cols: [[
+                                        {type: 'checkbox', field: 'docBorrowId', fixed: 'left'}
+                                        , {
+                                            field: 'patientMedicalNo',
+                                            title: '病案号',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'patientName',
+                                            title: '病历人姓名',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'borrowDoctorName',
+                                            title: '召回医生',
+                                            minWidth: 150
+
+                                        }, {
+                                            field: 'borrowPurpose',
+                                            title: '召回用途',
+                                            minWidth: 150
+                                        }, {
+                                            field: 'borrowOfficeId',
+                                            title: '召回所属科室',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return data.data.sysOrg.name;
+                                            }
+
+                                        }, {
+                                            field: 'borrowDayNum',
+                                            title: '召回天数',
+                                            minWidth: 150,
+                                        }, {
+                                            field: 'remark',
+                                            title: '召回备注',
+
+
+                                        }, {
+                                            field: 'oughtReturnDate',
+                                            title: '交还日期',
+                                            minWidth: 150,
+                                            templet: function (d) {
+                                                return util.toDateString(d.oughtReturnDate)
+                                            }
+                                        }]]
+                                }));
+
+
+                                //按召回日期范围查询
+                                laydate.render({
+                                    elem: '#askTimeBegin', range: true
+                                    , done: function (value, date, endDate) {
+                                        $('#askTimeBegin').val(value);
+                                        reloadAllTable();
+                                    }
+                                });
+                                //按续借日期范围查询
+                                laydate.render({
+                                    elem: '#BorrowAgainDate', range: true
+                                    , done: function (value, date, endDate) {
+                                        $('#BorrowAgainDate').val(value);
+                                        reloadAllTable();
+                                    }
+                                });
+
+                                //select标签实时查询
+                                form.on('select(level)', function () {
+                                    reloadAllTable();
+                                })
+
+                                $("#query_btn").on('click', function () {
+                                    reloadAllTable();
+                                })
+                                //input实时查询
+                                $("#borrowDoctorName").keyup(function (event) {
+                                    (event.key == "Enter") && $("#query_btn").click();
+                                });
+
+                                //监听行单击事件（单击事件为：rowDouble）
+                                table.on('row(docBorrowApplyDone)', function (obj) {
+                                    $("#againBorrow").removeAttr("disabled")
+                                    var nullClass = "layui-btn layui-btn-sm";
+                                    var haveClass = "layui-btn layui-btn-sm";
+                                    //是否有患者在该床位
+                                    if (obj.data.inhospitalId == null || obj.data.inhospitalId == "") {
+                                        haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                                    } else {
+                                        nullClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                                    }
+                                    initButton(nullClass, haveClass);
+                                    //标注选中样式
+                                    obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                                });
+                                //监听行单击事件（单击事件为：rowDouble）
+                                table.on('row(docBorrowApply)', function (obj) {
+                                    $("#agreeBorrow").removeAttr("disabled")
+                                    $("#unagreeBorrow").removeAttr("disabled");
+                                    var nullClass = "layui-btn layui-btn-sm";
+                                    var haveClass = "layui-btn layui-btn-sm";
+                                    //是否有患者在该床位
+                                    if (obj.data.inhospitalId == null || obj.data.inhospitalId == "") {
+                                        haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                                    } else {
+                                        nullClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                                    }
+                                    initButton(nullClass, haveClass);
+                                    //标注选中样式
+                                    obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                                });
+                                //监听行单击事件（）
+                                table.on('row(docReturn)', function (obj) {
+                                    $("#returnBorrow").removeAttr("disabled");
+                                    var nullClass = "layui-btn layui-btn-sm";
+                                    var haveClass = "layui-btn layui-btn-sm";
+                                    //是否有患者在该床位
+                                    if (obj.data.inhospitalId == null || obj.data.inhospitalId == "") {
+                                        haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                                    } else {
+                                        nullClass = "layui-btn layuireturnBorrow-btn-sm layui-btn-disabled";
+                                    }
+                                    initButton(nullClass, haveClass);
+                                    //标注选中样式
+                                    obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                                });
+
+                                $("#btn_assignment").click(function () {
+                                    $("#againBorrow").attr("style", "display: none;");
+                                    $("#agreeBorrow").attr("style", "");
+                                    $("#unagreeBorrow").attr("style", "");
+                                    $("#returnBorrow").attr("style", "display:none;");
+                                    docBorrowApply.reload({
+                                        url: '../../doc/docBorrowListData.jo',
+                                        height: getTableHgt(),
+                                        where: {borrowFlag: 2}
+                                    })
+
+                                });
+                                $("#btn_unassignment").click(function () {
+                                    $("#againBorrow").attr("style", "");
+                                    $("#agreeBorrow").attr("style", "display:none;");
+                                    $("#unagreeBorrow").attr("style", "display:none;");
+                                    $("#returnBorrow").attr("style", "display:none;");
+                                    docBorrowApplyDone.reload({
+                                        url: '../../doc/docBorrowListData.jo',
+                                        height: getTableHgt(),
+                                        where: {borrowFlag: 3}
+                                    })
+
+                                });
+                                $("#btn_returnAssignment").click(function () {
+                                    $("#againBorrow").attr("style", "display:none;");
+                                    $("#agreeBorrow").attr("style", "display:none;");
+                                    $("#unagreeBorrow").attr("style", "display:none;");
+                                    $("#returnBorrow").attr("style", "");
+                                    docReturn.reload({
+                                        url: '../../doc/docBorrowListData.jo',
+                                        height: getTableHgt(),
+                                        where: {borrowFlag: 3, returnFlag: 0}
+                                    })
+
+                                });
+
+                                //监听提交
+                                form.on('submit(agreeBorrow)', function (data) {
+                                    console.log(JSON.stringify(data) + "data")
+                                    fox();
+                                });
+
+                                function fox() {
+                                    var subimitFlag = true;
+                                    var docBorrowJson = table.checkStatus('docBorrowApply').data;
+
+                                    var docBorrowIds = $.map(docBorrowJson, function (item) {
+                                        return item.docBorrowId
+                                    })
+
+                                    console.log(JSON.stringify(docBorrowJson) + "docBorrowJson")
+                                    if (docBorrowJson.length <= 0) {
+                                        layer.msg('请先选择', {
+                                            time: 4000, //40s后自动关闭
+
+                                        });
+                                    } else {
+                                        var settings = {
+                                            "url": '../../doc/saveDocBorrow.jo',
+                                            "method": "POST",
+                                            "contentType": "application/json",
+                                            "data": JSON.stringify(docBorrowJson)
+                                        };
+                                        $.ajax(settings).done(function (result) {
+                                            console.log(JSON.stringify(result) + "resule")
+                                            if (result.code == "0") {
+                                                common.alertCall("保存成功。", 1, function () {
+                                                    docBorrowApply.reload({
+                                                        url: '../../doc/docBorrowListData.jo',
+                                                        where: {borrowFlag: 2}
+                                                    })
+                                                });
+                                            } else {
+                                                common.alert(result.msg, 0);
+                                            }
+                                        });
+                                    }
+
+
+                                }
+
+                                form.on('submit(unagreeBorrow)', function (data) {
+                                    console.log(JSON.stringify(data) + "data")
+                                    var subimitFlag = true;
+                                    var docBorrowJson = table.checkStatus('docBorrowApply').data;
+
+                                    var docBorrowIds = $.map(docBorrowJson, function (item) {
+                                        return item.docBorrowId
+                                    })
+
+                                    console.log(JSON.stringify(docBorrowJson) + "docBorrowJson")
+                                    if (docBorrowJson.length <= 0) {
+                                        layer.msg('请先选择', {
+                                            time: 4000, //4s后自动关闭
+                                        });
+                                    } else {
+                                        var settings = {
+                                            "url": '../../doc/disAgreeDocBorrow.jo',
+                                            "method": "POST",
+                                            "contentType": "application/json",
+                                            "data": JSON.stringify(docBorrowJson)
+                                        };
+                                        $.ajax(settings).done(function (result) {
+                                            if (result.code == "0") {
+                                                common.alertCall("保存成功。", 1, function () {
+                                                    docBorrowApply.reload({
+                                                        url: '../../doc/docBorrowListData.jo',
+                                                        where: {borrowFlag: 2}
+                                                    })
+                                                });
+                                            } else {
+                                                common.alert(result.msg, 0);
+                                            }
+                                        });
+                                    }
+                                });
+
+
+                                form.on('submit(againBorrow)', function (data) {
+
+                                    console.log(JSON.stringify(data) + "data")
+
+                                    var docBorrowJson = table.checkStatus('docBorrowApplyDone').data;
+
+                                    console.log(JSON.stringify(docBorrowJson) + "docBorrowJson")
+                                    if (docBorrowJson.length <= 0) {
+                                        layer.msg('请选择需要续借的那条记录', {
+                                            time: 4000, //4s后自动关闭
+                                        });
+
+                                    } else {
+                                        var settings = {
+                                            "url": '../../doc/saveDocBorrowAgain.jo',
+                                            "method": "POST",
+                                            "contentType": "application/json",
+                                            "data": JSON.stringify(docBorrowJson)
+                                        };
+
+                                    }
+                                });
+
+                                form.on('submit(returnBorrow)', function (data) {
+                                    console.log(JSON.stringify(data) + "data")
+                                    var subimitFlag = true;
+                                    var docBorrowJson = table.checkStatus('docReturn').data;
+
+                                    var docBorrowIds = $.map(docBorrowJson, function (item) {
+                                        return item.docBorrowId
+                                    })
+
+                                    console.log(JSON.stringify(docBorrowJson) + "docBorrowJson")
+                                    if (docBorrowJson.length <= 0) {
+                                        layer.msg('请选择需要归还的那条记录', {
+                                            time: 2000, //2s后自动关闭
+                                        });
+
+                                    } else {
+                                        var settings = {
+                                            "url": '../../doc/saveDocBorrowReturn.jo',
+                                            "method": "POST",
+                                            "contentType": "application/json",
+                                            "data": JSON.stringify(docBorrowJson)
+                                        };
+                                        $.ajax(settings).done(function (result) {
+                                            if (result.code == "0") {
+                                                common.alertCall("归还成功。", 1, function () {
+                                                    docReturn.reload({
+                                                        url: '../../doc/docBorrowListData.jo',
+                                                        where: {borrowFlag: 3, returnFlag: 0}
+                                                    })
+                                                });
+                                            } else {
+                                                common.alert(result.msg, 0);
+                                            }
+                                        });
+                                    }
+                                });
+
+                                //三个表格的查询方法
+                                function reloadAllTable() {
+                                    var params = getQueryParam();
+                                    params.borrowFlag = 2;
+                                    console.log(JSON.stringify(params) + "dinend")
+                                    docBorrowApply.reload({
+                                        url: '../../doc/docBorrowListData.jo', where: $.extend({
+                                            borrowDoctorName: "",
+                                            askTimeBegin: "",
+                                            BorrowAgainDate: ""
+                                        }, params)
+                                    });
+                                    params.borrowFlag = 3;
+                                    console.log(JSON.stringify(params) + "dinenc")
+                                    docBorrowApplyDone.reload({
+                                        url: '../../doc/docBorrowListData.jo', where: $.extend({
+                                            borrowDoctorName: "",
+                                            askTimeBegin: "",
+                                            BorrowAgainDate: ""
+                                        }, params)
+                                    });
+                                    params.returnFlag = 0
+                                    console.log(JSON.stringify(params) + "dinene")
+                                    docReturn.reload({
+                                        url: '../../doc/docBorrowListData.jo', where: $.extend({
+                                            borrowDoctorName: "",
+                                            askTimeBegin: "",
+                                            BorrowAgainDate: ""
+                                        }, params)
+                                    });
+
+                                }
+                            }
+                        })
+
+
+                    }
+                })
+            },
+            error: function (e) {
+                console.log(e);
+            }
+        });
+
+    })
+
+    //初始化患者列表操作按钮状态
+    function initButton(nullClass, haveClass) {
+        $('button[btn-type="null"]').each(function () {
+            $(this).attr('class', nullClass);
+        });
+        $('button[btn-type="have"]').each(function () {
+            $(this).attr('class', haveClass);
+        });
+    }
+
+
+    $(document).ready(function () {
+        console.log(JSON.stringify($("#docBorrowApply")) + "dasdasdasdas")
+        var nullClass = "layui-btn layui-btn-sm";
+        if (null != $("#docBorrowApply")) {
+            $('button[btn-type="null"]').each(function () {
+                $(this).attr('class', nullClass);
+            });
+
+        }
+
+    })
+    //重置查询表单并刷新表格
+    $("#btn_reset").click(function () {
+        location.reload()
+        // clearQueryForm();
+    })
+
+    //获取查询表单数据
+    function getQueryParam() {
+        var params = common.serializeObject($("#queryForm"), ['askTimeBegin']);
+        console.log(JSON.stringify(params) + "ccccc");
+        return params;
+    }
+    //清空查询表单信息
+    function clearQueryForm() {
+        var form = $('#queryForm');
+        var inputs = form.find('input');
+        var textareas = form.find('textarea');
+        var selects = form.find('select');
+        inputs.val(null);
+        textareas.val(null);
+        selects.val(null);
+    }
+
+</script>
+</html>

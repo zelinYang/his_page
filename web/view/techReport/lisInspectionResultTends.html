@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>检验趋势图</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+    <script src="../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../resource/hplus/js/jquery-3.3.1.min.js"></script>
+    <script src="../../resource/hplus/js/app-common.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echartsTheme.js"></script>
+    <script src="../../resource/layuiadmin/lib/extend/echarts.js"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!--趋势图div-->
+            <div id="main" style="width: 100%;height:300px;margin-left: 10px;margin-top: 10px;"></div>
+
+            <!--列表 begin-->
+            <div style="margin-left: 20px;margin-right: 20px;">
+                <table id="lisResultGrid" class="layui-table-tabs" lay-filter="lisResultGrid"></table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>
+
+<script>
+    var patientId = getQueryVariable("patientId") ? getQueryVariable("patientId") : "";
+    var inhospitalId = getQueryVariable("inhospitalId") ? getQueryVariable("inhospitalId") : "";
+    var registerId = getQueryVariable("registerId") ? getQueryVariable("registerId") : "";
+    var commonQueryParams = {}
+    commonQueryParams["patientId"] = patientId;
+    //如果有住院流水号就不把门诊流水放入查询条件
+    if (null != inhospitalId && "" != inhospitalId && inhospitalId) {
+        commonQueryParams["inhospitalId"] = inhospitalId;
+    } else if (null != registerId && "" != registerId && registerId) {
+        commonQueryParams["registerId"] = registerId;
+    }
+
+    //获取检验结果ID——testItemIds
+    var testItemIdStr = getQueryVariable("testItemIdStr") ? getQueryVariable("testItemIdStr") : "";
+    var testItemIds = [];
+    if (null != testItemIdStr && "" != testItemIdStr) {
+        var testItemIdStrDecode = decodeURI(testItemIdStr);
+        testItemIds = testItemIdStrDecode.split(",");
+    }
+    commonQueryParams["testItemIds"] = testItemIds;
+
+    // 基于准备好的dom，初始化echarts实例
+    var myChart = echarts.init(document.getElementById('main'));
+
+    $.ajax({
+        type: "post",
+        async: true,
+        url: '../../tech/lisInspectionResultTendData.jo',
+        data: {patientId: patientId, testItemIds: testItemIds},
+        traditional: true,
+        dataType: "json",//返回数据形式为json
+        success: function (result) {
+            console.log(result);
+            var seriesItems = [];
+            for (var idx in result.data.testItemStatMap) {
+                var seriesItem = {
+                    name: idx,
+                    type: "line",
+                    smooth: "true",
+                    data: result.data.testItemStatMap[idx]
+                }
+                seriesItems.push(seriesItem);
+            }
+            var chartOption = {
+                title: {
+                   text: '检验趋势图'
+                },
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: result.data.testItemNames
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: result.data.inspectionTimes
+                },
+                yAxis: {
+                    type: 'value'
+                },
+                series: seriesItems
+            }
+            myChart.setOption(chartOption);
+        },
+        error: function (errorMsg) {
+            //请求失败时执行该函数
+            layer.msg("图表请求数据失败!");
+            myChart.hideLoading();
+        }
+    })
+
+    //获取url参数
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+            var pair = vars[i].split("=");
+            if(pair[0] == variable){return pair[1];}
+        }
+        return(false);
+    }
+
+    layui.use(['table', 'layedit', 'laydate'], function () {
+        var that = this
+        var table = layui.table;
+        var form = layui.form
+            , layer = layui.layer
+            , layedit = layui.layedit
+            , laydate = layui.laydate;
+        //日期
+        laydate.render({
+            elem: '#date1'
+            ,value: '2000-01-01'
+        });
+
+        laydate.render({
+            elem: '#date2'
+            ,value: new Date()
+        });
+
+/*
+        var dicMaps = getDictSync("dicQualitativeShow");
+        var dicQualitativeShow = dicMaps["dicQualitativeShow"];
+
+        //检查结果明细列表
+        table.render({
+            elem : '#lisResultGrid',
+            id : 'lisResultGrid',
+            url : '../../tech/inspectionSampleResult.jo',
+            height : 'full-30',
+            where: commonQueryParams,
+            cols : [ [
+                {type:'checkbox'},
+                {
+                    field : 'englishName',
+                    title : '项目',
+                    minWidth : 110
+                },
+                {
+                    field : 'chineseName',
+                    title : '中文名称',
+                    minWidth : 110
+                },
+                {
+                    field : 'quantitativeResult',
+                    title : '结果',
+                    width : 80
+                },
+                {
+                    field : 'testItemUnit',
+                    title : '单位',
+                    width : 110
+                },
+                {
+                    field : 'qualitativeResult',
+                    title : '定性',
+                    align : 'center',
+                    width : 50,
+                    templet : function(row) {
+                        if (row.qualitativeResult == "ah" || row.qualitativeResult == "h") {
+                            return '<font color="red">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                        } else if (row.qualitativeResult == "al" || row.qualitativeResult == "l") {
+                            return '<font color="blue">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                        }
+                        return '';
+                    }
+                },
+                {
+                    field : 'testItemReference',
+                    title : '参考值'
+                },
+                {
+                    field : 'rulePrompt',
+                    title : '危急值'
+                },
+                {
+                    field : 'rulePromptFlag',
+                    title : '危急标记',
+                    templet : function(row) {
+                        var rulePromptFlag = typeof(row.rulePromptFlag) == "undefined" ? "" : row.rulePromptFlag;
+                        return '<font color="red">' + rulePromptFlag + '</font>';
+                    }
+                }] ],
+                done : function() {
+
+            }
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#main').height() - 70)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('lisResultGrid', {
+                height: height
+            })
+        })
+*/
+    });
+
+
+</script>

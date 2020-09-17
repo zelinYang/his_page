@@ -1,0 +1,371 @@
+<script>
+    /************************ 导航 ********************************/
+    var layer;
+    var tabChange;//切换菜单方法
+    var tabAdd;
+    var editDrugAllergy;
+    var refreshOutRigTab;
+    var tabAddOutNav;//主导航添加导航项
+    var randerTopNav;//渲染顶部导航栏
+    var buildLeftMenu;
+    var workNavClickEvent;
+
+    randerTopNav = function() {
+        var outFunId = '2502';
+        var firstMenu = $("#rightMenu",parent.document).find('li').find('a[fun-id="'+outFunId+'"]');
+        var menuData = firstMenu.attr('data-menu');
+        buildLeftMenu(menuData);
+    }
+
+
+    //构建 导航 a标签的html
+    function buildMenuAelem(navHtml, menuNode) {
+        var panel = '';//面板：就诊面板、维护面板
+        var layId = '';//tab的lay-id
+        var url = '';//tab的lay-id
+        var patientFlag = '';
+        var onClickFun = '';
+        var href = menuNode['href'];
+        if(href && href.split(',').length == 4){
+            var aMenuObj = href.split(',');
+            panel = aMenuObj[0];//面板：就诊面板、维护面板
+            layId = aMenuObj[1];//tab的lay-id
+            url = aMenuObj[2].search('/') != '-1'? aMenuObj[2] : '';//包含 '/',标识url连接地址
+            onClickFun = url? '': 'onclick="'+aMenuObj[2]+'();"' ; //如果不存在url，则是onclick操作
+            patientFlag = aMenuObj[3] == 'npatient'? '': 'patient="must"' ;//是否需要患者才能使用菜单的标识
+        }
+        navHtml.push('<a href="javascript:;" panel="'+ panel +'" lay-id="'+ layId +'" url="'+ url +'" '+patientFlag +'  ' + onClickFun+' >'+ menuNode.text +'</a>');
+    }
+
+    function buildMenu(navHtml, data) {
+        $.each(data, function (i, pMenuNode){
+            var panel = '';//面板：就诊面板、维护面板
+            var layId = '';//tab的lay-id
+            var url = '';//url
+            var patientFlag = '';//tab的lay-id
+
+            navHtml.push('<li class="layui-nav-item">');
+            buildMenuAelem(navHtml, pMenuNode)//父节点的a标签
+            if (pMenuNode.children && pMenuNode.children.length && pMenuNode.children.length > 0) {
+                navHtml.push('<dl class="layui-nav-child">');
+                $(pMenuNode.children).each(function(index, menuNode) {
+                    navHtml.push(' <dd>');
+                    buildMenuAelem(navHtml, menuNode);//子节点的a标签
+                    navHtml.push(' </dd>');
+                });
+                navHtml.push('</dl>');
+            }
+            navHtml.push('</li>');
+        });
+    }
+
+
+    //主页导航栏菜单[患者列表、门诊日志、处方、检查、检验、手术...]
+    var mainTab = {
+        layFilter:'outNav',
+        menu:{
+            regPatient:{
+                layId:'regPatient'
+                ,url:'../outpatient/regPatientList.do'}
+            ,outpatientEmr:{
+                layId:'outpatientEmr'
+                ,url:'../outpatient/outpatientEmr.do'}
+            ,medicineRecipe:{
+                layId:'medicineRecipe'
+                ,url:'../outpatient/recipe.do'}
+            ,outpatientDiagnose:{
+                layId:'outpatientDiagnose'
+                ,url:'../outpatient/outpatientDiagnose.do'}
+            ,tcmRecipe:{
+                layId:'tcmRecipe'
+                ,url:'../outpatient/recipeTcm.do'}
+            ,treatApply:{
+                layId:'treatApply'
+                ,url:'../surgery/treatApplyList.do'}
+            ,tech:{
+                layId:'tech'
+                ,url:'../outpatient/outpatientTech.do'}
+            ,techReport:{
+                layId:'tech'
+                ,url:'../outpatient/techReport.do'}
+            ,inhosApply:{
+                layId:'inhosApply'
+                ,url:'../inpatient/inpatientApplyEdit.do?emrTlpClassifyId=$!{CONST.AppConstants.EMR_TLP_CLASSIFY_ID_INPATIENT_APPLY}&serviceId=inpatientApplyService'}
+            ,outAppoint:{
+                layId:'outAppoint'
+                ,url:'../register/outAppointEdit.do'}
+            ,medicalDoc:{
+                layId:'medicalDoc'
+                ,url:'../outpatient/medicalDoc.do'}
+            ,"consultationApply":{
+                layId:'"consultationApply"'
+                ,url:'../consultationApply/outConsultationApplyEntry.do'}
+        }
+    }
+
+
+    //切换到门诊日志菜单
+    function tabChangeOutpatient() {
+        //如果选择的挂号患者不是当前已选择的患者，其它菜单的iframe src清空, 动态增加的选项卡则删除
+        if (selectRegId != 0 || selectRegId != grobalModel.registerId) {
+            $('.outNav .layui-tab-content>div>iframe:gt(0)').attr('src','');
+        }
+
+        tabChange(mainTab.layFilter, mainTab.menu.outpatientEmr.layId);
+        selectRegId = grobalModel.registerId;
+        $('.layui-tab-title>li[lay-tab-href]>.layui-tab-close').trigger('click');//删除动态选项卡
+    }
+
+    //编辑患者的过敏信息
+    editDrugAllergy = function() {
+        var url = '../outpatient/drugAllergyList.do' + common.objToParamStr(grobalModel);
+        tabAddOutNav('drugAllergy','过敏信息',url);
+    }
+
+    //住院申请
+    inhosApply = function() {
+        if (!grobalModel.registerId) {
+            common.msg('请先在患者列表中选择就诊患者', 0);
+            return false;
+        }
+        var url = mainTab.menu.inhosApply.url + common.objToParamStr(grobalModel);
+        tabAddOutNav('inhosApply','住院申请',url);
+    }
+
+    treatApply = function(){
+        if (!grobalModel.registerId) {
+            common.msg('请先在患者列表中就诊患者', 0);
+            return false;
+        }
+        var url = mainTab.menu.treatApply.url + common.objToParamStr(grobalModel) + "&validFlag=1";
+        tabAddOutNav('treatApply','治疗申请',url);
+    }
+
+
+
+    //查看患者的基本信息
+    showPatientInfo = function() {
+        var url = '../outpatient/patientInfo.do?patientIndexId=' + curPatient.patientIndexId;
+        var tabTitle = '患者信息';
+        tabAddOutNav('patientBaseInfo',tabTitle,url);
+    }
+
+    //顶部导航样式修改
+    navTopStyle = function() {
+        $('.nav-top > ul > li > dl').mouseover(function() {
+            $(this).siblings('a').addClass('c-white');
+        }).mouseout(function() {
+            $(this).siblings('a').removeClass('c-white');
+        });
+    }
+
+
+
+
+    layui.use(['element', 'layer'], function(){
+        var element = layui.element;
+        $ = layui.$;
+        layer = layui.layer;
+        element.render();
+
+
+
+        buildLeftMenu = function(menuData) {
+            var menu = $.parseJSON(menuData);
+
+            var container = $('.workNav');
+            container.html('');
+            if (menu.children && menu.children.length > 0) {
+                var html = [];
+                buildMenu(html, menu.children);
+                container.html(html.join(''));
+                // 重新加载js文件来初始化菜单样式
+                element.render();
+                workNavClickEvent();
+            }
+
+        }
+
+        workNavClickEvent = function() {
+            //监听顶部导航栏点击事件
+            element.on('nav(workNav)', function(elem){
+                var tab = $(elem).attr('tab');//面板
+                var panel = $(elem).attr('panel');//面板
+                var url = $(elem).attr('url');//url
+                var layId = $(elem).attr('lay-id');//url
+                var patient = $(elem).attr('patient');//url
+                var tabTitle = $(elem).text();//名称
+                var modelEle = '.'+ panel;
+
+                if(tab){
+                    //切换显示面板
+                    var modelEle = '.'+ tab;
+                    $(modelEle).removeClass('layui-hide');
+                    $(modelEle).siblings('.panel').addClass('layui-hide');
+                }
+
+                if (!panel || !url || !layId || !tabTitle) {
+                    //console.log('!panel || !url || !layId || !tabTitle 请在导航菜单元素中进行写入');
+                    return false;
+                }
+                if (patient) {//必选选择患者
+                    if (!grobalModel.patientId) {
+                        console.log('菜单按钮需选择就诊患者');
+                        common.msg('选择就诊患者', iconType.warn);
+                        return false;
+                    }
+                    url = url + (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel);
+                }
+
+                //切换显示面板
+                $(modelEle).removeClass('layui-hide');
+                $(modelEle).siblings('.panel').addClass('layui-hide');
+
+                //判断添加tab的位置
+                if('work' == panel){
+                    tabAddOutNav(layId,tabTitle,url);
+                } else if('maintenance' == panel){
+                    $('.maintenance iframe')[0].contentWindow.tabAdd(layId,tabTitle,url,false); //调用iframe的方法
+                }
+
+
+            });
+        }
+
+
+
+        //刷新主页右侧导航菜单
+        refreshOutRigTab = function() {
+            function loadRegIfamePage() {
+                $('iframe[targetSrc][regActive]').each(function(index) {
+                    var elem = $(this);
+                    var src = elem.attr('targetSrc') + common.objToParamStr(grobalModel);
+                    elem.attr('src',src);
+                });
+            }
+            loadRegIfamePage();
+        }
+
+        /* 切换到指定Tab项 */
+        tabChange = function (filter, layid) {
+            element.tabChange(filter, layid);
+        }
+
+        //监听导航菜单点击事件
+        element.on('tab(outNav)', function(elem){
+            var layId = $(this).attr('lay-id');
+            var patient = $(this).attr('patient');
+
+            //如果layui-tab-item 已有url( 动态的url)
+            var layTabHref = $('.layui-tab-title li[lay-id='+layId+']').attr('lay-tab-href');
+
+            if (layTabHref) {
+                url = layTabHref; //使用已有的url
+            } else {
+                if (patient) {//必须带当前患者的参数
+                    //需要判断患者是否存在，不存在则返回
+                    url = mainTab.menu[layId].url;
+                    url += (url.indexOf("?") != -1 ? "&" : "?") + $.param(grobalModel);
+                } else {
+                    url = mainTab.menu[layId].url
+                }
+            }
+
+            var force = false;
+            /*   debugger */
+            if (layId != 'regPatient') {
+                if (!grobalModel.registerId) {//未选取患者 重置各个tab的iframe src
+                    force = true;
+                    reqIframePage(layId,url,force);
+                    return false;
+
+                }
+            }
+            reqIframePage(layId,url);
+        });
+
+        //iframe请求页
+        function reqIframePage(layId,url,force) {
+            var destIframe = $('div[lay-id="'+layId+'"] iframe');
+            if(!destIframe.attr('src') || force) {
+                destIframe.attr('src',url);
+            }
+        }
+
+        //动态添加tab
+        tabAdd = function(layId,tabTitle,url,force,layFilter, curPatientId){
+            if (!layId) { //layId必填
+                console.log('layId必填');
+                return false;
+            }
+            if (!tabTitle) { //tab的标题必填
+                console.log('tab的url必填');
+                return false;
+            }
+            if (!url) { //tab的url必填
+                console.log('tab的url必填');
+                return false;
+            }
+
+            //去UL > LI 的对应 href
+            var layTabHref = $('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href');
+            if (layTabHref) {
+                if (layTabHref != url) { //url不相同，删除后新建
+                    element.tabDelete(layFilter, layId);
+                } else {
+                    if (force) {//强制新建
+                        element.tabDelete(layFilter, layId);
+                    }else {
+                        element.tabChange(layFilter,layId);
+                        return; //返回
+                    }
+                }
+            }
+
+            var content = '<iframe src="' + url +'" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+            if (curPatientId) { //必须包含当前所选的患者ID
+                content = '<iframe src="' + url +'" patientId=" ' + curPatientId + ' " width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>';
+            }
+            element.tabAdd(layFilter, { id: layId ,title: tabTitle ,content: content});
+
+            var layFilterNav = $('.' + layFilter);
+            layFilterNav.find('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href',url);
+            layFilterNav.find('.layui-tab-title>li:last').trigger('click');
+            layFilterNav.find('.layui-tab-content>div:last').attr('lay-id',layId);
+            //element.tabChange(mainTab.layFilter,layId);
+        }
+
+        //动态添加OutNav的tab选项卡
+        tabAddOutNav = function(layId,tabTitle,url,force){
+            tabAdd(layId, tabTitle, url, force, mainTab.layFilter);
+        }
+
+        //动态添加维护OutMaintenance的tab选项卡
+        tabAddOutMaintenanceTab= function(layId,tabTitle,url,force){
+            tabAdd(layId, tabTitle, url, force, outMaintenanceTab.layFilter);
+        }
+
+        $(window).resize(function(){
+
+            clearInterval(resetHgt);
+            var resetHgt = setInterval(function(){
+                $('#rightContent').height($('#outRightNav').height() - $('#rightTitle').height());
+            },100)
+        })
+
+        //页面初始化
+        $(document).ready(function() {
+            navTopStyle();//顶部导航样式修改
+            randerTopNav();
+            clearInterval(resetHgt);
+            var resetHgt = setInterval(function(){
+                $('#rightContent').height($('#outRightNav').height() - $('#rightTitle').height());
+            },100)
+        });
+    });
+
+    // 打开一个新的选项卡窗口，一般在子窗口调用，新加一个添加tab的方法， 因为住院医生，病区护士页面是这个方法。
+    function openTab(url, text, id) {
+        tabAddOutNav(id,text,url);
+    }
+</script>

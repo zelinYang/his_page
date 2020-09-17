@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageJs.vm")
+    #parse("./common/visualizationCss.vm")
+    #parse("./common/visualizationJs.vm")
+    <link rel="stylesheet" href="$!contextPath/resource/editor/mini-editor/plugins/layuiadmin/layui/css/layui.css"/>
+
+    <style>
+        /*.edui-dialog .edui-dialog-body {*/
+            /*height: 400px!important;*/
+        /*}*/
+        .edui-default .edui-for-sdetemplate .edui-dialog-content {
+            width: 600px;
+            height: 400px!important;
+        }
+    </style>
+</head>
+<body>
+<body class="gray-bg">
+<div class="wrapper-content" style="height: calc(100% - 56px);">
+    #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+    #formHiddenInput("emrTlpClassifyId" "$!{emrTlp.emrTlpClassifyId}" "id='emrTlpClassifyId'")
+    #formHiddenInput("emrTlpName" "$!{emrTlp.emrTlpName}" "id='emrTlpName'")
+    <div id="designContainer" class="full-height" type="text/plain" style="margin: 0 auto 0; display: none;">
+        #if($!emrTlp.emrTlpContent)
+            $!emrTlp.emrTlpContent
+        #else
+            <div contenteditable="false" title="页眉" class="header" id="header">
+                <p style="text-align: center;" contenteditable="false"><span style="font-size: 20px;"><strong
+                        id="hospitalName"></strong></span><br></p>
+                <p><br></p>
+                <hr/>
+            </div>
+            <p><br></p>
+            <div  contenteditable="false" title="页脚" class="footer" id="footer">
+                <p><br></p>
+            </div>
+        #end
+    </div>
+</div>
+<div class="layui-row gray-bg text-center p-t-sm p-b-sm" style="position: fixed; bottom: 0; z-index: 19991016; width: 100%;">
+    <div class="layui-form">
+        <div class="layui-form-item" style="margin-bottom: 0;">
+            <div class="layui-btn-group">
+                <button id="speedClick" class="layui-btn" onclick="showControls()">编辑质控字段</button>
+            </div>
+        </div>
+    </div>
+</div>
+    #parse("./common/layuiJs.vm")
+<script>
+    layui.use(['layer'], function(){
+        var layer = layui.layer;
+        layer.load({
+            offset: ['50%', '50%']
+        });
+    });
+
+
+    var minieditorDesign = new window.minieditorDesign('designContainer', {
+        modelType: 'readonly',
+        printType: '$!{emrTlp.printType}',
+        outhtmlWidth: '$!{emrTlp.emrTlpWidth}' + 'px',
+        saveUrl: '../emrTlp/saveEmrTlpContent.jo',
+        hospitalName: '$session.getAttribute("currentUser").unitOrgName',
+        baseFormParams: {emrTlpId:"$!{emrTlp.emrTlpId}"},
+        initData: {}
+    });
+
+    function getValues() {
+        if (miniEditor.validateForm()) {
+            var ctrls = window.miniEditor.getControlById();
+        }
+    }
+
+    function showControls() {
+
+        layer.open({
+            type: 2,
+            area: ['90%', '90%'],
+            maxmin: true,
+            title :'选择质控字段',
+            content: '../emr/emrDefectPrjFieldList.do?emrDefectPrjItemId=$!{emrDefectPrjItemId}&emrTlpId=$!{emrTlp.emrTlpId}' //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        });
+    }
+
+    layui.use(['form'], function(){
+        var form = layui.form;
+    });
+    setTimeout(function () {
+        showControls();
+    },500)
+
+
+</script>
+</body>
+</html>

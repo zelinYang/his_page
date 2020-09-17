@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>layui</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    #parse("./common/pageCss.vm")
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    <style>
+        .layui-form-item .layui-form-checkbox { margin-top: 0; }
+        .layui-form.layui-border-box.layui-table-view { background-color: #fff;}
+        .layui-form-item .layui-inline.fr, .layui-btn > button.layui-btn { margin-right: 0;}
+        .layui-icon-delete { cursor: pointer; color: red; }
+        .layui-icon-edit { cursor: pointer; color: #009688; }
+        table>thead>tr>th>div {
+            text-align: center;
+        }
+        .layui-row.full-height{display: flex}
+        .left-box{width: 190px}
+        .right-box{width: calc(100% - 200px);margin-left: 10px}
+
+        .layui-table-cell {
+            height:auto;
+            overflow:visible;
+            text-overflow:inherit;
+            white-space:normal;
+            word-break: break-all;
+        }
+    </style>
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-row full-height">
+
+        <div class=" layui-bg-white left-box">
+            <div class="layui-btn-group">
+                <button id="btn_refresh" type="button" class="layui-btn layui-btn-sm " style="margin-left: 30px" lay-tips="刷新">
+                    <i class="layui-icon layui-icon-refresh"></i>
+                </button>
+            </div>
+            <ul id="emrTypeTree" class="ztree full-height full-scroll"></ul>
+        </div>
+        <div class="layui-form right-box">
+            <div class="layui-form-item search-term" >
+                <input type="hidden" id="emrTlpClassifyId">
+                <input type="hidden" name="emrTreeCode" id="emrTreeCode">
+                <input type="hidden" id="isAdd" value="0">
+                <div class="layui-inline">
+                    <label class="layui-form-label">模板属性</label>
+                    <div class="layui-input-inline auto-width">
+                        #foreach($option in $dicData.dicBelongSysType.keySet())
+                            <input type="checkbox" lay-filter="emrTlpType" name="emrTlpType" checked title="$!{dicData.dicBelongSysType.get($option)}" value="$option">
+                        #end
+        ##                    #formCheckboxes("emrTlpType" "1" ${dicData.dicBelongSysType} "" " lay-filter='emrTlpType'" "")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">模板名称</label>
+                    <div class="layui-input-inline">
+                        <input class="layui-input" name="keyWord" id="emrTlpName" autocomplete="off">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-submit="" lay-filter="LAY-search" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                </div>
+                <div class="layui-inline "style="padding-left: 80px;">
+                    <button class="layui-btn layui-btn-sm layui-btn-normal" id="emrTlpClassify">病历分类</button>
+                </div>
+                <div class="layui-inline fr">
+                    <button class="layui-btn layui-btn-sm" id="emrPrint">打印</button>
+                    <button class="layui-btn layui-btn-sm" id="emrTlpClass">模板类名</button>
+                    <button class="layui-btn layui-btn-sm" id="data_element">数据元集</button>
+                    <button class="layui-btn layui-btn-sm" id="control_model">控件模板</button>
+                </div>
+
+            </div>
+            <table class="layui-table layui-hide" id="emrTlp" lay-filter="emrTlp"></table>
+            <script type="text/html" id="switchTpl">
+                <!-- 这里的 checked 的状态只是演示 -->
+                <input type="checkbox" name="sex" value="{{d.validFlag}}" emr-tlp-id="{{d.emrTlpId}}" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" {{ d.validFlag == 1 ? 'checked' : '' }}>
+            </script>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="toolbarDemo">
+    <button class="layui-btn layui-btn-sm" lay-event="btn_add">新增模板</button>
+</script>
+<script type="text/html" id="barDemo">
+##    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+##    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+    <i class="layui-icon layui-icon-edit" title="编辑" lay-event="edit"></i>&nbsp;&nbsp;
+    <i class="layui-icon layui-icon-form" title="修改属性" lay-event="property"></i>&nbsp;&nbsp;
+    <i class="layui-icon layui-icon-templeate-1" title="另存模板" lay-event="saveAs"></i>&nbsp;&nbsp;
+    <i class="layui-icon layui-icon-template-1" title="模板设置" lay-event="emrFuncSet"></i>&nbsp;&nbsp;
+    <i class="layui-icon layui-icon-delete" title="删除" lay-event="del"></i>
+</script>
+    #parse("./common/common.js.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./emr/emrTlpPage.js.vm")
+<script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+</body>
+</html>

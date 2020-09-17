@@ -1,0 +1,161 @@
+<script>
+    var PUBLIC_PROJECT = "$!{CONST.AppConstants.PUBLIC_PROJECT}";
+    var dicVendorFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVendorFlag)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                keyWord: '',
+                vendorFlag: $("#vendorFlag").val(),
+                bankAccount: '',
+                linkman: '',
+                linkmanPhone: '',
+                email: '',
+            }, common.serializeObject($('#medicineVendor_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            medicineVendorListGrid.reload({
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('medicineVendor_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/medicine/medicineVendorEdit.do?vendorFlag='+$("#vendorFlag").val(), '新增供应商', {
+                area: ['770px', '80%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        var medicineVendorListGrid = table.render($.extend(basePageTable, {
+            elem: '#medicineVendorListGrid',
+            url: contextPath + '/medicine/medicineVendorPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'medicineVendorName',
+                title: '供应商名称',
+                minWidth: 200
+            }, {
+                field: 'medicineVendorAbb',
+                title: '名称缩写'
+            }, {
+                field: 'vendorFlag',
+                title: '厂家类型',
+                templet: function (d) {
+                    return dicVendorFlag[d.vendorFlag] || ''
+                }
+            }, {
+                field: 'depositBank',
+                title: '开户银行'
+            }, {
+                field: 'bankAccount',
+                title: '银行账号'
+            }, {
+                field: 'vendorAddr',
+                title: '地址'
+            }, {
+                field: 'vendorZipCode',
+                title: '邮政编码'
+            }, {
+                field: 'linkman',
+                title: '联系人'
+            }, {
+                field: 'linkmanPhone',
+                title: '联系电话'
+            }, {
+                field: 'email',
+                title: 'Email'
+            }, {
+                field: 'remark',
+                title: '备注'
+            },{
+                field: 'hospitalId',
+                title: '使用限制',
+                width: 80,
+                templet: function (d) {
+                    return d.hospitalId == PUBLIC_PROJECT ? '公用' : '本单位';
+                }
+            }, {
+                field: 'validFlag',
+                title: '是否有效',
+                unresize: true,
+                width: 100,
+                templet: '#validFlagTpl'
+            }, {
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+    autoSetHeigt()
+            }
+        }));
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../medicine/updateMedicineVendorValidFlag.jo', {
+                medicineVendorId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                if (result.code === '0') {
+                    common.responseAtcion(result);
+                } else {
+                    common.alert(result.msg, 0);
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool('+ medicineVendorListGrid.config.id +')', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_edit':
+                    common.open('$contextPath' + '/medicine/medicineVendorEdit.do?medicineVendorId=' + row.medicineVendorId+'&vendorFlag='+ $("#vendorFlag").val(), row.producingAreaName, {
+                        area: ['770px', '80%'],
+                        scroll: true
+                    })
+            }
+        });
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+        function getTableHgt(){
+            return $('body').height() - $('#medicineVendor_queryForm').height() - ($('body').height() - $('.layui-fluid').height())
+        }
+    })
+</script>

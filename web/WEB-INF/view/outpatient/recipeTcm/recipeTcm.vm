@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>检验检查列表</title>
+    #parse("./common/pageCss.vm")
+    #parse("./outpatient/recipeTcm/recipeTcm.css.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+    #parse("./outpatient/recipeTcm/recipeTcm.js.vm")
+    <link rel="stylesheet" href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style type="text/css">
+        .recipeTotalPrice {
+            display: inline;
+            float: left;
+            padding-left: 10px;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        .recipeTotalPriceValue {
+            color: red;
+        }
+		#container .ui-layout-resizer-closed {
+			display: none !important;
+		}
+    </style>
+</head>
+<body class="white-bg recipeTcm">
+   <div class="main" style="height: calc(100% - 41px );">
+    <div id="container" >
+         <div class="pane ui-layout-center" style="text-align: center;">
+         	 <form id="oupatientRecipeTcm_queryForm">
+              #if(!$registerId) #set($registerId =-1) #end
+              #formHiddenInput("registerId" "$!registerId" " id='registerId' ")
+              #if(!$patientId) #set($patientId =-1) #end
+              #formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+              </form>
+              #formHiddenInput("recipeId" "$!recipeId" " id='recipeId' ")
+              <div class="layui-form full-height">
+                 <div class="full-height table-width-full">
+                       <!-- 数据表格 -->
+                       <table id="outpatientRecipeTcmTable" lay-filter="outpatientRecipeTcmTable"></table>
+                 </div>
+             </div>
+      	</div>
+         <!-- ***************************************************************************** -->
+         <div class="ui-layout-south layui-hide" >
+              <!-- 导航切换 -->
+              <div class="layui-tab layui-tab-card blod full-height" lay-filter="outItemTabs"  style="height: calc(100% - 12px);">
+                <!-- 导航 名称 -->
+                <ul class="layui-tab-title"  >
+                  <li lay-id="common" class="layui-this">草药组套</li>
+                  <li lay-id="history" >历史方剂</li>
+                </ul>
+                <!-- 导航内容 -->
+                <div class="layui-tab-content" style="height: calc(100% - 44px);">
+	                  #set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+	                  <div class="layui-tab-item common full-height layui-show" style="padding: 0px;">
+	                      <iframe targetSrc="$contextPath/outpatient/recipeTcmGroup.do" class="resizeiframe" $iframeAttr></iframe>
+	                  </div>
+	                  <div class="layui-tab-item history full-height" style="padding: 0px;">
+	                      <iframe targetSrc="$contextPath/outpatient/recipeTcmHistory.do"  $iframeAttr></iframe>
+	                  </div>
+                </div>
+              </div>
+         </div>
+     </div><!-- container -->
+
+ 		<!-- 底部按钮栏  -->
+	 	<div class="tool-bottom-fixed btn_gorup">
+            <div class="recipeTotalPrice">草药金额：￥<span class="recipeTotalPriceValue">0</span></div>
+     		<button id="btn_add"  class="layui-btn layui-btn-sm" type="button">新增</button>
+            <button id="btn_edit"  class="layui-btn layui-btn-sm" type="button">编辑</button>
+            <button id="btn_refund" class="layui-btn layui-btn-sm" type="button">申请退药</button>
+     		<button id="btn_del"  class="layui-btn layui-btn-sm" type="button" onclick="tcmDelete();">删除</button>
+     		<button id="tech_tpl"  class="layui-btn layui-btn-sm" type="button" targetTab="common">草药组套</button>
+     		<button id="tech_history" class="layui-btn layui-btn-sm" type="button" targetTab="history">历史方剂</button>
+            <button id="btn_refresh" type="button" class="layui-btn layui-btn-sm " style="margin-left: 30px" lay-tips="刷新">
+                <i class="layui-icon layui-icon-refresh"></i>
+            </button>
+ 		</div>
+   </div>
+</body>
+</html>

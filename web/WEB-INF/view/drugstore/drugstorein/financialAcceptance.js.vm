@@ -1,0 +1,361 @@
+<script>
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');//入库方式
+    var dicBillFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillFlag)');//购入方式
+
+    var recipeItemUrl = contextPath + '/drugstore/financialNotAcceptance.jo';
+    layui.use(['jquery', 'table', 'element', 'form', 'laydate', 'util', 'layer'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var element = layui.element;
+        var util = layui.util;
+        var layer = layui.layer;
+        element.render();
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                examCheckFlag: ''
+            }, common.serializeObject($('#queryForm')))
+        }
+
+
+        //第一个实例
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 68)
+        };
+
+        function getTableHgt1() {
+            return ($('body').height() - $('#queryFormItem').height() - 60)
+        };
+        // 重置表格高度
+        $(window).resize(function () {
+            var T_height = getTableHgt(), I_height = getTableHgt1();
+            table.reload('financialAcceptanceList', {
+                height: T_height
+            });
+            table.reload('financialAcceptanceList2', {
+                height: T_height
+            });
+            table.reload('financialAcceptanceItemList', {
+                height: I_height
+            });
+        });
+        //第一个实例
+        var recipeItemUrl = contextPath + '/drugstore/financialNotAcceptance.jo';
+        var tableIns = table.render({
+            elem: '#financialAcceptanceList'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            , height: getTableHgt()//高度
+            , defaultToolbar: []
+            , where: {
+                examCheckFlag: 0
+            }
+            , url: recipeItemUrl //数据接口
+            , limit: 20
+            , page: true //显示分页导航
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , cols: [[ //表头
+                {
+                    field: 'goodsBillNo', title: '入库单号', templet: function (row) {
+                        return row.goodsBillNo || ''
+                    }
+                }
+                , {
+                    field: 'drugstoreInDate', title: '入库日期', templet: function (row) {
+                        if (null != row.drugstoreInDate) {
+                            return util.toDateString(row.drugstoreInDate);
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                , {
+                    field: 'medicineVendorName', title: '供货单位', templet: function (row) {
+                        return row.medicineVendorName || ''
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });//table.render
+        var tableInList = table.render({
+            elem: '#financialAcceptanceList2'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: [],
+            where: getQueryParams()
+            , height: getTableHgt()//高度
+            , url: recipeItemUrl //数据接口
+            , limit: 20
+            , page: true //显示分页导航
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , cols: [[ //表头
+                {field: 'receiptBillNo', title: '验收单号'},
+                {
+                    field: 'goodsBillNo', title: '入库单号', templet: function (row) {
+                        return row.goodsBillNo || ''
+                    }
+                }
+                , {
+                    field: 'drugstoreInDate', title: '入库日期', templet: function (row) {
+                        if (null != row.drugstoreInDate) {
+                            return util.toDateString(row.drugstoreInDate);
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                , {
+                    field: 'medicineVendorName', title: '供货单位', templet: function (row) {
+                        return row.medicineVendorName || ''
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });//table.render
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+        //查询列表
+        query = function () {
+            var queryParams = common.serializeObject($('#queryForm'));
+            tableIns.reload({where: queryParams});
+        }
+
+        // 刷新按钮
+        $('#btn_freshen').click(function () {
+            refresh();
+        });
+
+        //刷新列表
+        refresh = function () {
+            tableIns.reload();
+        }
+        //监听行单击事件
+        table.on('row(financialAcceptanceList)', function (obj) {
+            //单击行变色
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            //显示单号相关信息
+            displayDrugstoreInInformation(obj.data);
+            var drugstoreInId = obj.data.drugstoreInId;
+            var tableInse = table.render({
+                elem: '#financialAcceptanceItemList'
+                //,toolbar: '#toolbarDemo'
+                , defaultToolbar: []
+                , height: getTableHgt1()//高度
+                , url: '../drugstore/selectDrugstoreInItemList.jo' //数据接口
+                , limit: 20
+                , page: true //显示分页导航
+                , method: 'post'
+                , totalRow: true
+                , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+                , where: {'drugstoreInId': drugstoreInId}
+                , cols: [[ //表头
+                    {
+                        field: 'medicineName', title: '药品名称', minWidth: 80, totalRowText: '合计', templet: function (row) {
+                            return row.medicineName || ''
+                        }
+                    }
+                    , {
+                        field: 'drugstoreName', title: '入库药房', minWidth: 80, templet: function (row) {
+                            return row.drugstoreName || ''
+                        }
+                    }
+                    , {
+                        field: 'inCount', title: '入库数量', minWidth: 80, templet: function (row) {
+                            return row.inCount || ''
+                        }
+                    }
+                    , {
+                        field: 'buyPrice', title: '进货价', templet: function (row) {
+                            return row.buyPrice || ''
+                        }
+                    }, {
+                        field: 'buyTotalSum', title: '进货金额', minWidth: 80,  totalRow: true
+                    }
+                    , {
+                        field: 'medicineVendorName', title: '供货单位', minWidth: 80, templet: function (row) {
+                            return row.medicineVendorName || ''
+                        }
+                    }
+                    , {
+                        field: 'productionDate', title: '生产日期', minWidth: 150, templet: function (row) {
+                            if (null != row.productionDate) {
+                                return util.toDateString(row.productionDate);
+                            } else {
+                                return '';
+                            }
+                        }
+                    }
+                    , {
+                        field: 'expireDate', title: '有效日期', minWidth: 150, templet: function (row) {
+                            if (null != row.expireDate) {
+                                return util.toDateString(row.expireDate);
+                            } else {
+                                return '';
+                            }
+                        }
+                    }
+                ]]
+                //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+                , done: function (res, curr, count) {
+                    var i = 0;
+                    var amount = 0;
+                    for (; i < res.data.length; i++) {
+                        amount = amount + res.data[i].inCount * res.data[i].buyPrice;
+                    }
+                    $('#payForm').css('display', 'block');
+                }
+            });//table.render
+            $('#payForm').find(".layui-inline").removeClass("layui-hide")
+            //点击验收触发验收动作
+            $('#btn_send').click(function () {
+                drugstoreInId = $('#drugstoreInId').val();
+                console.log(drugstoreInId);
+                if (null != drugstoreInId) {
+                    common.requestServer(contextPath + '/drugstore/saveFinancialAcceptance.jo', {drugstoreInId: drugstoreInId}, function (result) {
+                        if (result.code == "0") {
+                            common.alertCall("财务验收成功。", 1, function () {
+                                location.reload();
+                            });
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                } else {
+                    common.msg('请选择入库单号', {
+                        time: 6000
+                    });
+                }
+            });
+        });
+        table.on('row(financialAcceptanceList2)', function (obj) {
+            //单击行变色
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            //显示单号相关信息
+            displayDrugstoreInInformation(obj.data);
+            var drugstoreInId = obj.data.drugstoreInId;
+            var tableInse = table.render({
+                elem: '#financialAcceptanceItemList'
+                //,toolbar: '#toolbarDemo'
+                , defaultToolbar: []
+                , height: getTableHgt1()//高度
+                , url: '../drugstore/selectDrugstoreInItemList.jo' //数据接口
+                , limit: 20
+                , page: true //显示分页导航
+                , method: 'post'
+                , totalRow: true
+                , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+                , where: {'drugstoreInId': drugstoreInId}
+                , cols: [[ //表头
+                    {
+                        field: 'medicineName', title: '药品名称', minWidth: 80, totalRowText: '合计', templet: function (row) {
+                            return row.medicineName || ''
+                        }
+                    }
+                    , {
+                        field: 'drugstoreName', title: '入库药房', minWidth: 80, templet: function (row) {
+                            return row.drugstoreName || ''
+                        }
+                    }
+                    , {
+                        field: 'inCount', title: '入库数量', minWidth: 80, templet: function (row) {
+                            return row.inCount || ''
+                        }
+                    }
+                    , {
+                        field: 'buyPrice', title: '进货价', templet: function (row) {
+                            return row.buyPrice || ''
+                        }
+                    }, {
+                        field: 'buyTotalSum', title: '进货金额', totalRow: true
+                    }
+                    , {
+                        field: 'medicineVendorName', title: '供货单位', minWidth: 80, templet: function (row) {
+                            return row.medicineVendorName || ''
+                        }
+                    }
+                    , {
+                        field: 'productionDate', title: '生产日期', minWidth: 80, templet: function (row) {
+                            if (null != row.productionDate) {
+                                return util.toDateString(row.productionDate);
+                            } else {
+                                return '';
+                            }
+                        }
+                    }
+                    , {
+                        field: 'expireDate', title: '有效日期', minWidth: 80, templet: function (row) {
+                            if (null != row.expireDate) {
+                                return util.toDateString(row.expireDate);
+                            } else {
+                                return '';
+                            }
+                        }
+                    }
+                ]]
+                //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+                , done: function (res, curr, count) {
+                    var i = 0;
+                    var amount = 0;
+                    for (; i < res.data.length; i++) {
+                        amount = amount + res.data[i].inCount * res.data[i].buyPrice;
+                    }
+                    $('#payForm').css('display', 'block');
+                }
+            });//table.render
+            $('#payForm').find(".layui-inline").addClass("layui-hide")
+            //点击验收触发验收动作
+            $('#btn_send').click(function () {
+                drugstoreInId = $('#drugstoreInId').val();
+                console.log(drugstoreInId);
+                if (null != drugstoreInId) {
+                    common.requestServer(contextPath + '/drugstore/saveFinancialAcceptance.jo', {drugstoreInId: drugstoreInId}, function (result) {
+                        if (result.code == "0") {
+                            common.alertCall("财务验收成功。", 1, function () {
+                                location.reload();
+                            });
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                } else {
+                    common.msg('请选择入库单号', {
+                        time: 6000
+                    });
+                }
+            });
+        });
+        var displayDrugstoreInInformation = function (result) {
+            $('#drugstoreInWay').val(dicDrugstoreInWay[result.drugstoreInWay]);
+            $('#medicineVendorName').val(result.medicineVendorName);
+            $('#billFlag').val(dicBillFlag[result.billFlag]);
+            $('#drugstoreName').val(result.drugstoreName);
+            $('#goodsBillNo').val(result.goodsBillNo);
+            $('#manageUserName').val(result.manageUserName);
+            $('#buyDate').val(util.toDateString(result.buyDate));
+            $('#invoiceNum').val(result.invoiceNum);
+            $('#receiptSheetCount').val(result.receiptSheetCount);
+            $('#drugstoreInId').val(result.drugstoreInId);
+        }
+    });
+    //刷新当前页面
+    $('#btn_fresh').click(function () {
+        location.reload();
+    });
+
+
+</script>

@@ -1,0 +1,311 @@
+
+<script>
+    var dicBasDiseaseClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicBasDiseaseClassify)');
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index : 'lib/index', //主入口模块
+    autocomplete : 'autocomplete'
+}).use(
+    [ 'index', 'table', 'form', 'layer', 'laydate','util'  ],
+    function() {
+    var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, laydate = layui.laydate,util = layui.util;
+    //年选择器
+    laydate.render({
+    elem: '#q_yearPopu'
+    ,type: 'date'
+    ,trigger: 'click' //采用click弹出
+});
+    // 获取表格高度
+    function getTableHgt() {
+    return ($('body').height() - $('.layui-form').height() - 15)
+}
+    // 重置表格高度
+    $(window).resize(function () {
+    var height = getTableHgt()
+    table.reload('basDiseaseListGrid', {
+    height: height
+})
+})
+    //列表
+    table.render({
+    elem : '#basDiseaseListGrid',
+    url : '../report/syncOutpatientFeeListData.jo',//数据接口 ,
+    //  where : { regionId : $("select[name='regionId']:first").val()},
+    limit : 20,
+    method:'post',
+    cellMinWidth: 130,
+    cols : [ [
+{
+    type : 'numbers'
+},
+{
+    field : 'visitCardNo',
+    title : '门诊号码'
+},
+{
+    field : 'outpatientOfficeName',
+    title : '执行科室'
+},
+{
+    field : 'chargeGroupName8',
+    title : '治疗费',
+    width: 180,
+},
+{
+    field : 'chargeGroupName9',
+    title : '手术费'
+},
+{
+    field : 'chargeGroupName4',
+    title : '诊查费'
+},
+{
+    field : 'selfPayInWay',
+    title : '支付方式',
+    width: 90, templet: function (row) {
+    return dicPaymentMethod[row.selfPayInWay] || '';
+}
+},
+{
+    field : 'schoolCount',
+    title : '合计'
+} ] ],
+    page : true,
+    height : getTableHgt(),
+    request : {
+    pageName : 'pageNumber' //页码的参数名称，默认：page
+    ,
+    limitName : 'pageSize' //每页数据量的参数名，默认：limit
+},
+    done : function() {
+    /*    this.elem.next().find('[lay-event="LAYTABLE_COLS"]').click(function(e) {
+           setTimeout(function() {
+               layui.$(e.currentTarget).find('.layui-form-checkbox').click(function() {
+                   console.log(this)
+               })
+           }, 50);
+       }) */
+}
+});
+
+    //监听数据搜索
+    form.on('submit(btn_query)', function(data) {
+    /* debugger */
+    var field = data.field;
+    //执行重载
+    table.reload('basDiseaseListGrid', {
+    where : field
+});
+
+    return false;
+});
+
+    //重置查询表单并刷新表格
+    $("#btn_reset").click(function() {
+    setTimeout(function() {
+    $('#btn_query').click();
+}, 50);
+})
+
+    //新增事件
+    $('#btn_add').click(function() {
+    editBasDisease();
+});
+
+    //监听有无 慢性病操作
+    form.on('switch(chronicFlag)', function(obj) {
+    updateChronicFlag(obj);
+});
+    //监听有无传染病操作
+    form.on('switch(infectiousFlag)', function(obj) {
+    updateInfectiousFlag(obj);
+});
+    //监听有无单病种操作
+    form.on('switch(singleDiseaseFlag)', function(obj) {
+    updateSingleDiseaseFlag(obj);
+});
+    //监听有无效操作
+    form.on('switch(validFlag)', function(obj) {
+    updateValidFlag(obj);
+});
+
+    //监听工具条
+    table.on('tool(basDiseaseListGrid)', function(obj) {
+    var data = obj.data;
+    switch (obj.event) {
+    case 'edit':
+    editBasDisease(data);
+    break;
+    case 'del':
+    delBasDisease(data);
+    break;
+    case 'btn_show':
+    showBasDisease(obj.data);
+    break;
+}
+});
+
+    //编辑
+    function editBasDisease(data) {
+    var title = '新增信息'
+    var content = '$contextPath' + '/gxqgw/editDataRegionPopu.do';
+    //true 执行
+    if (data) {
+    title = data.diseaseName;
+    content += '?regionPopuId=' + data.regionPopuId;
+}
+    common.open(content, title, {
+    area : [ '960px', '80%' ],
+    scroll:'yes'
+});
+}
+
+    //显示
+    function showBasDisease(data) {
+
+    var content = '$contextPath' + '/gxqgw/dataRegionPopuShow.do?regionPopuId=' + data.regionPopuId;
+
+    common.open(content, "人口详情", {
+    area : [ '960px', '80%' ],
+
+    scroll:'yes'
+});
+}
+
+    //保存
+    function save(index, layero) {
+    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+    //监听提交
+    iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+    var url = contextPath + '/gxqgw//saveDataRegionPopu.jo', params = data.field, msg = "保存成功";
+    common.requestServerHandler(url, params, msg, function(result) {
+    $('#btn_query').click();
+    layer.close(index); //关闭弹层
+})
+});
+    submit.trigger('click');
+}
+
+
+    //监听行单击事件
+    table.on('row(basDiseaseListGrid)', function(obj){
+    console.log(obj.tr) //得到当前行元素对象
+    console.log(obj.data) //得到当前行数据
+    //obj.del(); //删除当前行
+    //obj.update(fields) //修改当前行数据
+    // $(.).text(obj.data.regionPopuId)
+});
+
+    // 慢性病
+    function updateChronicFlag(obj) {
+    var validFlag = Number(obj.elem.checked);
+    var diseaseIds = obj.value;
+    common.requestServer('../basDisease/basDiseaseUpdateChronicFlag.jo', {
+    diseaseIds : diseaseIds,
+    validFlag : validFlag
+}, function(result) {
+    if (result.code == "0") {
+    layer.msg('设置 慢性病 成功', {
+    icon : 1
+});
+} else {
+    layer.msg('设置 慢性病 失败', {
+    icon : 2
+});
+    obj.elem.checked = !obj.elem.checked;
+    form.render('checkbox');
+}
+});
+}
+    //传染病
+    function updateInfectiousFlag(obj) {
+    var validFlag = Number(obj.elem.checked);
+    var diseaseIds = obj.value;
+    common.requestServer('../basDisease/basDiseaseUpdateInfectiousFlag.jo', {
+    diseaseIds : diseaseIds,
+    validFlag : validFlag
+}, function(result) {
+    if (result.code == "0") {
+    layer.msg('设置 传染病 成功', {
+    icon : 1
+});
+} else {
+    layer.msg('设置 传染病 失败', {
+    icon : 2
+});
+    obj.elem.checked = !obj.elem.checked;
+    form.render('checkbox');
+}
+});
+}
+    //单病种
+    function updateSingleDiseaseFlag(obj) {
+    var validFlag = Number(obj.elem.checked);
+    var diseaseIds = obj.value;
+    common.requestServer('../basDisease/basDiseaseUpdateSingleDiseaseFlag.jo', {
+    diseaseIds : diseaseIds,
+    validFlag : validFlag
+}, function(result) {
+    if (result.code == "0") {
+    layer.msg('设置 传染病 成功', {
+    icon : 1
+});
+} else {
+    layer.msg('设置 传染病 失败', {
+    icon : 2
+});
+    obj.elem.checked = !obj.elem.checked;
+    form.render('checkbox');
+}
+});
+}
+    // 更新有效标志状态
+    function updateValidFlag(obj) {
+    var validFlag = Number(obj.elem.checked);
+    var diseaseIds = obj.value;
+    common.requestServer('../basDisease/basDiseaseUpdateValidFlag.jo', {
+    diseaseIds : diseaseIds,
+    validFlag : validFlag
+}, function(result) {
+    if (result.code == "0") {
+    layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+    icon : 1
+});
+} else {
+    layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+    icon : 2
+});
+    obj.elem.checked = !obj.elem.checked;
+    form.render('checkbox');
+}
+});
+}
+
+    //删除
+    function delBasDisease(data) {
+    common.confirm("确定要删除吗？", function() {
+    common.requestServer('$contextPath/gxqgw/delDataRegionPopu.jo', {
+
+    //    diseaseIds : data.diseaseId
+    ids : data.regionPopuId
+}, function(result) {
+    if (result.code == "0") {
+    common.msg("删除成功", 1, function () {
+    $('#btn_query').click();
+})
+
+} else {
+    common.alert(result.msg, 0);
+}
+});
+});
+}
+
+});
+</script>

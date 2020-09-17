@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-患者列表-就诊卡列表-门诊挂号</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="patient_queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">性别</label>
+                        <div class="layui-input-inline">
+                            #formRadioGroup("patientSex" "" ${dicData.dicClearSex} "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">出生日期</label>
+                        <div class="layui-input-inline wd-100">
+                            #formLayDateInput("patientBirthBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                        </div>
+                        <div class="layui-form-mid">至</div>
+                        <div class="layui-input-inline wd-100">
+                            #formLayDateInput("patientBirthEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline" style="width: auto">
+                            #formCheckboxeGroup("patientClassifys" "" $dicData.dicPatientClassify "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline wd-220">
+                            #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/医保号/健康卡' lay-tips='支持姓名/电话/身份证/就诊卡号/社保号/健康卡查询'")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs layui-btn-normal " lay-tips="详情" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="patientListGrid" lay-filter="patientListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+<script>
+    var NO_FLAG = '$!{CONST.AppConstants.NO_FLAG}';
+    var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}';
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)')
+    //患者证件类型
+    var dicPatientIdType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientIdType)')
+    //监护人证件类型
+    var dicEduDegree = JSON.parse('$dicTools.changeMapToJson($dicData.dicEduDegree)')
+    //患者类别
+    var dicPatientClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientClassify)')
+    //人员类型
+    var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)')
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                patientSex: '',
+                patientBirthBegin: '',
+                patientBirthEnd: '',
+                patientClassifys: '',
+                keyWord: '',
+                validFlag: YES_FLAG
+            }, common.serializeObject($('#patient_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('patientListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('patient_queryForm');
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#patientListGrid',
+            url: contextPath + '/patient/patientListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field: 'visitCardNo',
+                title: '就诊卡号',
+                minWidth: 180,
+                fixed: 'left'
+            }, {
+                field: 'patientName',
+                title: '患者姓名',
+                minWidth: 90,
+                fixed: 'left'
+            }, {
+                field: 'patientSex',
+                title: '性别',
+                templet: '#sexTpl'
+            }, {
+                field: 'patientBirth',
+                title: '出生日期',
+                minWidth: 105,
+                templet: function (row) {
+                    return util.toDateString(row.patientBirth, 'yyyy-MM-dd');
+                }
+            }, {
+                field: 'patientAge',
+                title: '年龄',
+                minWidth: 90
+            }, {
+                field: 'patientClassify',
+                title: '患者类型',
+                minWidth: 90,
+                templet: function (row) {
+                    return dicPatientClassify[row.patientClassify] || ''
+                }
+            }, {
+                field: 'patientIdType',
+                title: '证件类型',
+                minWidth: 150,
+                templet: function (row) {
+                    return dicPatientIdType[row.patientIdType] || ''
+                }
+            }, {
+                field: 'patientIdCard',
+                title: '证件号码',
+                minWidth: 180
+            }, {
+                field: 'patientAddr',
+                title: '现居住地',
+                minWidth: 180
+            }, {
+                field: 'patientAttribute',
+                title: '人员类型',
+                minWidth: 90,
+                templet: function (row) {
+                    return dicPatientAttribute[row.patientAttribute] || ''
+                }
+            }, {
+                field: 'patientPhone',
+                title: '患者电话',
+                minWidth: 120
+            }, {
+                field: 'bankCardNo',
+                title: '银行卡号',
+                minWidth: 180
+            }, {
+                field: 'socialSecurityNo',
+                title: '医保号',
+                minWidth: 90
+            }, {
+                field: 'guardName',
+                title: '监护人姓名',
+                minWidth: 100
+            }, {
+                field: 'guardIdCard',
+                title: '监护人证件号码',
+                minWidth: 180
+            }, {
+                field: 'inhospitalNo',
+                title: '住院号',
+                minWidth: 90
+            }, {
+                field: 'patientMedicalNo',
+                title: '病案号',
+                minWidth: 90
+            }, {
+                field: 'createTime',
+                title: '办卡时间',
+                minWidth: 130,
+                templet: function (row) {
+                    return util.toDateString(row.createTime, 'yyyy-MM-dd HH:mm');
+                }
+            }, {
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#patient_queryForm').height();
+        }
+        //操作栏操作按钮的事件
+        table.on('tool(patientListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    top.common.open('$contextPath' + '/register/showTimeAxis.do?patientId=' + row.patientId, '患者信息（' + row.patientName + '）', {
+                        area: ['90%', '90%'],
+                        scroll: true
+                    })
+                    break;
+            }
+        });
+    })
+</script>
+</body>
+</html>

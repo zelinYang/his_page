@@ -1,0 +1,662 @@
+<script>
+    //是否有效
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicEmrDefectType = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrDefectType)');
+    var dicEmrDefectMode = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrDefectMode)');
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index',
+    }).use(
+        ['index', 'table', 'form', 'layer', 'autocomplete'],
+        function () {
+            var $ = layui.$, form = layui.form, table = layui.table, autocomplete = layui.autocomplete;
+
+            // 获取表格高度
+            function getTableHgt() {
+                return ($('body').height() - $('.layui-btn-group').height() - 40);
+            }
+            // 重置表格高度
+            $(window).resize(function () {
+                var height = getTableHgt();
+                table.reload('emrDefectPrjClassifyListGrid', {
+                    height: height
+                });
+                table.reload('emrDefectPrjListGrid', {
+                    height: height
+                });
+                table.reload('emrDefectPrjItemListGrid', {
+                    height: height
+                });
+            })
+
+            //评分标准表列表
+            var emrDefectPrjClassifyListGrid = table.render({
+                elem: '#emrDefectPrjClassifyListGrid',
+                url: '../emr/emrDefectPrjClassifyListData.jo',
+                limit: 20,
+                id: 'emrDefectPrjClassifyListGrid',
+                where: {
+                    'validFlag': '1'
+                }//默认有效
+                ,
+                cols: [[{
+                    field: 'emrDefectPrjClassifyName',
+                    event: 'clickCall_1',
+                    title: '评分标准'
+                }]],
+                page: {
+                    layout: ['prev', 'page', 'next', 'count']
+                },
+                height: getTableHgt(),
+                request: {
+                    pageName: 'pageNumber' //页码的参数名称，默认：page
+                    ,
+                    limitName: 'pageSize' //每页数据量的参数名，默认：limit
+                }
+                //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+                ,
+                done: function (res, curr, count) {
+                    $("#btn_add").addClass("layui-btn-disabled");
+                    common.removeLayTableAllChoose(this);
+                }
+            });
+
+            //新增评分标准
+            $("#btn_addClassify").click(function () {
+                editClassify();
+            });
+
+            //编辑评分标准
+            $("#btn_editClassify").click(function () {
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分标准", 0);
+                } else {
+                    editClassify(emrDefectPrjClassifyId, $("#emrDefectPrjClassifyName").val());
+                }
+            });
+
+            //删除评分标准
+            $("#btn_deleteClassify").click(function () {
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分标准", 0);
+                } else {
+                    common.confirm("确定要删除吗？", function () {
+                        var url = contextPath + '/emr/delEmrDefectPrjClassify.jo', params = {
+                            ids: emrDefectPrjClassifyId
+                        }, msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function (result) {
+                            $("#emrDefectPrjClassifyId").val("");
+                            $("#emrDefectPrjClassifyName").val("");
+                            emrDefectPrjClassifyListGrid.reload();
+                        })
+                    });
+                }
+            });
+
+            //新增或编辑评分标准
+            function editClassify(emrDefectPrjClassifyId, emrDefectPrjClassifyName) {
+                var title = '新增标准';
+                var url = '$contextPath' + '/emr/emrDefectPrjClassifyEdit.do';
+                if (emrDefectPrjClassifyId) {
+                    url += '?emrDefectPrjClassifyId=' + emrDefectPrjClassifyId
+                    title = '<b>' + emrDefectPrjClassifyName + '</b>编辑';
+                }
+                common.open(url, title, {
+                    area: ['350px', '200px'],
+                    btn: ['保存'],
+                    yes: function (index, layero) {
+                        saveEmrDefectPrjClassify(index, layero);
+                    }
+                });
+            }
+
+            //保存编辑字典
+            function saveEmrDefectPrjClassify(index, layero) {
+                var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save_emrDefectPrjClassify',
+                    submit = layero.find('iframe').contents().find('#' + submitID);
+                //监听提交
+                iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                    var url = contextPath + '/emr/saveEmrDefectPrjClassify.jo', params = data.field, msg = "保存成功";
+                    common.requestServerHandler(url, params, msg, function (result) {
+                        //$("#btn_query_dic").click();
+                        emrDefectPrjClassifyListGrid.reload();
+                        layer.close(index); //关闭弹层
+                        //更新评分项目隐藏域的值
+                        $("#emrDefectPrjClassifyId").val(result.data.emrDefectPrjClassifyId);
+                        $("#emrDefectPrjClassifyName").val(result.data.emrDefectPrjClassifyName);
+                        //设置刚保存的评分标准为"选中"
+                        setTimeout(function () {
+                            var classifyIndex = null;
+                            for (classifyIndex in table.cache["emrDefectPrjClassifyListGrid"]) {
+                                var classify = table.cache["emrDefectPrjClassifyListGrid"][classifyIndex];
+                                if (result.data.emrDefectPrjClassifyId == classify.emrDefectPrjClassifyId) {
+                                    //设置对应评分标准页面DOM样式为"被选中"
+                                    $("[lay-id='emrDefectPrjClassifyListGrid']").find("tr[data-index=" + classifyIndex + "]").addClass("layui-table-click");
+                                    break;
+                                }
+                            }
+                        }, 500);
+                    })
+                });
+                submit.trigger('click');
+            }
+
+            //监听行单击事件
+            table.on('row(emrDefectPrjClassifyListGrid)', function (obj) {
+
+                //当前选中的评分标准与本次点击选择的评分标准相同时，不做操作
+                if ($("#emrDefectPrjClassifyId").val() == obj.data.emrDefectPrjClassifyId) {
+                    return;
+                }
+                $("#emrDefectPrjClassifyId").val(obj.data.emrDefectPrjClassifyId);
+                $("#emrDefectPrjClassifyName").val(obj.data.emrDefectPrjClassifyName);
+                $("#emrDefectPrjId").val("");
+                $("#emrDefectPrjName").val("");
+                $("#emrTlpClassifyId").val("");
+                $("#emrTlpClassifyName").val("");
+                table.reload("emrDefectPrjListGrid", {
+                    where: {
+                        emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val()
+                    }
+                });
+                table.reload("emrDefectPrjItemListGrid", {
+                    where: {
+                        emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val(),
+                        emrDefectPrjId: ""
+                    }
+                });
+            });
+
+            //评分项目列表
+            var emrDefectPrjListGrid = table.render({
+                elem: '#emrDefectPrjListGrid',
+                url: '../emr/emrDefectPrjListData.jo',
+                limit: 20,
+                id: 'emrDefectPrjListGrid',
+                where: {
+                    'validFlag': '1'
+                }//默认有效
+                ,
+                cols: [[{
+                    field: 'emrDefectPrjName',
+                    event: 'clickCall_2',
+                    title: '评分项目',
+                    templet: function (d) {
+                        return d.emrDefectPrjName + "（" + d.emrDefectMaxScore + "分）";
+                    }
+                }]],
+                page: {
+                    layout: ['prev', 'page', 'next', 'count']
+                },
+                height: getTableHgt(),
+                request: {
+                    pageName: 'pageNumber' //页码的参数名称，默认：page
+                    ,
+                    limitName: 'pageSize' //每页数据量的参数名，默认：limit
+                }
+                //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+                ,
+                done: function (res, curr, count) {
+                    $("#btn_add").addClass("layui-btn-disabled");
+                    common.removeLayTableAllChoose(this);
+                }
+            });
+
+            //新增评分项目
+            $("#btn_addPrj").click(function () {
+                //判断是否已选择评分标准
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分标准", 0);
+                } else {
+                    editPrj(emrDefectPrjClassifyId);
+                }
+            });
+
+            //编辑评分项目
+            $("#btn_editPrj").click(function () {
+                //判断是否已选择评分标准
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分项目", 0);
+                } else {
+                    //判断是否已选择评分项目
+                    var emrDefectPrjId = $("#emrDefectPrjId").val();
+                    if (null == emrDefectPrjId || "" == emrDefectPrjId) {
+                        common.alert("请选择评分项目", 0);
+                    } else {
+                        editPrj(emrDefectPrjClassifyId, emrDefectPrjId, $("#emrDefectPrjName").val());
+                    }
+                }
+            });
+
+            //删除评分项目
+            $("#btn_deletePrj").click(function () {
+                var emrDefectPrjId = $("#emrDefectPrjId").val();
+                if (null == emrDefectPrjId || "" == emrDefectPrjId) {
+                    common.alert("请选择评分项目", 0);
+                } else {
+                    common.confirm("确定要删除吗？", function () {
+                        var url = contextPath + '/emr/delEmrDefectPrj.jo', params = {
+                            ids: emrDefectPrjId
+                        }, msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function (result) {
+                            $("#emrDefectPrjId").val(null);
+                            $("#emrDefectPrjName").val(null);
+                            $("#emrTlpClassifyId").val(null);
+                            $("#emrTlpClassifyName").val(null);
+                            emrDefectPrjListGrid.reload({
+                                where: {
+                                    emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val()
+                                }
+                            });
+                        })
+                    });
+                }
+            });
+
+            //新增或编辑评分项目
+            function editPrj(emrDefectPrjClassifyId, emrDefectPrjId, emrDefectPrjName) {
+                var title = '新增项目';
+                var url = '$contextPath' + '/emr/emrDefectPrjEdit.do?emrDefectPrjClassifyId=' + emrDefectPrjClassifyId;
+                if (emrDefectPrjId) {
+                    url += '&emrDefectPrjId=' + emrDefectPrjId
+                    title = '<b>' + emrDefectPrjName + '</b>编辑';
+                }
+                common.open(url, title, {
+                    area: ['650px', '500px'],
+                    btn: ['保存'],
+                    yes: function (index, layero) {
+                        saveEmrDefectPrj(index, layero);
+                    }
+                });
+            }
+
+            //保存编辑字典
+            function saveEmrDefectPrj(index, layero) {
+                var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save_emrDefectPrj',
+                    submit = layero.find('iframe').contents().find('#' + submitID);
+                //监听提交
+                iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                    var url = contextPath + '/emr/saveEmrDefectPrj.jo', params = data.field, msg = "保存成功";
+                    common.requestServerHandler(url, params, msg, function (result) {
+                        table.reload("emrDefectPrjListGrid", {
+                            where: {
+                                emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val()
+                            }
+                        });
+                        layer.close(index); //关闭弹层
+                        //更新评分项目隐藏域的值
+                        $("#emrDefectPrjId").val(result.data.emrDefectPrjId);
+                        $("#emrDefectPrjName").val(result.data.emrDefectPrjName);
+                        $("#emrTlpClassifyId").val(result.data.emrTlpClassifyId);
+                        $("#emrTlpClassifyName").val(result.data.emrTlpClassifyName);
+                        //设置刚保存的评分项目为"选中"
+                        setTimeout(function () {
+                            var prjIndex = null;
+                            for (prjIndex in table.cache["emrDefectPrjListGrid"]) {
+                                var prj = table.cache["emrDefectPrjListGrid"][prjIndex];
+                                if (result.data.emrDefectPrjId == prj.emrDefectPrjId) {
+                                    //设置对应评分项目页面DOM样式为"被选中"
+                                    $("[lay-id='emrDefectPrjListGrid']").find("tr[data-index=" + prjIndex + "]").addClass("layui-table-click");
+                                    break;
+                                }
+                            }
+                        }, 500);
+                    })
+                });
+                submit.trigger('click');
+            }
+            // 监听主表行点击事件
+            $('#emrDefectPrjItemListGrids').on("click",".layui-table-body table.layui-table tbody tr", function () {
+
+                /*当单击表格行时,把单选按钮设为选中状态*/
+                var tableDiv;
+                var index = $(this).attr('data-index');
+
+                var tableBox = $(this).parents('.layui-table-box');
+                //存在固定列
+                if (tableBox.find(".layui-table-fixed.layui-table-fixed-l").length>0) {
+                    tableDiv = tableBox.find(".layui-table-fixed.layui-table-fixed-l");
+                } else {
+                    tableDiv = tableBox.find(".layui-table-body.layui-table-main");
+                }
+                var checkCell = tableDiv.find("tr[data-index=" + index + "]").find("td div.layui-table-cell div.layui-form-radio I");
+                if (checkCell.length>0) {
+                    checkCell.click();
+                }
+            });
+            //对td的单击事件进行拦截停止，防止事件冒泡再次触发上述的单击事件  将此代码在页面初始化后执行一次即可以。
+            $('#emrDefectPrjItemListGrids').on("click", "td div.layui-table-cell div.layui-form-radio", function (e) {
+                e.stopPropagation();
+            });
+            //监听评分项目行单击事件
+            table.on('row(emrDefectPrjListGrid)', function (obj) {
+
+                $("#emrDefectPrjItemListGrids").removeClass("layui-hide")
+                //当前选中的评分项目与本次点击选择的评分项目相同时，不做操作
+                if ($("#emrDefectPrjId").val() == obj.data.emrDefectPrjId) {
+                    return;
+                }
+                $("#emrDefectPrjId").val(obj.data.emrDefectPrjId);
+                $("#emrDefectPrjName").val(obj.data.emrDefectPrjName);
+                $("#emrTlpClassifyId").val(obj.data.emrTlpClassifyId);
+                $("#emrTlpClassifyName").val(obj.data.emrTlpClassifyName);
+                //赋值对应评分标准的隐藏域emrDefectPrjClassifyId
+                var emrDefectPrjClassifyId = obj.data.emrDefectPrjClassifyId;
+                $("#emrDefectPrjClassifyId").val(emrDefectPrjClassifyId);
+                //赋值对应评分标准的隐藏域emrDefectPrjClassifyName
+                var classifyIndex = null;
+                $("[lay-id='emrDefectPrjClassifyListGrid']").find("tr.layui-table-click").removeClass("layui-table-click");
+                for (classifyIndex in table.cache["emrDefectPrjClassifyListGrid"]) {
+                    var classify = table.cache["emrDefectPrjClassifyListGrid"][classifyIndex];
+                    if (emrDefectPrjClassifyId == classify.emrDefectPrjClassifyId) {
+                        $("#emrDefectPrjClassifyName").val(classify.emrDefectPrjClassifyName);
+                        //设置对应评分标准页面DOM样式为"被选中"
+                        $("[lay-id='emrDefectPrjClassifyListGrid']").find("tr[data-index=" + classifyIndex + "]").addClass("layui-table-click");
+                        break;
+                    }
+                }
+
+                //更新缺陷内容列表
+                table.reload("emrDefectPrjItemListGrid", {
+                    where: {
+                        emrDefectPrjId: obj.data.emrDefectPrjId
+                    }
+                });
+            });
+
+
+            //评分标准表列表
+            var emrDefectPrjItemListGrid = table.render({
+                elem: '#emrDefectPrjItemListGrid',
+                url: '../emr/emrDefectPrjItemListData.jo',
+                limit: 20,
+                id: 'emrDefectPrjItemListGrid',
+                where: {
+                    //'validFlag' : '1',
+                    event: 'clickCall_3',
+
+                }//默认有效
+                ,
+                cols: [[
+                    {type: 'radio', field: 'emrDefectPrjItemId', fixed: 'left'},
+                    {
+                        type: 'numbers',
+                        event: 'clickCall_3',
+                    }, {
+                        field: 'defectName',
+                        event: 'clickCall_3',
+                        title: '缺陷内容',
+                        minWidth: 80,
+                        align: 'left'
+                    }, {
+                        field: 'defectType',
+                        event: 'clickCall_3',
+                        title: '评分类型',
+                        width: 80,
+                        templet: function (d) {
+                            return dicEmrDefectType[d.defectType] + '扣分' || '';
+                        }
+                    }, {
+                        field: 'defectScore',
+                        event: 'clickCall_3',
+                        title: '分值',
+                        width: 50
+                    }, {
+                        field: 'defectMode',
+                        event: 'clickCall_3',
+                        title: '评分模式',
+                        width: 80,
+                        templet: function (d) {
+                            return dicEmrDefectMode[d.defectMode] || '';
+                        }
+                    }, {
+                        field: 'validFlag',
+                        event: 'clickCall_3',
+                        title: '是否有效',
+                        width: 80,
+                        templet: function (d) {
+                            return '<input type="checkbox" name="validFlag" value="' + d.emrDefectPrjItemId + '" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" '
+                                + (d.validFlag == 1 && 'checked') + '>';
+                        }
+                    }, {
+                        title: '操作',
+                        event: 'clickCall_3',
+                        width: 100,
+                        align: 'center',
+                        fixed: 'right',
+                        toolbar: '#colsToolbarEmrDefect'
+                    }]],
+                page: {
+                    layout: ['prev', 'page', 'next', 'count']
+                },
+                height: getTableHgt(),
+                request: {
+                    pageName: 'pageNumber' //页码的参数名称，默认：page
+                    ,
+                    limitName: 'pageSize' //每页数据量的参数名，默认：limit
+                }
+                //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+                ,
+                done: function (res, curr, count) {
+                    $("#btn_add").addClass("layui-btn-disabled");
+                    common.removeLayTableAllChoose(this);
+                }
+            });
+
+            //新增评分标准
+            $("#btn_addItem").click(function () {
+                //判断是否已选择评分标准
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分标准", 0);
+                } else {
+                    //判断是否已选择评分项目
+                    var emrDefectPrjId = $("#emrDefectPrjId").val();
+                    if (null == emrDefectPrjId || "" == emrDefectPrjId) {
+                        common.alert("请选择评分项目", 0);
+                    } else {
+                        editItem();
+                    }
+                }
+            });
+
+            //删除评分标准
+            $("#btn_deleteItem").click(function () {
+                var emrDefectPrjClassifyId = $("#emrDefectPrjClassifyId").val();
+                if (null == emrDefectPrjClassifyId || "" == emrDefectPrjClassifyId) {
+                    common.alert("请选择评分项目", 0);
+                } else {
+                    common.confirm("确定要删除吗？", function () {
+                        var url = contextPath + '/emr/delEmrDefectPrjClassify.jo', params = {
+                            ids: emrDefectPrjClassifyId
+                        }, msg = "删除成功";
+                        common.requestServerHandler(url, params, msg, function (result) {
+                            $("#emrDefectPrjClassifyId").val("");
+                            $("#emrDefectPrjClassifyName").val("");
+                            emrDefectPrjClassifyListGrid.reload();
+                        })
+                    });
+                }
+            });
+
+            //新增或编辑评分标准
+            function editItem(itemObj) {
+                var title = '新增缺陷内容';
+                var url = '$contextPath' + '/emr/emrDefectPrjItemEdit.do';
+                if (null != itemObj || typeof (itemObj) != "undefined") {
+                    url += '?emrDefectPrjClassifyId=' + itemObj.emrDefectPrjClassifyId
+                        + '&emrDefectPrjId=' + itemObj.emrDefectPrjId
+                        + '&emrDefectPrjName=' + itemObj.emrDefectPrjName
+                        + '&emrDefectPrjItemId=' + itemObj.emrDefectPrjItemId;
+                    title = '缺陷内容编辑';
+                } else {
+                    url += '?emrDefectPrjClassifyId=' + $("#emrDefectPrjClassifyId").val()
+                        + '&emrDefectPrjId=' + $("#emrDefectPrjId").val()
+                        + '&emrDefectPrjName=' + $("#emrDefectPrjName").val();
+                }
+                common.open(url, title, {
+                    area: ['650px', '500px'],
+                    btn: ['保存'],
+                    yes: function (index, layero) {
+                        saveEmrDefectPrjItem(index, layero);
+                    }
+                });
+            }
+
+            //保存缺陷内容
+            function saveEmrDefectPrjItem(index, layero) {
+                var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save_emrDefectPrjItem',
+                    submit = layero.find('iframe').contents().find('#' + submitID);
+                //监听提交
+                iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                    var url = contextPath + '/emr/saveEmrDefectPrjItem.jo', params = data.field, msg = "保存成功";
+                    common.requestServerHandler(url, params, msg, function (result) {
+                        table.reload("emrDefectPrjItemListGrid", {
+                            where: {
+                                emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val(),
+                                emrDefectPrjId: $("#emrDefectPrjId").val()
+                            }
+                        });
+                        layer.close(index); //关闭弹层
+                        //设置刚保存的缺陷内容为"选中"
+                        setTimeout(function () {
+                            var itemIndex = null;
+                            for (itemIndex in table.cache["emrDefectPrjItemListGrid"]) {
+                                var item = table.cache["emrDefectPrjItemListGrid"][itemIndex];
+                                if (result.data.emrDefectPrjItemId == item.emrDefectPrjItemId) {
+                                    //设置对应评分项目页面DOM样式为"被选中"
+                                    $("[lay-id='emrDefectPrjItemListGrid']").find("tr[data-index=" + itemIndex + "]").addClass("layui-table-click");
+                                    break;
+                                }
+                            }
+                        }, 500);
+                    })
+                });
+                submit.trigger('click');
+            }
+
+            //删除缺陷内容
+            function delItem(itemObj) {
+                common.confirm("确定要删除吗？", function () {
+                    var url = contextPath + '/emr/delEmrDefectPrjItem.jo', params = {
+                        ids: itemObj.emrDefectPrjItemId
+                    }, msg = "删除成功";
+                    common.requestServerHandler(url, params, msg, function (result) {
+                        table.reload("emrDefectPrjItemListGrid", {
+                            where: {
+                                emrDefectPrjClassifyId: $("#emrDefectPrjClassifyId").val(),
+                                emrDefectPrjId: $("#emrDefectPrjId").val()
+                            }
+                        });
+                    })
+                });
+            }
+
+            //监听行单击事件
+            table.on('row(emrDefectPrjItemListGrid)', function (obj) {
+                if (obj.data.defectMode==1){
+                    $("#btn_addColumn").addClass("layui-btn-disabled");
+                    $("#btn_addColumn").attr("disabled", "disabled");
+                } else {
+                    $("#btn_addColumn").removeClass("layui-btn-disabled");
+                    $("#btn_addColumn").removeAttr("disabled")
+                }
+
+                //赋值对应评分标准的隐藏域emrDefectPrjClassifyId
+                $("#emrDefectPrjClassifyId").val(obj.data.emrDefectPrjClassifyId);
+                //赋值对应评分标准的隐藏域emrDefectPrjClassifyName
+                var classifyIndex = null;
+                $("[lay-id='emrDefectPrjClassifyListGrid']").find("tr.layui-table-click").removeClass("layui-table-click");
+                for (classifyIndex in table.cache["emrDefectPrjClassifyListGrid"]) {
+                    var classify = table.cache["emrDefectPrjClassifyListGrid"][classifyIndex];
+                    if (obj.data.emrDefectPrjClassifyId == classify.emrDefectPrjClassifyId) {
+                        $("#emrDefectPrjClassifyName").val(classify.emrDefectPrjClassifyName);
+                        //设置对应评分标准页面DOM样式为"被选中"
+                        $("[lay-id='emrDefectPrjClassifyListGrid']").find("tr[data-index=" + classifyIndex + "]").addClass("layui-table-click");
+                        break;
+                    }
+                }
+                //赋值对应评分项目的隐藏域emrDefectPrjId
+                $("#emrDefectPrjId").val(obj.data.emrDefectPrjId);
+                //赋值对应评分项目的隐藏域emrDefectPrjName
+                var prjIndex = null;
+                $("[lay-id='emrDefectPrjListGrid']").find("tr.layui-table-click").removeClass("layui-table-click");
+                for (prjIndex in table.cache["emrDefectPrjListGrid"]) {
+                    var prj = table.cache["emrDefectPrjListGrid"][prjIndex];
+                    if (obj.data.emrDefectPrjId == prj.emrDefectPrjId) {
+                        $("#emrDefectPrjName").val(prj.emrDefectPrjName);
+                        //设置对应评分项目页面DOM样式为"被选中"
+                        $("[lay-id='emrDefectPrjListGrid']").find("tr[data-index=" + prjIndex + "]").addClass("layui-table-click");
+                        break;
+                    }
+                }
+                $("#emrTlpClassifyId").val(obj.data.emrTlpClassifyId);
+                $("#emrTlpClassifyName").val(obj.data.emrTlpClassifyName);
+            });
+
+            //监听工具条
+            table.on('tool(emrDefectPrjItemListGrid)', function (obj) {
+                var data = obj.data;
+                switch (obj.event) {
+                    case 'edit':
+                        editItem(data);
+                        break;
+                    case 'del':
+                        delItem(data);
+                        break;
+                }
+            });
+
+            //监听有无效操作
+            form.on('switch(validFlag)', function (obj) {
+                updateValidFlag(obj);
+            });
+
+            // 更新有效标志状态
+            function updateValidFlag(obj) {
+                var validFlag = Number(obj.elem.checked);
+                var idToChange = obj.value;
+                common.requestServer('../emr/emrDefectPrjItemUpdateValidFlag.jo', {
+                    emrDefectPrjItemIds: idToChange,
+                    validFlag: validFlag
+                }, function (result) {
+                    if (result.code == "0") {
+                        layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                            icon: 1
+                        });
+                    } else {
+                        layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                            icon: 2
+                        });
+                        obj.elem.checked = !obj.elem.checked;
+                        form.render('checkbox');
+                    }
+                });
+            }
+
+            //
+            $("#btn_addColumn").on('click', function () {
+                var emrJson = table.checkStatus('emrDefectPrjItemListGrid').data;
+
+                if (null != emrJson[0] ){
+                    var title = '质控规则组件'
+                    var content = '$contextPath' + '/emr/emrDefectPrjFieldMain.do?emrDefectPrjItemId='+emrJson[0].emrDefectPrjItemId;
+                    //true 执行
+                    common.open(content, title, {
+                        area: ['90%', '90%'],
+                        btn: ['关闭'],
+                        yes: function (index, layero) {
+                            layer.closeAll();
+                        }
+                    });
+                }else{
+                        common.alert("请选择需要设置的质控规则", 0);
+                }
+            })
+        });
+</script>

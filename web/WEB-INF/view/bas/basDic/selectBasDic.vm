@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-row full-height-scroll">
+        <div id="tree" lay-filter="tree"></div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    eleTree: 'modules/eleTree'
+}).use(['form', 'eleTree'], function(){
+    var eleTree = layui.eleTree, form = layui.form;
+    // 加载检验单类型树型菜单
+    common.requestServer('../basDic/basDicTree.jo', {dicTypeId: ("$!dicTypeId" == "" ? '' : $!dicTypeId), valid: ("$!valid" == "" ? '' : $!valid)}, function (result){
+        if (!result) { return ;}
+        var treeData = [{label: '检验单', spread: true, children: result}];
+        eleTree.render({ elem: '#tree', data: treeData });
+
+        $('.layui-layer-setwin', parent.document).css('top', '25px');
+        $('.layui-layer-setwin', parent.document).css('right', '25px');
+        $('.layui-layer-iframe', parent.document).css('overflow-y', 'hidden');
+        $('.layui-layer-iframe', parent.document).css('overflow-x', 'hidden');
+    });
+
+    // 监听左边树型点击事件
+    eleTree.on("toggleSlide(tree)", function(data) {
+        if (data.currentData && parent.selectBasDicCall && typeof(parent.selectBasDicCall) == 'function') {
+            parent.selectBasDicCall(data.currentData);
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index); 
+        }
+
+    });
+});
+</script>
+</html>

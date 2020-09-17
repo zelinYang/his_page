@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        body {
+            overflow: hidden;
+        }
+
+        .layui-fluid {
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+
+<table width="100%" border="0" cellspacing="0" cellpadding="0">
+    <tr>
+        <td>
+            <table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td valign="top">
+                        <form class="layui-form" method="post" ID="LoginForm" name="LoginForm" onsubmit="return LoginForm_onsubmit()">
+                            <table id="bs" width="90%" border="0" align="center"
+                                   cellpadding="0" cellspacing="0">
+                                <tr>
+                                    <td height="15" colspan="2"></td>
+                                </tr>
+                                <tr>
+                                    <td width="90" class="font1">
+                                        选择证书
+                                    </td>
+                                    <td>
+                                        <select id="UserList" name="UserList"></select>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td >
+                                        &nbsp;
+                                    </td>
+                                    <td>
+                                        &nbsp;
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td class="font1">
+                                        证书密码
+                                    </td>
+                                    <td>
+                                        <input class="layui-input" type="password" name="pwd1" id="UserPwd" size="16" maxlength="16">
+                                    </td>
+                                </tr>
+                            </table>
+                            <input type="hidden" ID="UserSignedData" name="UserSignedData" value="$!{strSignedData}">
+                            <input type="hidden" ID="UserCert" name="UserCert" value="$!{strServerCert}">
+                            <input type="hidden" ID="ContainerName" name="ContainerName">
+                            <input type="hidden" ID="strRandom" name="strRandom" value="$!{strRandom}">
+                        </form>
+                    </td>
+                </tr>
+                <tr>
+                    <td height="20"></td>
+                </tr>
+            </table>
+        </td>
+    </tr>
+</table>
+<div style="text-align: center;">
+    <button class="layui-btn" lay-submit="" lay-filter="formDemo" onclick="loginCert();">签名</button>
+</div>
+</body>
+<script src="$!contextPath/resource/cert/XTXSAB.js"></script>
+<script>
+    $(function () {
+        SetUserCertList("LoginForm.UserList", CERT_TYPE_HARD);
+        layui.use('form', function(){
+            var form = layui.form;
+        });
+    });
+    var strServerSignedData = "$!{strSignedData}";
+    var strServerRan = "$!{strRandom}";
+    var strServerCert = "$!{strServerCert}";
+    var user = JSON.parse('$!{user}');
+
+    function selectUser() {
+        $.post(contextPath + '/emr/getSignUserInfo.jo', {caKey: $('#UserList').val(), patientHospitalEmrId: '$!{info.patientHospitalEmrId}', doctorSign: '$!{info.doctorSign}'}, function (res){
+            console.log(res);
+            if(res.code === "0") {
+                var data = {
+                    name: res.data.name,
+                    userId: res.data.userId,
+                    signImage: res.data.signPic
+                };
+                console.log(data);
+                parent.signEmrCall(data);
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            }
+        }, 'json');
+    }
+
+    function loginCert(){
+        var strCertId = $('#UserList').val();
+        var strPin = $('#UserPwd').val();
+        SetAutoLogoutParameter(strCertId, '');
+        Login("LoginForm", strCertId, strPin, "");
+    }
+
+    function SignCallBack(retObj) {
+        if (retObj.retVal == "") {
+            // TestForm.signatureData.value = "";
+            alert("签名失败!");
+            return;
+        }
+        alert(retObj.retVal);
+        console.log(retObj.retVal);
+    }
+
+    function sign(value) {
+        if (value === "") {
+            alert("请输入待签名的数据!");
+            return ;
+        }
+        var strCertId = $('#UserList').val();
+        var strPin = $('#UserPwd').val();
+        SetAutoLogoutParameter(strCertId, '');
+        // Login("LoginForm", strCertId, strPin, "www.baidu.com");
+        SignedData(strCertId, value, SignCallBack);
+    }
+</script>
+</html>

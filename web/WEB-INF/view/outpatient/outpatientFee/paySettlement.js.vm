@@ -1,0 +1,151 @@
+<script type="text/html" id="settlementTpl">
+    <input type="checkbox" lay-filter="settlement" lay-skin="primary" checked="">
+</script>
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['form', 'table', 'layer', 'util', 'laydate'], function () {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, util = layui.util,
+            laydate = layui.laydate;
+        //收款日期
+        laydate.render({
+            elem: '#collectionDays'
+            , value: util.toDateString()
+        });
+
+        var recipeDocId = "recipeDoc";
+        //发票信息
+        table.render({
+            elem: '#' + recipeDocId,
+            url:'$contextPath/billRecipient/findUseOutpatientBillRecipient.jo',
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'currentNum',
+                title: '发票号码'
+            }, {
+                field: 'recipientName',
+                title: '姓名',
+
+            }, {
+                field: 'totalAmt',
+                title: '金额',
+
+            }, {
+                field: 'chargeDate',
+                title: '收费日期', templet: function (row) {
+                    return util.toDateString(row.chargeDate, 'yyyy-MM-dd HH:mm:ss')
+                }
+            }]],
+            parseData: function(res){ //res 即为原始返回的数据
+                res.data.totalAmt = $!{actualChargeAmount};
+                return {
+                    "code": res.code, //解析接口状态
+                    "msg": res.msg, //解析提示文本
+                    "data": [res.data] //解析数据列表
+                };
+            },
+            done: function (res) {
+                $("#feeBillNo").val(res.data[0].currentNum);
+                // this.elem.next().find('.layui-table-main tr:first').click();
+            }
+        });
+
+        var recipeIds = '$!{recipeIds}';
+        var recipeItemList = ${recipeItemList};
+        //处方信息
+        table.render({
+            elem: "#payInFee",
+            totalRow: true,
+            height: getTableHgt(),
+            data:recipeItemList,
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'medicineName',
+                title: '药品名称',
+                minWidth: 150,
+                totalRowText: '合计金额'
+            }, {
+                field: 'medicineSpec',
+                title: '规格',
+                minWidth: 150
+            }, {
+                field: 'giveTotalQuantityUnit',
+                title: '单位',
+                minWidth: 150
+            }, {
+                field: 'unitPrice',
+                title: '单价'
+            }, {
+                field: 'giveTotalQuantity',
+                title: '数量'
+            }, {
+                field: 'medicineUsage',
+                title: '用法'
+            }, {
+                field: 'actualPrice',
+                title: '金额',
+                totalRow: true
+            },  {
+                field: 'validFlag',
+                title: '备注'
+            }, {
+                field: 'validFlag',
+                title: '药房'
+            }]],
+            done:function(res, curr, count){
+
+            }
+
+        });
+
+        // //表格单击事件 详情
+        // table.on('row(' + recipeDocId + ')', function (obj) {
+        //     var row = obj.data;
+        //     $("#feeBillNo").val(row.feeBillNo)
+        //     //标注选中样式
+        //     obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        // });
+
+        $("#btn_save").click(function () {
+            window.open(location.href)
+            common.requestServerHandler('$contextPath' + '/outpatientFee/outpatientFeePay.jo', {
+                patCardType: "1",
+                patCardNo: $("#patCardNo").val(),
+                payAmt: 0
+            }, "缴费成功", function (result) {
+                $('#btn_query', window.parent.document).click();
+
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            })
+
+        });
+
+        $("#fundsReceived").on('input propertychange', function () {
+            $("#changeTheAmount").val($("#fundsReceived").val() - $("#actualChargeAmount").val());
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#recipeDoc').height() - 60)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload(recipeDocId, {
+                height: height
+            })
+        })
+
+
+    });
+</script>

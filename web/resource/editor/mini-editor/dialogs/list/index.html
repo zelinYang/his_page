@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>列表</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件标签</span></th>
+            <th><span>字段名（以,分隔）</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="labelName" placeholder="请输入控件标签"></td>
+            <td><input type="text" id="fieldName" placeholder="请输入字段名"></td>
+        </tr>
+        <tr>
+            <th><span>分类字段名</span></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="typeFieldName" placeholder="请输入分类字段名"></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span><span class="label label-important">*</span></th>
+            <th><span>调用方法名</span></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1">编辑模式</option>
+                    <option value="0" selected="selected">只读模式</option>
+                </select>
+            </td>
+            <td>
+                <input type="text" id="functionName" placeholder="请输入调用方法名">
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            console.log(rgbStr);
+            return eval(rgbStr);
+        }
+        var thePlugins = 'minilist',
+            ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                console.log(ctrl);
+                opt = ctrl.getOpt(),
+                    domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id'));
+                $('#ctrlId').attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#labelName').val(opt.labelName);
+                $('#fieldName').val(opt.fieldName);
+                $('#typeFieldName').val(opt.typeFieldName);
+                $('#functionName').val(opt.functionName);
+                if (opt.required === 1) {
+                    $G('requiredFlag').checked = true;
+                }
+                if (opt.saveFlag === 1) {
+                    $G('saveFlag').checked = true;
+                }
+                console.log(domCtrl.style.color);
+                if (domCtrl.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domCtrl.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[0], tempColor[1], tempColor[2]);
+                } else {
+                    document.getElementById('fontColor').value = (domCtrl.style.color || '').trim('#');
+                }
+                if (domCtrl.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domCtrl.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[0], tempBGColor[1], tempBGColor[2]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domCtrl.style.backgroundColor || '').trim('#');
+                }
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            if ($G('fieldName').value == '') {
+                $G('fieldName').focus();
+                layer.msg('请输入字段名', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.type = 'list';
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.labelName = $('#labelName').val();
+            newOpt.required = $G('requiredFlag').checked ? 1 : 0;
+            newOpt.saveFlag = $G('saveFlag').checked ? 1 : 0;
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.fieldName = $('#fieldName').val();
+            newOpt.typeFieldName = $('#typeFieldName').val();
+            newOpt.functionName = $('#functionName').val();
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            if (!!domCtrl) {
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $('#ctrlId').val());
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl' + (newOpt.required? ' ctrl-required': '');
+                //修改
+                ctrl.setOpt(newOpt);
+                var childs = domCtrl.childNodes;
+                for(var i = childs .length - 1; i >= 0; i--) {
+                    domCtrl.removeChild(childs[i]);
+                }
+                generateCtrl(domCtrl, newOpt);
+                UE.plugins[thePlugins].domListener();
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                domCtrl = UE.dom.domUtils.createElement(document, 'div', {
+                    class: 'emr-ctrl' + (newOpt.required? ' ctrl-required': ''),
+                    style: 'width: 100%',
+                    contenteditable: false,
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'list',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                generateCtrl(domCtrl, newOpt);
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt);
+                UE.plugins[thePlugins].domListener();
+            }
+        };
+
+        function generateCtrl(domCtrl, newOpt) {
+            var domValue = UE.dom.domUtils.createElement(document, 'div', {
+                class: 'emr-value emr-label' + newOpt.labelName.length,
+                contenteditable: true
+            });
+            if (newOpt.labelName) {
+                var labelCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                    style: 'float: left;',
+                    class: 'emr-label',
+                    contenteditable: false,
+                    'emr-type': 'label'
+                });
+                labelCtrl.innerHTML = '<b>' + newOpt.labelName + '</b>';
+                domValue.append(labelCtrl);
+            }
+            var pDom = UE.dom.domUtils.createElement(document, 'p', {
+                contenteditable: newOpt.mode == '1'? true: false
+            });
+            pDom.innerHTML = '<br>';
+            domValue.append(pDom);
+            domCtrl.appendChild(domValue);
+        }
+    })(UE);
+</script>
+</body>
+
+</html>

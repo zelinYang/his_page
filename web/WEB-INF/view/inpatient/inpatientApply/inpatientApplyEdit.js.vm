@@ -1,0 +1,82 @@
+<script>
+layui.use(['element','table','form'],function(){
+    var form = layui.form;
+    var $ = layui.jquery;
+
+    $(function() {
+        $('#btn_refresh').click(function() {
+            common.confirm('刷新后，未保存的数据将会清除，请确保数据已经保存，是否确定刷新？', function () {
+                loadEmrTlp($("#emrTlpId").val());
+            });
+        });
+    });
+    
+    var emrTlpId = $("#emrTlpId").val();
+    loadEmrTlp(emrTlpId);
+    
+    form.on('select(emrTlpId)',function(data){
+        loadEmrTlp(data.value);
+        $("#emrTlpId").val(data.value);
+    });
+    
+    //加载电子病历编辑iframe
+    function loadEmrTlp(emrTlpId){
+        if (!emrTlpId) {
+            common.alert('没有电子病历模板')
+            return;
+        }
+        console.log(emrTlpId);
+        var params = "emrTlpId=" + emrTlpId + "&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&registerId=$!{registerId}&serviceId=$!serviceId&patientHospitalEmrId=$!patientHospitalEmrId";
+        $("#emrEdit").attr("src", contextPath + '/emr/commonEmrTemplate.do?' + params);
+    }
+
+    //电子病历保存完之后调用
+    window.saveAfterCall = function (idMap) {
+        var regIframe =  $('div[lay-id=regPatient] iframe',window.parent.document);
+        var regEditWin = regIframe[0].contentWindow;
+        regEditWin.query();//刷新患者列表
+    }
+
+    //电子病历初始化完之后调用
+    window.emrReadyCall = function (minieditorDesign) {
+        //85 住院申请电子病历
+        setPatientInpaitentApply(minieditorDesign.baseFormParams.PatientHospitalEmr.registerId, minieditorDesign.baseFormParams.PatientHospitalEmr.patientId);
+    }
+
+
+    /*设置 住院申请 显示 已入院或已失效 标志 禁止保存*/
+    function setPatientInpaitentApply(registerId, patientId) {
+        if(!registerId || ! patientId) return;
+        $.ajax({
+            type: "GET",
+            url: '$contextPath/inpatient/inpatientApplyListData.jo',
+            data: {registerId: registerId,
+                patientId: patientId
+            },
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                var layero = $("#emrEdit").contents();
+                if(result.data.length > 0){
+                    var validFlag = result.data[0].validFlag;
+                    var inpatientState = result.data[0].inpatientState;
+                    if(validFlag == '0'){
+                        layero.find("#designContent").append('<div class="emr_invalid"><strong>已失效</strong></div>');
+                        layero.find('#btn_save').prop('disabled', true).addClass('layui-btn layui-btn-sm layui-btn-disabled');
+                        layero.find('#btn_formula').prop('disabled', true).addClass('layui-btn layui-btn-sm layui-btn-disabled');
+                    } else if(inpatientState == '1'){
+                        layero.find("#designContent").append('<div class="emr_invalid"><strong>已入院</strong></div>');
+                        layero.find('#btn_save').prop('disabled', true).addClass('layui-btn layui-btn-sm layui-btn-disabled');
+                        layero.find('#btn_formula').prop('disabled', true).addClass('layui-btn layui-btn-sm layui-btn-disabled');
+                    }
+                }
+            },
+            error: function(res){
+                jqueryPostError(res);
+            }
+        });
+    }
+
+});
+
+</script>

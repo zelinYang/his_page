@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>病区床位设置表管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body class="white-bg">
+<div class="layui-fluid ">
+    <div class="layui-col-xs2 full-height-scroll">
+        <div id="wardAdnOfficeTree" class="demo-tree-more"></div>
+    </div>
+    <div class="layui-col-xs10">
+        <!--搜索条件 开始-->
+        <form id="wardBed_queryForm" class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">房间号</label>
+                        <div class="layui-inline wd-120">
+                            #formNotInChineseInput("wardRoomNo" "" "id='q_wardRoomNo' maxlength='10' autocomplete='off'
+                            class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">床位号</label>
+                        <div class="layui-inline wd-120">
+                            #formNotInChineseInput("wardBedNo" "" "id='q_wardBedNo' maxlength='6' autocomplete='off'
+                            class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">性别限制</label>
+                        <div class="layui-inline ">#formRadioGroup("sexFlag" "" ${dicData.dicSexLimit} "")</div>
+                    </div>
+
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                            <i class="layui-icon layui-icon-search "></i>
+                        </button>
+                    </div>
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                            <i class="iconfont icon-qingchu"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+
+        <!--列表 begin-->
+        <!-- 列表表格 begin -->
+        <table id="wardBedListGrid" lay-filter="wardBedListGrid"></table>
+        <!--  列表表格 end -->
+        <!--列表end-->
+    </div>
+</div>
+</div>
+<!-- 性别限制 -->
+<script type="text/html" id="sexFlagTpl">
+    <span class="layui-badge {{d.sexFlag == 1 ? 'layui-bg-blue' : (d.sexFlag == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{dicSexLimit[d.sexFlag]}}</span>
+</script>
+<script>
+  var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)')
+  var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)')
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'tree', 'form', 'table', 'laytpl'], function () {
+    var $ = layui.$, tree = layui.tree, form = layui.form, table = layui.table, laytpl = layui.laytpl
+
+//初始化病区树
+    function initTree () {
+      common.requestServer(contextPath + '/inpatient/getWardDepTree.jo', function (result) {
+        if (result.code == '0') {
+          loadTree(result.data)
+        } else {
+          common.alert(result.msg, 2)
+        }
+      })
+    }
+
+    //执行初始化
+    initTree()
+
+    //加载 病区树
+    function loadTree (data) {
+      var wardAdnOfficeTree = tree.render({
+        elem: '#wardAdnOfficeTree' //默认是点击节点可进行收缩
+        , data: data
+        , showCheckbox: true  //是否显示复选框
+        , showLine: false  //是否开启连接线
+        , oncheck: function (obj) {
+          var wardIds = []
+          var inpatientWardOfficeIds = []
+          $.each(wardAdnOfficeTree.getCheck(), function (index, item) {//获得被勾选的节点
+            var wardId = item[1].split('wardId_')[1]
+            var inpatientWardOfficeId = item[1].split('inpatientWardOfficeId_')[1]
+            wardId && wardIds.push(+wardId)
+            inpatientWardOfficeId && inpatientWardOfficeIds.push(+inpatientWardOfficeId)
+          })
+          //重载表格
+          table.reload('wardBedListGrid', {
+            where: {
+              wardIds: wardIds.join(','), inpatientWardOfficeIds: inpatientWardOfficeIds.join(',')
+            }
+          })
+        }
+      })
+    }
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+      var queryParams = getQueryParams()
+      //执行重载
+      table.reload('wardBedListGrid', {
+        where: queryParams
+      })
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+      common.cleanForm('wardBed_queryForm')
+    })
+
+    // 获取查询表单参数对象
+    function getQueryParams () {
+      return $.extend({
+        wardRoomNo: '',
+        wardBedNo: '',
+        sexFlag: '',
+        validFlag: '$!{CONST.AppConstants.YES_FLAG}'
+      }, common.serializeObject($('#wardBed_queryForm')))
+    }
+
+    //病区床位设置表列表
+    table.render($.extend(basePageTable, {
+      elem: '#wardBedListGrid',
+      height: getTableHgt(),
+      url: contextPath + '/inpatient/wardBedListData.jo',
+      where: getQueryParams(),
+      cols: [[{
+        type: 'radio'
+      }, {
+        field: 'wardId',
+        title: '病区',
+        templet: function (d) {
+          return dicInpatientWardAll[d.wardId] || ''
+        }
+      }, {
+        field: 'wardOfficeName',
+        title: '科室'
+      }, {
+        field: 'wardRoomNo',
+        title: '房间号'
+      }, {
+        field: 'wardBedNo',
+        title: '床位号'
+      }, {
+        field: 'bedFee',
+        title: '病床费用'
+      }, {
+        field: 'sexFlag',
+        title: '性别限制',
+        width: 100,
+        templet: '#sexFlagTpl'
+      }]]
+    }))
+
+    //表格单击事件 选中
+    table.on('row(wardBedListGrid)', function (obj) {
+      var row = obj.data
+      parent.selectwardBedCallBack(row)
+      // 关闭窗口
+      var index = parent.layer.getFrameIndex(window.name)
+      parent.layer.close(index)
+    })
+
+    function getTableHgt () {
+      return ($('body').height() - $('#wardBed_queryForm').height() - 20)
+    }
+
+    $(window).resize(function () {
+      var height = getTableHgt()
+      table.reload('wardBedListGrid', {
+        height: height
+      })
+    })
+  })
+</script>
+</body>
+</html>

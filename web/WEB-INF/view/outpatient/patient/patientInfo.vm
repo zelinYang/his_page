@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+
+<style type="text/css">
+.layui-form-select dl {
+    position: fixed;
+    top: initial;
+    left: initial;
+    min-width: 220px;
+}
+    .layui-fluid{overflow-y: auto}
+</style>
+</head>
+<body class="white-bg">
+   <div class="layui-fluid">
+
+    <form class="layui-form" lay-filter="patientForm" id="patientForm">
+        <div class="hide-area">
+	        #formHiddenInput("patientId" "$!{patient.patientId}" " id='patientId' ")
+	        #formHiddenInput("patientIndexId" "$!{patientIndex.patientIndexId}" " id='patientIndexId' ")
+	        #formHiddenInput("validFlag" "$!{patient.validFlag}" " id='validFlag' ")
+	        #formHiddenInput("patientNation" "$!{patient.patientNation}" " id='patientNation' ")
+	        #formHiddenInput("patientCareer" "$!{patient.patientCareer}" " id='patientCareer'")
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()证件类型<i class="layui-icon alone-tips" lay-tips="患者为儿童时，证件类型可为空"></i></label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("patientIdType" "$!patient.patientIdType" $dicData.dicPatientIdType " lay-verify='required' id='patientIdType' lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()证件号码<i class="layui-icon alone-tips" lay-tips="患者为儿童时，证件号码可为空"></i></label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("patientIdCard" $!{patient.patientIdCard} " id='patientIdCard' maxlength='40' lay-verify='required|identityEmpty' id='patientIdCard' autocomplete='off' placeholder='' class='layui-input blurValidSavePatient'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()患者姓名</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("patientName" $!{patient.patientName} " id='patientName' maxlength='20' lay-verify='required' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()就诊卡号<i class="layui-icon alone-tips" lay-tips="医院若无就诊卡号，可用患者身份证等信息代替！"></i></label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("visitCardNo" $!{patientIndex.visitCardNo} " id='visitCardNo' maxlength='60' lay-verify='required' autocomplete='off' placeholder='' class='layui-input blurValidSavePatient'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()性别 </label>
+                <div class="layui-input-inline" style="width: auto;">
+                    <!--  -->
+                    #formRadioGroup("patientSex" "$!{patient.patientSex}" ${dicData.dicSex} "")
+                </div>
+            </div>
+
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">国籍</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("nationality" "$!patient.nationality" $dicData.dicNationality " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">民族 </label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("nationCode" "$!patient.nationCode" $dicData.dicNation " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">出生日期</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("patientBirth" "$!date.format('yyyy-MM-dd',$patient.patientBirth)" " id='patientBirth' autocomplete='off' class='layui-input layer-date' ")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">邮编(户口)</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("postalCode" $!{patient.postalCode} " id='postalCode' maxlength='6' lay-verify='numberEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">现居住地</label>
+                <div class="layui-input-inline " style="width: 515px;">
+                    <!--1.选择下拉联动2.输入搜索显示地址3.可以手动输入-->
+                    #formTextInput("patientAddr" $!{patient.patientAddr} " id='patientAddr' maxlength='200' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()患者类别 </label>
+                <div class="layui-input-inline" style="width: auto;">
+                    <!--  -->
+                    #formRadioGroup("patientClassify" "$!{patient.patientClassify}" ${dicData.dicPatientClassify} "lay-verify='required' lay-filter='patientClassify'")
+                </div>
+            </div>
+        </div>
+        <div class=" adult layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">婚否</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("marryState" "$!patient.marryState" $dicData.dicMarryState " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">银行卡号 </label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("bankCardNo" $!{patient.bankCardNo} " id='bankCardNo' maxlength='20' lay-verify='numberEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">职业</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+
+                    #formSingleSelectSearchFirstNone("careerCode" "$!patient.careerCode" $dicData.dicCareerCode "lay-filter='careerCode' lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+        </div>
+        <div class="adult layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">工作单位名称</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("companyName" $!{patient.companyName} " id='companyName' maxlength='200' lay-verify='' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">工作单位电话</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("companyPhone" $!{patient.companyPhone} " id='companyPhone' maxlength='20' lay-verify='phoneEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">工作单位地址</label>
+                <div class="layui-input-inline " style="width: 515px;">
+                    <!--1.选择下拉联动2.输入搜索显示地址3.可以手动输入-->
+                    #formTextInput("companyAddr" $!{patient.companyAddr} " id='companyAddr' maxlength='600' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+        </div>
+        <div class="children layui-form-item ">
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;"> #requiredTag()监护人姓名<i class="layui-icon alone-tips" lay-tips="患者为儿童时，监护人信息必填"></i></label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("guardName" $!{patient.guardName} " id='guardName' maxlength='20' lay-verify='required' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">#requiredTag()监护人证件类型</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("guardIdType" "$!patient.guardIdType" $dicData.dicGuardIdType " lay-verify='required' lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label" style="width: auto;">#requiredTag()监护人证件号码<i class="layui-icon alone-tips" lay-tips="患者为儿童时，监护人信息必填"></i></label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("guardIdCard" $!{patient.guardIdCard} " id='guardIdCard' maxlength='40' lay-verify='required|identityEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">患者类型 </label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("patientAttribute" "$!patientIndex.patientAttribute" $dicData.dicPatientAttribute " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">籍贯</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("nativePlace" $!{patient.nativePlace} " id='nativePlace' maxlength='20' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">患者电话</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("patientPhone" $!{patient.patientPhone} " id='patientPhone' maxlength='30' lay-verify='phoneEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">患者性质</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("patientKind" "$!patient.patientKind" $dicData.dicPatientKind " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">血型</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("bloodType" "$!patient.bloodType" $dicData.dicBloodType " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">医保号</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("socialSecurityCard" $!{patient.socialSecurityCard} " id='socialSecurityCard' maxlength='20' autocomplete='off' placeholder='' class='layui-input blurValidSavePatient'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">血型</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("bloodType" "$!patient.bloodType" $dicData.dicBloodType " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">RH血型</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("rhBloodType" "$!patient.rhBloodType" $dicData.dicRhBloodType " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">联系人关系</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formSingleSelectSearchFirstNone("contactRelation" "$!patient.contactRelation" $dicData.dicContactRelation " lay-search" "直接选择或搜索选择")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">联系人</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("contactName" $!{patient.contactName} " id='contactName' maxlength='20' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">联系人电话</label>
+                <div class="layui-input-inline">
+                    <!--  -->
+                    #formTextInput("contactPhone" $!{patient.contactPhone} " id='contactPhone' maxlength='20' lay-verify='phoneEmpty' autocomplete='off' placeholder='' class='layui-input'")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text m-b-xs">
+            <label class="layui-form-label">过敏史</label>
+            <div class="layui-input-inline " style="width: calc(100% - 120px);">
+                <!--  -->
+                #formTextarea("allergyDisease" "#htmlEscape($!{patient.allergyDisease})" "id='allergyDisease' class='layui-textarea' maxlength='200' placeholder='请输入内容，字数最多200字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline " style="width: calc(100% - 120px);">
+                <!--  -->
+                #formTextarea("remark" "#htmlEscape($!{patient.remark})" "id='remark' class='layui-textarea' maxlength='250' placeholder='请输入内容，字数最多250字'")
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-input-block">
+                <div class="tool-bottom-fixed btn_gorup" style="background: #ffffff; border-top: 1px solid #e7eaec;">
+                    <button class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_save" id="btn_save">&nbsp;&nbsp;保&nbsp;存&nbsp;&nbsp;</button>
+                    <button type="reset"  class="layui-btn layui-btn-sm"  id="patientForm_Reset">&nbsp;&nbsp;重&nbsp;置&nbsp;&nbsp;</button>
+                </div>
+            </div>
+        </div>
+    </form>
+   </div>
+    #parse("./outpatient/patient/patientInfo.js.vm")
+</body>
+</html>

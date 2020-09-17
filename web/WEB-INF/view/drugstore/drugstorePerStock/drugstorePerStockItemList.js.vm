@@ -1,0 +1,125 @@
+<script>
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'jquery','table', 'element', 'form', 'util'], function() {
+		var table = layui.table, element = layui.element, $ = layui.$, util = layui.util;
+		element.render();
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'));
+			return $.extend({
+				drugstoreId:''
+				, medicineName:''
+				, medicineType:''
+			}, queryForm);
+		}
+		//组套tabel
+		var itemTable = table.render({
+			elem: '#itemTable'
+			,defaultToolbar: []
+			,url: '../drugstore/drugstorePerStockItemPageData.jo' //数据接口
+			,page: true //开启分页
+			,where: getQueryParams()
+			,height: getTableHeight()//高度
+			,request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			,cols: [[ //表头
+				{type : 'numbers' }
+				,{field : 'medicineName',title : '药品名称', width: '200'}
+				,{field : 'drugstoreUnit',title : '药品单位', width: '80',templet: function(row){
+						if (row.drugstoreUnit){
+							return dicDrugNumUnit[row.drugstoreUnit];
+						}
+						return '';
+					}
+				}
+				,{field : 'stockCount',title : '账面数量', width: '80'}
+				,{field : 'actualCount',title : '<span style="color:red">*实盘数量</span>', width: '80', edit: 'number', style: 'background-color: #ff7c00; color: #fff;'}
+				,{field : 'remark',title : '备注', width: '100', edit: 'text', style: 'background-color: #5FB878; color: #fff;'}
+				,{field : 'batchNum',title : '药品批号', width: '80'}
+				,{field : 'expireDate',title : '药品期效', width: '120',templet: function(row){
+						if (row.expireDate){
+							return util.toDateString(row.perStockTime, 'yyyy-MM-dd');
+						}
+						return '';
+					}
+				}
+				,{field : 'buyPrice',title : '进货价', width: '80'}
+				,{field : 'tradePrice',title : '批发价', width: '80'}
+				,{field : 'retailPrice',title : '零售价', width: '80'}
+				,{field : 'producingAreaName',title : '产地', width: '200'}
+				,{field : 'medicineVendorName',title : '供货商', width: '200'}
+			]], done:function () {
+
+			}
+		});
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		$('#btn_confirm').on('click', function () {
+			common.confirm("确定要结束盘点吗？", function () {
+				var params = {
+					drugstorePerStockId: $("#drugstorePerStockId").val()
+				}
+				console.log(params);
+				common.requestServer('../drugstore/confirmDrugstorePerStockItem.jo', params, function(result) {
+					if (result.code === '0') {
+						parent.common.msg('保存成功', 1);
+						$('#btn_query', parent.document).click();
+						$('#itemEdit', parent.document).attr('src', '');
+					} else {
+						common.alert(result.msg, 0);
+					}
+				});
+			});
+		});
+
+		table.on('edit(itemTable)', function(obj){ //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+			console.log(obj.value); //得到修改后的值
+			console.log(obj); //当前编辑的字段名
+			console.log(obj.data); //所在行的所有相关数据
+			if(obj.field === 'actualCount' && !/^\d+$/.test(obj.value)) {
+				common.msg("请输入整数", 0);
+				console.log(obj.tr.find('td[data-field="actualCount"] div'))
+				obj.update({actualCount: obj.data.stockCount});
+				obj.tr.find('td[data-field="' + obj.field + '"] div').addClass('error-field');
+				obj.tr.find('td[data-field="' + obj.field + '"] div').click();
+				return;
+			}
+			obj.tr.find('td[data-field="' + obj.field + '"] div').removeClass('error-field');
+			var params = {
+				drugstorePerStockItemId: obj.data.drugstorePerStockItemId,
+				actualCount: obj.data.actualCount,
+				remark: obj.data.remark
+			}
+			common.requestServer('../drugstore/updateDrugstorePerStockItem.jo', params, function(result) {
+				if (result.code === '0') {
+					common.msg('更新成功', 1);
+				} else {
+					common.msg('修改失败', 0);
+				}
+			});
+		});
+
+		function refreshTable() {
+			table.reload('itemTable',{
+				where: getQueryParams()
+			})
+		}
+
+		function getTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+	});
+
+</script>

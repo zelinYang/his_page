@@ -1,0 +1,90 @@
+
+<script>
+//是否有效
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var tableReload;
+layui.use([ 'table', 'form', 'layer' ],function() {
+    var $ = layui.$, form = layui.form, table = layui.table, autocomplete = layui.autocomplete;
+
+    //字典表列表
+    table.render({
+        elem : '#patientEmrDefectItemTable',
+        url : '../patient/patientEmrDefectItemListData.jo',
+        limit : 20,
+        page: false,
+        id : 'patientEmrDefectItemTable',
+        where : { 'patientHospitalEmrId' : '-1' },
+        cols : [[
+                {type : 'numbers',width : 30},
+                {field : 'defectName',title : '缺陷项目'},
+                {field : 'defectScore',title : '项目分值'},
+                {field : 'oneNegativeScore',title : '甲类扣分'},
+                {field : 'twoNegativeScore',title : '乙类扣分'},
+                {field : 'threeNegativeScore',title : '丙类扣分'}
+                ]],
+        height : 'full-30',
+        request : { pageName : 'pageNumber',limitName : 'pageSize'  }//页码的参数名称，默认：page，每页数据量的参数名，默认：limit
+    });
+    //添加字典
+    $("#btn_add").click(function() {
+    	editPatientEmrDefectItem()
+    });
+
+    
+    //编辑字典
+    function editPatientEmrDefectItem() {
+    	if(!parent.patientHospitalEmr){
+	        common.msg('请选择审阅的电子病历！', iconType.warn);
+	    }
+    	
+        var title = '新增缺陷';
+        var url = '$contextPath/patient/patientEmrDefectItemEdit.do?emrTlpClassifyId=' + parent.patientHospitalEmr.emrTlpClassifyId;
+        common.open(url, title, {
+            area : [ '95%', '95%' ],
+            btn : [ '保存' ],
+            yes : function(index, layero) {
+                saveEmrDefectItem(index, layero);
+            }
+        });
+
+    }
+    
+    //保存编辑字典
+    function saveEmrDefectItem(index, layero) {
+    	if(!parent.patientHospitalEmr){
+    		common.msg('请选择审阅的电子病历！', iconType.warn);
+    	}
+        var frameEditWin = window['layui-layer-iframe' + index], submitID = 'btn_save_dic', submit = layero.find('iframe').contents().find('#' + submitID);
+        var param = $.extend(frameEditWin.emrDefectPrj,parent.patientHospitalEmr); 
+        
+        param['oneNegativeScore'] = 0;
+        param['twoNegativeScore'] = 0;
+        param['threeNegativeScore'] = 0;   ;
+        param[frameEditWin.scoreAttr] = frameEditWin.score;
+        //param.defectScore = param.defectScore - param[frameEditWin.scoreAttr];
+      
+        
+        //监听提交
+        frameEditWin.layui.form.on('submit(' + submitID + ')', function(data) {
+            var url =  '$contextPath/patient/savePatientEmrDefectItem.jo', msg = "保存成功";
+            common.requestServerHandler(url, param, msg, function(result) {
+            	tableReload();
+                layer.close(index); //关闭弹层
+            });
+        });
+        submit.trigger('click');
+    }
+            
+    //表格刷新查询
+    tableReload = function () {
+    	if(!parent.patientHospitalEmr) return;
+    	var param = {
+    			patientHospitalEmrId: parent.patientHospitalEmr.patientHospitalEmrId,
+    			registerId: parent.patientHospitalEmr.registerId,
+    			inhospitalId: parent.patientHospitalEmr.inhospitalId
+    	};
+    	table.reload('patientEmrDefectItemTable', {where : param});		
+     }
+
+});
+</script>

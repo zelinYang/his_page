@@ -1,0 +1,301 @@
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicDrugNumUnitDosageUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)'); //药品数量单位
+  var re =  /^\+?[1-9][0-9]*$/; //正则
+  var recipeTcmHistoryArr = [];
+
+  layui.use(['jquery','table', 'element'], function(){
+      var table = layui.table, element = layui.element, $ = layui.$;
+      element.render();
+
+      //日期范围
+      laydate.render({elem: '#makeOrderTime',trigger: 'click', range: true});
+
+      //第一个实例
+      var recipeTable = table.render({
+         elem: '#historyRecipeTcmTable'
+        //,toolbar: '#toolbarDemo'
+        ,defaultToolbar: []
+        //,height: '230'//高度
+        ,height: 'full-40'//高度
+        ,url: '../outpatient/recipeTcmHistoryListData.jo' //数据接口
+        //,page: true //开启分页
+        ,limit:200
+        ,request: {
+           pageName: 'pageNumber' //页码的参数名称，默认：page
+          ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,where: {patientId:$('#patientId').val(), payFeeFlag: '1'}
+        ,cols: [[ //表头
+          {field : 'makeOrderTime',title : '日期',
+             templet :function (row) {return getSmpFormatDateByLong(row.makeOrderTime,false);}}
+         ,{field : 'recipeNum', title : '处方名称'
+          }
+         ,{field : 'outpatientOfficeName',title : '科室名称'}
+        ]]
+        ,done: function(res, curr, count){
+        }
+      });
+
+      //设置门诊id
+      function setOutpatientId() {
+      	if (parent.parent.grobalModel.outpatientId) {
+      	  $('#outpatientId').val(parent.parent.grobalModel.outpatientId);
+		}
+	  }
+
+      setOutpatientId();
+
+      // 查询按钮
+      $('#btn_query_recipeTcm').click(function (){
+          queryRecipe();
+      });
+
+
+      //查询列表
+      function queryRecipe() {
+    	  var recipeNum = $('#recipeNum').val();  //common.serializeObject($('#historyRecipeTcm_queryForm'));
+          recipeTable.reload({ where: {recipeNum: recipeNum} });
+      }
+
+    //监听行单击事件
+    table.on('row(historyRecipeTcmTable)', function(obj){
+     	var row = obj.data;
+     	recipeRowParam = row;
+        recipeTcmHistoryArr = row;
+        rowRecipeSelect(row);
+    });
+
+        //处方行单击查询处方明细
+      function rowRecipeSelect(recipeRow) {
+          $('.main-right').removeClass('layui-hide');
+          $('#recipeId').val(recipeRow.recipeId);
+          queryRecipeItem();
+      }
+
+      var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+      //*************************  处方明细项 JS ********************************/
+      var recipeItemTable = table.render({
+         elem: '#historyRecipeTcmItemTable'
+        ,defaultToolbar: []
+        ,height: 'full-35'//高度
+        ,url: '../outpatient/recipeTcmListData.jo' //数据接口
+        ,limit:200
+        ,request: {
+           pageName: 'pageNumber' //页码的参数名称，默认：page
+          ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,cols: [[ //表头
+          {type:'checkbox'}
+         ,{field : 'recipeNum',title : '药方',
+        	 templet: function(row) {
+	               if(row.recipeItem) {
+	            	   var medicineName = row.recipeItem.medicineName ? row.recipeItem.medicineName : '';
+		    		   return '&nbsp---------&nbsp' + medicineName+'</span>';
+	               } else {
+	                   return row.recipeNum;
+	               }
+	    	}
+         }
+         ,{field : 'dosage', title : '剂数/剂量', edit: 'text'
+         }
+         ,{field : 'dosageUnit',title : '',
+        	 templet :function (row) {
+        		   if(row.recipeItem) {
+        			   return row.recipeItem.dosageUnit ? dicDrugNumUnitDosageUnit[row.recipeItem.dosageUnit]  : '';
+        		   } else {
+        			   return '剂';
+        		   }
+        	   }
+         	}
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+        	if(count == 1){
+        		$(res.data).each(function(index, data){
+   	        	 if(index == 0){
+   	        		 $('tr[data-index="'+index+'"] td[data-field="dosage"] div').html(data.orderDay);
+   	        	 } else {
+   	        		 $('tr[data-index="'+index+'"] td[data-field="dosage"] div').html(data.recipeItem.dosage);
+   	        	 }
+   	         });
+        	}
+        }
+      });
+
+
+
+      // 导入历史方剂按钮
+      $('#btn_import_recipeTcmItem').click(function (){
+    	var illegalRules = 0;//非法规则
+
+    	var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.parent.document);
+	    var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+
+    	var recipeItemHistoryParams = importHistotyRecipeItem();
+    	//历史明细参数
+    	var recipeItemHistoryArr = recipeItemHistoryParams.recipeItemHistoryArr;
+    	//库存不足的药品
+    	var medicineStockShortage = recipeItemHistoryParams.medicineStockShortage;
+    	//历史主表参数
+    	var recipeTcmHistoryArr = recipeItemHistoryParams.recipeTcmHistoryArr;
+
+    	if(medicineStockShortage.length){
+    		var medicineNames = '';
+    		$(medicineStockShortage).each(function(index, data) {
+    			medicineNames += data.medicineName + ',';
+            });
+    		medicineNames = common.clearLastChar(medicineNames,',');
+    		common.alert(medicineNames + '库存不足', 0);
+    		return false;
+    	}
+
+    	$(recipeItemHistoryArr).each(function(index, data) {
+    		var dosage = parseInt(data.dosage);//将输入的字符型转换成整型
+        	if(!re.test(dosage)){
+        		common.alert('药品 '+ data.medicineName +' 请输入正确的剂量格式', 0);
+        		illegalRules++;
+                return false;
+        	} else {
+        		data.dosage = dosage;//将整型赋值给药品剂量
+        	}
+        });
+
+    	if(illegalRules > 0) return false;//如果剂量不符合格式或者库存不足取消导入
+
+    	var recipeTcmParam = getImportRecipeTcmParam(recipeTcmHistoryArr);//处方参数
+    	var recipeTcmItem = setImportRecipeTcmItemParam(recipeItemHistoryArr, recipeTcmHistoryArr);//处方明细参数
+
+        recipeTcmItem = parent.filterExistDrug(recipeTcmItem, recipeTcmParam.registerId, recipeTcmParam.patientId);
+        if(recipeTcmItem.length <= 0) {
+            common.msg("导入的药品都已存在!", 0);
+            return;
+        }
+    	recipeTcmParam.recipeItemEditInfoList = JSON.stringify(recipeTcmItem);
+          $.ajax({
+              type:"POST",
+              dataType:"json",
+              contentType: 'application/json;charset=utf-8',
+              url: "$contextPath/outpatient/saveTcmRecipe.jo",
+              data:JSON.stringify(recipeTcmParam),
+              success:function(result){
+                  if (result.code == "0") {
+                      common.alertCall("保存成功。", 1, function (){
+                          parent.query();
+                          emrEditWin.getEmrRecipeTcmItem(result.data.registerId);//设置到门诊病历
+                      });
+                  } else {
+                      common.alert(result.msg, 0);
+                  }
+              }
+          }).error(function (e){jqueryPostError(e)});
+
+      });
+
+      //获取处方参数
+      function getImportRecipeTcmParam(recipeTcmHistoryArr){
+    	  var recipeTcmParam = {};
+    	  recipeTcmParam.registerId = $('#registerId').val();
+    	  recipeTcmParam.patientId = $('#patientId').val();
+    	  recipeTcmParam.herbUsageWay = recipeTcmHistoryArr.herbUsageWay;
+    	  recipeTcmParam.orderDay = recipeTcmHistoryArr.orderDay;
+    	  recipeTcmParam.usageFrequencyCode = recipeTcmHistoryArr.usageFrequencyCode;
+    	  recipeTcmParam.recipeRemark = recipeTcmHistoryArr.recipeRemark;
+    	  recipeTcmParam.takeBoilFlag = recipeTcmHistoryArr.takeBoilFlag;
+		  return recipeTcmParam;
+      }
+
+      //获取处方明细参数
+      function setImportRecipeTcmItemParam(recipeItemHistoryArr, recipeTcmHistoryArr){
+    	  var recipeTcmItemParamArr = []
+    	  $(recipeItemHistoryArr).each(function(index, data) {
+    		  var recipeTcmItemParam = {};
+        	  recipeTcmItemParam.medicineId = data.medicineId;
+        	  recipeTcmItemParam.medicineType = data.medicineName;
+        	  recipeTcmItemParam.medicineSpec = data.medicineSpec;
+        	  recipeTcmItemParam.dosage = data.dosage;
+              recipeTcmItemParam.unitPrice = data.minRetailPrice;
+              recipeTcmItemParam.actualPrice = data.minRetailPrice * 7 * data.dosage;
+        	  recipeTcmItemParam.pharmacyId = data.pharmacyId;
+        	  recipeTcmItemParam.dosageUnit = data.dosageUnit;
+        	  recipeTcmItemParam.dosageUnitText = data.dosageUnitText;
+        	  recipeTcmItemParam.herbCookingCode = data.herbCookingCode;
+        	  recipeTcmItemParam.pharmacyFreqName = data.pharmacyFreqName;
+        	  recipeTcmItemParam.herbCookingName = data.herbCookingName;
+        	  recipeTcmItemParam.giveTotalQuantity = data.dosage * recipeTcmHistoryArr.orderDay;
+        	  recipeTcmItemParam.totalQuantityUnit = data.dosageUnit;
+        	  recipeTcmItemParamArr.push(recipeTcmItemParam);
+    	  });
+    	  return recipeTcmItemParamArr;
+      }
+
+      //查询列表
+      function queryRecipeItem() {
+        var queryParams = common.serializeObject($('#historyRecipeTcmItem_queryForm'));
+          recipeItemTable.reload({ where: queryParams });
+      }
+
+      // 导入历史方剂
+      function importHistotyRecipeItem() {
+        var checkRows = table.checkStatus('historyRecipeTcmItemTable'); //test即为基础参数id对应的值
+        //获取选中行的数据 =checkRows.data
+        //获取选中行数量，可作为是否有选中行的条件 =checkRows.data.length
+        //表格是否全选 =checkRows.isAll
+
+
+        var recipeItemHistoryArr = checkRows.data;
+
+      	//没有勾选药品
+		if (checkRows.data.length < 1) {
+			  common.alert('请选择需要导入的药品', 0);
+			  return false;
+		}
+
+		var recipeItemHistoryArr = [];//组套明细参数数组
+		$(checkRows.data).each(function (index, data){
+			if(data.dosage){
+			    data.recipeItem.dosage = data.dosage; //设置输入的值到明细表
+            }
+            recipeItemHistoryArr.push(data.recipeItem);//明细数据
+
+		});
+
+        var medicineIds = [];
+  		$(recipeItemHistoryArr).each(function (index, data){
+  			var medicineId;
+  			medicineId = data.medicineId;
+  			medicineIds.push(medicineId);
+  		});
+
+  		var medicineInfoArray = parent.selectRecipeMedicineInfo(medicineIds.join(','));
+
+    	//转成map
+  		var isRecipeItem = true;
+  	    var recipeHistoryItemMap = parent.convertRecipeItemMap(recipeItemHistoryArr, isRecipeItem);
+  	  	recipeItemHistoryArr.length = 0;//清空数组
+
+  	  	var medicineStockShortage = []
+  	  	$(medicineInfoArray).each(function (index,mInfo) {
+    		  var dosage = recipeHistoryItemMap[mInfo.medicineId].dosage * 7;//剂量*剂数 的数量
+		      if (mInfo.stockCount < dosage) {
+		    	  medicineStockShortage.push(recipeHistoryItemMap[mInfo.medicineId]);//添加库存不足的药品到数组
+		    	  return true;//继续for循环
+		      } else {
+				  recipeItemHistoryArr.push(recipeHistoryItemMap[mInfo.medicineId]);//添加有库存的药品到数组
+		      }
+	    });
+  	  	var recipeItemHistoryParams = {
+  	  		recipeTcmHistoryArr: recipeTcmHistoryArr,
+  	  		recipeItemHistoryArr: recipeItemHistoryArr,
+  	  		medicineStockShortage: medicineStockShortage
+  	  	};
+
+        return recipeItemHistoryParams;
+    }
+
+
+
+    });//layui.use
+</script>

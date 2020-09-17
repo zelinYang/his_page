@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+.layui-table-view .layui-table td {padding: 3px 0;}
+@media screen and (max-width: 450px) {
+
+    .layui-form-item .layui-inline {
+        display: inline-block;
+    }
+
+    .layui-form-item .layui-input-inline {
+        display: inline-block;
+        margin: 0
+    }
+}
+</style>
+</head>
+<body class="gray-bg">
+    <!-- 医嘱查询条件 -->
+    <div class="layui-row p-t-xs p-l-sm p-r-sm white-bg">
+        <form class="layui-form" id="queryForm" action="../patient/getPatientEmrByDateGroup.do">
+            #formHiddenInput("serviceId" "$!info.serviceId" "id='serviceId'")
+            #formHiddenInput("patientId" "$!info.patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!info.inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("registerId" "$!info.registerId" "id='registerId'")
+            #formHiddenInput("emrTlpClassifyId" "$!info.emrTlpClassifyId" "id='emrTlpClassifyId'")
+            #formHiddenInput("createTimeEnd" "$!date.format('yyyy-MM-dd', $!info.createTimeEnd)" "id='createTimeEnd'")
+            #formHiddenInput("createTimeBegin" "$!date.format('yyyy-MM-dd', $!info.createTimeBegin)" "id='createTimeBegin'")
+            #formHiddenInput("emrProperty" "$!info.emrProperty" "id='emrProperty'")
+            #formHiddenInput("view" "patient/emr/commonEmrShowList" "id='view'")
+            <div class="layui-form-item search-term text-center">
+                <div class="layui-inline m-b-xs">
+                    <label class="layui-form-label">开始日期</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("" "" "id='createTime' class='layui-input' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline m-b-xs">
+                    <button class="layui-btn layui-btn-sm" id="btn_refresh" lay-tips="刷新"><i class="layui-icon layui-icon-refresh"></i> </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- 医嘱列表 -->
+    <div class="layui-row p-t-n full-height-scroll white-bg" id="listBoxHgt" style="height: calc(100% - 50px);">
+        <div class="layui-collapse" lay-filter="talkRecord">
+            #foreach($item in $!patientHospitalEmrList)
+                <div class="layui-colla-item">
+                    <h2 class="layui-colla-title">$!item</h2>
+                    <div class="layui-colla-content" query-date="$!item">
+                        <table class="layui-table" lay-skin="line">
+                            <colgroup>
+                                <col>
+                                <col width="80">
+                            </colgroup>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                </div>
+            #end
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    $(function () {
+        $('#listBoxHgt').height($('body').height() - $('#queryForm').height() - 6)
+    })
+    $(window).resize(function () {
+        $('#listBoxHgt').height($('body').height() - $('#queryForm').height() - 6)
+    })
+layui.use(['form', 'laydate', 'element'], function(){
+    var laydate = layui.laydate, form = layui.form, element = layui.element;
+
+    // 监听折叠面板点击事件
+    element.on('collapse(talkRecord)', function(data){
+        if (!data.show || !data.content.attr('query-date')) {
+            return ;
+        }
+
+        var params = {patientId: $("#patientId").val(), emrTlpClassifyId: $('#emrTlpClassifyId').val(), queryDate: data.content.attr('query-date')};
+        if($("#emrProperty").val() == "1"){
+            params["registerId"] = $('#registerId').val();
+        }else if($("#emrProperty").val() == "2"){
+            params["inhospitalId"] = $('#inhospitalId').val();
+        }
+        console.log(params);
+        common.requestServer(contextPath + '/emr/getPatientEmrByClassify.jo', params, function (result){
+            if (!result) { return ; }
+            var container = data.content.find('table > tbody');
+            container.html('');
+            var operate = '<a class="layui-btn layui-btn-xs" title="查看详情" id="show"><i class="layui-icon layui-icon-search"></i></a>';
+            $.each(result, function (i, v){
+                container.append('<tr emrTlpId="' + v.emrTlpId + '" id="' + v.patientHospitalEmrId + '"><td>' + v.emrTlpName + '</td><td align="right" emrTlpId="' + v.emrTlpId + '" id="' + v.patientHospitalEmrId + '">' + operate + '</td></tr>');
+            });
+            // 监听查看事件
+            data.content.find('table > tbody > tr #show').click(function (){
+                if(!$(this).parent().attr('id')) { return ; }
+                if ($(this).attr('id') == "show") {
+                    showDetail($(this).parent().parent());
+                }
+            });
+            // 监听单击行查看详情
+            data.content.find('table > tbody > tr').dblclick(function (){
+                showDetail(this);
+                //location.href = contextPath + '/emr/commonEmrTemplate.do?showBtn=0&view=patient/emr/commonEmrShow&' + params;
+            });
+        });
+    });
+
+    //显示详情
+    function showDetail(tr){
+        var params = "emrTlpId=" + $(tr).attr('emrTlpId') + "&patientHospitalEmrId=" + $(tr).attr('id') + "&patientId=" + $('#patientId').val();
+        if ($("#emrProperty").val() == "$!{CONST.AppConstants.EMR_PROPERTY_OUTPATIENT}"){
+            params = params + "&registerId=" + $('#registerId').val();
+        } else if ($("#emrProperty").val() == "$!{CONST.AppConstants.EMR_PROPERTY_INPATIENT}"){
+            params = params + "&inhospitalId=" + $('#inhospitalId').val();
+        }
+        if(typeof parent.openTab == "function"){
+	        parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, $(tr).find("td:first").text() + "详情", '');
+        } else if(typeof parent.parent.openTab == "function") {
+            parent.parent.openTab(contextPath + '/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + params, $(tr).find("td:first").text() + "详情", '');
+        } else if(typeof parent.openIframe == "function") {
+            //WEB-INF/view/patient/emr/commonEmrShowMain.vm
+            var patientHospitalEmrId = $(tr).attr('id');
+            parent.openIframe(patientHospitalEmrId);
+        }
+    }
+
+    // 刷新
+    $('#btn_refresh').click(function (){
+        window.location.href = window.location.href;
+    });
+    //日期范围选择
+    laydate.render({ elem: '#createTime',trigger:'click', range: true, done: function(value, date, endDate){
+        var item = value.split(' - ');
+        $('#createTimeBegin').val(item[0]);
+        $('#createTimeEnd').val(item[1]);
+        $('#queryForm').submit();
+    }});
+
+    // 回显查询日期
+    if ($('#createTimeBegin').val() && $('#createTimeEnd').val()) {
+        $('#createTime').val($('#createTimeBegin').val() + " - " + $('#createTimeEnd').val());
+    }
+
+
+    // 获取父窗口的选项卡名称
+    function getParentTabText() {
+        var url = document.location.href.split("//");
+        var start = url[1].indexOf("/");
+        var path = url[1].substring(start);
+        if(path.indexOf("?") != -1){
+            path = path.split("?")[0];
+        }
+
+        var li = $('li[lay-attr="' + path + '"]', window.parent.document);
+        var text = $(li).find('span').text();
+        if (text) {
+            return text;
+        }
+        return "";
+    }
+
+    //默认展开第一个折叠面板
+    $(".layui-collapse .layui-colla-title:first").click();
+});
+</script>
+</html>

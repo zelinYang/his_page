@@ -1,0 +1,143 @@
+<script>
+    //定义页面对象存放数据
+    var _patientEmrDefectItem = new Object();
+
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).use(['form','layer','laytpl'], function(){
+        var form = layui.form, laytpl = layui.laytpl;
+        if ("" == $("#emrTlpClassifyId").val()) {
+            $("#emrTlpClassifyId").val(parent.$("#emrTlpClassifyId").val());
+        }
+        if ("" == $("#emrTlpClassifyName").val()) {
+            $("#emrTlpClassifyName").val(parent.$("#emrTlpClassifyName").val());
+        }
+        //从页面获取电子病历患者住院流水ID，数据不存在时提示并关闭窗口
+        if (typeof(parent.$("#inhospitalId").val()) == "undefined" ||  parent.$("#inhospitalId").val() == "") {
+            common.alertCall("请先选择患者", 2 , function(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+        }
+        //从父页面获取电子病历列表数据
+        var emrArray = parent._patientHospitalEmrArray;
+/*
+        //数据不存在时进行提示并关闭窗口
+        if (typeof(emrArray) == "undefined" || emrArray.length == 0) {
+            common.alertCall("没有电子病历", 2 , function(){
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+        }
+*/
+        //渲染缺陷病历选择标签
+        laytpl($("#selectEmrDom").html()).render({"list": emrArray}, function(html) {
+            $("#patientEmrSelectDiv").html(html);
+            form.render('select');
+            //监听缺陷电子病历选中事件
+            form.on('select(patientHospitalEmrId)', function(data){
+                //把选中的缺陷电子病历主要内容放入本地变量_patientEmrDefectItem
+                var selectedOp = $(data.elem).find("option:selected");
+                _patientEmrDefectItem.emrTlpId = selectedOp.attr("_emr_tlp_id");
+                _patientEmrDefectItem.emrTlpName = selectedOp.attr("_emr_tlp_name");
+                _patientEmrDefectItem.emrTlpClassifyId = selectedOp.attr("_emr_tlp_classify_id");
+                _patientEmrDefectItem.diagnosisOfficeId = selectedOp.attr("_diagnosis_office_id");
+                _patientEmrDefectItem.diagnosisOfficeName = selectedOp.attr("_diagnosis_office_name");
+                _patientEmrDefectItem.diagnosisDoctorId = selectedOp.attr("_diagnosis_doctor_id");
+                _patientEmrDefectItem.diagnosisDoctorName = selectedOp.attr("_diagnosis_doctor_name");
+                //验证是否与之前数据重复
+                if (defectRepeatValid()) {
+                    common.alert("缺陷项目已存在，请重新选择缺陷项目或缺陷电子病历", "2");
+                }
+            });
+        });
+
+        //初始化页面DOM内容
+        $.extend(_patientEmrDefectItem, parent._patientEmrDefectItem);
+        $("#patientHospitalEmrId").val(_patientEmrDefectItem.patientHospitalEmrId);
+        form.render('select');
+        $("#defectName").val(_patientEmrDefectItem.defectName);
+        $("#emrDefectDesc").val(_patientEmrDefectItem.emrDefectDesc);
+        $("#actualLossScore").val(_patientEmrDefectItem.actualLossScore);
+        $("#emrDefectPrjItemId").val(_patientEmrDefectItem.emrDefectPrjItemId);
+
+/*
+        form.on("select(patientHospitalEmrId)", function(data) {
+        	if (defectRepeatValid()) {
+        		common.alert("缺陷项目已存在，请重新选择缺陷项目或缺陷电子病历", "2");
+        	}
+        	
+        });
+*/
+    });
+
+    //选择电子病历缺陷模板类型
+    $('#defectName').click(function() {
+        layer.open({
+            type: 2
+            ,title: '选择缺陷项目'
+            ,content: '../emr/emrDefectPrjItemSelect.do'
+            ,area: ['95%', '85%']
+        });
+    });
+    
+    //选择缺陷项目回调函数
+    function selectItemCall(item) {
+        if (null == item || typeof(item) == "undefined") {
+            return;
+        }
+        $.extend(_patientEmrDefectItem, item);
+        $("#defectName").val(_patientEmrDefectItem.defectName);
+        $("#emrDefectPrjItemId").val(_patientEmrDefectItem.emrDefectPrjItemId);
+        //验证是否与之前数据重复
+        if (defectRepeatValid()) {
+            common.alert("缺陷项目已存在，请重新选择缺陷项目或缺陷电子病历", "2");
+        }
+    }
+
+    //验证当前缺陷项目是否和之前的重复
+    function defectRepeatValid() {
+        //获取选中的缺陷电子病历和缺陷项目
+        var patientHospitalEmrId = $("#patientHospitalEmrId").val();
+        var emrDefectPrjItemId = $("#emrDefectPrjItemId").val();
+        var defectName = $("#defectName").val();
+        if (defectName == "") {
+            return false;
+        }
+        var emrArray = parent._patientEmrDefectItemArray;
+        for (var i = 0; i < emrArray.length; i++) {
+            var emr = emrArray[i];
+            //判断当前遍历的缺陷是否是现在编辑的缺陷
+            if (typeof(emr.isEditObj) != "undefined" && emr.isEditObj) {
+            	continue;
+            }
+            //不允许同一份电子病历有相同的缺陷项目
+        	if (("" + emr.patientHospitalEmrId) == ("" + patientHospitalEmrId)
+        			&& ("" + emr.emrDefectPrjItemId) == ("" + emrDefectPrjItemId)) {
+            	return true;
+            }
+        }
+        return false;
+    }
+</script>
+
+##选择缺陷病历下拉模板
+<script id="selectEmrDom" type="text/html">
+<select lay-filter="patientHospitalEmrId" id="patientHospitalEmrId" name="patientHospitalEmrId">
+    <option value="">请选择缺陷电子病历</option>
+  {{# layui.each(d.list, function(index, item){ }}
+    <option value="{{ item.patientHospitalEmrId }}"
+        _emr_tlp_id="{{ item.emrTlpId }}"
+        _emr_tlp_name="{{ item.emrTlpName }}"
+        _emr_tlp_classify_id="{{ item.emrTlpClassifyId }}"
+        _diagnosis_office_id = "{{ item.diagnosisOfficeId }}"
+        _diagnosis_office_name = "{{ item.diagnosisOfficeName }}"
+        _diagnosis_doctor_id = "{{ item.diagnosisDoctorId }}"
+        _diagnosis_doctor_name = "{{ item.diagnosisDoctorName }}"
+##        _emr_tlp_classify_name="{{ item.emrTlpClassifyName }}"
+    >{{ item.title }}</option>
+  {{# }); }}
+</select>
+</script>
+
+

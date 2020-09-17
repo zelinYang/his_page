@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+#parse("./datacenter/datacenter.js.vm")
+#parse("./datacenter/datacenter.css.vm")
+<style type="text/css">
+
+.item-peolpe {
+    height: 60px;
+    font-size: 20px;
+    line-height: 60px;
+    text-align: center;
+}
+
+.item-tag {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.item-data {
+    font-size: 36px;
+    font-weight: 700;
+}
+
+.item-list {
+    color: black;
+
+}
+
+.exponent button {
+    width: 98%;
+    height: 170px;
+    padding-right: 30px;
+    border: 1px solid #d2d2d2;
+    line-height: 45px;
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.exponent button i {
+    line-height: 50px;
+    font-size: 40px;
+    position: relative;
+    float: left;
+    left: 20px;
+}
+
+</style>
+</head>
+<body>
+<!-- 业务量概括 -->
+<div class="layui-fluid"   style="height:calc(100% - 40px);">
+    <h2 style="font-weight: 700;margin-left:20px;">手术情况分析</h2>
+    <!-- 指标 -->
+    <div class="layui-row m-sm" style="height:calc(100% - 300px);">
+        <div class="layui-col-xs5">
+            <div class="layui-row">
+		        <div class="layui-col-xs6 exponent">
+		            <button class="layui-btn layui-bg-white" id="this_week_infect_count">
+		                 <span class="item-list item-tag">感染率</span><br>
+                         <span class="item-list item-data">55%</span>
+		            </button>
+		        </div>
+		        <div class="layui-col-xs6 exponent">
+		            <button class="layui-btn layui-bg-white" id="this_week_fiv_count">
+		                 <span class="item-list item-tag">前五位收入</span><br>
+                         <span class="item-list item-data">￥230</span>
+		            </button>
+		        </div>
+	       </div>
+            <div class="layui-row">
+		        <div class="layui-col-xs6 exponent">
+		            <button class="layui-btn layui-bg-white">
+		                 <span class="item-list item-tag">总床位使用率</span><br>
+                         <span class="item-list item-data">80.33%</span>
+		            </button>
+		        </div>
+		        <div class="layui-col-xs6 exponent">
+		            <button class="layui-btn layui-bg-white">
+		                 <span class="item-list item-tag">再次手术总例数</span><br>
+                         <span class="item-list item-data">111</span>
+		            </button>
+		        </div>
+	       </div>
+	   </div>
+	   
+	   <!-- 分析图 -->
+	   <div class="layui-col-xs7 full-height">
+	       <iframe id="chart1" width="100%" height="100%" src="" frameborder="0"></iframe>
+	   </div>
+    </div>
+    <div class="layui-row" style="height:250px;">
+        <iframe id="chart2" width="100%" height="100%" src="" frameborder="0"></iframe>
+    </div>
+    
+</div>
+
+<script>
+layui.use(['element','layer'], function(){
+    //初始化分析图表1
+    $("#chart1").attr("src",smartBiResource + "d9f5c0fb9fc68c0af3482c1fe6f313bd");
+    $("#chart2").attr("src",smartBiResource + "64ab6f959e4d51900bd5b056b1c3d360"); 
+  
+    //点击感染率
+    $('#this_week_infect_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '手术感染率'
+            ,content: smartBiResource + "I402880460170ab6eab6e78780170ac0dc8d232f2"
+            ,area: ['60%', '60%']
+        });
+    });
+    //点击前五位收入
+    $('#this_week_fiv_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '手术前五位收入病区'
+            ,content: smartBiResource + "I402880460170ab6eab6e787801702016c54551a3"
+            ,area: ['60%', '60%']
+        });
+    });
+    
+    //点击再次手术总例数
+    $('#this_week_fiv_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '再次手术总例数'
+            ,content: smartBiResource + "I402880460170ab6eab6e787801702016c54551a3"
+            ,area: ['60%', '60%']
+        });
+    });
+});
+
+</script>
+</body>
+
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-table td, .layui-table th {padding: 5px;}
+</style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <div class="layui-row layui-bg-white" id="form-btn">
+                <form id="queryForm" class="layui-form" action="">
+					<div class="layui-form-item search-form p-t-sm p-l-sm p-r-sm">
+                        <div class="layui-inline">
+                            <div class="layui-input-inline">
+                                #formTextInput("clinicPathName" "" "id='clinicPathName' class='layui-input' placeholder='请输入路径名称' maxLength='50'")
+                            </div>
+                        </div>
+						<div class="layui-inline">
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("inpatientCondition" "" $!dicData.dicPatientCondition "lay-filter='inpatientCondition' id='inpatientCondition' class='layui-input'" "请选择适用病情")
+                            </div>
+						</div>
+						<div class="layui-inline">
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("sexFlag" "" $!dicData.dicSexLimit "lay-filter='sexFlag' id='sexFlag' class='layui-input'" "请选择适用性别")
+                            </div>
+						</div>
+						<div class="layui-inline">
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("applyOfficeId" "" $!dicData.dicSysOrgDeptName "lay-filter='applyOfficeId' id='applyOfficeId' lay-search='' class='layui-input'" "请选择申请科室")
+                            </div>
+                        </div>
+                    </div>
+                </form>
+				<!-- 按钮 -->
+				<div class="layui-row layui-bg-white m-b-xs p-t-n p-b-xs p-l-sm p-r-sm">
+					<button class="layui-btn layui-btn-sm layui-btn-disabled" type="button" open-id="1" btn-type="multi"> 通 过  </button>
+					<button class="layui-btn layui-btn-sm layui-btn-disabled" type="button" open-id="2" btn-type="multi"> 拒 绝  </button>
+					<button class="layui-btn layui-btn-sm" id="btn_refresh" type="button"> 刷 新  </button>
+				</div>
+            </div>
+            <table id="auditPathList" lay-filter="auditPathList" class="layui-hide"></table>
+        </div>
+    </div>
+</div
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+layui.use(['table', 'form'], function(){
+    var rowId;
+    var table = layui.table, form = layui.form;
+
+
+	// 获取表格高度
+	function getTableHgt() {
+		return ($('body').height() - $('#form-btn').height() - 26)
+	}
+	// 重置表格高度
+	$(window).resize(function () {
+		var height = getTableHgt()
+		table.reload('auditPathList', {
+			height: height
+		})
+	})
+
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/pathway/auditPathPageJson.jo';
+    var tableAaudit = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'#auditPathList',
+        elem: '#auditPathList',
+        height: getTableHgt(),
+        cols: [[
+            {field: 'clinicPathId', type:'checkbox', width:50,fixed:'left'},
+            {field:'clinicPathName', title: '路径名称', width:80},
+            {field:'clinicPathVersion', title: '版本'},
+            {field:'diseaseId', title: '准入病种', width:80},
+            {field:'hospitalStayDay', title: '标准住院日', width:100},
+            {field:'hospitalStayRange', title: '出院时间范围', width:120},
+            {field:'surgeryDay', title: '手术日'},
+            {field:'estimatedCost', title: '预估费用', width:80},
+            {field:'subjectiveCondition', title: '主观条件', width:80},
+            {field:'inpatientCondition', title: '适用病情', width:80, templet :function (row) { if (row.inpatientCondition) return dicPatientCondition[row.inpatientCondition]; }},
+            {field:'sexFlag', title: '适用性别', width:80, templet :function (row) { if (row.sexFlag) return dicSexLimit[row.sexFlag]; }},
+            {field:'pathFlag', title: '是否通用', width:80, templet :function (row) { if (row.pathFlag) return dicYesNo[row.pathFlag]; }},
+            {field:'applyOfficeId', title: '申请科室', width:80},
+            {field:'applyTime', title: '申请时间', width:80}
+
+        ]],
+        page: {layout: ['prev', 'page', 'next']},
+        done: function (){
+            // 去掉表格头部的全选及取消全选功能
+            common.removeHeadCheckbox('clinicPathId');
+        }
+      })
+    );
+
+    // 刷新列表
+    $('#btn_refresh').click(function (){
+        tableAaudit.reload({url: tableUrl, where: {}});
+    });
+
+    // 关键字检索
+    $('#clinicPathName').on('input propertychange', function (){
+        tableAaudit.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+    // 适用病情检索
+    form.on('select(inpatientCondition)', function (data){
+        tableAaudit.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+    // 适用性别检索
+    form.on('select(sexFlag)', function (data){
+        tableAaudit.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+    // 适申请科室检索
+    form.on('select(applyOfficeId)', function (data){
+        tableAaudit.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+
+    //监听复选框
+    table.on('checkbox(auditPathList)', function(obj){
+        if (obj.checked) {
+            rowId = obj.data.clinicPathId;
+        } else {
+            rowId = "";
+        }
+
+        var data = common.getTableSelectRow(table, 'auditPathList');
+        // 改变操作多条数据的按钮状态
+        $('button[btn-type="multi"]').each(function (){
+            if (data.length > 0) {
+                $(this).removeClass('layui-btn-disabled');
+            } else {
+                $(this).addClass('layui-btn-disabled');
+            }
+        });
+    });
+
+    // 按钮配置及操作
+    var operateUrl = {
+        1:{url: '/pathway/savePassAudit.jo', msg:'确定允许通过吗？', openType: 'link'},
+        2:{url: '/pathway/saveRejectAudit.jo', title:'拒绝理由', openType: 'win', winW:'99%', winH: '99%'}
+    }
+    $('button[btn-type="multi"]').click(function (){
+        if (!$(this).attr('open-id')) {
+            common.alert('页面按钮配置无效', 0);
+            return ;
+        }
+        var opt = operateUrl[$(this).attr('open-id')];
+        if (!opt || !opt.url || !opt.openType) {
+            common.alert('页面按钮操作配置无效', 0);
+            return ;
+        }
+
+        var ids = common.getTableSelectRowField(table, 'auditPathList', 'clinicPathId');
+        if (!ids || ids.length <= 0) {
+            common.alert('请选择需要审核的路径', 0);
+            return ;
+        }
+
+        var url = contextPath + opt.url;
+        if (opt.openType == 'win') {
+            var html = '<div class="full-height border-bottom" style="height: calc(100% - 5px);"><textarea id="reason" placeholder="请输入拒绝理由" class="layui-textarea full-height b-n"></textarea></div>';
+            var winOpt = {area:['350px', '230px'], btn:['确定', '取消'], offset: $('body').height()/2/2, closeBtn:false, btnAlign:'c', yes: function (index){
+                if (!$('#reason').val()) {
+                    common.alert('请填写拒绝理由', 0);
+                    return ;
+                }
+
+                common.requestServer(url, {ids: ids, auditFailedReason: $('#reason').val()}, function (result){
+                    if (result.code == "0") {
+                        $('#btn_refresh').click();
+                        layer.close(index);
+                        $('button[btn-type="multi"]').each(function (){
+                            $(this).addClass('layui-btn-disabled');
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            }};
+            common.openHtml(html, opt.title, winOpt);
+
+        } else if (opt.openType == 'link') {
+            common.confirm(opt.msg, function (){
+                common.requestServer(url, {ids: ids}, function (result){
+                    if (result.code == "0") {
+                        $('#btn_refresh').click();
+                        $('button[btn-type="multi"]').each(function (){
+                            $(this).addClass('layui-btn-disabled');
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        }
+    });
+});
+</script>
+</html>

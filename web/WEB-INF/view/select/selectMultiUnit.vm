@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title> 
+#parse("./common/pageCss.vm")
+<link href="../resource/hplus/css/plugins/jsTree/style.min.css" rel="stylesheet">
+</head>
+<body class="white-bg">
+    <div class="col-sm-12 p-l-n p-r-n full-height">
+        <div id="deptTree" class="full-height-scroll" style="height: calc(100% - 10px)"></div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button id="btn_save" type="button" class="btn btn-outline btn-primary"><i class="fa fa-check"></i> 确定</button>
+    </div>
+</body>
+<!-- 全局js -->
+#parse("./common/pageJs.vm")
+<script src="../resource/hplus/js/plugins/jsTree/jstree.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function () {
+    // 初始化单位树形
+    $("#deptTree").jstree({
+        "core": {"themes" : { "responsive" : false },
+            'data': function(obj, callback) {
+                var jsonstr = "[]";
+                var jsonarray = eval('(' + jsonstr + ')');
+                $.ajax({
+                    type : "GET",
+                    url : "../sys/getUnitTree.jo",
+                    dataType : "json",
+                    async : false,
+                    success : function(result) {
+                        var root = { "id":result[0].id, "parent":result[0].pid == "" ? "#" : result[0].pid, "text":result[0].name, "type":result[0].iconSkin, "state": {"opened" : true}, children:result[0].children}
+                        jsonarray.push(root);
+                    }
+                });
+                callback.call(this, jsonarray);
+            }
+        }, 
+        "plugins" : ["dnd", "types", "checkbox"],
+        "checkbox": {
+            "keep_selected_style": false,//是否默认选中
+            "three_state": false,//父子级别级联选择
+            "tie_selection": true // true表示可以通过方法获取选中的节点
+        }
+    });
+
+    // 确定按钮
+    $('#btn_save').click(function (){
+        var unitArray = [];
+        var box = $('#deptTree').jstree(true).get_selected(true);
+        $.each(box, function (i, val) {
+            unitArray.push(val.original);
+        });
+
+        if (parent.selectMultiUnitBack && typeof(parent.selectMultiUnitBack) == "function") {
+            var backData = [];
+            parent.selectMultiUnitBack(unitArray);
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index); 
+        }
+    });
+});
+</script>
+</html>
+

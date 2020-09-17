@@ -1,0 +1,511 @@
+<script>
+    var dicDrugNumUnitDosageUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicOffice  = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicOutTechExamState  = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutTechExamState)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicAccountBookTcmType = JSON.parse('$dicTools.changeMapToJson($dicData.dicAccountBookTcmType)');
+    var dicOrderState = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderState)');//医嘱状态
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicReasonableMedicineApplyState = JSON.parse('$dicTools.changeMapToJson($dicData.dicReasonableMedicineApplyState)');
+    var btnAdd;
+    var tcmDelete;
+    var selectRecipeMedicineInfo;
+    var checkRecipeTcmExist;//校验处方
+    var convertRecipeItemMap;//药品信息map
+    var query;
+    var selectOrderData = [];//已选中的医嘱项目
+    var initLayout;
+    var resizetab;
+    var filterExistDrug;//过滤已存在的药品
+    var initLayIfamePage;//初始化iframe页面
+    var outMainWin = parent; //门诊医生主窗口页面对象
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'jquery','table','element','form'], function(){
+        var table = layui.table;
+        var element = layui.element;
+        var form = layui.form;
+        var $ = layui.$;
+
+        element.render();
+
+        function hideSouthLayout() {
+            $(".ui-layout-resizer-south .content-open").trigger('click');
+        }
+
+        initLayout = function() {
+            var interval =  setInterval(function() {
+                if ($('#container').height()>0) {
+                    $('#container').layout({
+                        south__size: 350//pane的大小
+                        ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▼</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                        ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▲</div>"//pane关闭时，同上。
+                        ,spacing_open:8//边框的间隙
+                        ,maskIframesOnResize:".resizeiframe"
+                    });
+                    clearInterval(interval );//停止
+                    hideSouthLayout();
+                }
+            }, 10);
+        }
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#outpatientRecipeTcmTable'
+            ,id: 'outpatientRecipeTcmTable'
+            ,defaultToolbar: []
+            ,height: 'full-50'//高度
+            ,url: '../outpatient/recipeTcmListData.jo' //数据接口
+            ,where:common.serializeObject($('#oupatientRecipeTcm_queryForm'))
+            ,limit:200
+            ,request: {pageName: 'pageNumber' ,limitName: 'pageSize' }
+            ,cols: [[ //表头
+                {
+                    type: 'checkbox'
+                }
+                ,{
+                    field: 'payFeeFlag', title: '缴费状态', templet: function (row) {
+						if (row.orderLockFlag === '1') {
+							return '已锁定';
+						}
+						return dicPayFeeState[row.payFeeFlag] || "";
+                    }
+                }
+				,{
+					field: 'rationalDrugUseApproveFlag', title: '合理用药', templet: function (row) {
+						return dicReasonableMedicineApplyState[row.rationalDrugUseApproveFlag] || "";
+					}
+				}
+                ,{field : 'recipeItem.orderName',title : '项目名称',
+                    templet :function (row) {
+                        console.log(row.validFlag);
+                        if(row.recipeItem) {
+                            var recipeItem = row.recipeItem.orderName ? row.recipeItem.orderName : '';
+                            return recipeItem ;
+                        }
+                        return '' ;
+                    }
+                }
+                ,{field: 'recipeId', title: '处方ID', hide: true}
+                ,{field : 'herbUsageWay', title : '用法',
+                    templet :function (row) {
+                        if(row.herbUsageWay) {
+                            return dicHerbUsage[row.herbUsageWay];
+                        }
+                        return '' ;
+                    }
+                }
+                ,{field : 'herbUsageClassify', title : '类别',
+                    templet :function (row) {
+                        if(row.herbUsageClassify) {
+                            return dicAccountBookTcmType[row.herbUsageClassify];
+                        }
+                        return '' ;
+                    }
+                }
+                ,{field : 'orderDay', title : '剂数'}
+                ,{field : 'recipeItem.medicineSpec',title:'规格',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.medicineSpec ? row.recipeItem.medicineSpec : '';
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                ,{field : 'recipeItem.dosage', title : '剂量',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            if(row.recipeItem.dosageUnit){
+                                return row.recipeItem.dosage ? row.recipeItem.dosage + dicDrugNumUnitDosageUnit[row.recipeItem.dosageUnit] : '';
+                            }
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                ,{field : 'takeBoilFlag', title : '代煎',
+                    templet :function (row) {
+                        if(!row.recipeItem) {
+                            return '';
+                        } else {
+                            return dicYesNo[row.takeBoilFlag] ? dicYesNo[row.takeBoilFlag] : '否';
+                        }
+                    }
+                }
+                ,{field : 'diseaseName', title : '中医诊断'}
+                ,{field : 'tcmSymptomName', title : '中医证候'}
+                ,{field : 'herbCookingName', title : '特殊用法',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.herbCookingName ? row.recipeItem.herbCookingName: '';
+                        } else {
+                            return '';
+                        }
+                    }
+                },{field : 'unitPrice', title : '单价',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.unitPrice? row.recipeItem.unitPrice: '';
+                        }
+                        return '';
+                    }
+                },{field : 'actualPrice', title : '金额',
+                    templet :function (row) {
+                        if(row.recipeItem) {
+                            return row.recipeItem.actualPrice || '';
+                        }
+                        return '';
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            ,done: function(res, curr, count){
+                var that = this;
+                $('th').css('text-align','center');
+                //获取草药金额
+                $('.recipeTotalPriceValue').text($.map(res.data, function (recipe) {
+                    return recipe.recipeItem.actualPrice
+                }).reduce(function (total, num) {
+                    return total + num;
+                }, 0).toFixed(2));
+
+                $.each(res.data, function (index, item) {
+                    var trDom = that.elem.next().find('.layui-table-main tr[data-index="' + index + '"]');
+                    if (item.validFlag === '0') {
+                        trDom.addClass('del-tr');
+                        trDom.children(":first").children(":first").html('');
+                    }
+                });
+
+                //存放计算医技表格数据需要合并的医技 id
+                var recipeIds = $.unique($.map(res.data, function (item) {
+                    return item.recipeId;
+                }));
+                //合并显示单元格字段
+                var groupCells = ['herbUsageWay', 'herbUsageClassify', 'orderDay'];
+                //合并关键字段
+                var groupKeyWord = 'recipeId';
+                $.each(recipeIds, function (index, contains) {
+                    var trs = that.elem.next().find('.layui-table-main tr td[data-field="'+ groupKeyWord +'"]>.layui-table-cell:contains('+ contains +')').filter(function () {
+                    return $(this).text() == contains;
+                }).parents('tr');
+                    $.each(groupCells, function (i, field) {
+                        trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+                    })
+                    //移入背景颜色
+                    trs.hover(function () {
+                        trs.addClass('layui-table-hover');
+                    }, function () {
+                        trs.removeClass('layui-table-hover');
+                    })
+                });
+            }
+        });
+
+
+        //form监听事件
+        table.on('checkbox(outpatientRecipeTcmTable)', function(obj){
+            var groupKeyWord = 'recipeId';
+            obj.tr.siblings().find('td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + obj.data.recipeId + ')').filter(function () {
+                return $(this).text() == obj.data.recipeId;
+            }).parents('tr').find(':checkbox[name="layTableCheckbox"]').click();
+            $.each(table.cache.outpatientRecipeTcmTable, function (i, item) {
+                if (item.recipeId === obj.data.recipeId) {
+                    if (obj.checked) {
+                        item.LAY_CHECKED = true;
+                    } else {
+                        delete item.LAY_CHECKED;
+                    }
+                }
+            });
+            form.render('checkbox');
+        });
+
+        btnAdd = function(recipeId) {
+            var param = $.extend({},parent.grobalModel);
+            if (recipeId) {
+                param.recipeId = recipeId;
+            }
+            param.outpatientFlag = '1';
+            console.log(param);
+            var url = '$contextPath/outpatient/recipeTcmEdit.do'+common.objToParamStr(param);
+            var title = '草药药房';
+            var options = {
+                id: 'win',
+                type: 2,
+                move: '.layui-layer-title',
+                title: title,
+                shadeClose: false,
+                offset: 'auto',
+                shade: 0.5,
+                maxmin: true,
+                area: ['1000px', '700px'],
+                content: [url, 'no']
+            }
+            parent.layer.open(options);
+        }
+
+
+        tcmDelete = function() {
+            var checkStatus = table.checkStatus('outpatientRecipeTcmTable');
+            if (checkStatus.data.length === 0 ) {
+                common.msg('请选择要删除的项', 0);
+                return false;
+            }
+            var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.document);
+            var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+
+            var registerId = $('#registerId').val();
+            var recipeIds = $.unique($.map(checkStatus.data, function (item) {
+                return item.recipeId;
+            }));
+
+
+            common.confirm('确定删除处方吗？', function (){
+                common.requestServer('../outpatient/recipeTcmDelete.jo', {recipeIds: recipeIds.join(',')}, function (result){
+                    if (result.code == '0') {
+                        common.alert(result.msg, 1);
+                        query();
+                        emrEditWin.getEmrRecipeTcmItem(registerId);
+                        outMainWin.countOutpatientFee(registerId);
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+
+        }
+
+        //校验是否存在相同处方
+        checkRecipeTcmExist = function(recipeItemJson){
+            var registerId = $('#registerId').val();
+            var recipeExist;
+            $.ajax({
+                type: "POST",
+                url: '../outpatient/checkTcmRecipeExist.jo',
+                data: {registerId: registerId,
+                    recipeItemJson: recipeItemJson},
+                dataType: "json",
+                async: false,//同步 请求
+                success: function(result){
+                    recipeExist = result;
+                },
+                error: function(res){jqueryPostError(res);}
+            });
+            return recipeExist;
+        }
+
+
+        //新增
+        $('#btn_add').click(function (){
+            btnAdd();
+        });
+
+        //编辑
+        $('#btn_edit').click(function (){
+            var checkStatus = table.checkStatus('outpatientRecipeTcmTable');
+            if (checkStatus.data.length === 0 ) {
+                common.msg('请选择要修改的处方', 0);
+                return false;
+            }
+            var recipeIds = $.unique($.map(checkStatus.data, function (recipe) {
+                return recipe.recipeId;
+            }));
+            if (recipeIds.length > 1) {
+                common.msg('每次只能编辑一个处方', 0);
+                return false;
+            }
+            btnAdd(recipeIds[0]);
+        });
+
+        $("#btn_refund").click(function () {
+            var checkStatus = table.checkStatus('outpatientRecipeTcmTable');
+            if (checkStatus.data.length === 0 ) {
+                common.msg('请选择要申请退药的处方', 0);
+                return false;
+            }
+            var paidRecipeArr = [];
+            $.each(checkStatus.data, function (index, data) {
+                if (data.payFeeFlag !== '1') {
+                    paidRecipeArr.push(data.recipeItem.orderName);
+                }
+            });
+            if (paidRecipeArr.length !== 0) {
+                common.alert(paidRecipeArr.join(',') + '还未缴费，请进行删除操作', 0);
+                return;
+            }
+
+            var recipeIds = $.unique($.map(checkStatus.data, function (recipe) {
+                return recipe.recipeId;
+            }));
+            refundRecipe(recipeIds);
+        });
+
+        // 新增电子病历
+        function refundRecipe(recipeIdArr) {
+            layer.open({
+                type: 2
+                , title: '申请退药理由'
+                , content: '../outpatient/editReason.do'
+                , area: ['600px', '500px']
+                , btn: ['确定', '取消']
+                , scrollbar: true
+                , yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                            , submitID = 'LAY-emr-submit'
+                            , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field; //获取提交的字段
+                        if (!field.reason) {
+                            layer.msg('请输入申请退药理由', {icon: 2});
+                            return;
+                        }
+                        layer.close(index); //关闭弹层
+                        common.confirm("申请退费会将整个处方一起退费，确定申请退费吗？", function () {
+                            common.openLoad();
+                            common.requestServer(contextPath + '/outpatient/refundRecipe.jo', {recipeIds: recipeIdArr.join(','), applyDrugReturnReason: field.reason}, function (result) {
+                                common.closeLoad();
+                                if (result.code === "0") {
+                                    common.msg(result.msg, 1);
+                                    window.location.reload();
+                                } else {
+                                    common.msg(result.msg, 0);
+                                }
+                            });
+                        });
+                    });
+
+                    submit.trigger('click');
+                }
+                , success: function (layero, index) {
+
+                }
+            });
+        }
+
+
+        //选择处方的药品详细信息
+        selectRecipeMedicineInfo = function(medicineIds) {
+            var recipeMedicineInfoArray = [];
+            $.ajax({
+                type: "POST",
+                url: '../outpatient/selectRecipeMedicineInfo.jo',
+                data: {medicineIds:medicineIds},
+                dataType:"json",
+                async:false,//同步 请求
+                success: function(data){ recipeMedicineInfoArray = data;},
+                error: function(res){jqueryPostError(res);}
+            });//ajax end
+            return recipeMedicineInfoArray;
+        }
+
+        //药品信息map key=药品序号 value=药品信息
+        convertRecipeItemMap = function(recipeGroupItemArr,isRecipeItem) {
+            var recipeGroupItemMap = {};
+            $(recipeGroupItemArr).each(function (i,recipeGroupItem) {
+                if (isRecipeItem) {
+                    recipeGroupItemMap[recipeGroupItem.medicineId] = recipeGroupItem;
+                }else {
+                    recipeGroupItemMap[recipeGroupItem.chargeItemId] = recipeGroupItem;
+                }
+
+            });
+            return recipeGroupItemMap;
+        }
+
+
+        filterExistDrug = function(recipeTcmItem, registerId, patientId) {
+            var recipeTcmItemParams;
+            $.ajax({
+                type: "POST",
+                url: '../outpatient/filterExistDrug.jo',
+                data: {registerId: registerId,
+                    recipeTcmJson: JSON.stringify(recipeTcmItem),
+                    patientId: patientId},
+                dataType: "json",
+                async: false,//同步 请求
+                success: function(result){
+                    recipeTcmItemParams = result.data;
+                },
+                error: function(res){jqueryPostError(res);}
+            });
+            return recipeTcmItemParams;
+        };
+
+
+        //查询列表
+        query = function() {
+            var queryParams = common.serializeObject($('#oupatientRecipeTcm_queryForm'));
+            tableIns.reload({ where: queryParams });
+            outMainWin.countOutpatientFee($("#registerId").val());
+        };
+
+        //单选按钮触发查询
+        form.on('radio(diagnosisClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+            query();
+        });
+
+
+        //延迟加载Ifame页面
+        initLayIfamePage = function() {
+            function loadIfamePage() {
+                $('iframe[targetSrc]').each(function(index) {
+                    var elem = $(this);
+                    var src = elem.attr('targetSrc') + common.objToParamStr(outMainWin.grobalModel);
+                    elem.attr('src',src);
+                });
+            }
+            //延迟加载
+            setTimeout(function() {
+                loadIfamePage();
+            }, 500);
+        }
+
+        //页面初始化
+        $(document).ready(function() {
+            ckOutRegExist();
+            initLayout();
+            initLayIfamePage();
+
+            /* 切换到指定Tab项 */
+            tabChange = function (filter, layid) {
+                element.tabChange(filter, layid);
+            }
+
+            $('#tech_tpl, #tech_history').click(function() {
+                //切换到指定的tab
+                var targetTab = $(this).attr('targetTab');
+                element.tabChange('outItemTabs', targetTab);
+                showSouthLayout();
+            });
+
+            resizetab = function() {
+                table.resize('outpatientRecipeTcmTable');
+            }
+
+            //显示隐藏底部窗口
+            function showSouthLayout() {
+                var southDisplay = $(".ui-layout-resizer-south .content-open").css("display");
+                if (southDisplay == 'none'){
+                    $('.ui-layout-south').removeClass('layui-hide');
+                    $(".ui-layout-resizer-south .content-open").trigger('click');
+                }
+            }
+        });
+
+        //刷新页面按钮
+        $("#btn_refresh").click(function () {
+            location.reload();
+        });
+    });//layui.use
+</script>

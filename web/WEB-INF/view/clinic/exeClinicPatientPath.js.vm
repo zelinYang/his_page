@@ -1,0 +1,392 @@
+<script>
+	var firstClick = true;
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicEmrParting = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrParting)');
+	var dicInpatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientCondition)');
+	var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+	var dicPathStageType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathStageType)');
+	var activityExeStateType = JSON.parse('$dicTools.changeMapToJson($dicData.activityExeStateType)');
+	var pathStageTimeAssessType = JSON.parse('$dicTools.changeMapToJson($dicData.pathStageTimeAssessType)');
+	var pathStageResultAssessType = JSON.parse('$dicTools.changeMapToJson($dicData.pathStageResultAssessType)');
+	var autocomplete;
+	var activityProperty = "$!{queryInfo.type}";//1=医 2=护
+
+	layui.config({base: '../resource/layuiadmin/'}).extend({
+		autocomplete: 'modules/autocomplete'
+	}).use(['form', 'element', 'table', 'autocomplete'], function () {
+		var form = layui.form, element = layui.element, table = layui.table;
+		autocomplete = layui.autocomplete;
+		var $ = layui.$;
+		form.render('select');
+
+		//页面初始化
+		$(function() {
+			// $('.timeAxisBox li').click(function(){
+			// 	var i = $(this).index();
+			// 	$(this).addClass('act').siblings().removeClass('act');
+			// 	$('.slideItem').eq(i).addClass('act').siblings().removeClass('act');
+			// });
+			$('.layui-timeline li').click(function(){
+				var i = $(this).index();
+				$(this).addClass('act').siblings().removeClass('act');
+				$('.slideItem').eq(i).addClass('act').siblings().removeClass('act');
+				showClinicPatientActivity($(this).find('input[name=clinicPatientStageId]').val());
+			});
+		});
+
+		window.showClinicPatientActivity = function(clinicPatientStageId) {
+			common.requestServer(contextPath + '/clinic/findClinicPatientStageInfo.jo', {clinicPatientStageId: clinicPatientStageId, activityProperty: activityProperty}, function (result) {
+				if (result.code === '0') {
+					for (var key in result.data.stageMap) {
+						var html = [];
+						html.push('<ul>');
+						$.each(result.data.stageMap[key], function (index, order) {
+							html.push('<li>');
+							if (!order.activityExeState || order.activityExeState === '0' || order.activityExeState === '2') {
+								html.push('<i class="layui-icon layui-icon-rate"></i> ');
+							} else {
+								html.push('<i class="layui-icon layui-icon-rate-solid"></i> ');
+							}
+							html.push(order.activityContent);
+							html.push('（');
+							html.push(activityExeStateType[order.activityExeState]);
+							html.push('）');
+							html.push('</li>');
+						})
+						html.push('</ul>');
+						$("#type" + key).html(html.join(''));
+					}
+					var assessHtml = [];
+					if (!result.data.clinicPatientStage.pathStageTimeAssess) {
+						assessHtml.push('还未进行评估');
+					} else {
+						assessHtml.push('时间进度：');
+						assessHtml.push(pathStageTimeAssessType[result.data.clinicPatientStage.pathStageTimeAssess]);
+						assessHtml.push('；总体结果：');
+						assessHtml.push(pathStageResultAssessType[result.data.clinicPatientStage.pathStageResultAssess]);
+						assessHtml.push('<br />');
+						assessHtml.push('评估备注：');
+						assessHtml.push(result.data.clinicPatientStage.patientStageAssessRemark);
+						assessHtml.push('<br />');
+						assessHtml.push('变异原因：');
+						$.each(result.data.clinicPatientStageAssessList, function (index, clinicPatientStageAssess) {
+							assessHtml.push(index + 1);
+							assessHtml.push('、');
+							assessHtml.push(clinicPatientStageAssess.variationReasonContent);
+							if (clinicPatientStageAssess.variationDetail) {
+								assessHtml.push('（');
+								assessHtml.push(clinicPatientStageAssess.variationDetail);
+								assessHtml.push('）');
+							}
+							assessHtml.push('；');
+						})
+					}
+					$("#assessContent").html(assessHtml.join(''));
+				} else {
+					common.alert(result.msg, 0);
+				}
+			})
+		}
+
+		$("#btn_add").click(function () {
+			if ($('.timeAxisBox li.act').length === 0) {
+				common.msg('请选择阶段', 0);
+				return;
+			}
+			var clinicPathStageId = $('.timeAxisBox li.act').find('input[name=clinicPathStageId]').val();
+			var validParams = {
+				clinicPathStageId: clinicPathStageId,
+				inhospitalId: $("#inhospitalId").val()
+			};
+			common.requestServer(contextPath + "/clinic/validateClinicPatientStage.jo", validParams, function (result) {
+				if (result.code === "0") {
+					layer.open({
+						type: 2
+						, title: '生成路径'
+						, content: contextPath + '/clinic/selectClinicPathActivity.do?clinicPathStageId=' + clinicPathStageId + '&inhospitalId=' + $("#inhospitalId").val()
+						, area: ['98%', '98%']
+						, btn: ['确定', '取消']
+						, scrollbar: true
+						, maxmin: true
+						, yes: function (index, layero) {
+							var iframeWindow = window['layui-layer-iframe' + index]
+									, submitID = 'LAY-emr-submit'
+									, submit = layero.find('iframe').contents().find('#' + submitID);
+
+							//监听提交
+							iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+								var field = data.field; //获取提交的字段
+								console.log(iframeWindow.getParams());
+								if (!iframeWindow.getParams()) {
+									common.alert('请选择活动', 0);
+									return;
+								}
+								field.clinicPatientPathId = $("#clinicPatientPathId").val();
+								field.clinicPathId = $("#clinicPathId").val();
+								field.clinicPathActivityIds = iframeWindow.getParams();
+								field.inhospitalId = $("#inhospitalId").val();
+								common.requestServer(contextPath + "/clinic/saveClinicPatientStage.jo", field, function (result) {
+									if (result.code === "0") {
+										common.msg("保存成功!", 1, function () {
+											layer.close(index);
+											location.reload();
+										});
+									} else {
+										common.alert(result.msg, 0);
+									}
+								});
+							});
+
+							submit.trigger('click');
+						}
+						, success: function (layero, index) {
+
+						}
+					});
+				} else {
+					common.alert(result.msg, 0);
+				}
+			});
+		})
+
+		$("#changeDisease").click(function () {
+			// window.location.href = contextPath + '/clinic/changeClinicPatientPathDisease.do?clinicPatientPathId=' +$("#clinicPatientPathId").val();
+			layer.open({
+				type: 2
+				, title: '变更路径'
+				, content: contextPath + '/clinic/changeClinicPatientPathDisease.do?clinicPatientPathId=' +$("#clinicPatientPathId").val()
+				, area: ['98%', '98%']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, maxmin: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						if (!field.clinicPathId) {
+							common.msg("请选择临床路径病种", 0);
+							return ;
+						}
+						common.requestServer(contextPath + '/clinic/saveClinicPatientPathDisease.jo', {clinicPathId: field.clinicPathId, clinicPatientPathId: field.clinicPatientPathId}, function (result) {
+							if (result.code === '0') {
+								common.msg("保存成功", 1, function (){
+									layer.close(index);
+									location.reload();
+								});
+
+							} else {
+								common.alert(result.msg, 0);
+							}
+						})
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		})
+		$("#changeStage").click(function () {
+			layer.open({
+				type: 2
+				, title: '变更阶段'
+				, content: contextPath + '/clinic/changeClinicPatientPathStage.do?clinicPatientPathId=' +$("#clinicPatientPathId").val() + "&inhospitalId=" + $("#inhospitalId").val()
+				, area: ['98%', '98%']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, maxmin: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						if (!field.clinicPathStageId) {
+							common.msg("请选择临床路径阶段进度", 2);
+							return ;
+						}
+						common.requestServer(contextPath + '/clinic/saveClinicPatientPathStage.jo', {clinicPatientPathId: field.clinicPatientPathId, clinicPatientStageId: field.clinicPathStageId, currentPatientStageId: field.currentPatientStageId}, function (result) {
+							if (result.code === '0') {
+								common.msg("保存成功", 1, function (){
+									layer.close(index);
+									location.reload();
+								});
+
+							} else {
+								common.alert(result.msg, 0);
+							}
+						})
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		});
+		$("#variantEtiology").click(function () {
+			common.open(contextPath + '../../../../cloud_his/view/clinic/variantEtiology.html?clinicPatientPathId=' + $("#clinicPatientPathId").val() + "&inhospitalId=" + $("#inhospitalId").val(), '处方药品审核结果', {area: ['85%', '85%']});
+		});
+
+
+		$("#btn_exe").click(function () {
+			if ($('.layui-timeline li.act').length === 0) {
+				common.msg('请选择项目', 0);
+				return;
+			}
+			var clinicPatientStageId = $('.layui-timeline li.act').find('input[name=clinicPatientStageId]').val();
+			layer.open({
+				type: 2
+				, title: '执行项目'
+				, content: contextPath + '/clinic/exeClinicPatientActivity.do?clinicPatientStageId=' + clinicPatientStageId + '&inhospitalId=' + $("#inhospitalId").val()
+				, area: ['98%', '98%']
+				// , btn: ['确定', '取消']
+				, scrollbar: true
+				, maxmin: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						console.log(iframeWindow.getParams());
+						if (!iframeWindow.getParams()) {
+							common.alert('请选择活动', 0);
+							return;
+						}
+						field.clinicPatientPathId = $("#clinicPatientPathId").val();
+						field.clinicPathId = $("#clinicPathId").val();
+						field.clinicPathActivityIds = iframeWindow.getParams();
+						field.inhospitalId = $("#inhospitalId").val();
+						$.post(contextPath + "/clinic/saveClinicPatientStage.jo", field, function (result) {
+							if (result.code === "0") {
+								common.msg("保存成功!", 1, function () {
+									layer.close(index);
+									localtion.reload();
+								});
+							} else {
+								common.alert(result.msg, 0);
+							}
+						}, "json");
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		});
+
+		$("#btn_assess").click(function () {
+			if ($('.layui-timeline li.act').length === 0) {
+				common.msg('请选择项目', 0);
+				return;
+			}
+			var clinicPatientStageId = $('.layui-timeline li.act').find('input[name=clinicPatientStageId]').val();
+			common.requestServer(contextPath + "/clinic/validateClinicPatientStageAssess.jo", {clinicPatientStageId: clinicPatientStageId}, function (result) {
+				if (result.code === "0") {
+					layer.open({
+						type: 2
+						, title: '阶段评估'
+						, content: contextPath + '/clinic/clinicPatientAssessEdit.do?clinicPatientStageId=' + clinicPatientStageId + '&clinicPatientPathId=' + $("#clinicPatientPathId").val() + '&inhospitalId=' + $("#inhospitalId").val()
+						, area: ['98%', '98%']
+						, btn: ['确定', '取消']
+						, scrollbar: true
+						, maxmin: true
+						, yes: function (index, layero) {
+							var iframeWindow = window['layui-layer-iframe' + index]
+									, submitID = 'LAY-emr-submit'
+									, submit = layero.find('iframe').contents().find('#' + submitID);
+
+							//监听提交
+							iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+								var field = data.field; //获取提交的字段
+								if (!iframeWindow.getParams().validFlag) {
+									common.alert('请填写理由为其他的详细描述');
+									return;
+								}
+								$.extend(field, iframeWindow.getParams())
+								field.clinicPatientPathId = $("#clinicPatientPathId").val();
+								field.clinicPatientStageId = clinicPatientStageId;
+								field.clinicPathId = $("#clinicPathId").val();
+								field.inhospitalId = $("#inhospitalId").val();
+								common.requestServer(contextPath + "/clinic/saveClinicPatientStageAssess.jo", field, function (result) {
+									if (result.code === "0") {
+										common.msg("保存成功!", 1, function () {
+											layer.close(index);
+											location.reload();
+										});
+									} else {
+										common.alert(result.msg, 0);
+									}
+								});
+							});
+
+							submit.trigger('click');
+						}
+						, success: function (layero, index) {
+
+						}
+					});
+				} else {
+					common.alert(result.msg, 0);
+				}
+			});
+		});
+
+		$("#completeClinic").click(function () {
+			common.requestServer(contextPath + "/clinic/validateAllClinicPatientStageAssess.jo", {clinicPatientPathId: $("#clinicPatientPathId").val()}, function (result) {
+				if (result.code === "0") {
+					common.requestServer(contextPath + "/clinic/saveClinicPatientPathComplete.jo", {clinicPatientPathId: $("#clinicPatientPathId").val(), inhospitalId: $("#inhospitalId").val()}, function (result) {
+						if (result.code === "0") {
+							common.msg("保存成功!", 1, function () {
+								location.reload();
+							});
+						} else {
+							common.alert(result.msg, 0);
+						}
+					});
+				} else {
+					common.alert(result.msg, 0);
+				}
+			});
+		});
+
+		// 获取表格高度
+		function getMainTableHeight() {
+			return ($('body').height() - 20);
+		}
+		// 获取表格高度
+		function getOtherTableHeight() {
+			return ($('body').height() - 60);
+		}
+
+		var afterWith = ($('.timeAxisBox').width() - 60);
+		//console.log(afterheight);
+		$('<style>').html('@keyframes clipMe{0%,100%{clip:rect(0px,'+ afterWith +'px,2px,0px);}25%{clip:rect(0px,'+ afterWith +'px,'+ afterWith +'px,'+ afterWith +'px);}50%{clip:rect('+ afterWith +'px,'+ afterWith +'px,'+ afterWith +'px,0px);}75%{clip:rect(0px,2px,'+ afterWith +'px,0px);}}').appendTo($('head'));
+
+		$(window).resize(function () {
+			table.reload('mainTable',{
+				height:getMainTableHeight()
+			})
+		})
+		$(document).ready(function () {
+			$(".mainTwo").height($('body').height() - $(".mainOne").height() - 61);
+		});
+
+
+
+
+});
+</script>

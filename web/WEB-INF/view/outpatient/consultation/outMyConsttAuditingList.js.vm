@@ -1,0 +1,161 @@
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var dicConsttStateFlag  = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttStateFlag)');
+  var dicConsttLevel  = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttLevel)');
+  var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)'); 
+  var dicConsttAutditingState = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsttAutditingState)'); 
+  
+  layui.use(['jquery','table','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var $ = layui.$;
+    
+    //日期范围
+    laydate.render({elem: '#applyTime',trigger: 'click', range: true});
+    
+    element.render();
+    //第一个实例
+    var tableIns = table.render({
+       elem: '#consttApplyTable'
+      ,toolbar: '#toolbarDemo'
+      ,defaultToolbar: []
+      ,height: 'full-55'//高度
+      ,page: true
+      ,url: '$contextPath/consultationApply/consultationApplyListData.jo' //数据接口
+      ,where:common.serializeObject($('#consttApply_queryForm'))
+      ,limit:20
+      ,request: {  pageName: 'pageNumber',limitName: 'pageSize'} //页码的参数名称，默认：page //每页数据量的参数名，默认：limit
+      ,cols: [[ //表头
+        {type:'checkbox'}
+       ,{field : 'consultationApplyId',title : '会诊单号',width : 80}
+       ,{field : 'visitCardNo',title : '就诊卡号',width : 160}
+       ,{field : 'patientName',title : '患者姓名',width : 80}
+       ,{field : 'patientSex',title : '性别',width : 50,
+           templet :function (row) { if (row.patientSex)return dicSex[row.patientSex]; }
+        }
+       ,{field : 'patientAgeYear',title : '年龄',width : 50}
+       ,{field : 'applyOfficeId',title : '申请科室',width : 100,
+           templet :function (row) { return dicSysOrgName [row.applyOfficeId];}
+       }
+       ,{field : 'applyDoctorId',title : '申请医生',width : 100,
+           templet :function (row) {return dicSysUser[row.applyDoctorId];}
+       }
+       ,{field : 'applyTime',title : '申请时间',width : 130}
+       ,{field : 'diseaseName',title : '初步诊断',width : 100}
+       ,{field : 'consultationAim',title : '会诊目的',width : 100}
+       ,{field : 'consultationLevelFlag',title : '会诊级别',width : 100,
+           templet :function (row) {return dicConsttLevel[row.consultationLevelFlag];}
+       }
+       ,{field : 'consultationStateFlag',title : '审核状态',width : 100,
+           templet :function (row) {
+               return dicConsttAutditingState[row.consultationStateFlag];
+           }
+       }
+       ,{field : 'consultationTime',title : '会诊时间',width : 130}
+      ]]
+    });
+    
+   //监听事件
+    table.on('toolbar(consttApplyTable)', function(obj){
+      var checkStatus = table.checkStatus(obj.config.id);
+      switch(obj.event){
+        case 'auditing':
+            openAuditingPage(checkStatus);
+          //layer.msg('新增');
+        break;
+        case 'show':
+            openShowPage(checkStatus);
+        break;
+      };
+    });
+   
+   
+    //监听行单击事件
+    table.on('row(consttApplyTable)', function(obj){
+        var consttApply = obj.data; 
+        var pEmr = findPatientHospitalEmr(consttApply);
+        patientEmrShow(pEmr,consttApply.patientName);
+    });
+    
+    
+    function findPatientHospitalEmr(consttApply) {
+        var pEmrRow;
+        $.ajax({  
+            type: "POST",  
+            url: '$contextPath/patient/findPatientHospitalEmr.jo',  
+            data: {patientHospitalEmrId: consttApply.patientHospitalEmrId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                 pEmrRow = result.data;
+            },  
+            error: function(res){jqueryPostError(res);} 
+        });//ajax end    
+        return pEmrRow;
+    }
+    
+    function patientEmrShow(pEmrRow,title) {
+        var param ={
+             view: 'patient/emr/commonEmrShow'
+            ,showBtn: '0'
+            ,registerId: pEmrRow.registerId
+            ,emrTlpId: pEmrRow.emrTlpId
+            ,patientHospitalEmrId: pEmrRow.patientHospitalEmrId
+            ,patientId: pEmrRow.patientId
+        }
+        var url = '$contextPath/emr/commonEmrTemplate.do'+common.objToParamStr(param);
+        
+        var tabTitle = title? (pEmrRow.emrTlpName +'('+title+')') : pEmrRow.emrTlpName;
+        parent.parent.tabAddOutNav('consttApplyShow'+ pEmrRow.emrTlpId, tabTitle, url);
+    }
+   
+    //审核状态点击事件
+    var auditingStateChangeEvent = function() {
+        form.on('radio(consttAutditingState)', function(data){
+            query();
+        });
+    }
+      
+    // 查询按钮
+    $('#btn_query').click(function (){
+        query();
+    });
+        
+    //查询列表
+    function query() { 
+        var queryParams = common.serializeObject($('#consttApply_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+        
+    //单选按钮触发查询
+    form.on('radio(diagnosisClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+      query();
+    });  
+    
+    function openAuditingPage(ckRow) {
+     if(ckRow.data.length <= 0){
+         common.msg('请选择会诊!', 0);
+         return;
+     }
+        parent.parent.tabAddOutNav('drugAllergy','会诊审核',
+                '$contextPath/consultationApply/outConsttApplyAuditing.do?consultationApplyId='+ ckRow.data[0].consultationApplyId);
+     }
+
+     function openShowPage(ckRow) {
+         if(ckRow.data.length <= 0){
+             common.msg('请选择会诊!', 0);
+             return;
+         }
+         parent.parent.tabAddOutNav('outConsttApplyEdit','会诊申请('+ckRow.data[0].patientName+')',
+         '$contextPath/consultationApply/outConsultationApplyEntry.do?consultationApplyId='+ ckRow.data[0].consultationApplyId);
+     }
+    
+    //页面初始化
+    $(document).ready(function() {
+        auditingStateChangeEvent();
+    });
+    
+  });//layui.use
+</script> 

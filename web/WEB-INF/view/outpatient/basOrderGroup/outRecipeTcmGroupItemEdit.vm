@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>草药处方</title>
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+	#parse("./outpatient/recipeTcm/recipeTcm.css.vm")
+	#parse("./outpatient/recipeTcm/recipeTcmEdit.js.vm")
+	<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+	<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2"></script>
+	<style>
+		.webui-popover .webui-popover-content{overflow: hidden;}
+		.main-center{overflow: auto;}
+		@media screen and (max-width: 450px){
+			.main_top .layui-form-item .layui-inline {
+				margin-bottom:  5px;
+			}
+		}
+	</style>
+</head>
+<body class="white-bg">
+<div class="main full-height">
+	<form id="tcmRecipeForm" class="layui-form full-height p-t-xs">
+		<div class="main_top">
+			<div class="layui-form-item">
+				#if($recipe)
+					#formHiddenInput("registerId" "$!recipe.registerId" " id='registerId' ")
+					#formHiddenInput("patientId" "$!recipe.patientId" " id='patientId' ")
+					#formHiddenInput("pharmacyId" "$!recipe.pharmacyId" " id='pharmacyId' class='layui-input' ")
+					#formHiddenInput("recipeId" "$!recipe.recipeId" " id='recipeId' ")
+					#formHiddenInput("medicineType" "$!recipe.medicineType" " id='medicineType' ")
+					#formHiddenInput("recipeNum" "$!recipe.recipeNum" " id='recipeNum' ")
+					#formHiddenInput("patientName" "$!recipe.patientName" " id='patientName' ")
+				#else
+					#formHiddenInput("registerId" "$!registerId" " id='registerId' ")
+					#formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+					#formHiddenInput("pharmacyId" "$!pharmacyId" " id='pharmacyId' class='layui-input' ")
+				#end
+
+				#formHiddenInput("urgencyFlag" "$!urgencyFlag" " id='urgencyFlag' ")
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag用法</label>
+					<div class="layui-input-inline">
+						#formSingleSelectDictionary("herbUsageWay" $!recipe.herbUsageWay $dicData.dicHerbUsage "id='herbUsageWay'  class='layui-input' " "" "")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">类别</label>
+					<div class="layui-input-inline">
+						#formSingleSelectFirstNone("accountBookType" "" $dicData.dicAccountBookTcmType "class='layui-input' style='border:0;' " "")
+					</div>
+				</div>
+				<div class="layui-inline">
+					<label class="layui-form-label">#requiredTag剂数</label>
+					<div class="layui-input-inline">
+						#if($!recipe.orderDay)
+                         #formIntInput("orderDay" "$!recipe.orderDay" "id='orderDay' class='layui-input' ")
+                  	  #else
+							#formIntInput("orderDay" "7" "id='orderDay' class='layui-input' ")
+						#end
+					</div>
+				</div>
+			</div>
+			<div class="layui-form-item">
+					<label class="layui-form-label">医生说明</label>
+					<div class="layui-input-inline" style="width: calc(100% - 120px);">
+						#formIntInput("recipeRemark" "$!recipe.recipeRemark" "id='recipeRemark' class='layui-input' ")
+					</div>
+			</div>
+
+		</div><!-- main_top -->
+
+		<div class="main-center">
+			<table class="layui-table" table-eidt style="min-width: 600px">
+				<colgroup>
+					<col data-index="1" width="30">
+					<col data-index="2" width="200">
+					<col data-index="3" width="120">
+					<col data-index="4" width="80">
+					<col data-index="5" width="80">
+					<col data-index="6" width="60">
+					<col data-index="7" width="200">
+				</colgroup>
+				<thead>
+				<tr>
+					<th data-index="1"><i id="btn_add" class="layui-icon layui-icon-add-1 icon-btn"></i></th>
+					<th data-index="2">医嘱内容</th>
+					<th data-index="3">药品规格</th>
+					<th data-index="4-5" colspan="2">每付剂量</th>
+					<th data-index="6">单价</th>
+					<th data-index="7">特殊煎法</th>
+				</tr>
+				</thead>
+				<tbody class="tbody-data">
+					#foreach($recipeItem in $recipeItemList)
+					<tr class="trRow">
+						<td data-index="1">
+							<i class="layui-icon layui-icon-ok icon-btn"></i>
+						</td>
+						<td data-index="2">
+							#formHiddenInput("recipeItemIdPage" "" "")
+	                        #formHiddenInput("recipeItemId" "$!recipeItem.recipeItemId" "")
+	                        #formHiddenInput("medicineId" "$!recipeItem.medicineId" "")
+	                        #formHiddenInput("medicineType" "$!recipeItem.medicineType" "")
+	                        #formTextInput("medicineName" "$!recipeItem.medicineName" "class='layui-input' ")
+						</td>
+						<td data-index="3">
+							#formTextInput("medicineSpec" "$!recipeItem.medicineSpec" "class='layui-input' readonly")
+						</td>
+						<td data-index="4">
+							#formFloInput("dosage" "$!recipeItem.dosage" "class='wd-50' maxlength='5'")
+						</td>
+						<td data-index="5">
+							#formHiddenInput("dosageUnit" "$!recipeItem.dosageUnit" "")
+                            #formTextInput( "dosageUnitText" "$!recipeItem.dosageUnit"  $dicData.dicDrugNumUnitDosageUnit "class='wd-50' " )
+						</td>
+						<td data-index="6">#formTextInput("unitPrice" "$!recipeItem.unitPrice"
+							"class='layui-input' style='width: 100%;display: inline;' readOnly")</td>
+						<td data-index="7">
+							#formSingleSelectFirstNone("herbCookingCode" "$!recipeItem.herbCookingCode" $dicData.dicHerbCooking "class='layui-input' style='border:0;' lay-filter='herbCookingCode'  " "")
+						</td>
+					</tr>
+					#end
+				</tbody>
+			</table>
+
+			<!-- 表格模板 -->
+			<table class="rowTpl layui-hide">
+				<tbody>
+				<tr class="trRow tplRow">
+					<td data-index="1">
+						<i class="layui-icon layui-icon-delete icon-btn icon-red  "
+						   onclick="removeTrRecipeItem(this)"></i>
+						<i class="layui-icon layui-icon-ok icon-btn layui-hide"></i>
+					</td>
+					<td data-index="2">
+						#formHiddenInput("recipeItemIdPage" "" "")
+                              #formHiddenInput("recipeItemId" "$!recipeItem.recipeItemId" "")
+                              #formHiddenInput("medicineId" "$!recipeItem.medicineId" "")
+                              #formHiddenInput("medicineType" "$!recipeItem.medicineType" "")
+                              #formTextInput(
+						"medicineName" "$!recipeItem.medicineName" "class='layui-input' autocomplete='off' ")
+					</td>
+					<td data-index="3">#formTextInput(
+                        "medicineSpec" "$!recipeItem.medicineSpec" "class='layui-input' readonly")</td>
+					<td data-index="4">
+						#formFloInput("dosage" "$!recipeItem.dosage" "class='wd-50' maxlength='5'")
+					</td>
+					<td data-index="5">
+						#formHiddenInput("dosageUnit" "$!recipeItem.dosageUnit" "")
+                        #formTextInput( "dosageUnitText" "$!recipeItem.dosageUnit"  $dicData.dicDrugNumUnitDosageUnit "class='wd-50' " )
+					</td>
+					<td data-index="6">
+						#formTextInput("unitPrice" "$!recipeItem.unitPrice" "class='layui-input' style='width: 100%;display: inline;' readOnly")
+					</td>
+					<td data-index="7">
+						#formSingleSelectFirstNone("herbCookingCode" "$!recipeItem.herbCookingCode" $dicData.dicHerbCooking "class='layui-input' style='border:0;' lay-filter='herbCookingCode'  " "")
+                        #formHiddenInput("pharmacyId" "" "class='layui-input' readonly")
+					</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+
+
+	</form>
+	<div class="tool-bottom-fixed">
+		<button class="layui-btn layui-btn-sm" type="button" id="btn_submit"> 确定</button>
+	</div>
+</div><!-- main -->
+</body>
+</html>

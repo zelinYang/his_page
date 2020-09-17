@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-电子病历分类管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        #emrTlpClassify_queryForm .layui-form-item .layui-form-checkbox {
+            margin-top: 0px;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<div class="layui-fluid ">
+    <!--<div class="layui-col-xs2 full-height-scroll">
+        <div id="wardAdnOfficeTree" class="demo-tree-more"></div>
+    </div>-->
+    <div class="layui-col-xs12">
+        <!--搜索条件 开始-->
+        <form id="emrTlpClassify_queryForm" class="layui-form">
+            <div class="layui-row-query">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label wd-100">模板分类名称</label>
+                        <div class="layui-inline wd-120">
+                            #formTextInput("emrTlpClassifyName" "" "id='q_emrTlpClassifyName' maxlength='50'
+                            autocomplete='off' class='layui-input'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">医护类型</label>
+                        <div class="layui-inline ">
+                            #formCheckboxeGroup("doctorNurseFlags" "" $dicData.dicDoctorNurseFlag "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">分类属性</label>
+                        <div class="layui-inline ">
+                            #formCheckboxeGroup("emrTlpClassifyTypes" "" $dicData.dicBelongSysType "")
+                        </div>
+                    </div>
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                            <i class="layui-icon layui-icon-search "></i>
+                        </button>
+                    </div>
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                            <i class="iconfont icon-qingchu"></i>
+                        </button>
+                    </div>
+                    <div class="layui-inline" style="margin-top: -7px;">
+                        <button id="btn_add" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="新增">
+                            <i class="layui-icon "></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+
+        <!--列表 begin-->
+        <!-- 列表表格 工具栏-->
+        <!-- 是否有效开关 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" lay-filter="validFlag" name="validFlag" value="{{d.emrTlpClassifyId}}"
+                   lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+        </script>
+        <!-- 性别限制 -->
+        <script type="text/html" id="sexFlagTpl">
+            <span class="layui-badge {{d.sexFlag == 1 ? 'layui-bg-blue' : (d.sexFlag == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{dicSexLimit[d.sexFlag]}}</span>
+        </script>
+        <!-- 操作栏操作按钮 -->
+        <script type="text/html" id="operatebar">
+            <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i class="layui-icon"></i></a>
+            <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_delete"><i class="layui-icon layui-icon-delete"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="emrTlpClassifyListGrid" lay-filter="emrTlpClassifyListGrid"></table>
+        <!--  列表表格 end -->
+        <!--列表end-->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./emr/emrTlpClassify/emrTlpClassifyList.js.vm")
+</body>
+</html>

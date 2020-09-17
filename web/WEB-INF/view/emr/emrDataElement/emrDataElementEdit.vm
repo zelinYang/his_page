@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>编辑国家电子病历数据集</title>
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html"/>
+    <![endif]-->
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .radio-only {
+            display: none;
+        }
+
+        .text-only {
+            display: none;
+        }
+
+        .date-only {
+            display: none;
+        }
+
+        .select-only {
+            display: none;
+        }
+
+        .not-data-base {
+            display: none;
+        }
+
+        .btn {
+            margin-right: 2px;
+        }
+
+        .oprate {
+            display: none;
+        }
+
+        .input-prepend {
+            height: 34px;
+        }
+
+        .input-group.col-sm-5 {
+            display: inline-table;
+        }
+
+        .option:hover > .oprate {
+            float: none;
+            top: -15px;
+            display: inline;
+        / / 鼠标移入后，按钮内容为可见
+        }
+
+        .layui-col-xs4 .layui-input-inline {
+            width: calc(100% - 140px);
+        }
+
+        .layui-form-item {
+            margin-bottom: 15px;
+        }
+
+        .error {
+            color: red;
+        }
+
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0px;
+        }
+
+        .layui-form-label {
+            width: 100px;
+        }
+
+        .layui-input-block {
+            margin-left: 120px;
+        }
+    </style>
+</head>
+
+<body class="white-bg">
+
+<div class="layui-fluid">
+    <form class="layui-form" id="emrDataElementForm" action="" lay-filter="component-form-group">
+        #formHiddenInput("createTime" "$!{emrDataElement.createTime}" " ")
+        #formHiddenInput("stopTime" "$!{emrDataElement.stopTime}" " ")
+        #formHiddenInput("dataElementIdOld" "$!{emrDataElement.dataElementId}" "id='dataElementIdOld' ")
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">#requiredTag()数据元名称</label>
+                <div class="layui-input-block">
+                    #formTextInput("dataElementName" "#htmlEscape($!{emrDataElement.dataElementName})" "
+                    id='dataElementName' lay-verify='required' maxlength='100' autocomplete='off' class='layui-input' ")
+                </div>
+            </div>
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">#requiredTag()标识符</label>
+                <div class="layui-input-block">
+                    #formNotInChineseInput("dataElementId" "#htmlEscape($!{emrDataElement.dataElementId})" "
+                    id='dataElementId' lay-verify='required' maxlength='20' autocomplete='off' class='layui-input' ")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">数据类型<i class="layui-icon alone-tips dataElementMsg"
+                                                       data-type="dataElementType"
+                                                       lay-tips="点击查看数据元值的数据类型描述规则"></i></label>
+                <div class="layui-input-block">#formTextInput("dataElementType"
+                    "#htmlEscape($!{emrDataElement.dataElementType})" " id='dataElementType' list='dataElementTypeList'
+                    maxlength='20' autocomplete='off' class='layui-input' ")
+                    <datalist id="dataElementTypeList">
+                        <optgroup label="字符型 (string) 通过字符形式表达的值的类型。可包含字母字符(a~z,A~Z)、数字字符等。
+                            (默认 GB2312)">
+                            <option value="S1">
+                                字符型 (string) 通过字符形式表达的值的类型。S1表示不可枚举的，且以字符描述的形式
+                            </option>
+                            <option value="S2">
+                                字符型 (string) 通过字符形式表达的值的类型。S2表示枚举型，且列举值不超过3个
+                            </option>
+                            <option value="S3">
+                                字符型 (string) 通过字符形式表达的值的类型。S3表示代码表的形式
+                            </option>
+                        </optgroup>
+                        <option value="L">布尔型 (boolean) 又称逻辑型,采用0(Fa1se)或1(True)形式表示的逻辑值的类型</option>
+                        <option value="N">数值型 (number) 通过“0”到“9”数字形式表示的值的类型
+                        </option>
+                        <option value="D">日期型 (date) 采用 GB/T 7408中规定的 YYYYMMDD 格式表示的值的类型</option>
+                        <option value="DT">日期时间型 (datetime) 采用 GB/T 8408中规定的 YYYYMMDDThhmmss 格式表示的值的类型。(字
+                            符T作为时间的标志符 ,说明日的时间表示的开始。)
+                        </option>
+                        <option value="T">时间型(time) 采用 GB/T 8408 中规定的 hhmmss 格式表示的值的类型
+                        </option>
+                        <option value="BY">二进制(binary) 上述无法表示的其他数据类型,如图像、音频、视频等二进制流文件格式</option>
+                    </datalist>
+                </div>
+            </div>
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">表示格式<i class="layui-icon alone-tips dataElementMsg"
+                                                       data-type="dataElementFormat"
+                                                       lay-tips="点击查看数据元值的表示格式描述规则"></i></label>
+                <div class="layui-input-block">#formTextInput("dataElementFormat"
+                    "#htmlEscape($!{emrDataElement.dataElementFormat})" " id='dataElementFormat'
+                    list='dataElementFormatList' maxlength='20'
+                    autocomplete='off' class='layui-input' ")
+                    <datalist id="dataElementFormatList">
+                    </datalist>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">允许值<i class="layui-icon alone-tips dataElementMsg"
+                                                      data-type="dataElementValue"
+                                                      lay-tips="点击查看数据元值的允许值描述规则"></i></label>
+                <div class="layui-input-block">
+                    #formTextInput("dataElementValue" "#htmlEscape($!{emrDataElement.dataElementValue})" "
+                    id='dataElementValue' maxlength='50' autocomplete='off' class='layui-input' ")
+                </div>
+            </div>
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">#requiredTag()数据元值类型</label>
+                <div class="layui-input-block">
+                    #formSingleSelectDictionaryCommon("dataValueType" "$!{emrDataElement.dataValueType}"
+                    $dicData.dicDataValueType "id='dataValueType' lay-filter='dataValueType' label='数据元值类型'
+                    lay-verify='required' ")
+                </div>
+            </div>
+        </div>
+        #if(${emrDataElement})
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs6">
+                <label class="layui-form-label">#requiredTag()是否有效</label>
+                <div class="layui-input-block" id="validFlag">#formRadioGroup("validFlag" "$!{emrDataElement.validFlag}"
+                    ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                </div>
+            </div>
+        </div>
+        #end
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">定义</label>
+            <div class="layui-input-block ">
+                #formTextarea("dataElementDesc" "#htmlEscape($!{emrDataElement.dataElementDesc})" "id='dataElementDesc'
+                class='layui-textarea' maxlength='100' placeholder='请输入内容，字数最多100字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-layout-admin"></div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit="" lay-filter="btn_save" id="btn_save" value="确认"/>
+        </div>
+    </form>
+</div>
+<script type="text/html" id="dataElementFormatListTpl">
+        {{# layui.each(d, function(key, value){ }}
+        <option value="{{ key }}">{{ value }}</option>
+        {{# }); }}
+
+</script>
+<script type="text/html" id="dataElementMsgTpl">
+    <div class="layui-layout-admin">
+        <div class="layui-main">
+            <a class="layui-btn layui-btn-normal" href="http://www.nhc.gov.cn/wjw/s9497/201108/52741.shtml"
+               target="_blank">WS363.1-2011 卫生信息数据元目录 第1部分：总则</a>
+            <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+                <legend class="dataElementType">6.2.4 数据元值的数据类型</legend>
+            </fieldset>
+            <blockquote class="layui-elem-quote layui-text">
+                <p>数据元值的数据类型描述规则见表3。本文件将字符型分为3种形式，S1表示不可枚举的，且以字符描述的形式；S2表示枚举型，且列举值不超过3个；S3表示代码表的形式。</p>
+            </blockquote>
+            <h3 align="center" style="font-weight:bold">表3 数据元值的数据类型描述规则</h3>
+            <div class="layui-form">
+                <table class="layui-table">
+                    <colgroup>
+                        <col width="200">
+                        <col width="100">
+                        <col>
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th style="text-align : center">数据类型</th>
+                        <th style="text-align : center">表示符</th>
+                        <th style="text-align : center">描述</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td style="text-align : center">字符型(string)</td>
+                        <td style="text-align : center">S</td>
+                        <td>通过字符形式表达的值的类型。可包含字母字符(a~z,A~Z)、数字字符等。
+                            (默认 GB2312)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">布尔型(boolean)</td>
+                        <td style="text-align : center">L</td>
+                        <td>又称逻辑型,采用0(Fa1se)或1(True)形式表示的逻辑值的类型
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">数值型 (number)</td>
+                        <td style="text-align : center">N</td>
+                        <td>通过“0”到“9”数字形式表示的值的类型
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">日期型(date)</td>
+                        <td style="text-align : center">D</td>
+                        <td>采用 GB/T 7408中规定的 YYYYMMDD 格式表示的值的类型
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">日期时间型 (datetime)</td>
+                        <td style="text-align : center">DT</td>
+                        <td>采用 GB/T 8408中规定的 YYYYMMDDThhmmss 格式表示的值的类型。(字
+                            符T作为时间的标志符 ,说明日的时间表示的开始。)
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">时间型(time)</td>
+                        <td style="text-align : center">T</td>
+                        <td>采用 GB/T 8408 中规定的 hhmmss 格式表示的值的类型
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">二进制(binary)</td>
+                        <td style="text-align : center">BY</td>
+                        <td>上述无法表示的其他数据类型,如图像、音频、视频等二进制流文件格式
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+                <legend class="dataElementFormat">6.2.5 表示格式</legend>
+            </fieldset>
+            <blockquote class="layui-elem-quote layui-text">
+                <p>表示格式见表4和表5</p>
+            </blockquote>
+            <div class="layui-form">
+                <h3 align="center" style="font-weight:bold">表4 数据元值的数据类型描述规则</h3>
+                <table class="layui-table">
+                    <colgroup>
+                        <col width="200">
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th style="text-align : center">字符</th>
+                        <th style="text-align : center">含义</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td style="text-align : center">A</td>
+                        <td>字母字符</td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">N</td>
+                        <td>数字字符
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">AN</td>
+                        <td>字母或(和)数字字符
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">D8</td>
+                        <td>采用YYYYMMDD的格式表示,其中,“YYYY”表示年份,“MM”表示月份,“DD”表示日期
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">T6</td>
+                        <td>采用hhmmss的格式表示,其中
+                            “hh”表示小时,“mm”表示分钟,“ss”表示秒
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">DT15</td>
+                        <td>
+                            采用YYYYMMDDThhmmss的格式表示,字符T作为时间的标志符,说明日的时间表示的开
+                            始;其余字符表示与上同
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <h3 align="center" style="font-weight:bold">表 5 数据元值的表示格式中字符长度描述规则</h3>
+                <table class="layui-table">
+                    <colgroup>
+                        <col width="200">
+                        <col>
+                    </colgroup>
+                    <thead>
+                    <tr>
+                        <th style="text-align : center">类别</th>
+                        <th style="text-align : center">表示方法</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td style="text-align : center">固定长度</td>
+                        <td>在数据类型表示符后直接给出字符长度的数目,如N4
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">可变长度</td>
+                        <td>
+                            1) 可变长度不超过定义的最大字符数
+                            在数据类型表示符后加
+                            “..”后给出数据元最大字符数目,如AN..10
+                            2) 可变长度在定义的最小和最大字符数之间
+                            在数据类型表示符后给出最小字符长度数后加
+                            “..”后再给出最大字符数,如AN4..20
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">有若干字符行
+                            表示的长度
+                        </td>
+                        <td>
+                            按固定长度或可变长度的规定给出每行的字符长度数后加
+                            “X”后,再给出最大行数,如
+                            AN..40X3
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align : center">有小数位</td>
+                        <td>
+                            按固定长度或可变长度的规定给出字符长度数后,在“,”后给出小数位数,字符长度数包含整数
+                            位数、小数点位数和小效位数,如N6,2
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            应用示例 :
+            <blockquote class="layui-elem-quote layui-quote-nm">
+                示例: 1：S 字符型<br>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        AN10
+                    </div>
+                    <div class="layui-col-xs10">
+                        固定为10个字符(相当于 5 个汉字)长度的字符。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        AN4..10
+                    </div>
+                    <div class="layui-col-xs10">
+                        可变长度,最小为 4个 最大为 10个 字符长度的字符。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        AN..10
+                    </div>
+                    <div class="layui-col-xs10">
+                        可变长度 ,最大为 10个 字符长度的字符 。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        AN..20X3
+                    </div>
+                    <div class="layui-col-xs10">
+                        可变长度 ,最多 3行 ,每行最大长度为 20个字符长度的字符。
+                    </div>
+                </div>
+
+            </blockquote>
+            <blockquote class="layui-elem-quote layui-quote-nm">
+                示例 2:N 效字型
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        N4
+                    </div>
+                    <div class="layui-col-xs10">
+                        固定长度为4位的数字。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        N..4
+                    </div>
+                    <div class="layui-col-xs10">
+                        最大长庋为4位的数字 。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        N6,2
+                    </div>
+                    <div class="layui-col-xs10">
+                        最大长度为 6 位的十进制小数格式 (包括小数点),小数点后保留2位效字 。
+                    </div>
+                </div>
+            </blockquote>
+            <blockquote class="layui-elem-quote layui-quote-nm">
+                示例 3:T 日期 时间型
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        T8
+                    </div>
+                    <div class="layui-col-xs10">
+                        采用 YYYYMMDD格 式 (8位定长)表示年月日。
+                    </div>
+                </div>
+                <div class="layui-row">
+                    <div class="layui-col-xs2">
+                        T15
+                    </div>
+                    <div class="layui-col-xs10">
+                        采用 YYYYMMDDhhmmss格式 (15位定长)表示年月日时分秒。时分秒之前加大写字母“T” 。如 2010年1月 5日 8时 10分 9秒 为 20100105T081009。
+                    </div>
+                </div>
+            </blockquote>
+            <fieldset class="layui-elem-field layui-field-title" style="margin-top: 20px;">
+                <legend class="dataElementValue">6.2.6 数据元允许值</legend>
+            </fieldset>
+            <blockquote class="layui-elem-quote layui-text">
+                <p>本文件数据元值域有两种类型:</p>
+                <p> a) 可枚举值域:由 允许值列表规定的值域 ,每个允许值的值和值含义均应成对表示。其中:</br>
+                    ——可选值较少的(如 3个或以下),在 “数据元允许值 ”属性中直接列举 。</br>
+                    ——可选值较多的(如 3个 以上),在 “数据元允许值 ”属性中写出值域代码表名称。如代码表属引用标准的,则须注明标准号。
+                </p>
+                <p> b) 不可枚举值域:由描述规定的值域 ,在 “数据元允许值 ”居性中须准确描述该值域的允许值 。</p>
+            </blockquote>
+        </div>
+    </div>
+</script>
+<!-- form检验 -->
+<script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+<script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index: 'lib/index' //主入口模块
+    }).use(['index', 'form', 'laytpl'], function () {
+        var form = layui.form;
+        var laytpl = layui.laytpl;
+        common.verify(form);
+        //点击查看数据元值的数据类型描述规则
+        $(".dataElementMsg").click(function () {
+            var type = $(this).data('type');
+            var title = $(this).parent().contents().filter(function () {
+                return this.nodeType === 3;
+            }).text();
+            parent.common.openHtml($("#dataElementMsgTpl").html(), "数据元值的" + title + "描述规则", {
+                skin: '',
+                resize: true,
+                moveOut: true,
+                area: ['80%', '80%']
+                , success: function (layero) {
+                    //滚动到标签
+                    layero.find('.' + type)[0].scrollIntoView();
+                }
+            });
+        })
+        var dicDataElementFormat = {
+            "A": "字母字符",
+            "N": "数字字符",
+            "AN": "字母或(和)数字字符",
+            "D8": "采用YYYYMMDD的格式表示,其中,“YYYY”表示年份,“MM”表示月份,“DD”表示日期",
+            "T6": "采用hhmmss的格式表示,其中 “hh”表示小时,“mm”表示分钟,“ss”表示秒",
+            "DT15": "采用YYYYMMDDThhmmss的格式表示,字符T作为时间的标志符,说明日的时间表示的开 始;其余字符表示与上同"
+        }
+
+        //加载列表
+        function loadDataList(data,value) {
+            var getTpl = $("#dataElementFormatListTpl").html();
+            var dataList = {}
+            var reg = /^(AN|A|N)(\d*)(\.\.?)(,?)(\d*)(X?)(\d*)$/;
+            if(!data[value] && reg.test(value)){
+                var dataElementFormatVal = reg.exec(value);
+                var dataElementFormatLength = 0;
+                console.log(dataElementFormatVal);
+                var isVlen = (dataElementFormatVal[3] == "..") ;//可变长度或固定长度
+                var lenAndMinLen = dataElementFormatVal[2];//固定长度或最小长度
+                var maxLen = dataElementFormatVal[5];//最大长度
+                dataList[value] = data[dataElementFormatVal[1]] + " : " + (isVlen ? "可变长度," : "固定为") + (len && (lenAndMinLen ? "最小为 "+len+"个" : "为10个字符(相当于 5 个汉字)长度的字符")) +maxLen
+            }
+            laytpl(getTpl).render($.extend(dataList, data), function (html) {
+                $("#dataElementFormatList").html(html);
+            });
+        }
+        loadDataList(dicDataElementFormat, $("[list='dataElementFormatList']").val());
+        //监听实时输入
+       $("[list='dataElementFormatList']").on('input propertychange',function () {
+            loadDataList(dicDataElementFormat,$(this).val());
+        })
+
+        form.on('submit(btn_save)', function (data) {
+            var basDicParams = data.field;
+            common.requestServer('$contextPath/emrDataElement/saveEmrDataElement.jo', basDicParams, function (result) {
+                if (result.code == "0") {
+                    common.alertCall("保存成功!", 1, function () {
+                        // 刷新父页面
+                        var $btnQuery = $('#btn_query', window.parent.document);
+                        if ($btnQuery.length > 0) $btnQuery.click();
+
+                        // 关闭窗口
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    });
+
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        });
+
+    });
+
+    $(function () {
+        $("#emrDataElementForm").validate({
+            rules: {
+                dataElementName: {
+                    required: true,
+                    maxlength: 100,
+                    remote: {
+                        url: contextPath + '/emrDataElement/checkDataElementNameExist.jo',
+                        dataType: "json",
+                        type: "post",
+                        data: {
+                            dataElementIdOld: function () {
+                                return $('#dataElementIdOld').val();
+                            },
+                            dataElementName: function () {
+                                return $('#dataElementName').val();
+                            }
+                        }
+                    }
+                },
+                dataElementId: {
+                    required: true,
+                    maxlength: 20,
+                    remote: {
+                        url: contextPath + '/emrDataElement/checkDataElementIdExist.jo',
+                        dataType: "json",
+                        type: "post",
+                        data: {
+                            dataElementIdOld: function () {
+                                return $('#dataElementIdOld').val();
+                            },
+                            dataElementId: function () {
+                                return $('#dataElementId').val();
+                            }
+                        }
+                    }
+                }
+            },
+            messages: {
+                dataElementName: {
+                    required: '数据元名称不能为空',
+                    maxlength: '数据元名称长度不能超过100位',
+                    remote: '数据元名称已存在'
+                },
+                dataElementId: {
+                    required: '数据元标识符不能为空',
+                    maxlength: '数据元标识符长度不能超过20位',
+                    remote: '数据元标识符已存在'
+                }
+            }
+        });
+    });
+</script>
+</body>
+
+</html>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>缴款查询</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./settlement/inpatient/payIn/payIn.css.vm")<!-- 页面js -->
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+
+<body>
+<div class="layui-content-wrapper">
+    <form id="reg_patient_queryForm" class="layui-form">
+        <div class="layui-row-query search-term">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">缴款日期</label>
+                    <div class="layui-input-inline wd-100">
+                        #formLayDateInput("prepayDateBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                    </div>
+                    <div class="layui-form-mid">至</div>
+                    <div class="layui-input-inline wd-100">
+                        #formLayDateInput("prepayDateEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">缴款方式</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectSearch("selfPrepayInWay" "" $!{dicData.dicPaymentMethod} "lay-search")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">收费员</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("operPayUserName" "" "id='operPayUserName' class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline" style="width: auto">
+                        <input type="checkbox" name="refundPrepayFeeFlag" value="1" title="已退费">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <div class="layui-input-inline wd-220">
+                        #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='收据号/姓名/住院流水号' lay-tips='支持收据号/姓名/住院流水号查询'")
+                    </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                    <button class="layui-btn  layui-btn-sm " id="btn_query" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                    <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                </div>
+                <!--<div class="layui-inline layui-btn-group">
+                    <button class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="迁移收据"><i class="layui-icon layui-icon-export"></i></button>
+                    <button class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="打印"><i class="layui-icon layui-icon-print"></i></button>
+                    <button class="layui-btn layui-btn-sm m-l-lg" type="button">作废</button>
+                    <button id="btn_regPass" class="layui-btn layui-btn-sm" type="button">重打收据</button>
+                </div>-->
+            </div>
+        </div>
+    </form>
+
+    <div class="layui-form-item tb-header">住院患者缴款记录</div>
+    <!-- 数据表格 -->
+    <table id="regPatientTable" lay-filter="regTab"></table>
+</div>
+</body>
+#parse("./settlement/inpatient/payIn/payInRecord.js.vm")
+</body>
+</html>

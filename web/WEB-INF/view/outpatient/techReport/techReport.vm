@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>报告查阅</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+    <style>
+        .layui-tab-title .layui-this {
+            color: #000 !important;
+            border: 1px solid #e2e2e2 !important;
+        }
+    </style>
+</head>
+
+<body class="white-bg">
+<!-- 门诊病历信息 -->
+<div class="main full-height layui-col-sm9 layui-col-xs9">
+    <div class="layui-tab layui-tab-card blod" lay-filter="techReport"
+         style="height: calc(100% - 9px);width: 100%;border: none;margin: 0">
+        <!-- 主页导航名称 -->
+        <ul class="layui-tab-title btn">
+            <li class="layui-this">检验报告</li>
+            <li>检查报告</li>
+        </ul>
+        <!-- 导航内容 根据index对应li -->
+        <div class="layui-tab-content" style="height: calc(100% - 44px); padding: 5px;">
+            #set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+            <div lay-id="1" class="layui-tab-item full-height layui-this">
+            ##规避调用方参数问题(如果是“住院”模块使用,只用inhospitalId查询;如果是“门诊”模块使用,只用registerId)
+            #set($_queryParams = "")
+            #if("" != "$!{inhospitalId}")
+                #set($_queryParams = "&inhospitalId=$!{inhospitalId}")
+            #else
+                #set($_queryParams = "&registerId=$!{registerId}")
+            #end
+                <iframe src="$contextPath/outpatient/techReportInspect.do?patientId=$!{patientId}$!{_queryParams}"
+                        regActive $iframeAttr></iframe>
+            </div>
+            <div lay-id="2" class="layui-tab-item full-height">
+                <iframe src="$contextPath/outpatient/techReportExam.do?patientId=$!{patientId}$!{_queryParams}"
+                        regActive $iframeAttr></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="layui-col-sm3 layui-col-xs3 white-bg full-height border-r p-t-xs" style="padding: 42px 5px 0px;
+    overflow: auto;">
+    <table class="layui-table">
+        <tbody class="outTechList">
+        <tr>
+            <td width="80px">申请单</td>
+            <td>已下达项目</td>
+        </tr>
+        <tr class="data-empty">
+            <td colspan="2">无记录</td>
+        </tr>
+        </tbody>
+    </table>
+    <table class="table-tpl layui-hide">
+        <tbody>
+        <tr class="tr-tpl">
+            <td class="examApplyName"></td>
+            <td class="proName"></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+<script type="text/javascript">
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson( $dicData.dicOffice)');
+    var loadTree; //加载左侧检验分类
+    // var loadOutTech; //右侧已申请的检验单
+    var treeNodeClickEvent; //树节点点击事件-渲染右侧检验明细列表
+    var outTechLisTrClickEvent; //已下达的申请单回显
+    var outTechLisShow; //已下达的申请单回显
+    var queryOutTechItem; //获取申请单的明细
+    var randerTechItem;//渲染申请单回显
+    var randerTechItemCommon;//回显公共属性的值
+    var verifyTechItem;//验证医技明细参数
+    var centerTop;//中间顶部表单
+
+    var cloneCenterTop;//复制中间顶部表单jq对象
+    var zTree_Menu;
+    var examItemTpl;//检查项模板
+    var initExamItemTpl;//初始化检查项模板
+    var outMainWin = parent.parent; //门诊医生主窗口页面对象
+    var layer;
+    var initLayout;
+    var setEmrExamProName;
+    var setExamTypeName;
+    var getExamParam;
+    var winClose;
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        eleTree: 'modules/eleTree'
+    }).use(['form', 'element', 'eleTree', 'table', 'laydate'], function () {
+       var element = layui.element;
+        var $ = layui.$;
+        // element.render();
+
+        //页面初始化
+        $(document).ready(function () {
+            $('.layui-tab-title>li:eq(0)').click();
+        });
+        layer = layui.layer;
+        var eleTree = layui.eleTree, form = layui.form;
+        var laydate = layui.laydate;
+        var table = layui.table;
+        var $ = layui.$;
+        var submit = '0';
+        var urgentFlag;
+        layer.load();
+
+        laydate.render({
+            elem: '#zhebus',trigger: 'click',
+            range: true,
+            max: getFormatDate(new Date(), 'yyyy-MM-dd'),
+            value: getFormatDate(new Date(), 'yyyy-MM-dd')
+        });
+
+        // 初始化表格列表模板
+        initExamItemTpl = function () {
+            examItemTpl = $('.examItemList .exam-item-tpl').clone().removeClass('exam-item-tpl').removeClass('layui-hide');
+        }
+
+
+        function showIconForTree(treeId, treeNode) {
+            return !treeNode.isParent;
+        }
+
+        function getFontCss(treeId, treeNode) {
+            return (!!treeNode.highlight) ? {color: "#A60000", "font-weight": "bold"} : {
+                color: "#333",
+                "font-weight": "normal"
+            };
+        }
+
+        queryOutTechItem = function (techRow) {
+            var medicalTechItemListData;
+            var params = {outpatientTechId: techRow.outpatientTechId, pageSize: 50}
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/medicalTechItemListData.jo',
+                data: params,
+                dataType: "json",
+                async: false, //默认是true：异步，false：同步。
+                success: function (result) {
+                    medicalTechItemListData = result;
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+            return medicalTechItemListData;
+        }
+        //已下达的申请单回显
+        outTechLisTrClickEvent = function () {
+            $('tbody.outTechList>tr td div').click(function () {
+                var outTechTr = $(this).parent().parent();
+                outTechTr.addClass('active').siblings().removeClass('active');
+                var techRow = outTechTr.data('row');
+                var techItemListData = queryOutTechItem(techRow);
+
+                //主信息参数
+                $('#outpatientTechId').val(techRow.outpatientTechId);
+                $('#techExamApplyId').val(techRow.techApplyId);
+                $('#examApplyName').val(techRow.techApplyName);
+
+                //点击医技分类，显示分类下的检验/检查项目
+                var id = techItemListData.data[0].doctorOrderSubtype;
+                var node = zTree_Menu.getNodeByParam("id", id, null);//根据属性查询节点
+                zTree_Menu.selectNode(node);
+                $('.curSelectedNode').dblclick();
+            });
+        }
+
+        //渲染申请单回显
+        randerTechItem = function (item) {
+            var chargeItemIdInput = $('input[name="chargeItemId"][value="' + item.chargeItemId + '"]');
+            var techItemDiv = chargeItemIdInput.parent();
+
+            techItemDiv.find('input[name="examItemCk"]').prop('checked', true);
+            techItemDiv.find('input[name="outpatientTechItemId"]').val(item.outpatientTechItemId);
+            techItemDiv.find('input[name="unitPrice"]').val(item.unitPrice);
+            techItemDiv.find('input[name="orderName"]').val(item.orderName);
+            techItemDiv.find('input[name="chargeItemId"]').val(item.chargeItemId);
+            techItemDiv.find('input[name="chargeName"]').val(item.chargeName);
+            techItemDiv.find('input[name="doctorOrderSubtype"]').val(item.doctorOrderSubtype);
+            techItemDiv.find('input[name="chargeGroupId"]').val(item.chargeGroupId);
+            techItemDiv.find('input[name="giveTotalQuantity"]').val(item.giveTotalQuantity ? item.giveTotalQuantity : 1);
+            techItemDiv.find('input[name="selfPayRatio"]').attr('lay-filter', 'selfPayRatio' + item.chargeItemId);
+            techItemDiv.find('input[name="selfPayRatio"]').val(item.selfPayRatio);
+            if (item.selfPayRatio == '1') {
+                techItemDiv.find('input[name="selfPayRatio"]').prop('checked', true);
+            }
+            form.render('select');
+            form.render('checkbox');
+            // 监听加急复选框，选中赋值1否则0
+            techItemDiv.find('input[name="selfPayRatio"]').each(function () {
+                form.on('checkbox(' + $(this).attr('lay-filter') + ')', function (data) {
+                    $(this).val(data.elem.checked ? '1' : '0');
+                });
+            });
+        }
+
+        //已下达的申请单回显
+        outTechLisShow = function (techItemListData) {
+            if (techItemListData.count == 0) {
+                return;
+            }
+            $(techItemListData.data).each(function (index, techItem) {
+
+                randerTechItem(techItem);
+            });
+            randerTechItemCommon(techItemListData.data[0]);
+        }
+
+        //回显公共属性的值
+        randerTechItemCommon = function (techItem) {
+            $('select[name="exeOfficeId"]').siblings('.layui-form-select').find('dl dd[lay-value="' + techItem.exeOfficeId + '"]').click();
+            $('input[name="urgentFlag"]').val(techItem.urgentFlag);
+            if (techItem.urgentFlag == '1') {
+                $('input[name="urgentFlag"]').prop('checked', true);
+            } else {
+                $('input[name="urgentFlag"]').prop('checked', false);
+            }
+            form.render('checkbox');
+            form.on('checkbox(urgentFlag)', function (data) {
+                $(this).val(data.elem.checked ? '1' : '0');
+            });
+        }
+
+        //加载已添加的申请单
+        loadOutTech = function (localFreshen) {
+            var params;
+            //规避调用方参数问题(如果是“住院”模块使用,只用inhospitalId查询;如果是“门诊”模块使用,只用registerId)
+            if ("" != "$!{inhospitalId}") {
+                params = {
+                        inhospitalId: '$!{inhospitalId}',
+                        lisFlag:'1',
+                        orderGroupFlag: '1',
+                        validFlag: '${CONST.AppConstants.YES_FLAG}'
+                }
+            } else {
+            	params = {
+                        registerId: '$!{registerId}',
+                        lisFlag:'1',
+                        orderGroupFlag: '1',
+                        validFlag: '${CONST.AppConstants.YES_FLAG}'
+                }
+            }
+
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/medicalTechListData.jo',
+                data: params,
+                dataType: "json",
+                success: function (result) {
+                    layer.closeAll('loading');
+                    var lisTbody = $('.layui-table .outTechList');
+
+                    var emptyTr = $('.layui-table .data-empty');
+                    if (localFreshen) {
+                        $('.outTechList tr:gt(0)').remove();//移除tr内容
+                    }
+
+                    if (result.data.length == 0) {
+                        return false;
+                    }
+                    $(result.data).each(function (index, row) {
+                        var newTr = $('.table-tpl .tr-tpl').clone();
+                        if ("$!{inhospitalId}") {
+                            newTr.find('.examApplyName').append($('<div><div>').html(row.orderGroupNo));
+                            newTr.find('.proName').append($('<div><div>').html(row.orderName));
+                            newTr.removeClass('tr-tpl').removeClass('layui-hide');
+                            newTr.data('row', row);
+                            lisTbody.append(newTr);
+                        }else {
+                            newTr.find('.examApplyName').append($('<div><div>').html(row.techApplyName));
+                            newTr.find('.proName').append($('<div><div>').html(row.proName));
+                            newTr.removeClass('tr-tpl').removeClass('layui-hide');
+                            newTr.data('row',row);
+                            lisTbody.append(newTr);
+                        }
+
+                    });
+                    emptyTr.remove();
+                    outTechLisTrClickEvent();
+                    if (localFreshen) {
+                        $('.outTechList tr:eq(1) td div').click();
+                    }
+
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        form.on('checkbox(urgentFlag)', function (data) {
+            if (data.elem.checked == true) {
+                urgentFlag = "1";
+            } else {
+                urgentFlag = "0";
+            }
+        });
+
+
+        cloneCenterTop = function () {
+            return centerTop.clone();
+        }
+
+
+        initLayout = function () {
+            var interval = setInterval(function () {
+                if ($('#container').height() > 0) {
+                    $('#container').layout({
+                        north__size: 250//pane的大小
+                        , spacing_open: 8//边框的间隙
+                        , togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▲</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                        , togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▼</div>"//pane关闭时，同上。
+                    });
+                    clearInterval(interval);//停止
+                }
+            }, 10);
+        }
+        winClose = function () {
+            var index = parent.parent.layer.getFrameIndex(parent.window.name);
+            parent.parent.layer.close(index);
+        }
+
+        //页面初始化
+        $(document).ready(function () {
+            ckOutRegExist();
+
+            initLayout();
+            // 初始化表格列表模板
+            initExamItemTpl();
+
+            //加载已添加的申请单
+            loadOutTech();
+
+        });
+    });
+
+
+</script>
+</html>

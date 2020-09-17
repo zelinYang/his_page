@@ -1,0 +1,62 @@
+<script>
+   var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)'); 
+   var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+   var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');//入库方式
+   var dicBillFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicBillFlag)');//购入方式
+   layui.use(['jquery','table', 'element', 'form', 'laydate','util','layer'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate; 
+      var form = layui.form; 
+      var element = layui.element;
+      var util = layui.util;
+      var layer = layui.layer;
+      element.render(); 
+    
+    //第一个实例
+     var recipeItemUrl = contextPath + '/drugstore/financialNotAcceptance.jo';
+     var tableInse = table.render({
+         elem: '#financialAcceptanceItemList'
+        //,toolbar: '#toolbarDemo'
+        ,defaultToolbar: []
+        ,height: 'full-175'//高度
+        ,url:'../drugstore/selectDrugstoreInItemList.jo' //数据接口
+        ,limit:20
+        ,page: true //显示分页导航
+        ,method:'post'
+        ,totalRow:true
+        ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+        ,where: {'drugstoreInId' : "$!{drugstoreIn.drugstoreInId}"}
+        ,cols: [[ //表头
+           {field : 'medicineName',title : '药品名称',templet: function(row){ return row.medicineName || ''}, totalRowText: '合计'}
+          ,{field : 'drugstoreName',title : '入库药房',templet: function(row){ return row.drugstoreName || ''}}
+          ,{field : 'inCount',title : '入库数量',templet: function(row){ return row.inCount || ''}}
+          ,{field : 'buyPrice',title : '进货价',templet: function(row){ return row.buyPrice || ''}}
+          ,{field : 'buyTotalSum',title : '进货金额', totalRow:true}
+          ,{field : 'medicineVendorName',title : '供货单位',templet:function(row){ return row.medicineVendorName || ''}}
+          ,{field : 'productionDate',title : '生产日期',templet: function(row){ 
+              if (null != row.productionDate){
+                  return util.toDateString(row.productionDate);
+              }else{
+                  return '';
+              }
+          }}
+          ,{field : 'expireDate',title : '有效日期',templet: function(row){ 
+              if (null != row.expireDate){
+                  return util.toDateString(row.expireDate);
+              }else{
+                  return '';
+              }
+          }}
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+            var i = 0;
+            var amount = 0 ;
+            for(;i < res.data.length ; i++){
+                amount = amount + res.data[i].inCount * res.data[i].buyPrice;
+            }
+            $('#feeAmount').html(amount.toFixed(2));
+        }
+     });//table.render
+  });
+</script> 

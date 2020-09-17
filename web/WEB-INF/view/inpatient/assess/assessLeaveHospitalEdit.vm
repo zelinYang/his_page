@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style type="text/css">
+</style>
+</head>
+<body>
+    <div class="m-n" style="height: calc(100% - 15px);">
+        <form class="layui-form white-bg p-t-xs p-b-xs">
+            <div class="layui-inline">
+                <label class="layui-form-label">选择模板：</label>
+                <div class="layui-input-inline" >
+                    #formSingleSelect("emrTlpId" "$!{emrTlp.emrTlpId}" $!emrTlpMap "id='emrTlpId' lay-filter='emrTlpId'")
+                </div>                     
+            </div>
+        </form>
+        <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 37px); "
+                class="larry-iframe" src=""></iframe>
+    </div>
+
+<script>
+layui.use(['element','table','form'],function(){
+    var form = layui.form;
+    
+    var emrTlpId = $("#emrTlpId").val();
+    loadEmrTlp(emrTlpId);
+    
+    form.on('select(emrTlpId)',function(data){
+        loadEmrTlp(data.value);
+    });
+    
+    //加载电子病历编辑iframe
+    function loadEmrTlp(emrTlpId){
+        var params = "emrTlpId=" + emrTlpId + "&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}";
+        console.log(contextPath + '/patient/commonEmrTemplate.do?' +params);
+        $("#emrEdit").attr("src", contextPath + '/patient/commonEmrTemplate.do?' + params);
+    }
+});
+//病历数据保存时调用
+function initBaseParams(minieditorDesign) {
+    var data = minieditorDesign.getBaseParams();
+    var AssessLeaveHospital = data['AssessLeaveHospital'];
+    //新增
+    if (!AssessLeaveHospital || !AssessLeaveHospital.id) {
+        AssessLeaveHospital = {inhospitalId: '$!{inhospitalId}', patientId: '$!{patientId}' };
+    }
+    console.log(minieditorDesign.getValue('InpatientInhospital_inpatientCondition'));
+    var inhospitalCondition = "";
+    if(minieditorDesign.getValue('InpatientInhospital_inpatientCondition') && 
+       minieditorDesign.getValue('InpatientInhospital_inpatientCondition').length > 0){
+        inhospitalCondition = minieditorDesign.getValue('InpatientInhospital_inpatientCondition')[0].value;
+    }
+    $.extend(AssessLeaveHospital, 
+            { recordUserId: minieditorDesign.getValue('AssessLeaveHospital_chargeNurseName').chargeNurseId
+             ,inhospitalCondition: inhospitalCondition
+            });
+    console.log(AssessLeaveHospital);
+    minieditorDesign.addParams({AssessLeaveHospital:AssessLeaveHospital});
+}
+</script>
+</body>
+
+</html>

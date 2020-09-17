@@ -1,0 +1,114 @@
+<html>
+<head>
+    <title>电子病历模板编辑</title>
+    #parse("./common/layuiCss.vm")
+##    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    #parse("./common/common.js.vm")
+    #parse("./common/layuiJs.vm")
+    <!-- form检验 -->
+    <script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+    <script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+    <style>
+        .col-xs-8 label {
+            margin-top: 8px;
+        }
+        .layui-unselect.layui-form-checkbox span {
+            color: #555;
+        }
+        .layui-unselect.layui-form-checkbox.layui-form-checked span {
+            color: #fff;
+        }
+        #editForm{padding-top: 10px}
+    </style>
+</head>
+
+<body>
+<form class="layui-form" action="" id="editForm">
+    #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "id='inhospitalId'")
+    #formHiddenInput("surgeryFlag" "0" "id='surgeryFlag'")
+    #formHiddenInput("inpatientSymptomTimeId" "" "id='inpatientSymptomTimeId'")
+    <div class="layui-form-item">
+        <label class="layui-form-label"><span style="color:red">*</span>开始时间</label>
+        <div class="layui-input-inline">
+            <input type="text" id="symptomStartTime" name="symptomStartTime"  lay-verify="required" autocomplete="off" placeholder="请输入开始时间" class="layui-input" readonly>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"><span style="color:red">*</span>结束时间</label>
+        <div class="layui-input-inline">
+            <input type="text" id="symptomEndTime" name="symptomEndTime" lay-verify="required" placeholder="请输入结束时间" autocomplete="off" class="layui-input" readonly>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"><span style="color:red">*</span>间隔选项</label>
+        <div class="layui-input-block">
+            <input type="radio" name="timeDicTypeId" lay-filter="timeDicTypeId" value="230" title="4小时间隔（0点开始）" checked>
+            <input type="radio" name="timeDicTypeId" lay-filter="timeDicTypeId" value="229" title="4小时间隔（2点开始）">
+            <input type="radio" name="timeDicTypeId" lay-filter="timeDicTypeId" value="0" title="自定义">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">时间间隔</label>
+        <div class="layui-input-inline">
+            <input type="number" id="timeInterval" name="timeInterval" value="240" lay-verify="required" placeholder="请输入时间间隔" autocomplete="off" class="layui-input" readonly>
+        </div>
+        <div class="layui-form-mid layui-word-aux">分钟</div>
+    </div>
+    <div class="layui-form-item layui-hide" style="overflow: auto">
+        <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+    </div>
+</form>
+<script>
+    layui.use(['form', 'element', 'laydate'], function() {
+        var form = layui.form, laydate = layui.laydate;
+        var element = layui.element;
+        var $ = layui.$;
+
+        laydate.render({
+            elem: '#symptomStartTime'
+            ,type: 'datetime'
+            ,format: 'yyyy-MM-dd HH:mm' //可任意组合
+        });
+
+        laydate.render({
+            elem: '#symptomEndTime'
+            ,type: 'datetime'
+            ,format: 'yyyy-MM-dd HH:mm' //可任意组合
+        });
+
+        form.on('radio(timeDicTypeId)', function(data){
+            console.log(data.elem); //得到radio原始DOM对象
+            console.log(data.value); //被点击的radio的value值
+            if (data.value === '0') {
+                $("#timeInterval").removeAttr('readonly');
+            } else {
+                $("#timeInterval").attr('readonly', 'readonly');
+            }
+        });
+
+        $(function () {
+            var inpatientSymptomTime = '$!{inpatientSymptomTime}'? JSON.parse('$!{inpatientSymptomTime}'): '';
+            if (inpatientSymptomTime) {
+                $("#inpatientSymptomTimeId").val(inpatientSymptomTime.inpatientSymptomTimeId);
+                $("#symptomStartTime").val(new Date(inpatientSymptomTime.symptomStartTime).format('yyyy-MM-dd hh:mm'));
+                $("#symptomEndTime").val(new Date(inpatientSymptomTime.symptomEndTime).format('yyyy-MM-dd hh:mm'));
+                $(':radio[name=timeDicTypeId][value=' + inpatientSymptomTime.timeDicTypeId + ']').attr('checked', 'checked');
+                $("#timeInterval").val(inpatientSymptomTime.timeInterval);
+                if (inpatientSymptomTime.timeDicTypeId === 0) {
+                    $('#timeInterval').removeAttr('readonly');
+                }
+                form.render('radio');
+            }
+            var editFlag = '$!{editFlag}';
+            if (editFlag === '0') {
+
+            }
+        });
+    });
+
+    function selectLength(length) {
+        $('#emrTlpWidth').val(length);
+    }
+</script>
+</body>
+</html>

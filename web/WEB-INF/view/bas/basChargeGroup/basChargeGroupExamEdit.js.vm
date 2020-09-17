@@ -1,0 +1,540 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    //科室名称
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'tableSelect', 'xmSelect', 'layer'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, tableSelect = layui.tableSelect, layer = layui.layer,
+            xmSelect = layui.xmSelect;
+        common.verify(form)
+
+        let exeOfficeIdStrElem = $('#exeOfficeIdStr');
+        let exeOfficeNameStrElem = $('#exeOfficeNameStr');
+        // 科室
+        xmSelect.render({
+            el: '#arrangeDutyOfficeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            data: $.map(exeOfficeIdStrElem.val().split(','), function (value, index) {
+                var exeOfficeNames = exeOfficeNameStrElem.val().split(',');
+                if (value) return {name: exeOfficeNames[index] || '', value: value, selected: true};
+            }),
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../org/sysOrgListData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.name, value: item.orgId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }, on: function (data) {
+                //arr:  当前多选已选中的数据
+                var arr = data.arr;
+                exeOfficeIdStrElem.val($.map(arr, function (item) {
+                    return item.value
+                }).toString());
+                exeOfficeNameStrElem.val($.map(arr, function (item) {
+                    return item.name
+                }).toString());
+            }
+        });
+
+        //修改表格的合计列
+        //id=表格id, field = 要统计和列，fixed 小数位数，可不填默认为0
+        function updateTotla(id, field, fixed) {
+            //统计
+            var totla = $.map(table.cache[id], function (item) {
+                return Number(item[field] || 0);
+            }).reduce(function (total, num) {
+                return total + num
+            }, 0).toFixed(fixed);
+            //修改统计单元格
+            $('#' + id).next('.layui-table-view').find('.layui-table-total td[data-field="' + field + '"] .layui-table-cell').text(totla);
+            return totla;
+        }
+
+        //收费项目总计
+        function updateChargeItemTotla() {
+            var id = 'basChargeItemListGrid';
+            updateTotla(id, 'chargeItemCount');
+            updateTotla(id, 'unitPrice', 2);
+            updateTotla(id, 'actualPrice', 2);
+        }
+
+        //获取收费项目id 和 数量 数组 value="12_32"  chargeItemId_chargeItemCount
+        function getChargeItems() {
+            return $.map($("#chargeItemIdStr").val().split(','), function (chargeItem) {
+                var chargeItemId = chargeItem.split('_')[0];
+                var chargeItemCount = chargeItem.split('_')[1];
+                return {chargeItemId: chargeItemId, chargeItemCount: chargeItemCount || '1'}
+            })
+        }
+
+        //设置 收费项目id 和 数量 数组 [{chargeItemId:1, chargeItemCount:0}]
+        function setChargeItems() {
+            $('#chargeItemIdStr').val($.map(table.cache['basChargeItemListGrid'], function (item) {
+                if (item.chargeItemId) return item.chargeItemId + '_' + item.chargeItemCount;
+            }).join());
+        }
+
+        var chargeItemIds = $.map(getChargeItems(), function (chargeItem) {
+            return chargeItem.chargeItemId;
+        })
+
+        //收费项目设置表列表
+        table.render({
+            elem: '#basChargeItemListGrid',
+            url: chargeItemIds.join(',') ? contextPath + '/bas/basChargeItemListData.jo?validFlag=' + YES_FLAG + '&chargeItemIds=' + chargeItemIds.join(',') : '', //接口
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            parseData: function (res) { //res 即为原始返回的数据
+                $.each(res.data, function (i, d) {
+                    var chargeItems = getChargeItems().find(function (x) {
+                        return x.chargeItemId == d.chargeItemId;
+                    });
+                    d.chargeItemCount = chargeItems ? chargeItems.chargeItemCount : '1';
+                    d.actualPrice = d.chargeItemCount * d.unitPrice;
+                })
+                return res;
+            },
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_basChargeItem" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'chargeName',
+                    title: '费用名称',
+                    minWidth: 200
+                }, {
+                    field: 'doctorOrderType',
+                    title: '医嘱项目类型',
+                    width: 100,
+                    templet: function (d) {
+                        return dicDoctorOrderType[d.doctorOrderType] || '';
+                    }
+                },
+                {
+                    field: 'remark',
+                    title: '规格/备注',
+                    width: 180
+                },
+                {
+                    field: 'chargeItemUnit',
+                    title: '单位',
+                    sort: true,
+                    width: 80
+                },
+                {
+                    title: '#requiredTag()数量',
+                    field: 'chargeItemCount',
+                    sort: true,
+                    width: 80,
+                    event: 'chargeItemCount',
+                    edit: 'text',
+                    style: 'box-shadow: 1px 1px 20px rgba(0, 0, 0, .15);background-color: #fff;'
+                },
+                {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                },
+                {
+                    field: 'actualPrice',
+                    title: '金额',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                },
+                {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#operateTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+                //新增收费项目
+                renderAdd();
+                updateChargeItemTotla();
+            }
+        });
+        table.on('edit(basChargeItemListGrid)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+            obj.update({actualPrice: value * data.unitPrice});//修改其它列
+            updateChargeItemTotla();
+        });
+
+        //新增收费项目按钮
+        function renderAdd() {
+            tableSelect.render({
+                elem: '#btn_add_basChargeItem',	//定义输入框input对象 必填
+                checkedKey: 'chargeItemId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '费用名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: contextPath + '/bas/basChargeItemListData.jo',
+                    cols: [[{type: 'checkbox'},
+                        {
+                            field: 'chargeName',
+                            title: '费用名称',
+                            minWidth: 200
+                        }, {
+                            field: 'doctorOrderType',
+                            title: '医嘱项目类型',
+                            width: 100,
+                            templet: function (d) {
+                                return dicDoctorOrderType[d.doctorOrderType] || '';
+                            }
+                        },
+                        {
+                            field: 'remark',
+                            title: '规格/备注',
+                            width: 180
+                        },
+                        {
+                            field: 'chargeItemUnit',
+                            title: '单位',
+                            sort: true,
+                            width: 80
+                        },
+                        {
+                            field: 'unitPrice',
+                            title: '单价',
+                            sort: true,
+                            width: 80,
+                            style: 'text-align: right;'//金额居右显示
+                        }
+                    ]]
+                }),
+                done: function (elem, result) {
+                    var chargeItemIdStr = $.grep($.map(result.data, function (item) {
+                        return item.chargeItemId;
+                    }).concat($.map(table.cache['basChargeItemListGrid'], function (item) {
+                        return item.chargeItemId
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).join();
+                    table.reload('basChargeItemListGrid', {
+                        url: chargeItemIdStr ? contextPath + '/bas/basChargeItemListData.jo?validFlag=' + YES_FLAG + '&chargeItemIds=' + chargeItemIdStr : '', //接口
+                    });
+                }
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(basChargeItemListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    break;
+                case 'chargeItemCount':
+                    $(this).find('input').attr('type', 'number');
+                    $(this).removeClass('layui-table-cell-danger');
+                    break;
+            }
+            updateChargeItemTotla()
+        });
+
+        //收费项目总计
+        function updateMedicineTotla() {
+            var id = 'medicineListGrid';
+            updateTotla(id, 'medicineCount');
+            updateTotla(id, 'standardRetailPrice', 2);
+            updateTotla(id, 'actualPrice', 2);
+        }
+
+        //获取药品/耗材id 和 数量 数组 value="12_32"  medicineId_chargeItemCount
+        function getMedicines() {
+            return $.map($("#medicineIdStr").val().split(','), function (medicine) {
+                var medicineId = medicine.split('_')[0];
+                var medicineCount = medicine.split('_')[1];
+                return {medicineId: medicineId, medicineCount: medicineCount}
+            })
+        }
+
+        //设置 药品/耗材id 和 数量 数组 [{medicineId:1, medicineCount:1}]
+        function setMedicines() {
+            $('#medicineIdStr').val($.map(table.cache['medicineListGrid'], function (medicine) {
+                if (medicine.medicineId) return medicine.medicineId + '_' + medicine.medicineCount;
+            }).join());
+            updateTotla('medicineListGrid', 'medicineCount');
+        }
+
+        var medicineIds = $.map(getMedicines(), function (medicine) {
+            return medicine.medicineId;
+        })
+        //药品耗材列表
+        table.render({
+            elem: '#medicineListGrid',
+            url: medicineIds.join(',') ? contextPath + '/medicine/medicineSimpleListData.jo?validFlag=' + YES_FLAG + '&medicineIds=' + medicineIds.join(',') : '', //接口
+            parseData: function (res) { //res 即为原始返回的数据
+                $.each(res.data, function (i, d) {
+                    var medicines = getMedicines().find(function (x) {
+                        return x.medicineId == d.medicineId;
+                    });
+                    d.medicineCount = medicines ? (medicines.medicineCount || 1) : 1;
+                    d.actualPrice = d.medicineCount * d.standardRetailPrice;
+                })
+                return res;
+            },
+            limit: 10000,
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_medicine" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'medicineName',
+                    title: '药品/耗材名称',
+                    minWidth: 200
+                }, {
+                    field: 'medicineType',
+                    title: '药品/耗材类型',
+                    width: 100,
+                    templet: function (d) {
+                        return dicMedicineType[d.medicineType] || '';
+                    }
+                },
+                {
+                    field: 'medicineSpec',
+                    title: '药品/耗材规格',
+                    width: 180
+                },
+                {
+                    field: 'medicineUnit',
+                    title: '单位',
+                    sort: true,
+                    width: 80,
+                    templet: function (d) {
+                        return dicDrugNumUnit[d.medicineUnit] || '';
+                    }
+                },
+                {
+                    title: '#requiredTag()数量',
+                    field: 'medicineCount',
+                    sort: true,
+                    width: 80,
+                    event: 'medicineCount',
+                    edit: 'text',
+                    style: 'box-shadow: 1px 1px 20px rgba(0, 0, 0, .15);background-color: #fff;'
+                },
+                {
+                    field: 'standardRetailPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                },
+                {
+                    field: 'actualPrice',
+                    title: '金额',
+                    sort: true,
+                    width: 80,
+                    style: 'text-align: right;'//金额居右显示
+                    , templet: function (d) {
+                        return (d.medicineCount * d.standardRetailPrice);
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#operateTpl',
+                    fixed: 'right'
+                }]], done: function (res) {
+                //新增药品耗材项目
+                renderAddMedicine();
+                updateMedicineTotla();
+            }
+        });
+
+        table.on('edit(medicineListGrid)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+            obj.update({actualPrice: value * data.standardRetailPrice});//修改其它列
+            updateMedicineTotla();
+        });
+
+        //新增药品耗材项目按钮
+        function renderAddMedicine() {
+            tableSelect.render({
+                elem: '#btn_add_medicine',	//定义输入框input对象 必填
+                checkedKey: 'medicineId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '药品/耗材名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: contextPath + '/medicine/medicineSimpleListData.jo',
+                    cols: [[
+                        {type: 'checkbox'},
+                        {
+                            field: 'medicineName',
+                            title: '药品/耗材名称',
+                            minWidth: 200
+                        }, {
+                            field: 'medicineType',
+                            title: '药品/耗材类型',
+                            width: 100,
+                            templet: function (d) {
+                                return dicMedicineType[d.medicineType] || ""
+                            }
+                        }, {
+                            field: 'medicineSpec',
+                            title: '药品/耗材规格',
+                            width: 180
+                        },
+                        {
+                            field: 'medicineUnit',
+                            title: '单位',
+                            sort: true,
+                            width: 80,
+                            templet: function (d) {
+                                return dicDrugNumUnit[d.medicineUnit] || '';
+                            }
+                        },
+                        {
+                            field: 'standardRetailPrice',
+                            title: '单价',
+                            sort: true,
+                            width: 80,
+                            style: 'text-align: right;'//金额居右显示
+                        }
+                    ]]
+                }),
+                done: function (elem, result) {
+                    var medicineIdStr = $.grep($.map(result.data, function (item) {
+                        return item.medicineId;
+                    }).concat($.map(table.cache['medicineListGrid'], function (item) {
+                        return item.medicineId
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).join();
+                    table.reload('medicineListGrid', {
+                        url: medicineIdStr ? contextPath + '/medicine/medicineSimpleListData.jo?validFlag=' + YES_FLAG + '&medicineIds=' + medicineIdStr : '', //接口
+                    });
+                }
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(medicineListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'medicineCount':
+                    $(this).find('input').attr('type', 'number');
+                    $(this).removeClass('layui-table-cell-danger');
+                    break;
+                case 'btn_delete':
+                    obj.del();
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    break;
+            }
+            updateMedicineTotla()
+        });
+
+        // 获取坐标回调函数
+        function selectMapCoordinateBack(lng, lat) {
+            //$('#longitude').val(lng);
+            //$('#latitude').val(lat);
+        }
+
+        //自定义验证规则
+        form.verify({
+            chargeItem: function (value) {
+                //同步收费项目
+                setChargeItems();
+                if (!$('#chargeItemIdStr').val()) {
+                    $('#btn_add_basChargeItem').focus(function () {
+                        $('#basChargeItemListGrid').next().addClass('table-danger');
+                    }).blur(function () {
+                        $('#basChargeItemListGrid').next().removeClass('table-danger');
+                    }).focus();
+                    return "收费项目不能为空";
+                } else {
+                    var flag = true;
+                    $.each(table.cache['basChargeItemListGrid'], function (index, basChargeItem) {
+                        if (!$.isArray(basChargeItem) && !basChargeItem.chargeItemCount) {
+                            //显示红色边框
+                            $('#basChargeItemListGrid + .layui-table-view .layui-table-main td[data-field="chargeItemCount"]').addClass(function () {
+                                if ($(this).find('.layui-table-cell:empty').length) {
+                                    return 'layui-table-cell-danger'
+                                }
+                            })
+                            flag = false;
+                            return false;
+                        }
+                    });
+                    if (!flag) return "收费项目请填写数量列！";
+                }
+            },
+            medicine: function (value) {
+                //同步药品耗材
+                setMedicines();
+                var flag = true;
+                $.each(table.cache['medicineListGrid'], function (index, basChargeItem) {
+                    if (!$.isArray(basChargeItem) && !basChargeItem.medicineCount) {
+                        //显示红色边框
+                        $('#medicineListGrid + .layui-table-view .layui-table-main td[data-field="medicineCount"]').addClass(function () {
+                            if ($(this).find('.layui-table-cell:empty').length) {
+                                return 'layui-table-cell-danger'
+                            }
+                        })
+                        flag = false;
+                        return false;
+                    }
+                });
+                if (!flag) return "药品耗材请填写数量列！";
+            }
+        });
+
+        //提交表单
+        function saveBasChargeGroup() {
+            var params = common.serializeObject($('#basChargeGroupForm'))
+            common.requestServer(contextPath + '/bas/saveBasChargeGroup.jo', params, function (result) {
+                if (result.code == '0') {
+                    $("#chargeGroupId").val(result.data.chargeGroupId);
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+         // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasChargeGroup()
+            return false
+        })
+        // 关闭窗口
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>

@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>多行文本</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <th><span>控件模式</span></th>
+            <th></th>
+        </tr>
+        <tr>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1" selected="selected">编辑模式</option>
+                    <option value="0">只读模式</option>
+                </select>
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    (function (UE) {
+        window.rgb = function () {
+            return arguments;
+        };
+
+        function formatRGB(rgbStr) {
+            rgbStr = rgbStr.match(/^rgb\((\d+),\s*(\d+),\s*(\d+)\)$/);
+            return rgbStr;
+        }
+        var thePlugins = 'minisection', ctrl, opt, domCtrl;
+        window.onload = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                ctrl = UE.plugins[thePlugins].editdom; //获取具体的组件
+                opt = ctrl.getOpt();
+                domCtrl = ctrl.getCtrlElement();
+                var domValue = ctrl.getValueElement();
+                $('#ctrlId').val(domCtrl.getAttribute('id'));
+                $('#ctrlId').attr('readonly', 'readonly');
+                $('#ctrlDesc').val(opt.desc);
+                $('#editModeFlag').val(opt.mode);
+                if (opt.requiredFlag === 1) {
+                    $G( 'requiredFlag' ).checked = true;
+                }
+                if (opt.saveFlag === 1) {
+                    $G( 'saveFlag' ).checked = true;
+                }
+                if (domValue.style.color.indexOf('rgb') === 0) {
+                    var tempColor = formatRGB((domValue.style.color || '').trim('#'));
+                    document.getElementById('fontColor').jscolor.fromRGB(tempColor[1], tempColor[2], tempColor[3]);
+                } else {
+                    document.getElementById('fontColor').value = (domValue.style.color || '').trim('#');
+                }
+                if (domValue.style.backgroundColor.indexOf('rgb') === 0) {
+                    var tempBGColor = formatRGB((domValue.style.backgroundColor || '').trim('#'));
+                    document.getElementById('backgroundColor').jscolor.fromRGB(tempBGColor[1], tempBGColor[2], tempBGColor[3]);
+                } else {
+                    document.getElementById('backgroundColor').value = (domValue.style.backgroundColor || '').trim('#');
+                }
+            }
+        };
+        dialog.oncancel = function () {
+            if (UE.plugins[thePlugins].editdom) {
+                delete UE.plugins[thePlugins].editdom;
+            }
+        };
+        dialog.onok = function () {
+            if ($G('ctrlId').value == '') {
+                $G('ctrlId').focus();
+                layer.msg('请输入控件ID', {icon: 2});
+                return false;
+            }
+            if ($G('ctrlDesc').value == '') {
+                $G('ctrlDesc').focus();
+                layer.msg('请输入控件描述', {icon: 2});
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.desc = $('#ctrlDesc').val();
+            newOpt.mode = $('#editModeFlag').val();
+            newOpt.required = $('#requiredFlag').checked ? 1 : 0;
+            newOpt.strictverify = $('#saveFlag').checked ? 1 : 0;
+            newOpt.fontColor = $('#fontColor').val().length > 0? '#' + $('#fontColor').val(): '';
+            newOpt.backgroundColor = $('#backgroundColor').val().length > 0? '#' + $('#backgroundColor').val(): '';
+            newOpt.type = 'section';
+            if (!!domCtrl) {
+                var domValue = ctrl.getValueElement();
+                domCtrl.setAttribute('id', $G('ctrlId').value);
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl emr-section' + (newOpt.required? ' ctrl-required': '');
+                //修改
+                ctrl.setOpt(newOpt);
+                var childs = domValue.childNodes;
+                for(var i = childs .length - 1; i >= 0; i--) {
+                    domValue.removeChild(childs[i]);
+                }
+                if (newOpt.labelNmae) {
+                    var pDom = UE.dom.domUtils.createElement(document, 'p', {});
+                    var labelCtrl = UE.dom.domUtils.createElement(document, 'span', {
+                        class: 'emr-label',
+                        contenteditable: false,
+                        'emr-type': 'label'
+                    });
+                    labelCtrl.innerHTML = newOpt.labelNmae;
+                    pDom.appendChild(labelCtrl);
+                    domValue.appendChild(pDom);
+                } else {
+                    domValue.innerHTML = newOpt.desc;
+                }
+                delete UE.plugins[thePlugins].editdom;
+            } else {
+                domCtrl = UE.dom.domUtils.createElement(document, 'div', {
+                    class: 'emr-ctrl emr-section' + (newOpt.required? ' ctrl-required': ''),
+                    contenteditable: false,
+                    id: $('#ctrlId').val(),
+                    'emr-type': 'section',
+                    'emr-model': encodeURIComponent(JSON.stringify(newOpt))
+                });
+                var domValue = UE.dom.domUtils.createElement(document, 'div', {
+                    class: 'emr-value',
+                    contenteditable: ($('#editModeFlag').val() === "1")
+                });
+                var textareaDom = UE.dom.domUtils.createElement(document, 'textarea', {});
+                var ppDom = UE.dom.domUtils.createElement(document, 'p', {});
+                console.log(textareaDom);
+                ppDom.appendChild(textareaDom);
+                domValue.appendChild(ppDom);
+                domCtrl.appendChild(domValue);
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                //新建
+                editor.execCommand('insertControl', domCtrl, newOpt)
+            }
+            UE.plugins[thePlugins].domListener();
+        };
+    })(UE);
+</script>
+</body>
+
+</html>

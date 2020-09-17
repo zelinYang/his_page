@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>出院患者科室百分比</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <link rel="stylesheet" href="../../../resource/layuiadmin/layui/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../../resource/layuiadmin/style/admin.css" media="all">
+    <script src="../../../resource/hplus/js/jquery-3.3.1.min.js"></script>
+    <script src="../../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="demo1" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item ">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">类别</label>
+                        <div class="layui-input-inline">
+                            <select name='variationFactor' id='q_variationFactor' lay-filter='q_variationFactor' lay-search>
+                                <option value=""></option>
+                                <option value="1">诊断依据</option>
+                                <option value="2">出院标准</option>
+                                <option value="3">进入标准</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">内容</label>
+                        <div class="layui-input-inline wd-220">
+                            <input type="text" name="variationReasonContent" value="" class='layui-input' id='q_variationReasonContent'
+                                   autocomplete='off'  />
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-btn-group">
+                            <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                                <i class="iconfont icon-qingchu"></i></button>
+                        </div>
+                        <button id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" type="button"
+                                lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 begin -->
+        <table id="patientAccessGrid" lay-filter="patientAccessGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+</body>
+</html>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="btn_delete">删除</a>
+</script>
+<script>
+    var pathName = window.document.location.pathname;
+    //获取带"/"的项目名，如：/cloud_his
+    var projectName = pathName.substring(0, pathName.substr(1).indexOf('/') + 1);
+
+    layui.use(['table', 'layedit', 'laydate'], function(){
+        var that = this
+        var table = layui.table;
+        var form = layui.form
+            ,layer = layui.layer
+            ,layedit = layui.layedit
+            ,laydate = layui.laydate;
+
+        table.render({
+            id: 'patientAccessGrid'
+            ,elem: '#patientAccessGrid'
+            ,url: projectName+'/pathway/patientPathManage.jo'
+            ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+            ,cols: [[
+                {field:'clinicAssessId', title: '临床路径评估ID'}
+                ,{field:'clinicDiseaseName', title: '病种'}
+                ,{field:'clinicPathName', title: '路径'}
+                ,{field:'clinicAssessContent', title: '内容'}
+                ,{field:'clinicAssessType', title: '类别',
+                    templet :function (row) {
+                        if (row.clinicAssessType == 1) {
+                            return '诊断依据'
+                        }
+                        if (row.clinicAssessType == 2) {
+                            return '出院标准'
+                        }
+                        if (row.clinicAssessType == 3) {
+                            return '进入标准'
+                        }
+                        return  '-';
+                    }}
+                ,{field:'needFlag', title: '是否必填',
+                        templet :function (row) {
+                            return row.needFlag == 1 ? '是' : '否';
+                        }
+                }
+                ,{field:'sort', title: '排列顺序'}
+
+                // ,{field:'leaveHospitalDate', title: '退出住院日',
+                //     templet :function (row) {
+                //         return row.leaveHospitalDate ? layui.util.toDateString(row.leaveHospitalDate, 'yyyy-MM-dd') : '';
+                //     }
+                // }
+                ,{fixed: 'right', title:'操作', toolbar: '#barDemo', width:150}
+            ]]
+            ,page: true
+            ,height : getTableHgt(),
+        });
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                variationFactor: '',
+                variationReasonContent: '',
+                variationDetail: '',
+            }, common.serializeObject($('#demo1')));
+        }
+
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('demo1');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(projectName + '/view/clinic/patientPathManage/patientPathAssessAdd.html', '新增', {
+                area: ['95%', '95%'],
+                scroll: true,
+                cancel: function(index, layero){
+                    table.reload('patientAccessGrid',{})
+                    layer.close(index)
+                }
+            })
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#demo1').height() - 20)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basDiseaseListGrid', {
+                height: height
+            })
+        })
+        //查询按钮
+        $("#btn_query").click(function () {
+            var q_variationReasonContent = $("#q_variationReasonContent").val()
+            var q_variationFactor = $("#q_variationFactor").val()
+            table.reload('patientAccessGrid',{
+                where:{clinicAssessType:q_variationFactor,keyWord:q_variationReasonContent}
+            })
+        })
+        //监听删除事件
+        table.on('tool(patientAccessGrid)', function(obj){
+            switch(obj.event){
+                case 'btn_delete':
+                    common.confirm('是否删除',function () {
+                        if (obj.data.clinicAssessId) {
+                            $.ajax({
+                                type: "post",
+                                async: true,
+                                url: projectName + '/pathway/deleteClinicAssess.jo?clinicAssessIds='+obj.data.clinicAssessId,
+                                dataType: "json",        //返回数据形式为json
+                                success: function (result) {
+                                    table.reload('patientAccessGrid', {
+                                        url: projectName+'/pathway/patientPathManage.jo'
+                                    });
+                                }
+                            })
+                        }
+                        else {
+                            obj.del();
+                        }
+
+                        return false;
+                    });
+                    break;
+            };
+        });
+        //监听提交
+        form.on('submit(demo1)', function(data){
+
+            return false;
+        });
+    });
+
+
+</script>

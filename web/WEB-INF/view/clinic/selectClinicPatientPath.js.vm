@@ -1,0 +1,119 @@
+<script>
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicActivityOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicActivityOrderType)');
+	layui.use(['form', 'element', 'table'], function () {
+		var form = layui.form, element = layui.element, table = layui.table;
+		autocomplete = layui.autocomplete;
+		var $ = layui.$;
+
+		form.on('checkbox(notIn)', function(data){
+			console.log(data.elem.checked);
+			if (data.elem.checked) {
+				$('input[name=notInType]').removeAttr('disabled');
+				$('textarea[name=notInReason]').removeAttr('disabled');
+			} else {
+				$('input[name=notInType]').attr('disabled', 'disabled');
+				$('textarea[name=notInReason]').attr('disabled', 'disabled');
+			}
+			form.render('radio');
+		});
+
+		form.on('select(clinicPathId)', function(data){
+			if (data.value) {
+				table.render($.extend(basePageTable, {
+					url: contextPath + '/clinic/pathStageListData.jo',
+					id: 'clinicPathStageTable',
+					elem: '#clinicPathStageTable',
+					height: $('body').height() - $("#patientInfo").height() - $("#accessPath").height() - 10,
+					where: {clinicPathId: data.value},
+					done: function (res, curr, count) {
+						// 去掉表格头部的全选及取消全选功能
+						common.removeHeadCheckbox('drugstoreInId');
+					},
+					cols: [[
+						{type: 'radio'},
+						{
+							field: 'pathStageContent',
+							title: '阶段名称'
+						}
+					]]
+				}));
+				//处方接收列表行单击事件
+				table.on('row(clinicPathStageTable)', function (obj) {
+					clickTableByRow(obj ,'clinicPathStageTable');
+
+					common.requestServer(contextPath + '/clinic/findClinicPathStageInfo.jo', {clinicPathStageId: obj.data.clinicPathStageId}, function (result) {
+						if (result.code === '0') {
+							for (var key in result.data.stageMap) {
+								var html = [];
+								if (key === '2') {
+									for (var key in result.data.stageMap[key].orderMap) {
+										html.push('<fieldset class="layui-elem-field layui-field-title">');
+										html.push('<legend>' + dicActivityOrderType[key] + '</legend>');
+										html.push('<div class="layui-field-box">');
+										html.push('<ul>');
+										$.each(result.data.stageMap[key].orderMap[key], function (index, order) {
+											html.push('<li>');
+											html.push(order.orderName);
+											html.push('</li>');
+										})
+										html.push('</ul>');
+										html.push('</div>');
+										html.push('</fieldset>');
+									}
+								} else if (key === '4') {
+
+								} else {
+									console.log(result.data.stageMap[key]);
+									html.push('<ul>');
+									$.each(result.data.stageMap[key], function (index, order) {
+										html.push('<li>');
+										html.push(order.activityContent);
+										html.push('</li>');
+									})
+									html.push('</ul>');
+								}
+								console.log(html);
+								$("#type" + key).html(html.join(''));
+							}
+						} else {
+							common.alert(result.msg, 0);
+						}
+					})
+				});
+			} else {
+
+			}
+		});
+
+		$("#btn_save").click(function () {
+			common.requestServer(contextPath + '/clinic/saveClinicPatientPath.jo', {clinicPathId: $("#clinicPathId").val(), inhospitalId: $("#inhospitalId").val()}, function (result) {
+				if (result.code === '0') {
+					common.msg("保存成功", 1);
+					location.reload();
+				} else {
+					common.alert(result.msg, 0);
+				}
+			})
+		})
+
+		function editClinicPath(clinicPathId) {
+			var src = '$contextPath/clinic/clinicPathEdit.do?clinicPathId=' + (clinicPathId || '');
+			$('#editIframe').attr('src', src);
+		}
+
+		// 获取表格高度
+		function getMainTableHeight() {
+			return ($('body').height() - 20);
+		}
+		// 获取表格高度
+		function getOtherTableHeight() {
+			return ($('body').height() - 60);
+		}
+		$(window).resize(function () {
+			table.reload('mainTable',{
+				height:getMainTableHeight()
+			})
+		})
+	});
+</script>

@@ -1,0 +1,250 @@
+<script type="text/html" id="settlementTpl">
+    <input type="checkbox" lay-filter="settlement" lay-skin="primary" checked="">
+</script>
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var resTableData = "";
+    var personalInfo = "";
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['form', 'table', 'layer', 'util', 'laydate'], function () {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, util = layui.util,
+            laydate = layui.laydate;
+        //收款日期
+        laydate.render({
+            elem: '#collectionDays'
+            , value: util.toDateString()
+        });
+
+        var recipeDocId = "recipeDoc";
+        var recipeIds = ${recipeIds};
+        //处方信息
+        table.render({
+            elem: "#billRecipientList",
+
+            totalRow: true,
+            url:'$contextPath/gxpInsurance/getRecipeToPayList.do?recipeIds='+recipeIds.join(),
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'medicineName',
+                title: '药品名称',
+                minWidth: 150,
+                totalRowText: '合计金额'
+            }, {
+                field: 'medicineSpec',
+                title: '规格',
+                minWidth: 150
+            }, {
+                field: 'giveTotalQuantityUnit',
+                title: '单位',
+                minWidth: 150
+            }, {
+                field: 'unitPrice',
+                title: '单价'
+            }, {
+                field: 'giveTotalQuantity',
+                title: '数量'
+            }, {
+                field: 'medicineUsage',
+                title: '用法'
+            }, {
+                field: 'actualPrice',
+                title: '金额',
+                totalRow: true
+            },  {
+                field: 'validFlag',
+                title: '备注'
+            }, {
+                field: 'validFlag',
+                title: '药房'
+            }]],
+            done:function(res, curr, count){
+                resTableData = res;
+                var actualPrice = $('.layui-table-total .layui-table tr [data-field="actualPrice"]').text();
+                $("#hisfye").val(actualPrice);
+
+            }
+
+        });
+     // //表格双击事件 详情
+     // table.on('row(' + recipeDocId + ')', function (obj) {
+     //         var row = obj.data;
+     //         $("#feeBillNo").val(row.feeBillNo)
+     //         //标注选中样式
+     //         obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+     //     });
+
+        $("#readCardByNo").click(function () {
+            common.open('$contextPath/gxpInsurance/identity.do', '收款结算', {
+                area: ['80%', '80%'],
+                moveOut: true,
+                btn:['确定','取消'],
+                yes: function(index, layero){
+                    //do something
+                    var formData = window["layui-layer-iframe"+index].callbackdata();
+                    var output = JSON.stringify(formData.data.output);
+                    initPersonalInfo(JSON.parse(output));
+                    layer.close(index);
+                },
+                btn2: function(index, layero){
+                    layer.close(index);
+                }
+            });
+        });
+
+        $("#btn_save").click(function () {
+            var loading = layer.load(0);
+            var param = serializeForm($('#reg_patient_EditForm'));
+
+            var url = 'http://localhost:8089/gxp_mi_settlement/medicalInsurance/call/';
+            request(url,param,loading);
+         // common.open('$contextPath/gxpInsurance/identity.do?tradeCode=C03b', '身份识别', {
+         //     area: ['80%', '80%'], moveOut: true
+         // });
+
+        });
+
+        function initPersonalInfo(formData){
+            personalInfo = formData;
+            form.val("personalInfo",formData);
+
+            form.val("personalInfo",formData.rows.row);
+
+            $("#wilSettlement").attr("class","layui-btn layui-btn-normal");
+
+        }
+
+        $("#fundsReceived").on('input propertychange', function () {
+            $("#changeTheAmount").val($("#fundsReceived").val() - $("#actualChargeAmount").val());
+        })
+
+        //预结算
+        $("#wilSettlement").click(function () {
+            outpatientBillUpload();
+            var inputParam = {
+                aac001:$("#aac001").val(),
+                hisfye:$("#hisfye").val(),
+                aaz217:"20194599241008374170",
+                ykb065:$("#ykb065").val(),
+                aka130:"11",
+                hisfye:$("#hisfye").val(),
+                zsjsbz:"0",
+                grzhbz:"1",
+                yac112:$("#yac112").val(),
+                amc010:$("#amc010").val()
+            };
+            var url = 'http://localhost:8089/gxp_mi_settlement/medicalInsurance/call/C0050';
+            request(url,inputParam,wilSettlement);
+        });
+        function request(url,param,callBack){
+            var loading = layer.load(0);
+            var paramInput = {"input":param};
+            $.ajax({
+                type : "POST",
+                url : url,
+                contentType: "application/json;charset=utf-8",
+                dataType : "json",
+                ajaxOptions: {
+                    xhrFields: { //跨域
+                        withCredentials: true
+                    },
+                    crossDomain: true
+                },
+                data: JSON.stringify(paramInput),
+                async : false,
+                success : function(result) {
+                    layer.close(loading);
+                    if(result.code < 0){
+                        common.alert(result.msg,3);
+                    }else{
+                        callBack(result);
+                    }
+                },error:function(result){
+                    layer.close(loading);
+                }
+
+            });
+
+        }
+
+        function wilSettlement(result){
+
+            form.val("resultForm",result.data.output.rows.row);
+        }
+
+        //门诊单据上传
+        function  outpatientBillUpload(){
+            var res = resTableData;
+            var outpatientBill = {
+                input:{
+                    aac001:personalInfo.aac001,
+                    aka130:$("#amc010").val(),
+                    aae140:$("#aae140").val(),
+                    djxxrows:{
+                        djxxrow:{
+                            yka097:resTableData.data[0].exeOfficeId,
+                            yka098:resTableData.data[0].exeOfficeName,
+                            ykd102:resTableData.data[0].exeOfficeName,
+                        }}
+                }
+
+            }
+        }
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#receipts').height() - 60)
+        }
+
+        // 重置表格高度
+     // $(window).resize(function () {
+     //         var height = getTableHgt()
+     //            table.reload(billRecipientList, {
+     //             height: height
+     //         })
+     //     })
+
+
+    });
+
+    function stringify(data){
+        return JOSN.stringify(data);
+    }
+
+    function serializeForm(form, arrayDateId) {
+        var o = {};
+        $.each(form.serializeArray(), function(index) {
+
+            if (o[this['name']]) {
+                o[this['name']] = o[this['name']] + "," + this['value'];
+            } else {
+                o[this['name']] = this['value'];
+            }
+        });
+
+        // 处理日期查询条件
+        if (arrayDateId && arrayDateId.length > 0) {
+            var obj = {};
+            for (var i = 0; i < arrayDateId.length; i++) {
+                var dateEle = $(form).find('#' + arrayDateId[i]);
+                if (!dateEle || dateEle.val() == '') { continue; }
+
+                var tag = dateEle.attr('tag').split(',');
+                var arrayDate = dateEle.val().split(" - ");
+                obj[tag[0]] = ((arrayDate[0] != "" && arrayDate[0] != undefined) ? arrayDate[0] : "");
+                obj[tag[1]] = ((arrayDate[1] != "" && arrayDate[1] != undefined) ? arrayDate[1] : "");
+            }
+            $.extend(o, obj);
+        }
+        return o;
+    };
+
+
+
+</script>

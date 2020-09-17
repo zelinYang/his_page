@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle} - 整改通知</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    
+  <style>
+    .emrList-left { width: 50%; float: left; background-color: #fff;}
+    .emrList-right { width: calc(50% - 10px); margin-left: 10px; float: right; background-color: #fff;}
+    #container .ui-layout-resizer-closed {display: block !important;}
+  </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid full-scroll">
+        <div class="emrList-left ">
+            <form id="patientForm" class="layui-form">
+                <!-- 表单 开始 -->
+                <input type="hidden" name="submitFlag" value="$!{CONST.AppConstants.NO_FLAG}">
+                <input type="hidden" name="reformStatus" value="$!{CONST.AppConstants.REFORM_STATUS_NOTDO}"/>
+                <input type="hidden" name="receiverId" value="$!{inpatientInhospital.managerDoctorId}"/>
+                <input type="hidden" name="receiverOfficeId" value="$!{inpatientInhospital.currentOfficeId}"/>
+                <input type="hidden" name="patientEmrDefectId" value="$!{patientEmrDefect.patientEmrDefectId}"/>
+                <input type="hidden" name="patientId" value="$!{inpatientInhospital.patientId}"/>
+                <input type="hidden" name="inhospitalId" value="$!{inpatientInhospital.inhospitalId}"/>
+                <input type="hidden" name="hospitalId" value="$!{inpatientInhospital.hospitalId}"/>
+                <div class="layui-form-item layui-form-text width-auto">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">接收人</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("receiverName" "$!{inpatientInhospital.managerDoctorName}" " maxlength='10' lay-verify='required' class='layui-input' readonly='readonly'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">接收科室</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("receiverOfficeName" "$!{inpatientInhospital.currentOfficeName}" " maxlength=''
+                            lay-verify='required' class='layui-input' readonly='readonly'")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text ">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">整改内容</label>
+                        <div class="layui-input-inline width-full m-b-sm" style="width: 485px;">
+                            #formTextarea("reformContent" ""  " id='reformContent' class='layui-textarea' 
+                            maxlength='400' placeholder='请输入内容，字数最多400字' style='height:300px'")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-hide">
+                    <input type="button" lay-submit lay-filter="btn_send_reform" id="btn_send_reform" value="发送整改通知">
+                </div>
+            </form>
+        </div>
+        <!-- 缺陷项目列表 -->
+        <div class="emrList-right " id="container">
+            <!--列表 begin-->
+            <table id="defectItemGrid" class="layui-list-talbe" lay-filter="defectItemGrid"></table>
+            <!--  列表表格 end -->
+        </div>
+    </div>
+</div>
+#parse("./emrDefect/patientEmrReformEdit.js.vm")
+</body>
+</html>

@@ -1,0 +1,105 @@
+ <script>
+   var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+   var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+   var dicPaymentMethod=JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+
+   layui.config({
+       base : '../resource/layuiadmin/' //静态资源所在路径
+   }).extend({
+       index : 'lib/index', //主入口模块
+   }).use([ 'index', 'jquery','table', 'element', 'form', 'laydate', 'util'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate;
+      var form = layui.form;
+      var element = layui.element;
+      var util = layui.util;
+      element.render();
+// 查询按钮
+       $('#btn_query').click(function (){
+           query();
+       });
+
+       // 清空按钮
+       $('#btn_clean').click(function () {
+           common.cleanForm('reg_patient_queryForm');
+       })
+
+       // 获取查询表单参数对象
+       function getQueryParams() {
+           return $.extend({
+               operPrepayUserName: '',
+               keyWord: '',
+               selfPrepayInWay: '',
+               prepayDateBegin: '',
+               prepayDateEnd: '',
+               refundPrepayFeeFlag: '',
+           }, common.serializeObject($('#reg_patient_queryForm')));
+       }
+
+       //查询列表
+       query = function() {
+           var queryParams = getQueryParams();
+           tableIns.reload({ where: queryParams });
+       }
+      //第一个实例
+      var tableIns = table.render({
+         elem: '#regPatientTable'
+        ,url: '../inpatient/payInListData.jo' //数据接口
+        ,limit:20
+        ,page:true
+        ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+        ,where: getQueryParams()
+        ,cols: [[ //表头
+			{field: 'prepayReceiptNo', title: '收据号码', minWidth: 100}
+              , {field: 'inhospitalId', title: '住院流水号', minWidth: 100}
+              , {field: 'patientName', title: '姓名'}
+
+              , {
+                  field: 'prepayDate', title: '缴款日期', minWidth: 180, templet: function (row) {
+                      return  row.prepayDate ? util.toDateString(row.prepayDate) :'';
+                  }
+              }
+              , {
+                  field: 'selfPrepayInWay', title: '缴款方式', minWidth: 100,
+                  templet: function (row) {
+                      return dicPaymentMethod[row.selfPrepayInWay] || '';
+                  }
+              }
+              , {field: 'prepaySum', title: '缴款金额', minWidth: 100}
+              , {field: 'checkNo', title: '支票号码', minWidth: 100}
+              ,{field : 'operPrepayUserName',title : '收费员'}
+
+              , {
+                  field: 'refundPrepayFeeFlag', title: '是否已退费', width: 100,
+                  templet: function (row) {
+                      return row.refundPrepayFeeFlag == "1" ? '<span style="color: red">是</span>' :'';
+                  }
+              },{field : 'refundPrepayDate',title : '退款日期',minWidth: 180,templet : function(row) {
+                  return  row.refundPrepayDate ? util.toDateString(row.refundPrepayDate) :'';
+                  }
+              } , {field: 'refundPrepaySum', title: '退款金额', minWidth: 100}
+              ,{field : 'refundOperPrepayUserName',title : '退费员'}
+        ]], done:function () {
+              tableReHeight(this, getTableHgt);
+          }
+      });//table.render
+       /**
+        * 动态重置表格高度
+        * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+        * 注意： table.height 不需要添加
+        * @param that 表格实例 this
+        * @param heightCallback 高度回调方法 返回数值,需要动态获取
+        */
+       function tableReHeight(that, heightCallback) {
+           // 动态重置表格高度
+           $(window).resize(function () {
+               that.elem.next('.layui-table-view').attr('style', ' ')
+               that.height = heightCallback();
+               table.resize(that.id);
+           }).resize();
+       }
+     function getTableHgt(){
+         return ($('body').height() - $('#reg_patient_queryForm').height() - 36)
+     }
+  });
+</script>

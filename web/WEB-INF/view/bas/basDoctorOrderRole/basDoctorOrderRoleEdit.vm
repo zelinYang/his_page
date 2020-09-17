@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-医生开处方权限（特殊药品）设置管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .region-search {
+            position: absolute;
+            right: 8px;
+            top: 5px;
+            cursor: pointer;
+        }
+
+        .layui-card-body.medicineRecipeClassify {
+            height: calc(100vh - 250px);
+            overflow: auto;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form m-sm" id="basDoctorOrderRoleForm" lay-filter="basDoctorOrderRoleForm">
+    <!-- 表单 开始 -->
+    <div class="layui-card">
+        <div class="layui-card-header">基本信息</div>
+        <div class="layui-card-body deps">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()医生</label>
+                    <div class="layui-input-inline">
+                        #formHiddenInput("doctorId" "$!{basDoctorOrderRole.doctorId}" " id='doctorId' ")
+                        #formHiddenInput("validFlag" "$!{CONST.AppConstants.YES_FLAG}" " id='validFlag' ")
+
+                        #if($!{basDoctorOrderRole})
+                        #formTextInput("doctorName" "$!basDoctorOrderRole.doctorName" "class='layui-input' readonly")
+                        #else
+                        #formTextInput("doctorName" "$!basDoctorOrderRole.doctorName" "id='doctorName' class='layui-input'
+                        maxlength='50' autocomplete='off' ts-selected='$!basDoctorOrderRole.doctorId' lay-verify='required'
+                        readonly")
+                        <i class="layui-icon layui-icon-more region-search" title="选择医生"></i>
+                        #end
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">处方医嘱权限</label>
+                    <div class="layui-input-inline">
+                        #if($!{basDoctorOrderRole.recipeFlag})
+                            #set($recipeFlag = $!{basDoctorOrderRole.recipeFlag})
+                        #else
+                            #set($recipeFlag = $!{CONST.AppConstants.YES_FLAG})
+                        #end
+                        #formRadioGroup("recipeFlag" "$!{recipeFlag}" ${dicData.dicYesNo} " ")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="layui-card">
+        <div class="layui-card-header">#requiredTag()特殊药品</div>
+        <div class="layui-card-body medicineRecipeClassify m-l-md">
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+
+    <!-- 表单 结束 -->
+    <script type="text/html" id="specialMedicineTpl">
+        {{# layui.each(dicSpecialMedicine,function(specialMedicineValue, specialMedicineName){ }}
+        <div class="layui-form-item">
+            <div class="layui-input-inline">
+                <input type="checkbox" name="medicineRecipeClassify" lay-filter="medicineRecipeClassify" value="{{specialMedicineValue}}" lay-skin="primary" title="{{specialMedicineName}}"  lay-verify="reqRedio" check-msg='请选择特殊药品'>
+            </div>
+            <div class="layui-input-inline" style="width: auto;">
+                <!--抗菌药-->
+                {{# if(MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == specialMedicineValue){ }}
+                {{#layui.each(dicAntibioticLevel, function(value, title){ }}
+                <input type="radio" name="antibioticGen" value="{{value}}" title="{{title}}" disabled check-msg='请选择抗菌药等级'>
+                {{# }) }}
+                {{# }else if(MEDICINE_RECIPE_CLASSIFY_MENTAL_STATE == specialMedicineValue){ }}
+                {{#layui.each(dicSpecialMedicineLevel, function(value, title){ }}
+                <input type="radio" name="specialMedicineLevel_{{specialMedicineValue}}" value="{{value}}" title="{{title}}" disabled >
+                {{# }) }}
+                {{# } }}
+            </div>
+        </div>
+        {{# }) }}
+    </script>
+</form>
+#parse("./bas/basDoctorOrderRole/basDoctorOrderRoleEdit.js.vm")
+</body>
+</html>

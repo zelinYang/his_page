@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<link rel="stylesheet" href="../resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+<script src="../resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+<style>
+
+   body{
+    background-color: #f5f6f7!important;
+
+   }
+    h5{
+	    font-size: 14px;
+	    margin: 0;
+	    line-height: 36px;
+	    padding: 0 15px 0 0;
+	    text-overflow: ellipsis;
+	    font-weight: 600;
+	    float: left;
+    }
+    table.layui-table baseInfoTable tr th{
+        text-align: center;
+    }
+
+    .btn_del_tr { font-size: 24px;color:red;}
+    #baseInfoTable tr td{ color:#111;}
+    .btn-shrink { float: right; position:relative; right:10px;}
+    .layui-table.layui-table-input{ margin: 0; }
+
+    /*用于校验表单错误的样式 */
+    .input-error{outline:#FF5722 solid 1px;}
+
+    .baseInfoTable { min-width: 1100px;}
+    .baseInfoTable tr td {border: none}
+
+   .layui-card-body {
+	   overflow-x: auto;
+	   width: calc(100% - 30px);
+   }
+
+</style>
+</head>
+<body class="full-height p-xs t-edit">
+	#formHiddenInput("patientId" "$!patient.patientId" "id='patientId'")
+<div class="full-height-scroll" style="height:calc(100% - 50px);">
+    <div class="layui-card" >
+        <div class="layui-card-header"><h5>基本信息</h5></div>
+	    <div class="layui-card-body">
+            <table class="layui-table baseInfoTable ">
+                <colgroup>
+	                <col width="20%">
+	                <col width="25%">
+	                <col width="12%">
+	                <col width="12%">
+	                <col  >
+                </colgroup>
+                <tr>
+                    <td>患者姓名：$!patient.patientName</td>
+                    <td>出生年月：$!date.format("yyyy-MM-dd",$!patient.patientBirth)</td>
+                    <td>性别：#lookUpDict($dicData.dicSex $!patient.patientSex)</td>
+                    <td>民族：$!patient.patientNation</td>
+                    <td>就诊卡号：$!patientIndex.visitCardNo</td>
+                </tr>
+            </table>
+        </div>
+	</div>
+
+	<div class="layui-card">
+        <div class="layui-card-header"><h5>过敏史</h5></div>
+	    <div class="layui-card-body">
+		   <table class="layui-table baseInfoTable layui-table-input edit" id="alleThead" >
+			   <colgroup>
+				   <col width="3%">
+				   <col width="20%">
+				   <col width="20%">
+				   <col width="11.5%">
+				   <col width="16%">
+				   <col width="11%">
+				   <col width="">
+			   </colgroup>
+			   <thead>
+				   <tr>
+					   <th>
+						  <i class="layui-icon layui-icon-add-1 icon-btn btn-add " title="新增行" id="addAllergyTr" ></i>
+					   </th>
+					   <th>过敏原</th>
+					   <th>症状</th>
+					   <th>程度</th>
+					   <th>首发时间</th>
+					   <th>记录人</th>
+					   <th>记录时间<i class="layui-icon layui-icon-up btn-shrink"></i></th>
+				   </tr>
+			   </thead>
+			   <tbody class="rowTpl layui-hide">
+				   <tr class="trRow">
+					   <td class="text-center">
+						   <i class="layui-icon layui-icon-delete icon-btn btn_del_tr delAllergyTr" title="删除"></i>
+							#formHiddenInput("drugAllergyId" "" "id='drugAllergyId'")
+					   </td>
+					   <td>
+							#formSelectInput("allergyDrugName" "" $!dicData.dicAllergyMedicine "class='layui-input table-input selInp_select'"
+							"class='layui-input table-input selInp_input'  style='width:231.6px;" "" "")
+
+						   <input type="text" value="" id="text" class="layui-input table-input" style="display: none;"/>
+
+					   </td>
+					   <td>
+							#formTextInput("allergySymptom" "" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("severity" "" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("firstOccurTime" "" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+					   </td>
+					   <td>
+						   #formTextInput("createUserName" "$currentUser.name" " class='layui-input table-input' readOnly")
+						   #formHiddenInput("createUserId" "$currentUser.userId" "")
+					   </td>
+					   <td>
+						   #formTextInput("createTime" "" "id='createTime' class='layui-input table-input newCreateTime' readOnly")
+					   </td>
+				   </tr>
+			   </tbody>
+		   </table>
+            <table class="layui-table baseInfoTable layui-table-input" lay-skin="sm" >
+                <colgroup>
+                    <col width="3%">
+                    <col width="20%">
+                    <col width="20%">
+                    <col width="11.5%">
+                    <col width="16%">
+                    <col width="11%">
+                    <col width="">
+                </colgroup>
+                <tbody id="allergyTbody" class="">
+					#if(!$patientDrugAllergyList)
+                    <tr ><p class="text-center p-t-sm" >无数据</p></tr>
+					#end
+					#foreach($item in $!patientDrugAllergyList)
+                    <tr>
+                        <td class="text-center">
+                            <i class="layui-icon layui-icon-delete icon-btn btn_del_tr delAllergyTr" title="删除"></i>
+							#formHiddenInput("drugAllergyId" "$!item.drugAllergyId" "id='drugAllergyId'")
+                        </td>
+                        <td>
+							#formSelectInput("allergyDrugName" "$!item.allergyDrugName" $!dicData.dicAllergyMedicine "class='layui-input  selInp_select'"
+								"class='layui-input selInp_input' placeholder='请输入'" "" "请选择")
+                        </td>
+                        <td>
+							#formTextInput("allergySymptom" "$!item.allergySymptom" " class='layui-input table-input'")
+                        </td>
+                        <td>
+							#formTextInput("severity" "$!item.severity" " class='layui-input table-input'")
+                        </td>
+                        <td>
+							#formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.firstOccurTime)" " class='layui-input layer-date table-input' id='firstOccurTime' readOnly")
+							##formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm',$!item.firstOccurTime)" " class='layui-input table-input'")
+                        </td>
+                        <td>
+							#formTextInput("createUserName" "$!item.createUserName" " class='layui-input table-input' readOnly")
+							#formHiddenInput("createUserId" "$!item.createUserId" "")
+                        </td>
+                        <td>
+							#formTextInput("createTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.createTime)" "id='createTime' class='layui-input table-input' readOnly")
+                        </td>
+                    </tr>
+					#end
+                </tbody>
+            </table>
+	    </div>
+    </div>
+
+	<div class="layui-card">
+        <div class="layui-card-header"><h5>不良反应史</h5></div>
+        <div class="layui-card-body">
+			<table class="layui-table baseInfoTable layui-table-input" id="adverseThead" >
+				<colgroup>
+				   <col width="3%">
+				   <col width="20%">
+				   <col width="20%">
+				   <col width="11.5%">
+				   <col width="16%">
+				   <col width="11%">
+				   <col width="">
+				</colgroup>
+				<thead>
+					<tr>
+						<th>
+						   <i class="layui-icon layui-icon-add-1 icon-btn btn-add " title="新增行" id="addAdverseTr" ></i>
+						</th>
+						<th>药物名称</th>
+						<th>症状</th>
+						<th>程度</th>
+						<th>首发时间</th>
+						<th>记录人</th>
+						<th>记录时间<i class="layui-icon layui-icon-up btn-shrink"></i></th>
+					</tr>
+				</thead>
+				<tbody class="rowTpl layui-hide">
+					<tr class="trRow">
+						<td class="text-center">
+							<i class="layui-icon layui-icon-delete icon-btn btn_del_tr delAdverseTr" title="删除"></i>
+							 #formHiddenInput("adverseDrugReactionId" "" "id='adverseDrugReactionId'")
+						</td>
+						<td>
+							 #formTextInput("adverseDrugName" "" " class='layui-input table-input'")
+						</td>
+						<td>
+							 #formTextInput("reactionSymptom" "" " class='layui-input table-input'")
+						</td>
+						<td>
+							 #formTextInput("severity" "" " class='layui-input table-input'")
+						</td>
+						<td>
+							 #formTextInput("firstOccurTime" "" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+						</td>
+						<td>
+							 #formTextInput("createUserName" "$currentUser.name" " class='layui-input table-input' readOnly")
+							 #formHiddenInput("createUserId" "$currentUser.userId" "")
+					   </td>
+					   <td>
+							 #formTextInput("createTime" "" "id='createTime' class='layui-input table-input newCreateTime' readOnly")
+					   </td>
+					</tr>
+				</tbody>
+			</table>
+			<table class="layui-table baseInfoTable layui-table-input">
+				<colgroup>
+				   <col width="3%">
+				   <col width="20%">
+				   <col width="20%">
+				   <col width="11.5%">
+				   <col width="16%">
+				   <col width="11%">
+				   <col width="">
+				</colgroup>
+				<tbody id="adverseTbody">
+				   #if(!$adverseDrugReactionList)
+					   <tr ><p class="text-center p-t-sm" >无数据</p></tr>
+				   #end
+				   #foreach($item in $!adverseDrugReactionList)
+				   <tr>
+					   <td class="text-center">
+						   <i class="layui-icon layui-icon-delete icon-btn btn_del_tr delAdverseTr" title="删除"></i>
+							#formHiddenInput("adverseDrugReactionId" "$!item.adverseDrugReactionId" "id='adverseDrugReactionId'")
+					   </td>
+					   <td>
+							#formTextInput("adverseDrugName" "$!item.adverseDrugName" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("reactionSymptom" "$!item.reactionSymptom" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("severity" "$!item.severity" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.firstOccurTime)" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+					   </td>
+					   <td>
+						   #formTextInput("createUserName" "$!item.createUserName" " class='layui-input table-input' readOnly")
+						   #formHiddenInput("createUserId" "$!item.createUserId" "")
+					   </td>
+					   <td>
+							#formTextInput("createTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.createTime)" "id='createTime' class='layui-input table-input' readOnly")
+					   </td>
+				   </tr>
+				   #end
+				</tbody>
+			</table>
+        </div>
+    </div>
+
+    <div class="layui-card">
+        <div class="layui-card-header"><h5>过往疾病史</h5></div>
+        <div class="layui-card-body">
+			<table class="layui-table baseInfoTable layui-table-input " id="pastDiseaseThead" >
+				<colgroup>
+				   <col width="3%">
+				   <col width="20%">
+				   <col width="20%">
+				   <col width="11.5%">
+				   <col width="16%">
+				   <col width="11%">
+				   <col width="">
+				</colgroup>
+				<thead>
+					<tr>
+						<th>
+						   <i class="layui-icon layui-icon-add-1 icon-btn btn-add " title="新增行"  id="addPastDiseaseTr"></i>
+						</th>
+						<th>疾病名称</th>
+						<th>具体部位</th>
+						<th>是否遗传</th>
+						<th>首发时间</th>
+						<th>记录人</th>
+						<th>记录时间<i class="layui-icon layui-icon-up btn-shrink"></i></th>
+					</tr>
+				</thead>
+				<tbody class="rowTpl layui-hide">
+					<tr class="trRow">
+						<td class="text-center">
+							<i class="layui-icon layui-icon-delete icon-btn red btn_del_tr delPastDiseaseTr" title="删除"></i>
+							 #formHiddenInput("pastDiseaseId" "" "id='pastDiseaseId'")
+						</td>
+						<td>
+							 #formHiddenInput("diseaseId" "" "id='diseaseId'")
+							 #formTextInput("diseaseName" "" " class='layui-input table-input'")
+						</td>
+						<td>
+							 #formTextInput("diseaseContent" "" " class='layui-input table-input'")
+						</td>
+						<td class="layui-form text-center">
+							 ##formTextInput("familyDiseaseFlag" "" " class='layui-input table-input'")
+							 <input type="checkbox" name="familyDiseaseFlag" lay-skin="switch" lay-text="是|否">
+						</td>
+						<td>
+							 #formTextInput("firstOccurTime" "" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+						</td>
+						<td>
+							 #formTextInput("createUserName" "$currentUser.name" " class='layui-input table-input' readOnly")
+							 #formHiddenInput("createUserId" "$currentUser.userId" "")
+					   </td>
+					   <td>
+							 #formTextInput("createTime" "" "id='createTime' class='layui-input table-input  newCreateTime' readOnly")
+					   </td>
+					</tr>
+				</tbody>
+			</table>
+			<table class="layui-table baseInfoTable layui-table-input">
+				<colgroup>
+					<col width="3%">
+					<col width="20%">
+					<col width="20%">
+					<col width="11.5%">
+					<col width="16%">
+					<col width="11%">
+					<col width="">
+				</colgroup>
+				<tbody id="pastDiseaseTbody">
+				   #if(!$pastDiseaseList)
+					   <tr ><p class="text-center p-t-sm" >无数据</p></tr>
+				   #end
+				   #foreach($item in $!pastDiseaseList)
+				   <tr>
+					   <td class="text-center">
+						   <i class="layui-icon layui-icon-delete icon-btn btn_del_tr delPastDiseaseTr" title="删除"></i>
+							#formHiddenInput("pastDiseaseId" "$!item.pastDiseaseId" "id='pastDiseaseId'")
+					   </td>
+					   <td>
+							#formHiddenInput("diseaseId" "$!item.diseaseId" "id='diseaseId'")
+							#formTextInput("diseaseName" "$!item.diseaseName" " class='layui-input table-input'")
+					   </td>
+					   <td>
+							#formTextInput("diseaseContent" "$!item.diseaseContent" " class='layui-input table-input'")
+					   </td>
+					   <td class="layui-form text-center">
+							<input type="checkbox" name="familyDiseaseFlag" lay-skin="switch" lay-text="是|否"
+							#if($!item.familyDiseaseFlag=="1")
+								checked="checked"
+							#end
+							>
+					   </td>
+					   <td>
+							#formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.firstOccurTime)" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+					   </td>
+					   <td>
+							#formTextInput("createUserName" "$!item.createUserName" " class='layui-input table-input' readOnly")
+							#formHiddenInput("createUserId" "$!item.createUserId" "")
+					   </td>
+					   <td>
+							#formTextInput("createTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.createTime)" "id='createTime' class='layui-input table-input' readOnly")
+					   </td>
+				   </tr>
+				   #end
+				</tbody>
+			</table>
+        </div>
+    </div>
+	<div class="tool-bottom-fixed " style="background-color:#ffffff;">
+        <button class="layui-btn layui-btn-sm" id="btn_save">保存</button>
+    </div>
+</div>
+
+#parse("./outpatient/patient/patientArchives.js.vm")
+</body>
+</html>

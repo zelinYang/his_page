@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>新增组套</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm") 
+</head>
+<body class="white-bg">
+  <div class="main full-height" > 
+    <form id="basOrderGroupForm" class="layui-form full-height-scroll">
+	  
+	    <div class="layui-row" >
+	           <div class="layui-form-item ">
+	           #formHiddenInput("commonMedicineFlag" "$!basOrderGroup.commonMedicineFlag" "")
+	           #formHiddenInput("orderGroupType" "$!basOrderGroup.orderGroupType" "")
+	           #formHiddenInput("validFlag" "$!basOrderGroup.validFlag" "")
+	           #formHiddenInput("orderUserId" "$!basOrderGroup.orderUserId" "")
+	           #formHiddenInput("orderOfficeId" "$!basOrderGroup.orderOfficeId" "")
+	           #formHiddenInput("exeOfficeId" "$!basOrderGroup.exeOfficeId" "")
+              <div class="layui-inline">
+                    <label class="layui-form-label" >组套名称</label>
+                    <div class="layui-input-inline" >
+                       #formTextInput("orderGroupName" "$!basOrderGroup.orderGroupName" "class='layui-input' ")
+                    </div>
+                </div>
+              <div class="layui-inline">
+                   <label class="layui-form-label label-md">常用</label>
+                   <div class="layui-input-inline"> 
+                       <input type="checkbox" name="commonMedicineFlag" lay-filter='commonMedicineFlag' lay-skin="primary" 
+                         value="0" >
+                   </div>
+                </div>
+ 
+	               
+               <div class="layui-inline">
+                  <label class="layui-form-label" >排序号</label>
+                  <div class="layui-input-inline" >
+                     #formIntInput("sort" "$!basOrderGroup.sort" " maxlength='10' class='layui-input'")
+                  </div>
+              </div>
+	        </div>
+	     </div>
+	 
+	     <!-- row -->
+        <div class="layui-row">
+             <div class="layui-inline">
+                 <label class="layui-form-label label-md">所属类型</label>
+                 <div class="layui-input-inline"> 
+                     #formRadioGroup("orderGroupClassify" "$!{basOrderGroup.orderGroupClassify}" ${dicData.dicBelongSysType} " ")
+                 </div>
+              </div>
+        </div><!--row-->
+        
+	     <!-- row -->
+        <div class="layui-row">
+            <div class="layui-form-item ">
+	              <div class="layui-inline" >
+	                 <label class="layui-form-label">备注信息</label>
+	                 <div class="layui-input-inline" style="width: 514px;">
+	                    #formTextarea("remark" "#htmlEscape($!{basOrderGroup.remark})" " maxlength='1000' class='layui-textarea' rows='3'")
+	                 </div>
+	              </div>
+            </div>
+        </div><!--row-->
+	 
+	 </form>
+  </div><!-- main -->
+ 
+  <!-- 底部按钮栏  -->
+ <div class="tool-bottom-fixed btn_gorup" style="background: #ffffff;border-top: 1px solid #e7eaec;">
+     <button id="btn_save" class="layui-btn layui-btn-sm" type="button">保存</button>
+ </div>
+  ##parse("./outpatient/surgery/basOrderGroupOutEdit.js.vm")<!-- 页面js -->
+  
+  <script type="text/javascript">
+   
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index',
+    autocomplete: 'autocomplete'
+  }).use(['index','form', 'laydate', 'element', 'autocomplete'], function(){
+    var element = layui.element,autocomplete = layui.autocomplete,laydate = layui.laydate,form = layui.form;
+    
+    element.render();
+    	 
+    $('#btn_save').click(function() {
+    	saveBasOrderGroup();
+    });
+    
+
+    // 提交表单
+    function saveBasOrderGroup() { 
+      //表单参数
+        var basOrderGroupParams = common.serializeObject($('#basOrderGroupForm'));
+        var orderGroupItemArray = parent.getOrderGroupItem();
+        var param = {
+        		 groupJsonData: JSON.stringify(basOrderGroupParams),	
+        		 itemJsonData: JSON.stringify(orderGroupItemArray)	
+        };
+        common.requestServer('$!contextPath/bas/saveBasOrderGroup.jo', param, function(result){
+            if (result.code == "0") { 
+            	common.alertCall("保存成功。", 1, function (){ 
+	                var index = parent.layer.getFrameIndex(window.name);
+	                parent.layer.close(index); 
+	            });
+            } else {
+                common.alert(result.msg, 0);
+            } 
+        });
+    }//save function
+    
+  
+    
+});//layui.use end
+</script>
+</body>
+</html>

@@ -1,0 +1,327 @@
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<!-- 单选列表 -->
+<script type="text/html" id="radioTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="radio" name="{{d.name}}" lay-filter="{{d.filter}}" value="{{val}}" {{val== d.value
+           ? 'checked' : ''}}  title="{{key}}" {{d.attr}}>
+    {{# }) }}
+</script>
+
+<!-- 复选框列表 -->
+<script type="text/html" id="checkboxTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="checkbox" name="{{d.name || ''}}" lay-filter="{{d.filter || ''}}" value="{{val || ''}}" {{val== d.value
+           ? 'checked' : ''}}  title="{{key || ''}}" {{d.attr || ''}} lay-skin="primary">
+    {{# }) }}
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var DIC_TYPE_ID_POST_FEE = "$!{CONST.AppConstants.DIC_TYPE_ID_POST_FEE}";
+    var OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE = "$!{CONST.AppConstants.OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE}";
+    var AGE_FEE_FLAG_LE6YEAR = "$!{CONST.AppConstants.AGE_FEE_FLAG_LE6YEAR}";
+    var AGE_FEE_FLAG_GT6YEAR = "$!{CONST.AppConstants.AGE_FEE_FLAG_GT6YEAR}";
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl,
+            tableSelect = layui.tableSelect;
+
+        common.verify(form);
+
+        //清空分类
+        $('.caller-icon').click(function () {
+            $("#q_keyWord").val("");
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            //执行重载
+            table.reload('basChargeItemListGrid', {where: {keyWord: $("#q_keyWord").val()}});
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/basDic/basDicEdit.do?dicTypeId=' + DIC_TYPE_ID_POST_FEE, '新增职称', {
+                area: ['80%', '80%']
+            });
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basChargeItemListGrid',
+            url: contextPath + '/bas/basChargeItemListData.jo',
+            where: {'outpatientFeeCode': OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE},
+            height: 'full-60',
+            cols: [[
+                {type: 'checkbox'}, {
+                    field: 'chargeName',
+                    title: '诊查项目',
+                    minWidth: 250
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 60,
+                }]], done: function () {
+            }
+        }));
+        //复选框
+        table.on('checkbox(basChargeItemListGrid)', function (obj) {
+            if (!$(':radio[name="doctorPostCode"]:checked').val()) {
+                common.msg('请先选择职称', 0);
+                var tbView = $('#basChargeItemListGrid').next('.layui-table-view');
+                return
+            }
+            if (obj.type == 'all') {
+                var data = table.checkStatus('basChargeItemListGrid').data; //idTest 即为基础参数 id 对应的值
+                var basPostFees = [];
+                if (obj.checked) {
+                    basPostFees = $.grep($.map(data, function (item) {
+                        item.ageFeeFlag = item.chargeName.indexOf(dicAgeFeeFlag[AGE_FEE_FLAG_LE6YEAR]) != -1 ? AGE_FEE_FLAG_LE6YEAR : AGE_FEE_FLAG_GT6YEAR;
+                        var basPostFee = table.cache['basPostFeeListGrid'].find(function (x) {
+                            return x.chargeItemId == item.chargeItemId;
+                        });
+                        if (!basPostFee) {
+                            return item;
+                        }
+                    }).concat(table.cache['basPostFeeListGrid']), function (n) {
+                        return $.trim(n).length > 0;
+                    });
+                } else {
+                    //删除
+                    basPostFees = $.map(table.cache['basPostFeeListGrid'], function (item) {
+                        var basPostFee = table.cache['basChargeItemListGrid'].find(function (x) {
+                            return x.chargeItemId == item.chargeItemId;
+                        });
+                        if (!basPostFee) {
+                            return item;
+                        }
+                    })
+                }
+                table.reload('basPostFeeListGrid', {
+                    url: '', //接口
+                    data: basPostFees
+                });
+            }
+        });
+        //单击行
+        table.on('row(basChargeItemListGrid)', function (obj) {
+            if (!$(':radio[name="doctorPostCode"]:checked').val()) {
+                common.msg('请先选择职称', 0);
+                return
+            }
+            var data = obj.data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            var checked = obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked');
+            obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked', !checked);
+            form.render();
+
+            var basPostFees = $.map(table.cache['basPostFeeListGrid'], function (item) {
+                if (!$.isArray(item)) return item;
+            })
+            //判断是否存在
+            var basPostFee = basPostFees.find(function (x) {
+                return x.chargeItemId == data.chargeItemId;
+            });
+
+            if (!basPostFee) {
+                data.emergencyFeeFlag = NO_FLAG;
+                //新增
+                data.ageFeeFlag = data.chargeName.indexOf(dicAgeFeeFlag[AGE_FEE_FLAG_LE6YEAR]) != -1 ? AGE_FEE_FLAG_LE6YEAR : AGE_FEE_FLAG_GT6YEAR;
+                basPostFees.push(data);
+            } else if (checked) {
+                //删除
+                basPostFees = basPostFees.filter(function (x) {
+                    return x.chargeItemId != data.chargeItemId;
+                });
+            }
+            table.reload('basPostFeeListGrid', {
+                url: '', //接口
+                data: basPostFees
+            });
+            var tbView = $('#basPostFeeListGrid').next('.layui-table-view');
+            //表格滚动到底部
+            tbView.find('.layui-table-body').scrollTop(tbView.find('.layui-table-body .layui-table').height());
+
+            $("#submitFlag").val('0');//未提交
+        });
+
+        form.on('radio(doctorPostCode)', function (data) {
+            $("#doctorPostName").val($(data.elem).attr('title'));
+            var callBack = function () {
+                table.reload('basPostFeeListGrid', {
+                    url: contextPath + '/bas/basPostFeeListData.jo?doctorPostCode=' + data.value, //接口
+                });
+                var tbView = $('#basChargeItemListGrid').next('.layui-table-view');
+                //表格移除选择
+                tbView.find('.layui-table-main :checkbox[name="layTableCheckbox"]:checked').prop('checked', false);
+                tbView.find('.layui-table-main tr.layui-table-click').removeClass('layui-table-click');
+                $("#submitFlag").val('');
+                data.elem.checked = true;
+                $(':radio[name="doctorPostCode"]').each(function () {
+                    this.defaultChecked = this.checked
+                })
+                form.render();
+            }
+            //未提交
+            if ($("#submitFlag").val()) {
+                //上次
+                var defaultElem = $(':radio[name="doctorPostCode"]').filter(function () {
+                    return this.defaultChecked;
+                });
+                defaultElem.prop('checked', true);
+                form.render();
+                layui.layer.confirm("数据发生变化，需要保存吗？", {
+                    btn: ['保存', '不保存', '取消']
+                }, function (index) {
+                    $("#btn_save").click();
+                    layer.close(index);
+                }, function (index) {
+                    callBack();
+                    layer.close(index);
+                }, function (index) {
+                    defaultElem.prop('checked', true);
+                    form.render();
+                    layer.close(index);
+                });
+            } else {
+                callBack();
+            }
+        });
+
+        table.render({
+            elem: '#basPostFeeListGrid',
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 'full-120',
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'chargeName',
+                    title: '诊查项目',
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 60,
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    event: 'checkbox',
+                    title: '急诊收费',
+                    width: 100,
+                    align: 'center',
+                    templet: function (d) {
+                        return laytpl($('#checkboxTpl').html()).render({
+                            filter: 'emergencyFeeFlag',
+                            value: d.emergencyFeeFlag,
+                            data: {[YES_FLAG]: ''},
+                        });
+                    }
+                }, {
+                    title: '收费年龄段',
+                    event: 'ageFeeFlag',
+                    width: 130,
+                    templet: function (d) {
+                        return laytpl($('#radioTpl').html()).render({
+                            name: 'ageFeeFlag' + d.LAY_TABLE_INDEX,
+                            filter: 'ageFeeFlag',
+                            value: d.ageFeeFlag,
+                            data: dicAgeFeeFlag,
+                            attr: 'lay-verify="reqRedio" check-msg="请选择收费年龄段"'
+                        });
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]]
+            , done: function (res) {
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(basPostFeeListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            $("#submitFlag").val('0');//未提交
+            var that = this;
+            switch (obj.event) {
+                case 'checkbox':
+                    $(that).find(':checkbox[lay-filter]').each(function () {
+                        var field = $(this).attr('lay-filter');
+                        obj.update({
+                            [field]: Number(+$(this).is(':checked'))
+                        });
+                    });
+                    break;
+                case 'ageFeeFlag':
+                    obj.update({
+                        'ageFeeFlag': $(obj.tr).find(':radio[lay-filter="ageFeeFlag"]:checked').val()
+                    });
+                    break;
+                case 'btn_delete':
+                    obj.del();
+                    break;
+            }
+        });
+
+        //提交表单
+        function saveBasPostFee() {
+            var basPostFeeParams = common.serializeObject($('#basPostFeeForm'));
+            var basPostFees = $.map(table.cache['basPostFeeListGrid'], function (item) {
+                return $.extend(item, basPostFeeParams);
+            });
+            basPostFeeParams.basPostFeeEditInfoList = basPostFees;
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/bas/saveBasPostFeeList.jo', JSON.stringify(basPostFeeParams), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    $("#submitFlag").val('');
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('basPostFeeListGrid', {
+                            url: contextPath + '/bas/basPostFeeListData.jo?doctorPostCode=' + $(':radio[name="doctorPostCode"]:checked').val(), //接口
+                        });
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasPostFee()
+            return false
+        })
+        $("#btn_close").click(function () {
+            $('#btn_query', window.parent.document).click();
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>

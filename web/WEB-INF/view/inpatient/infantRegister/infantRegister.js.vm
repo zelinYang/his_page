@@ -1,0 +1,71 @@
+<script>
+layui.use(['element','form','layer','laydate'], function(){
+    	
+   	laydate.render({elem: '#infantInhospitalDate',trigger: 'click', type: 'datetime', istime: true, max: getSmpFormatNowDate(true)});
+   	laydate.render({elem: '#infantBirth', type: 'datetime', istime: true, max: getSmpFormatNowDate(true)});
+
+   	//保存
+   	$('#btn_save').on('click',function(){
+           submitForm();
+       });
+   	
+   	//初始化表单数据
+       function init(){
+           var babyCount = "$babyCount";
+       	var inhospitalNo="$!inpatientInhospital.inhospitalNo";
+       	var patientName="$!inpatientInhospital.patientName";
+       	console.log(babyCount);
+       	$('#inhospitalNo').val(inhospitalNo+"B"+babyCount);
+       	$('#infantName').val(patientName+"B"+babyCount);
+       }
+       init();
+       
+       
+    	// 提交表单
+   	function submitForm() {
+   		var params = common.serializeObject($('#editForm'));
+   		if(validDateForm(params)==-1){
+   		    return;
+   		}
+   		common.requestServer('../patient/saveInfantRegister.jo', params, function(result){
+   			if (result.code == "0") {
+   				common.alertCall("保存成功。", 1, function (){
+   				    $("dd[layadmin-event='closeThisTabs']",parent.document).click();
+   				});
+   			} else {
+   				common.alert(result.msg, 0);
+   			}
+   		});
+   	}
+    
+    function validDateForm(obj){
+        if(obj.patientName==null||obj.patientName==""){
+            common.alert("请输入姓名",0);
+            return -1;
+        }
+        if(obj.inhospitalNo==null||obj.inhospitalNo==""){
+            common.alert("请输入住院号",0);
+            return -1;
+        }
+        if(obj.visitCardNo==null||obj.visitCardNo==""){
+            common.alert("请输入就诊卡号",0);
+            return -1;
+        }
+        if(obj.patientBirth==null||obj.patientBirth==""){
+            common.alert("请选择出生时间",0);
+            return -1;
+        }
+        if(obj.inhospitalDate==null||obj.inhospitalDate==""){
+            common.alert("请选择入院日期",0);
+            return -1;
+        }
+        if(obj.currentBedNo==null||obj.currentBedNo==""){
+            common.alert("请输入床号",0);
+            return -1;
+        }
+        return 1;
+    }
+
+});
+</script>
+

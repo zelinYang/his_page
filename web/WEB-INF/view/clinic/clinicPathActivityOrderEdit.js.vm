@@ -1,0 +1,423 @@
+<script>
+var currentTr;
+var orderData;
+// 表格操作对象
+var tableObj = function (tableId, saveUrl, jsonField, rowEvent, eventConfig) {
+    this.lastTr;
+    this.templateTr;
+    this.id = tableId;
+    this.saveUrl = saveUrl;
+    this.rowEvent = rowEvent;
+    this.jsonField = jsonField;
+    this.eventConfig = eventConfig;
+    var self = this;
+    // 初始化
+    this.init = function(){
+        self.lastTr = $('#' + self.id + ' > tr:last');
+        this.templateTr = $('#' + self.id + ' > tr:last').prop("outerHTML");
+        $('#' + self.id + ' > tr:last').remove();
+    };
+    // 新增一行
+    this.addTr = function (srcTr) {
+        var currentTr;
+        if (srcTr) {
+            currentTr = $(srcTr).after(self.templateTr).next();
+        } else {
+            $('#' + self.id).append(self.templateTr);
+            currentTr = $('#' + self.id + ' > tr:last');
+        }
+        currentTr.find('input[name="sort"]').val(currentTr.index() + 1);
+        var ecf = self.eventConfig;
+        if(ecf && ecf.eventField) {
+            currentTr.find('input[name="' + ecf.eventField + '"]').on('input propertychange', function (){
+                var curTr = $(this).parent().parent();
+                var typeId = curTr.find('select[name="' + ecf.paramField + '"]').val();
+                var templateId = ecf.template + typeId;
+                var winId = ecf.winId + typeId;
+                var cfg = ecf[typeId];
+                var inputEle = this;
+                if (!cfg || !cfg.url || !$(this).val()) { return ; }
+                common.requestServer(contextPath + cfg.url, {keyWord: $(this).val()}, function (result){
+                    if (!result || !result.data || result.data.length < 0) {
+                        return ;
+                    }
+                    var html = [];
+                    orderData = result.data;
+                    $.each(result.data, function (i, val){
+                        html.push(cfg.call(i, winId, val));
+                    });
+
+                    if ($('#' + winId) && $('#' + winId).attr('class')) {
+                        $('#' + winId + ' > table > tbody').html(html.join(''))
+                    } else {
+                        $('#' + templateId + ' > table > tbody').html(html.join(''));
+                        var top = $(inputEle).offset().top - 450;
+                        var left = $(inputEle).offset().left + $(inputEle).width() + 10;
+                        var opt = {id: winId, area:['450px', '450px'], offset: [(top < 10 ? 10 : top), left]};
+                        common.openHtml($('#' + templateId).html(), false, opt);
+                        $('#' + winId).css("background-color","#fff");
+                    }
+                });
+            });
+        }
+        return currentTr;
+    };
+
+    // 保存
+    this.save = function (formParams) {
+        var arrayParams = [];
+        $('#' + self.id + ' > tr').each(function(){
+            var params = common.getSingleTrData(this);
+            //alert(common.hasEditData(this, params));
+            // 判行是否有编辑，无编辑不需要保存
+            if(common.hasEditData(this, params)) {
+                return true;
+            }
+            if(!$.isEmptyObject(params)) { arrayParams.push(params); }
+        });
+
+        if (arrayParams.length > 0) {
+            formParams[self.jsonField] = JSON.stringify(arrayParams);
+            common.requestServer(contextPath + self.saveUrl, formParams, function (result){
+                if (result.code == "0") {
+                    common.msg('保成功存', 1);
+                    var rows = $('input[row-click="' + self.rowEvent + '"]:checked');
+                    if (rows) { rows.click(); }
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+    };
+
+    // 执行初始化
+    this.init();
+}
+
+var tableConfig;
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicFreeOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicFreeOrderType)');
+var dicNotDrugChargeGroup = JSON.parse('$dicTools.changeMapToJson($dicData.dicNotDrugChargeGroup)');
+layui.use(['layer', 'form'], function(){
+    var layer = layui.layer, form = layui.form;
+    // 路径活动表格操作配置
+    var activityTable = new tableObj('activityList', '/pathway/savePathActivity.jo', 'activityJsonData', '');
+    // 路径活动医嘱表格等操作配置
+    var eventcfg = {
+            eventField:'orderName', 
+            paramField:'orderClassify', 
+            template: 'template_',
+            winId: 'winId_',
+            1: {url: '/pharmacy/pharmacyStockListData.jo', call: getDrug}, 
+            2: {url: '/bas/orderItemAllListData.jo?doctorOrderType=2', call: getGroupItem}, 
+            3: {url: '/bas/basChargeItemListData.jo', call: getChargeItem},
+            8: {url: '/bas/chargeFreeListData.jo', call: getChargeFree}
+        };
+    var orderTable = new tableObj('orderList', '/pathway/saveOrderItem.jo', 'orderJsonData', 'activityTr', eventcfg);
+    tableConfig = {activity: activityTable, order: orderTable};
+
+    // 生成选择药品表格的数据列表
+    function getDrug(index, winId, obj) {
+        var html = [];
+        html.push('<tr ondblclick="selectDrug(' + index + ', \'' + winId + '\')">');
+        html.push('<td>' + (obj.medicineName ? obj.medicineName : '') + '</td>');
+        html.push('<td>' + (obj.medicineSpec ? obj.medicineSpec : '') + '</td>');
+        html.push('<td>' + (obj.riskMedicineFlag ? dicYesNo[obj.riskMedicineFlag] : '') + '</td>');
+        html.push('<td>' + (obj.producingArea ? obj.producingArea : '') + '</td></tr>');
+        return html.join('');
+    }
+    
+    // 生成选择非收费项目（嘱托）表格的数据列表
+    function getChargeFree(index, winId, obj) {
+        var html = [];
+        html.push('<tr ondblclick="selectChargeFree(' + index + ', \'' + winId + '\')">');
+        html.push('<td>' + (obj.orderName ? obj.orderName : '') + '</td>');
+        html.push('<td>' + (obj.doctorOrderType ? dicFreeOrderType[obj.orderType] : '') + '</td></tr>');
+        return html.join('');
+    }
+
+    // 生成选择收费项目（费用）表格的数据列表
+    function getChargeItem(index, winId, obj) {
+        var html = [];
+        html.push('<tr ondblclick="selectChargeItem(' + index + ', \'' + winId + '\')">');
+        html.push('<td>' + (obj.chargeName ? obj.chargeName : '') + '</td>');
+        html.push('<td>' + (obj.chargeGroupId ? dicNotDrugChargeGroup[obj.chargeGroupId] : '') + '</td>');
+        html.push('<td>' + (obj.unitPrice ? obj.unitPrice : '') + '</td></tr>');
+        return html.join('');
+    }
+
+    // 生成选择组套（诊疗）表格的数据列表
+    function getGroupItem(index, winId, obj) {
+        var html = [];
+        html.push('<tr ondblclick="selectGroupItem(' + index + ', \'' + winId + '\')">');
+        html.push('<td>' + (obj.orderName ? obj.orderName : '') + '</td></tr>');
+        return html.join('');
+    }
+
+    // 新增一行tr
+    $('#add_activity_tr, #add_order_tr').click(function (){
+        if ($(this).attr('id') == 'add_activity_tr' && !$('#clinicPathStageId').val() && !$('#activityType').val() && !$('#clinicPathId').val()) {
+            common.alert('阶段参数无效', 0);
+            return ;
+        }
+        if ($(this).attr('id') == 'add_order_tr' && !$('#clinicOrderGroup').val()) {
+            common.alert('请先选择时点对应诊疗活动', 0);
+            return ;
+        }
+        tableConfig[$(this).attr('name')].addTr();
+        if ($(this).attr('id') == 'add_activity_tr' && $('#clinicPathPointId').val()) {
+            // 绑定活动列表TR的点击事件
+            bindActivityTr()
+        }
+        form.render('select');
+        form.render('checkbox'); 
+    });
+
+    // 绑定活动列表TR的点击事件
+    function bindActivityTr() {
+        // 绑定行点击事件，点击触发时获取对应的活动项目（医嘱等）
+        $('#activityList > tr').click(function (){
+            var pathActivityId = $(this).find('input[name="clinicPathActivityId"]').val();
+            if (!pathActivityId) {
+                $('#orderList').html('');
+                return ;
+            }
+
+           // 获取路径活动对应的医嘱数据
+            common.requestServer(contextPath + '/pathway/orderItemListData.jo', {pathActivityId: pathActivityId}, function (result){
+                $('#orderList').html('');
+                $('#clinicOrderGroup').val(result.clinicOrderGroup ? result.clinicOrderGroup : '');
+                if (!result || !result.data) { return ; }
+                var groupTr={};
+                $.each(result.data, function (i, val){
+                    var curTr = orderTable.addTr();
+                    curTr.find('input[name="sort"]').val(val.sort);
+                    curTr.find('input[name="orderCode"]').val(val.orderCode);
+                    curTr.find('input[name="orderGroupNo"]').val(val.orderGroupNo);
+                    curTr.find('input[name="clinicOrderItemId"]').val(val.clinicOrderItemId);
+                    curTr.find('select[name="orderClassify"]').val(val.orderClassify);
+                    curTr.find('select[name="shortOrderFlag"]').val(val.shortOrderFlag);
+                    curTr.find('input[name="orderName"]').val(val.orderName);
+                    curTr.find('input[name="dosageQuantity"]').val(val.dosageQuantity);
+                    curTr.find('select[name="quantityUnit"]').val(val.quantityUnit);
+                    curTr.find('select[name="doseWayCode"]').val(val.doseWayCode);
+                    curTr.find('select[name="pharmacyFreqId"]').val(val.pharmacyFreqId);
+                    curTr.find('input[name="singleItemDesc"]').val(val.singleItemDesc);
+                    curTr.find('select[name="orderRule"]').val(val.orderRule);
+                    curTr.find('input[name="orderRuleGroup"]').val(val.orderRuleGroup);
+                    curTr.find('select[name="lisSpecimenId"]').val(val.lisSpecimenId);
+                    curTr.find('input[name="totalCount"]').val(val.totalCount);
+                    curTr.find('select[name="totalCountUnit"]').val(val.totalCountUnit);
+                    curTr.find('input[name="useageDayNum"]').val(val.useageDayNum);
+
+                    common.getTrTempData(curTr);
+                    if (val.orderGroupNo) {
+                        if (!groupTr[val.orderGroupNo]) {
+                            groupTr[val.orderGroupNo] = [];
+                        }
+                        groupTr[val.orderGroupNo].push(curTr);
+                    }
+                    // 绑定新增子项（同组医嘱）
+                    curTr.find('i[name="add_child_tr"]').click(function (){
+                        var curTr = $(this).parents('tr');
+                        if (!curTr.find('input[name="sort"]').val()) {
+                            common.alert('序号不能为空', 0);
+                            return ;
+                        }
+                        var orderGroupNo = curTr.find('input[name="orderGroupNo"]');
+                        if (!orderGroupNo.val()) {
+                            // 生成时间字符串租号
+                            orderGroupNo.val(new Date().getTime());
+                            curTr.find('input[name="groupFlag"]').val(orderGroupNo.val());
+                        }
+                        var curChildTr = tableConfig[curTr.attr('name')].addTr(curTr);
+                        curChildTr.find('i[name="add_child_tr"]').remove();
+                        curChildTr.find('input[name="sort"]').val(curTr.find('input[name="sort"]').val());
+                        curChildTr.find('input[name="sort"]').hide();
+                        curChildTr.find('input[name="orderGroupNo"]').val(orderGroupNo.val());
+                        curChildTr.find('select[name="orderClassify"]').hide();
+                        curChildTr.find('select[name="orderClassify"]').val(val.orderClassify);
+                        curChildTr.find('select[name="shortOrderFlag"]').hide();
+                        curChildTr.find('select[name="shortOrderFlag"]').val(val.orderClassify);
+                    });
+                });
+
+                // 合并同组医嘱
+                $.each(groupTr, function (k, tr){
+                    var len = tr.length - 1;
+                    $.each(tr, function (i, curTr){
+                        if (i != 0) { 
+                            curTr.find('i[name="add_child_tr"]').remove();
+                            curTr.find('input[name="sort"]').hide();
+                            curTr.find('select[name="orderClassify"]').hide();
+                            curTr.find('select[name="shortOrderFlag"]').hide();
+                        } else {
+                            curTr.find('input[name="groupFlag"]').val(k);
+                        }
+                        if (i != len) { 
+                            curTr.find('input[name="sort"]').parent().css('border', '0');
+                            curTr.find('select[name="orderClassify"]').parent().css('border', '0');
+                            curTr.find('select[name="shortOrderFlag"]').parent().css('border', '0');
+                        }
+                        curTr.find('input[name="sort"]').parent().prev().css('border-right-width', '1px');
+                        curTr.find('select[name="shortOrderFlag"]').parent().next().css('border-left-width', '1px');
+                    });
+                });
+            });
+
+            // 设置当前路径活动行为选择状态，其他为未选中
+            $('input[row-click="activityTr"]').each(function (){
+                $(this).prop('checked', false);
+            });
+            $(this).find('input[row-click="activityTr"]').prop('checked', true);
+            form.render('checkbox');
+        });
+    }
+    
+    // 保存
+    $('#save_activity, #save_order').click(function (){
+        var name = $(this).attr('name');
+        if (name == 'activity') {
+            var param = {activityType: $('#activityType').val(), clinicPathStageId: $('#clinicPathStageId').val(), clinicPathId: $('#clinicPathId').val()};
+            if (!param.activityType || !param.clinicPathStageId || !param.clinicPathId) { return ; }
+            tableConfig[$(this).attr('name')].save(param);
+        }
+        if (name == 'order') {
+            var param = {clinicOrderGroup: $('#clinicOrderGroup').val()};
+            tableConfig[$(this).attr('name')].save(param);
+        }
+    });
+
+    // 取组套
+    $('#btn_getGroup').click(function (){
+        if (!$('#clinicOrderGroup').val()) {
+            common.alert('请先选择时点对应诊疗活动', 0);
+            return ;
+        }
+        common.open(contextPath + '/bas/selectOrderGroup.do', '取组套', {area:['75%','95%']});
+    });
+    
+    //加载活动列表数据
+    function loadAcivityList(){
+        var params = {clinicPathStageId: $('#clinicPathStageId').val(), activityType: $('#activityType').val(), clinicPathId: $('#clinicPathId').val()};
+        if (!params.clinicPathStageId || !params.activityType || !params.clinicPathId) { return ; }
+        common.requestServer(contextPath + '/pathway/treatActivityListData.jo', params, function (result){
+            $('#activityList').html('');
+            if (!result || !result.data) { return ;}
+            var html = [];
+            $.each(result.data, function(i, val){
+                var curTr = activityTable.addTr();
+                curTr.find('input[name="sort"]').val(val.sort);
+                curTr.find('input[name="clinicPathActivityId"]').val(val.clinicPathActivityId);
+                curTr.find('select[name="clinicActivityNode"]').val(val.clinicActivityNode);
+                curTr.find('select[name="clinicActivityClassify"]').val(val.clinicActivityClassify);
+                curTr.find('select[name="doctorOrderType"]').val(val.doctorOrderType);
+                curTr.find('select[name="techClinicLevel"]').val(val.techClinicLevel);
+                curTr.find('input[name="stopExeTime"]').val(val.stopExeTime);
+                curTr.find('input[name="activityContent"]').val(val.activityContent);
+
+                var mustFlag = curTr.find('input[name="mustFlag"]');
+                if (mustFlag && mustFlag.val() == val.mustFlag) {
+                    mustFlag.prop("checked",true);
+                }
+                common.getTrTempData(curTr);
+            });
+            // 绑定活动列表TR的点击事件
+            bindActivityTr();
+        });
+    }
+    loadAcivityList();
+});
+
+// 选择药品
+function selectDrug(index, winId){
+    var data = orderData[index];
+    if (!currentTr) { return ; }
+    $(currentTr).find('input[name="orderCode"]').val(data.pharmacyStockId ? data.pharmacyStockId : '');
+    $(currentTr).find('input[name="orderName"]').val(data.medicineName ? data.medicineName : '');
+    $(currentTr).find('select[name="dosageQuantity"]').val(data.ampoule ? data.ampoule : '');
+    $(currentTr).find('select[name="quantityUnit"]').val(data.dosageUnit ? data.dosageUnit : '');
+    $(currentTr).find('select[name="totalCountUnit"]').val(data.dosageForm ? data.dosageForm : '');
+    $('#' + winId).next().find('a.layui-layer-ico').click();
+}
+
+//选择收费项目
+function selectChargeItem(index, winId){
+    var data = orderData[index];
+    if (!currentTr) { return ; }
+    $(currentTr).find('input[name="orderCode"]').val(data.chargeItemId ? data.chargeItemId : '');
+    $(currentTr).find('input[name="orderName"]').val(data.chargeName ? data.chargeName : '');
+    $('#' + winId).next().find('a.layui-layer-ico').click();
+}
+
+//选择非收费
+function selectChargeFree(index, winId){
+    var data = orderData[index];
+    if (!currentTr) { return ; } 
+    $(currentTr).find('input[name="orderCode"]').val(data.chargeFreeId ? data.chargeFreeId : '');
+    $(currentTr).find('input[name="orderName"]').val(data.orderName ? data.orderName : '');
+    $('#' + winId).next().find('a.layui-layer-ico').click();
+}
+
+//选择诊疗（组套）
+function selectGroupItem(index, winId){
+    var data = orderData[index];
+    if (!currentTr) { return ; }
+    $(currentTr).find('input[name="orderCode"]').val(data.orderItemId ? data.orderItemId : '');
+    $(currentTr).find('input[name="orderName"]').val(data.orderName ? data.orderName : '');
+    $('#' + winId).next().find('a.layui-layer-ico').click();
+}
+
+// 删除行配置
+var delleteConfig = {
+    1:{msg: '确定要删除吗？',url: '/pathway/deleteTreatActivity.jo', paramField: 'ids', valueField: 'clinicTreatActivityId'}, 
+    2:{msg: '确定要删除吗？',url: '/pathway/deleteOrderItem.jo', paramField: 'ids', valueField: 'clinicOrderItemId'}
+}
+// 删除一行
+function deleteTr(obj) {
+    var curTr = $(obj).parent().parent();
+    var config = delleteConfig[$(obj).attr('config-id')];
+    var paramId = curTr.find('input[name="' + config.valueField + '"]').val();
+    if (!paramId) {
+        curTr.remove();
+        return ;
+    }
+
+    // 从库中删除
+    common.confirm(config.msg, function (){
+        var params = {};
+        params[config.paramField] = paramId;
+        common.requestServer(contextPath + config.url, params, function (result){
+            if (result.code == "0") {
+                curTr.remove();
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+}
+
+// 选中组套回掉函数
+function selectOrderGroupBack(data) {
+    if (!data || data.length <= 0 || !tableConfig || !tableConfig['order']) {
+        return ;
+    }
+    var orderTable = tableConfig['order'];
+    $.each(data, function (i, val){
+        var curTr = orderTable.addTr();
+        curTr.find('input[name="sort"]').val(curTr.index() + 1);
+        curTr.find('input[name="orderCode"]').val(val.orderItemId);
+        curTr.find('input[name="orderGroupNo"]').val('0');
+        curTr.find('input[name="orderName"]').val(val.orderName);
+        //curTr.find('input[name="orderName"]').attr('readOnly', true);
+        curTr.find('input[name="dosageQuantity"]').val(val.dosage);
+        curTr.find('select[name="quantityUnit"]').val(val.dosageUnit);
+        curTr.find('select[name="doseWayCode"]').val(val.doseWayCode);
+        curTr.find('select[name="pharmacyFreqId"]').val(val.pharmacyFreqId);
+        curTr.find('input[name="singleItemDesc"]').val(val.remark);
+        curTr.find('select[name="lisSpecimenId"]').val(val.lisSpecimenId);
+        curTr.find('input[name="totalCount"]').val(val.usageQuantity);
+        curTr.find('select[name="totalCountUnit"]').val(val.dosageUnit);
+    });
+}
+</script>

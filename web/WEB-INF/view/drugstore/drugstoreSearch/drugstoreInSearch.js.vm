@@ -1,0 +1,259 @@
+<script>
+	var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');//产地
+	var dicMedicineVendor = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineVendor)');//供应商
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');//供应商
+	var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');//供应商
+	var medicineDosage = JSON.parse('$dicTools.changeMapToJson($dicData.medicineDosage)');//供应商
+	var dicDrugReportUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugReportUsage)');// 报告用药
+	var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');// 科室
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');// 药品单位
+	var templateTr = $('#itemList tr:last').prop("outerHTML");
+	layui.use(['table', 'element', 'laydate', 'form'], function () {
+		var table = layui.table;
+		var form = layui.form;
+
+		var $ = layui.jquery, element = layui.element, laydate = layui.laydate;
+		//按日期范围查询
+		laydate.render({
+			elem: '#drugstoreInDate',trigger: 'click', range: true, done: function (value, date, endDate) {
+
+			}
+		});
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 450//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onopen_end: refreshTable
+			});
+		}
+
+		//页面初始化
+		$(function() {
+			initLayout();
+		});
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+		function refreshTable() {
+			table.reload('mainTable',{
+				where: getQueryParams()
+			});
+		}
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['drugstoreInDate']);
+			return $.extend({
+				drugstoreInWay: '',
+				drugstoreId: '',
+				drugstoreInDateBegin: '',
+				drugstoreInDateEnd: '',
+				drugstoreInFlag: ''
+			}, queryForm);
+		}
+
+		var mainTable = table.render($.extend(basePageTable, {
+			elem: '#mainTable'
+			, height: getLeftTableHeight()
+			// ,width:860
+			, url: '../drugstoreSearch/drugstoreSearchIn.jo' //数据接口
+			, page: true //开启分页
+			, where: getQueryParams()
+			, id: 'mainTable'
+			, cols: [[ //表头
+				{type: 'radio', fixed: 'left'}
+				, {field: 'drugstoreInId', title: '单据号', width: 80, sort: true, fixed: 'left'}
+				, {
+					field: 'drugstoreInDate', title: '入库日期', width: 110,
+					templet: function (res) {
+						return layui.util.toDateString(res.drugstoreInDate, 'yyyy-MM-dd');
+					}
+				}
+				, {field: 'invoiceNo', title: '发票号', width: 110}
+				, {field: 'medicineVendorName', title: '供货厂家名称', width: 180, sort: true}
+				, {field: 'drugstoreName', title: '药库/耗材库名', width: 110}
+				, {
+					field: 'buyDate',
+					title: '采购日期',
+					width: 180,
+					templet: function (res) {
+						return layui.util.toDateString(res.buyDate, 'yyyy-MM-dd');
+					}
+				}
+				, {field: 'manageUserName', title: '主管负责人姓名', width: 177}
+				, {field: 'operUserName', title: '操作人姓名', width: 110, sort: true}
+			]]
+		}));
+		var itemTable = table.render($.extend(singlePageTable, {
+			elem: '#itemTable'
+			, height: getRightTableHeight()
+			, data: []
+			, done: function (res) {
+				var recipeTotalPriceValue = 0;
+				$.each(res.data, function (index, item) {
+					recipeTotalPriceValue += item.inBuyTotalSum;
+				});
+				$("#recipeTotalPriceValue").val(recipeTotalPriceValue);
+			}
+			,page:true
+			, cols: [[ //表头
+				{field: 'medicineName', title: '药品通用名称', width: 200, fixed: 'left'}
+				, {field: 'producingAreaName', title: '产地名称', width: 120, sort: true}
+				, {field: 'inCount', title: '入库数量', width: 80}
+				, {field: 'qualifiedCount', title: '合格数量', width: 80}
+				, {
+					field: 'expireDate',
+					title: '药品效期',
+					width: 120,
+					templet: function (res) {
+						return layui.util.toDateString(res.expireDate, 'yyyy-MM-dd');
+					}
+				}
+				, {
+					field: 'productionDate',
+					title: '生产日期',
+					width: 120,
+					templet: function (res) {
+						return layui.util.toDateString(res.productionDate, 'yyyy-MM-dd');
+					}
+				}
+				, {field: 'medicineSpec', title: '药品规格', width: 150}
+				, {field: 'medicineUnit', title: '药品单位', width: 80,
+					templet: function (d) {
+						return dicDrugNumUnit[d.medicineUnit] || '';
+					}
+				}
+				, {
+					field: 'dosageUnit', title: '剂量单位', width: 80, templet: function (row) {
+						if (row.dosageUnit) {
+							return row.dosageUnit ? dicDrugNumUnitDosageUnit[row.dosageUnit] || '' : ''
+						}
+						return ''
+					}
+				}
+				, {
+					field : 'dosageForm',
+					title : '药品剂型',
+					width: 200, templet: function (row) {
+						return dicDosageForm[row.dosageForm] || '';
+					}
+				}
+				, {
+					field : 'medicineDosage',
+					title : '药品剂量',
+					width: 80
+				}
+				, {field: 'buyPrice', title: '进货价', width: 80}
+				, {field: 'inBuyTotalSum', title: '进货金额', width: 80}
+				, {field: 'tradePrice', title: '批发价', width: 80}
+				, {field: 'retailPrice', title: '零售价', width: 80}
+				, {field: 'batchNum', title: '药品批号', width: 80}
+				, {field: 'longTermRecord', title: '长期备案', width: 80, templet: function (row) {
+						if (row.longTermRecord === '1') {
+							return '是';
+						}
+						return '';
+					}
+				}
+				, {field: 'urgencyRecord', title: '紧急备案', width: 80, templet: function (row) {
+						if (row.urgencyRecord === '1') {
+							return '是';
+						}
+						return '';
+					}
+				}
+				, {field: 'reportUsage', title: '报告用药 ', width: 80, templet: function (row) {
+						return dicDrugReportUsage[row.reportUsage] || '';
+					}
+				}
+				, {field: 'reportOfficeId', title: '报告科室', width: 80, templet: function (row) {
+						return dicOffice[row.reportOfficeId] || '';
+					}
+				}
+			]]
+		}));
+
+		//监听行单击事件（单击事件为：row）
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var sum = 0;
+			var data = obj.data;
+			$('#drugstoreIn').find('input, select').each(function () {
+				var name = $(this).attr('name');
+				if (!data[name]) {
+					$(this).val('');
+					return;
+				}
+				if (name && data[name]) {
+					if (name === 'buyDate' || name === 'makeInvoiceDate') {
+						$(this).val(new Date(data[name]).format('yyyy-MM-dd'));
+					} else {
+						$(this).val(data[name]);
+					}
+				}
+			});
+			var drugstoreInId = data.drugstoreInId;
+			table.reload('itemTable', {
+				where: {drugstoreInId: drugstoreInId}
+				, url: '../drugstoreSearch/drugstoreSearchInById.jo' //数据接口
+				,height: getRightTableHeight()
+			});
+			form.render();
+			$("#editForm").hide();
+		});
+
+		$("#searchByDate").on('click', function () {
+			var params = common.serializeObject($('#queryHead'), ['createTime']);
+			var title = '账本查询';
+			var content = '$contextPath' + '/drugstoreSearch/accountBookSearch.do?createTimeBegin=' + JSON.stringify(params).createTimeBegin + '&createTimeEnd=' + JSON.stringify(params).createTimeEnd;
+			//true 执行
+			common.open(content, title, {
+				area: ['999px', '666px'],
+				btn: ['导出', '明细', '打印', '退出'],
+				yes: function (index, layero) {
+					// save(index, layero);
+				}
+			});
+		});
+
+		// 获取表格高度
+		function getLeftTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		function getRightTableHeight() {
+			return ($('body').height() - $("#drugstoreIn").height() - 10);
+		}
+
+		$(window).resize(function () {
+			table.reload('mainTable', {
+				height: getLeftTableHeight()
+			})
+		})
+
+	});
+</script>

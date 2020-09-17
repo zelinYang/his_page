@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-门诊科室设置-编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form class="layui-form" lay-filter="arrangeDutyOfficeForm" id="arrangeDutyOfficeForm"
+              style="padding: 20px 30px 0 0;">
+            <div class="layui-form-item">
+                <label class="layui-form-label">挂号科室</label>
+                <div class="layui-input-block">
+                    #formHiddenInput("arrangeDutyOfficeId" $!{arrangeDutyOffice.arrangeDutyOfficeId} " ")
+                    #formHiddenInput("dutyOfficeType" "$!{CONST.AppConstants.DUTY_OFFICE_TYPE_OUTPATIENT}" "")
+                    #formTextInput("arrangeDutyOfficeName" "$!{arrangeDutyOffice.arrangeDutyOfficeName}" "readonly
+                    class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">预约时段</label>
+                    <div class="layui-input-inline">
+                        #set($registerTime = "$!date.format('HH:mm:ss',
+                        $!{arrangeDutyOffice.registerStartTime}) - $!date.format('HH:mm:ss',
+                        $!{arrangeDutyOffice.registerEndTime})")
+                        #formTextInput("" "$registerTime" "readonly
+                        class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: auto">预约时段间隔(分钟)</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("timeInterval" "$!{arrangeDutyOffice.timeInterval}" "readonly
+                        class='layui-input'")
+                    </div>
+                </div>
+            </div>
+            #if($!{arrangeDutyOffice})
+            #set($validFlag = $!{arrangeDutyOffice.validFlag})
+            #set($emergencyRegisterFlag = $!{arrangeDutyOffice.emergencyRegisterFlag})
+            #set($appointOnlineFlag = $!{arrangeDutyOffice.appointOnlineFlag})
+            #else
+            #set($validFlag = $!{CONST.AppConstants.YES_FLAG})
+            #set($emergencyRegisterFlag = $!{CONST.AppConstants.NO_FLAG})
+            #set($appointOnlineFlag = $!{CONST.AppConstants.NO_FLAG})
+            #end
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: auto;">是否急诊科室</label>
+                    <div class="layui-input-inline">#formRadioGroup("emergencyRegisterFlag"
+                        "$!{emergencyRegisterFlag}"
+                        ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否急诊科室'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="width: auto">是否允许网上预约</label>
+                    <div class="layui-input-inline">#formRadioGroup("appointOnlineFlag" "$!{appointOnlineFlag}"
+                        ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否允许网上预约'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">是否停挂</label>
+                    <div class="layui-input-inline" id="validFlag">#formRadioGroup("validFlag" "$!{validFlag}"
+                        ${dicData.dicStartStop} "lay-verify='reqRedio' check-msg='请选择是否停挂'")
+                    </div>
+                </div>
+            </div>
+            <div class="tool-bottom-fixed">
+                <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+<!-- 本页面js -->
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form);
+
+        common.setFormReadOnly($("#arrangeDutyOfficeForm"));
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+</body>
+</html>

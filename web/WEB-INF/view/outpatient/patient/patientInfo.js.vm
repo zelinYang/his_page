@@ -1,0 +1,84 @@
+<script>
+layui.use(['form','laydate'], function(){
+    var $ = layui.$
+    ,form = layui.form
+    ,laydate = layui.laydate
+    
+    laydate.render({
+        elem: '#patientBirth'//出生日期
+        ,format: 'yyyy-MM-dd'
+        ,min: -54750//150*365 150年和当天转天
+        ,max: 0
+        ,done: function(value, date, endDate){
+        }
+      });
+    //失去焦点验证
+    $(".blurValidSavePatient").blur(function(){
+        var name= $(this).attr("name");
+        var val= $(this).val();
+        var patientParams = {[name]:val,patientIndexId:$("#patientIndexId").val()}
+        common.requestServer('$contextPath/patient/blurValidSavePatient.jo',patientParams , function(result){
+            if (result.code != "0") {
+                common.alert(result.msg, 0);
+            }
+      });
+    })
+    //患者类别
+    form.on('radio(patientClassify)', function(data){
+            //成人adult
+            //儿童children
+           if(data.value==1){
+              //成人adult 
+              $(".adult").show().find("input,select").prop("disabled",false);//显示成人信息
+              $(".children").hide().find("input,select").prop("disabled" , true).removeAttr("lay-verify");//隐藏儿童信息
+              $("#patientIdType").attr("lay-verify" , "required");
+              $("#patientIdCard").attr("lay-verify" , "required|identityEmpty");
+          }else{
+              //儿童children
+              $(".children").show().find("input,select").prop("disabled",false).attr("lay-verify","required");//显示儿童信息
+              $(".adult").hide().find("input,select").prop("disabled" , true);//隐藏成人信息
+              $("#guardIdCard").attr("lay-verify","required|identityEmpty");
+              $("#patientIdType").removeAttr("lay-verify");
+              $("#patientIdCard").attr("lay-verify" ,"identityEmpty");
+          }
+          form.render();
+        });
+    #if($!{patient.patientClassify}==1)
+    $('#patientClassify_1').next().click();
+    #else
+    $('#patientClassify_2').next().click();
+    #end
+    
+    form.on('radio(patientClassify)');
+    form.on('select(careerCode)', function(data){
+           //得到被选中的值
+          $("#patientCareer").val(data.value);
+        }); 
+  //自定义验证规则
+    form.verify({
+       phoneEmpty:[/^$|^1\d{10}$/,"请输入正确的手机号"]
+      ,identityEmpty:[/^$|(^\d{15}$)|(^\d{17}(x|X|\d)$)/,"请输入正确的身份证号"]
+      ,numberEmpty:function(e){if(isNaN(e))return "只能填写数字"}
+    });
+  //监听提交
+    form.on('submit(btn_save)', function(data){
+        var patientParams = data.field;
+         common.requestServer('$contextPath/patient/savePatient.jo', patientParams, function(result){
+             if (result.code == "0") {
+                 common.alertCall("保存成功。", 1, function (){
+                     
+                    $('#patientIndexId').val(result.data.patientIndex.patientIndexId); 
+                    $('#patientId').val(result.data.patientIndex.patientId); 
+                     
+                    location.reload();
+                 });
+             } else {
+                 common.alert(result.msg, 0);
+             }
+       });
+       return false;
+    });
+  
+ 
+  })
+  </script>

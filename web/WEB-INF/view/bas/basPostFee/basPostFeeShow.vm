@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-手术流程配置-手术名称代码-编辑</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-form-select dl {
+            max-height: 220px;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<form class="layui-form" lay-filter="" id="basPostFeeForm" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("postFeeId" "$!{basPostFee.postFeeId}" " ")
+    #formHiddenInput("doctorPostName" "$!{basPostFee.doctorPostName}" "id='doctorPostName' ")
+    #formHiddenInput("chargeName" "$!{basPostFee.chargeName}" " id='chargeName'")
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()职称名称</label>
+        <div class="layui-input-block ">
+            #formRadioGroup("doctorPostCode" "$!{basPostFee.doctorPostCode}"
+            ${dicData.dicDoctorPost} " lay-filter='doctorPostCode' lay-verify='reqRedio' check-msg='请选择职称' ")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()诊查费用</label>
+            <div class="layui-input-inline ">
+                #formSingleSelectSearchFirstNone("chargeItemId" "$!{basPostFee.chargeItemId}"
+                $dicData.dicRegisterDoctorDutyName "
+                d='chargeItemId' lay-filter='chargeItemId'
+                lay-search lay-verify='required'" "")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()单价</label>
+            <div class="layui-input-inline ">
+                #formTextInput("unitPrice" "$!{basPostFee.unitPrice}" " id='unitPrice'
+                class='layui-input' readonly")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()收费年龄段</label>
+            <div class="layui-input-inline">#formRadioGroup("ageFeeFlag" "$!{basPostFee.ageFeeFlag}"
+                ${dicData.dicAgeFeeFlag} " lay-verify='reqRedio' check-msg='请选择收费年龄段'")
+            </div>
+        </div>
+        #if(${basPostFee})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-inline">#formRadioGroup("validFlag" "$!{basPostFee.validFlag}"
+                ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+        </button>
+    </div>
+</form>
+##parse("./bas/basPostFee/basPostFeeEdit.js.vm")
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'tableSelect', 'table'], function () {
+        var $ = layui.$, form = layui.form;
+        common.verify(form);
+        common.setFormReadOnly($("#basPostFeeForm"));
+        $("#btn_close").click(function () {
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+
+</body>
+</html>

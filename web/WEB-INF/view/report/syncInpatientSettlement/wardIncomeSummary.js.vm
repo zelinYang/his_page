@@ -1,0 +1,171 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+var dicInhospitalChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCode)');
+var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+var dicInhospitalWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalWay)');
+
+layui.use(['table', 'element', 'form'], function () {
+    var table = layui.table, form = layui.form;
+    var $ = layui.jquery, element = layui.element;
+    var techTable = table.render($.extend(basePageTable, {
+        elem: '#tech'
+        , id: 'tech'
+        , height: getTableHgt()
+        , url: '$contextPath/report/syncInpatientSettlementListData.jo' //数据接口
+        , cols: [[ //表头
+            { type: 'numbers',fixed:'left'}
+            ,{
+                field: 'inhospitalNo', title: '住院号',width:100,fixed:'left'
+            },{
+                field:'currentOfficeName',title:'当前科室',width:80,fixed:'left'
+            },{
+                field: 'patientName', title: '姓名',width:80,fixed:'left'
+            },{
+                field:'inhospitalDateBegin',title:'入院时间',width:150,templet:function (res) {
+                    return layui.util.toDateString(res.inhospitalDateBegin,'yyyy-MM-dd HH:mm:ss')
+                }
+            },{
+                field:'outhospitalDateBegin',title:'出院时间',width:150,templet:function (res) {
+                    return layui.util.toDateString(res.outhospitalDateBegin,'yyyy-MM-dd HH:mm:ss')
+                }
+            },{
+                field:'actualChargeAmount',title:'应收款',width:90
+            },{
+                field:'feeGroupAmount1',title:'西药费',width:90
+            },{
+                field:'feeGroupAmount2',title:'中草药费',width:90
+            },{
+                field:'feeGroupAmount3',title:'中成药费',width:90
+            },{
+                field:'feeGroupAmount4',title:'诊察费',width:90
+            },{
+                field:'feeGroupAmount5',title:'检查费',width:90
+            },{
+                field:'feeGroupAmount6',title:'化验费',width:90
+            },{
+                field:'feeGroupAmount7',title:'放射',width:90
+            },{
+                field:'feeGroupAmount8',title:'治疗费',width:90
+            },{
+                field:'feeGroupAmount9',title:'手术费',width:90
+            },{
+                field:'feeGroupAmount10',title:'护理费',width:90
+            },{
+                field:'feeGroupAmount11',title:'材料费',width:90
+            },{
+                field:'feeGroupAmount12',title:'高值材料费',width:90
+            },{
+                field:'feeGroupAmount13',title:'床位费',width:90
+            },{
+                field:'feeGroupAmount99',title:'其他费',width:90
+            },{
+                field:'currentWardName',title:'当前病区',width:80
+            },{
+                field:'materialPayRatio',title:'百元收入消耗材料占比',width:150
+            },{
+                field:'medicalPayRatio',title:'百元收入药品占比',width:120
+            },{
+                field: 'mbfWholeAmount', title: '医保使用',width:90
+            },{
+                field: 'mbfMutualHelpAmount', title: '医疗互助',width:90
+            },{
+                field: 'mbfCivilServantAmount', title: '公务员基金',width:90
+            },{
+                field: 'mbfDisabledSoldierAmount', title: '残疾军人补助',width:90
+            },{
+                field: 'mbfWholesaleSalvageAmount', title: '大额救助',width:90
+            },{
+                field: 'mbfSerousIllnessAmount', title: '大病互助',width:90
+            },{
+                field:'mbfMedicalAidAmount',title:'医疗补助支付',width:90
+            },{
+                field:'mbfOtherAidAmount',title:'其他补助支付',width:90
+            },{
+                field:'mbfClaimingExpensesAmount',title:'再报销支付',width:90
+            },{
+                field:'mbfIndividualAmount',title:'医保使用',width:90
+            },{
+                field:'mbfFamilyAmount',title:'医保家庭账户支付',width:90
+            },{
+                field:'mbfSelfPay',title:'医保自付合计',width:90
+            },{
+                field:'chargeCash',title:'现金--自费',width:90
+            },{
+                field:'actualCharge',title:'找零金额',width:90
+            }
+        ]]
+    }));
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 13);
+    }
+    // 重置表格高度
+    $(window).resize(function () {
+        var height = getTableHgt()
+        table.reload('tech', {
+            height: height
+        })
+    })
+
+    //监听搜索
+    $('#search').on('click', function () {
+        techTable.reload({
+            where: getQueryParams()
+        })
+    });
+
+    function getQueryParams() {
+        var params = $.extend({
+            inhospitalNo:'',
+            patientName:'',
+            currentOfficeId:'',
+            currentWardId:'',
+        }, common.serializeObject($('#queryForm')));
+
+        var inhospitalDate = $('#inhospitalDate').val();
+        if (outhospitalDate) {
+            var inhospitalDate = inhospitalDate.split(' - ');
+            params.inhospitalDateBegin = inhospitalDate[0];
+            params.inhospitalDateEnd = inhospitalDate[1];
+        }
+        var outhospitalDate = $('#outhospitalDate').val();
+        if (outhospitalDate) {
+            var outhospitalDate = outhospitalDate.split(' - ');
+            params.outhospitalDateBegin = outhospitalDate[0];
+            params.outhospitalDateEnd = outhospitalDate[1];
+        }
+        return params;
+    }
+    //日期时间范围
+    laydate.render({
+        elem: '#inhospitalDate',trigger: 'click'
+        , range: true
+    });
+    //日期时间范围
+    laydate.render({
+        elem: '#outhospitalDate',trigger: 'click'
+        , range: true
+    });
+
+    //新增事件
+    $('#btn_add').click(function() {
+        editBasDisease();
+    });
+    //编辑
+    function editBasDisease(data) {
+        var title = '导出数据'
+        var iframeEnvironment = 'I4028804601699abb9abbf0080169bd1596c93925';
+        var content = diResource + iframeEnvironment
+        //true 执行
+        if (data) {
+            title = data.diseaseName;
+            content += '?regionPopuId=' + data.regionPopuId;
+        }
+        common.open(content, title, {
+            area : [ '1160px', '80%' ],
+            scroll:'yes'
+        });
+    }
+})
+</script>

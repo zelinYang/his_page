@@ -1,0 +1,44 @@
+<script>
+layui.use(['element','table','form'],function(){
+    var form = layui.form;
+    var $ = layui.jquery;
+
+    $(function() {
+        $('#btn_refresh').click(function() {
+            common.confirm('刷新后，未保存的数据将会清除，请确保数据已经保存，是否确定刷新？', function () {
+                loadEmrTlp($("#emrTlpId").val());
+            });
+        });
+    });
+    
+    var emrTlpId = $("#emrTlpId").val();
+    loadEmrTlp(emrTlpId);
+    
+    form.on('select(emrTlpId)',function(data){
+        loadEmrTlp(data.value);
+        $("#emrTlpId").val(data.value);
+    });
+    
+    //加载电子病历编辑iframe
+    function loadEmrTlp(emrTlpId){
+        if (!emrTlpId) {
+            common.alert('没有电子病历模板')
+            return;
+        }
+        console.log(emrTlpId);
+        var params = "emrTlpId=" + emrTlpId + "&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&registerId=$!{registerId}&serviceId=$!serviceId&patientHospitalEmrId=$!patientHospitalEmrId";
+        $("#emrEdit").attr("src", contextPath + '/emr/commonEmrTemplate.do?' + params);
+    }
+});
+#*
+//打开模板
+function templateSwitch(){
+    $(".ui-layout-toggler-south").click(); 
+}
+//导入内容
+function leadingIn(content){
+    $("#emrEdit")[0].contentWindow.minieditorDesign.miniEditor.inserthtml(content);
+}
+
+}*#
+</script>

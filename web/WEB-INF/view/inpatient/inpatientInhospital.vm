@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style>
+        html,body { height: 100%;}
+        .layadmin-pagetabs { -moz-box-shadow:1px 1px 3px #757575; -webkit-box-shadow:1px 1px 3px #757575; box-shadow:1px 1px 3px #757575; }
+        .layadmin-pagetabs .layui-tab-title li {line-height: 32px;}
+        ::-webkit-scrollbar{width: 0px; height: 0px;}
+
+        .layui-nav-tree .layui-nav-bar { background-color: #ff9000;}
+        .layadmin-pagetabs { transition: none; -webkit-transition: none; }
+
+        .baseInfo > div > label{
+            font-size: 14px;
+            color: #0262da;
+        }
+
+        .baseInfo > div > span{
+            font-size: 14px;
+        }
+
+        .layui-tab-card >.layui-tab-title .layui-this:after {
+            border: none;
+            border-radius: 0;
+            border-top: 2px solid #009688;
+        }
+        .baseInfo > .layui-inline{
+            padding:7px 14px;
+        }
+        #btn_refresh{
+            height:32px;
+            top:1px;
+            right:1px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+<div id="LAY_app" class="full-height">
+    <div class="layadmin-maillist-fluid full-height" style="overflow-x: hidden">
+        <!--菜单栏-->
+        <div class="member-left full-height">
+            <div class="tab_page_menu">
+                <ul id="rootMenu"></ul>
+            </div>
+            <div id="searchMenuContainer">
+                <div class="searchMenu layadmin-flexible" lay-unselect>
+                    <input id="searchMenu" type="text" class="inputMenu" placeholder="菜单搜索">
+                    <span layadmin-event="flexible">
+                        <i class="layui-icon layui-icon-shrink-right" id="LAY_app_flexible"></i>
+                    </span>
+                </div>
+                <div id="leftMenu" class="tab_box"></div>
+                <!--菜单搜索层-->
+                <dl class="searchMenu-lay">
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                    <dd><a href="javascript:void(0);">菜单栏</a></dd>
+                </dl>
+            </div>
+
+        </div>
+        <!--右侧内容-->
+        <div class="member-content">
+            <div class="member-info">
+                <!--患者信息-->
+                <div class="layui-row baseInfo">
+                            #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+                            #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+                            #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+                    <div class="layui-inline"><label class="control-label">床号：</label><span id="currentBedNo">#htmlEscape($!inpatientInhospital.currentBedNo)</span></div>
+                    <div class="layui-inline"><span id="lowIncomeFlag" class="layui-badge" style="#if(${CONST.AppConstants.YES_FLAG} != $!patient.lowIncomeFlag)display: none;#end">贫困户</span><label class="control-label">姓名：</label><span id="patientName">#htmlEscape($!inpatientInhospital.patientName)</span></div>
+                    <div class="layui-inline"><label class="control-label">性别：</label><span id="patientSex">#lookUpDict($dicData.dicSex $!inpatientInhospital.patientSex)</span></div>
+                    <div class="layui-inline"><label class="control-label">住院号：</label><span id="inhospitalNo">$!inpatientInhospital.inhospitalNo</span></div>
+                    <div class="layui-inline"><label class="control-label">年龄：</label><span id="age">$!bedAndInpatient.patientAgeShow</span></div>
+                    <div class="layui-inline"><label class="control-label">病区：</label><span id="wardId">#lookUpDict($dicData.dicInpatientWardAll $!inpatientInhospital.wardId)</span></div>
+                    <div class="layui-inline"><label class="control-label">所在科室：</label><span id="currentOfficeId">#lookUpDict($dicData.dicSysOrgDeptName $!inpatientInhospital.currentOfficeId)</span></div>
+                    <div class="layui-inline"><label class="control-label">入院日期：</label><span id="inhospitalDate">$!date.format('yyyy-MM-dd', $!inpatientInhospital.inhospitalDate)</span></div>
+                </div>
+            </div>
+
+            <!-- 页面标签 -->
+            <div class="layadmin-pagetabs sub-pagetabs" id="LAY_app_tabs">
+                <div class="layui-icon layadmin-tabs-control layui-icon-prev" layadmin-event="leftPage" ></div>
+                <div class="layui-icon layadmin-tabs-control layui-icon-next" layadmin-event="rightPage"></div>
+                <div class="layui-icon layadmin-tabs-control layui-icon-down">
+                    <ul class="layui-nav layadmin-tabs-select" lay-filter="layadmin-pagetabs-nav">
+                        <li class="layui-nav-item" lay-unselect>
+                            <a href="javascript:;"></a>
+                            <dl class="layui-nav-child layui-anim-fadein">
+                                <dd layadmin-event="closeThisTabs"><a href="javascript:;">关闭当前标签页</a></dd>
+                                <dd layadmin-event="closeOtherTabs"><a href="javascript:;">关闭其它标签页</a></dd>
+                                <dd layadmin-event="closeAllTabs"><a href="javascript:;">关闭全部标签页</a></dd>
+                            </dl>
+                        </li>
+                    </ul>
+                </div>
+                <div class="layui-tab" lay-unauto lay-allowClose="true" lay-filter="layadmin-layout-tabs">
+                    <ul class="layui-tab-title" id="LAY_app_tabsheader">
+                        <!--<li lay-id="../patient/clinicPlanShow.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId" lay-attr="../patient/clinicPlanShow.do" class="layui-this">诊疗一览表</li>-->
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 主体内容 -->
+            <div class="layui-body layui-body-min-left" id="LAY_app_body">
+               <!-- <div class="layadmin-tabsbody-item layui-show" >
+                    <iframe src="../patient/clinicPlanShow.do?patientId=$!inpatientInhospital.patientId&inhospitalId=$!inpatientInhospital.inhospitalId" id="inhospitalIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+                </div>-->
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+#parse("./common/pageJs.vm")
+<script>
+
+
+//医护类型， 1=医生
+var DOCTOR_NURSE_FLAG_DOCTOR = "$!{CONST.AppConstants.DOCTOR_NURSE_FLAG_DOCTOR}"
+//电子病历属性 2=住院病历
+var EMR_PROPERTY_INPATIENT = "$!{CONST.AppConstants.EMR_PROPERTY_INPATIENT}"
+//电子病历模板分类ID  病案首页分类
+var EMR_TLP_CLASSIFY_ID_DOC_RECORD = "$!{CONST.AppConstants.EMR_TLP_CLASSIFY_ID_DOC_RECORD}"
+var layuiIndex;
+var currentTabId;
+var emrTreeData;
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicSysOrgDeptName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgDeptName)');
+var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+layui.config({
+  base: '../resource/layuiadmin/'
+}).extend({
+  index: 'lib/index',
+  autocomplete: 'autocomplete'
+}).use(['index','form', 'laydate', 'element', 'autocomplete'], function(){
+    var laydate = layui.laydate, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+    layuiIndex = layui.index;
+
+    // 菜单收缩
+    $(".side-tree .layui-nav-item").click(function () {
+        $('#LAY_app').siblings().removeClass("layadmin-side-shrink");
+    });
+
+    // 根据床号检索患者
+    autocomplete.render({
+        cache: false,
+        method: 'post',
+        searchField: 'currentBedNo',
+        elem: $('#currentBedNo')[0],
+        url: '../inpatient/inpatientInhospitalPage.jo',
+        template_val: '{{d.currentBedNo}}',
+        template_txt: '{{d.currentBedNo}} （{{d.patientName}}）',
+        onselect: function (obj) { searchCall(obj); }
+    });
+
+    // 根据患者姓名检索患者
+    autocomplete.render({
+        cache: false,
+        method: 'post',
+        searchField: 'patientName',
+        elem: $('#patientName')[0],
+        url: '../inpatient/inpatientInhospitalPage.jo',
+        template_val: '{{d.currentBedNo}}',
+        template_txt: '{{d.patientName}}',
+        onselect: function (obj) { searchCall(obj); }
+    });
+
+    // 检索回调函数
+    function searchCall(obj) {
+        $('#inhospitalId').val(obj.inhospitalId);
+        $('#currentBedNo').val(obj.currentBedNo);
+        $('#patientName').val(obj.patientName);
+        $('#patientSex').html(dicSex[obj.patientSex]);
+        $('#age').html(obj.age);
+        $('#wardId').html(dicInpatientWardAll[obj.wardId]);
+        $('#currentOfficeId').html(dicSysOrgDeptName[obj.currentOfficeId]);
+        if (obj.inhospitalDate) {
+            $('#inhospitalDate').html(getFormatDateByLong(obj.inhospitalDate, 'yyyy-MM-dd'));
+        } else {
+            $('#inhospitalDate').html('');
+        }
+
+        // 关闭所有选项卡
+        $('#LAY_app_tabsheader > li:gt(0)').remove();
+        $('#LAY_app_body > div:gt(0)').remove();
+
+        // 刷新当前主页面
+        $('#LAY_app_body > div:first').addClass('layui-show');
+        $('#inhospitalIframe').attr('src', '../patient/clinicPlanShow.do?patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val());
+    }
+
+    // 初始化左边菜单
+    var menuData = parent.menuData;
+    if (menuData) {
+        var html = [];
+        var tabContent = [];
+        var menu = JSON.parse(menuData).children;
+        $.each(menu, function (i, r){
+            // if(!r.children) { return true; }
+            html.push('<li id="' + r.id + '" data-menu=' + (r.children ? JSON.stringify(r.children).replace(/\s+/g, "@") : '[]') + '><span><i class="' + r.icon + '"></i><p>' + r.text + '</p></span></li>');
+            tabContent.push('<div class="container_page full-height-scroll"><ul id="leftMenu_' + i + '" class="layui-nav layui-nav-tree layui-inline side-tree"></ul></div>');
+        });
+        $('#rootMenu').html(html.join(''));
+        $('#leftMenu').html(tabContent.join(''));
+
+        /*跟菜单页选项卡切换监听*/
+        $(".tab_page_menu ul li").click(function () {
+            var index = $(".tab_page_menu ul li").index(this);
+            $(this).addClass("selected").siblings().removeClass("selected");
+            $(".tab_box .container_page").eq(index).addClass("selected").siblings().removeClass("selected");
+
+            var id = $(this).attr('id');
+            if (id == '3880') {
+                if (emrTreeData) {
+                    generateEmrMenu(emrTreeData, index);
+                }
+                $.post('../emrTlp/getEmrTypeTree.jo', {emrTlpFlags: '0,2', doctorNurseFlags: '0,1'}, function(result){
+                    emrTreeData = result;
+                    generateEmrMenu(emrTreeData, index);
+                }, "json");
+            } else {
+                // 菜单数据
+                var menuHtml = [];
+                var hasChild = false; // 标识是否有子菜单
+                var strData = $(this).attr('data-menu');
+                var data = JSON.parse(strData);
+                $.each(data, function (i, r){
+                    var href = r.href ? contextPath + "/" + r.href : '';
+                    menuHtml.push('<li id="' + r.id + '" class="layui-nav-item">');
+                    menuHtml.push('<a id="' + r.id + '" href="javascript:void(0);" title="' + r.text + '" tab-url="' + href + '"><i class="' + (r.icon ? r.icon.replace('@', ' ') : '') + '"></i><span>' + r.text + '</span></a>');
+                    if (r.children && r.children.length > 0) {
+                        hasChild = true;
+                        menuHtml.push('<dl class="layui-nav-child">');
+                        $.each(r.children, function (j, v){
+                            href = v.href ? contextPath + "/" + v.href : '';
+                            menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.text + '" tab-url="' + href + '">' + v.text + '</a></dd>');
+                        });
+                        menuHtml.push('</dl>');
+                    }
+                    menuHtml.push('</li>');
+                });
+                $('#leftMenu_' + index).html(menuHtml.join(''));
+                // 重新渲染菜单标签元素
+                element.render();
+
+
+                // 左边菜单点击事件
+                $('#leftMenu a').click(function (){
+                    // 当存在链接且链接长度必须大于5时才打开选项卡
+                    if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                        var url = $(this).attr('tab-url');
+                        var params = [];
+                        params.push('patientId=' + $('#patientId').val());
+                        params.push('inhospitalId=' + $('#inhospitalId').val());
+                        params.push('emrTlpFlags='+EMR_PROPERTY_INPATIENT);
+                        params.push('doctorNurseFlag='+DOCTOR_NURSE_FLAG_DOCTOR);
+                        if (!RegExp(/emrProperty/).test(url)) {
+                            params.push('emrProperty=2');
+                        }
+                        var character = url.indexOf('?') > 0 ? '&' : '?';
+                        // 最后一个参数url 做为iframe的ID
+                        layui.index.openTabsPage(url + character + params.join('&'), $(this).text(), $(this).attr('id'));
+                    }
+                });
+
+                if (hasChild) {
+                    // 监听左边树型菜单展开和收缩
+                    $('#leftMenu li.layui-nav-item').click(function (){
+                        $('li.layui-nav-item').each(function (){
+                            $(this).removeClass('layui-nav-itemed');
+                        });
+                        $(this).addClass('layui-nav-itemed');
+                    });
+                    // 默认打开第一个树型菜单
+                    //$('li.layui-nav-item:first').click();
+                }
+            }
+        });
+
+        // 打开第一选项卡
+        $(".tab_page_menu ul li:first").click();
+        //打开选中的选项卡下首个树型菜单
+        $("#leftMenu div.selected li.layui-nav-item:first").click().children('a').click().next('dl.layui-nav-child').find('dd a:first').click();
+
+        // 监听检索菜单
+        $('#searchMenu').bind('input propertychange', function (){
+            var html = [];
+            var value = $(this).val();
+            $("dl.searchMenu-lay").html('');
+            if (!value) { return ;}
+            $.each(menu, function (i, m){
+                var rootId = m.id;
+                if (!m.children) { return true; }
+                $.each(m.children, function (j, c){
+                    var reg = RegExp("^.*" + value + ".*$");
+                    if (reg.test(c.text)){
+                        var selector = (c.href ? 'a#' : "li#") + c.id;
+                        html.push('<dd pId="' + rootId + '" id="' + selector + '" ><a href="javascript:void(0);">' + c.text + '</a></dd>');
+                    }
+                    if (!c.children) { return true; }
+                    $.each(c.children, function (k, v){
+                        var reg = RegExp("^.*" + value + ".*$");
+                        if (reg.test(v.text)){
+                            html.push('<dd pId="' + rootId + '" id="a#' + v.id + '"><a href="javascript:void(0);">' + v.text + '</a></dd>');
+                        }
+                    });
+                });
+            });
+            $("dl.searchMenu-lay").html(html.join(''));
+            $("dl.searchMenu-lay > dd").click(function (){
+                var pId = $(this).attr('pId');
+                var menuId = $(this).attr('id');
+                $('li#' + pId).click();
+                $(menuId).click();
+                $("dl.searchMenu-lay").hide();
+            });
+            $("dl.searchMenu-lay").show();
+        });
+    }
+
+    function generateEmrMenu(emrTreeData, index) {
+        var menuHtml = [];
+        var hasChild = false; // 标识是否有子菜单
+        var url = 'getPatientEmrByDateGroup.do?emrTlpClassifyId=';
+        $.each(emrTreeData, function (i, value){
+            var isParent = value.children && value.children.length > 0;
+            var isDocFeeGroup = EMR_TLP_CLASSIFY_ID_DOC_RECORD == value.emrTlpClassifyId
+            var href = !isParent? contextPath + '/' + 'emr/' + value.emrTreeCode  + "/" + url + value.emrTlpClassifyId + (isDocFeeGroup ? '&serviceId=docFeeGroupService' : ''): '';
+            menuHtml.push('<li id="' + value.id + '" class="layui-nav-item">');
+            menuHtml.push('<a id="' + value.id + '" href="javascript:void(0);" title="' + value.emrTlpClassifyName + '" tab-url="' + href + '"><i class="' + (value.icon ? value.icon.replace('@', ' ') : '') + '"></i><span>' + value.emrTlpClassifyName + '</span></a>');
+            if (isParent) {
+                hasChild = true;
+                menuHtml.push('<dl class="layui-nav-child">');
+                $.each(value.children, function (j, v){
+                    href = contextPath + '/' + 'emr/' + v.emrTreeCode  + "/" + url + v.emrTlpClassifyId;
+                    menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.emrTlpClassifyName + '" tab-url="' + href + '">' + v.emrTlpClassifyName + '</a></dd>');
+                });
+                menuHtml.push('</dl>');
+            }
+            menuHtml.push('</li>');
+        });
+        $('#leftMenu_' + index).html(menuHtml.join(''));
+        // 重新渲染菜单标签元素
+        element.render();
+
+        // 左边菜单点击事件
+        $('#leftMenu a').click(function (){
+            // 当存在链接且链接长度必须大于5时才打开选项卡
+            if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                var url = $(this).attr('tab-url');
+                var params = [];
+                params.push('patientId=' + $('#patientId').val());
+                params.push('inhospitalId=' + $('#inhospitalId').val());
+                if (!RegExp(/emrProperty/).test(url)) {
+                    params.push('emrProperty=2');
+                }
+                var character = url.indexOf('?') > 0 ? '&' : '?';
+                // 最后一个参数url 做为iframe的ID
+                layui.index.openTabsPage(url + character + params.join('&'), $(this).text(), $(this).attr('id'));
+            }
+        });
+
+        if (hasChild) {
+            // 监听左边树型菜单展开和收缩
+            $('#leftMenu li.layui-nav-item').click(function (){
+                $('li.layui-nav-item').each(function (){
+                    $(this).removeClass('layui-nav-itemed');
+                });
+                $(this).addClass('layui-nav-itemed');
+            });
+            // 默认打开第一个树型菜单
+            //$('li.layui-nav-item:first').click();
+        }
+    }
+    $('#searchMenuContainer').mouseleave(function (){
+        $("dl.searchMenu-lay").html('');
+        $("dl.searchMenu-lay").hide();
+    });
+});
+// 打开一个新的选项卡窗口，一般在子窗口调用
+function openTab(url, text, id){
+    layuiIndex.openTabsPage(url, text, id);
+}
+</script>
+</html>

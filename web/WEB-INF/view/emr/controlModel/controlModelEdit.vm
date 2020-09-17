@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>电子病历模板</title>
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html" />
+    <![endif]-->
+    #parse("./common/layuiCss.vm")
+    <link rel="stylesheet" href="../resource/layuiadmin/style/admin.css"  media="all">
+    <script src="../resource/editor/mini-editor/dialogs/jscolor-2.0.4/jscolor.min.js"></script>
+    <style>
+        .radio-only{
+            display: none;
+        }
+        .text-only {
+            display: none;
+        }
+        .section-only {
+            display: none;
+        }
+        .list-only {
+            display: none;
+        }
+        .date-only {
+            display: none;
+        }
+        .select-only {
+            display: none;
+        }
+        .click-only {
+            display: none;
+        }
+        .formula-only {
+            display: none;
+        }
+        .not-data-base {
+            display: none;
+        }
+        .btn {
+            margin-right: 2px;
+        }
+        .oprate {
+            display: none;
+        }
+        .input-prepend {
+            height: 34px;
+        }
+        .input-group.col-sm-5 {
+            display: inline-table;
+        }
+        .option:hover > .oprate{
+            float: none;
+            top: -15px;
+            display: inline;    //鼠标移入后，按钮内容为可见
+        }
+        .layui-col-xs4 .layui-input-inline {
+            width: calc(100% - 140px);
+        }
+        .layui-form-item {
+            margin-bottom: 15px;
+        }
+        .error {
+            color: red;
+        }
+        .layui-form-item .layui-form-checkbox {
+             margin-top: 0px;
+        }
+        .layui-form-switch {
+            margin-top: 4px;
+        }
+        /* 多选下拉框  start*/
+        .xm-iconfont.icon-close{
+            display: none;
+        }
+        .xm-select-title, .xm-input {
+           height: 30px !important;
+           min-height: 30px !important;
+        }
+        .xm-input.xm-select{
+           padding-top: 0!important;
+        }
+        .xm-select-label span{
+           margin: 0px;
+        }
+        .xm-select-parent .xm-form-select dl.xm-select-radio .xm-select-tips:first-child {
+           display: none;
+        }
+         /* 多选下拉框  end*/
+    </style>
+</head>
+
+<body class="white-bg">
+<div class="layui-fluid">
+    <form class="layui-form" id="controlModelForm" action="" lay-filter="component-form-group">
+        #formHiddenInput("controlModelId" "$!{controlModel.controlModelId}" "id='controlModelId'")
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs4">
+                <label class="layui-form-label"><span style="color:red">*</span>控件名称</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="modelName" id="modelName" maxlength="50" lay-verify="required" autocomplete="off" placeholder="请输入标题" class="layui-input" value="$!{controlModel.modelName}" required>
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label"><span style="color:red">*</span>控件类型</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("modelType" "$!{controlModel.modelType}" $dicData.dicControlModelType "id='modelType' lay-filter='modelType' label='类型' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label"><span style="color:red">*</span>控件描述</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="description" id="description" maxlength="20" lay-verify="required" autocomplete="off" placeholder="请输入标题" class="layui-input" value="$!{controlModel.description}" required>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs4">
+                <label class="layui-form-label">不可删除</label>
+                <div class="layui-input-inline">
+                    <input id="notDelFlag" name="notDelFlag" type="checkbox" title="不可删除" value="1" #if("$!{controlModel.notDelFlag}" == "1") checked #end>
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label">是否必填</label>
+                <div class="layui-input-inline">
+                    <input id="requiredFlag" name="requiredFlag" type="checkbox" title="必填" value="1" #if("$!{controlModel.requiredFlag}" == "1") checked #end>
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label"><span style="color:red">*</span>控件模式</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("editModeFlag" "$!{controlModel.editModeFlag}" $dicData.dicModeType "id='editModeFlag' lay-filter='editModeFlag' label='控件模式' lay-verify='required' ")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs4">
+                <label class="layui-form-label">是否表字段</label>
+                <div class="layui-input-inline">
+                    <input type="checkbox" id="dataType" name="dataType" lay-filter='dataType' lay-skin="switch" lay-text="是|否" #if("$!controlParam.dataType" == '1' || "$!controlParam.dataType" == "") checked #end>
+                </div>
+            </div>
+            <div class="layui-col-xs4 data-base">
+                <label class="layui-form-label"><span style="color:red">*</span>类名</label>
+                <div class="layui-input-inline">
+                    <select name="className" id="className" label="类名" lay-ignore lay-verify="required" required  xm-select='className' xm-select-radio xm-select-search='' xm-select-search-type="dl" >
+##                        <option value="">请选择类名</option>
+                        #foreach($option in $aipCaseFileds.keySet())
+                            <option value='${option}'
+                                #if("${option}" == "$!{controlModel.className}" && "$!controlParam.dataType" == "1")
+                                    selected='selected'
+                                #end>${option}</option>
+                        #end
+                    </select>
+                </div>
+            </div>
+            <div class="layui-col-xs4 data-base">
+                <label class="layui-form-label"><span style="color:red">*</span>字段名</label>
+                <div class="layui-input-inline">
+                    <select name="fieldName" id="fieldName" label="字段名" lay-verify="required"  required #if("$!controlParam.dataType" == '1') value="$!{controlModel.fieldName}" #end xm-select='fieldName' xm-select-radio xm-select-search='' xm-select-search-type="dl" >
+
+                    </select>
+                </div>
+            </div>
+            <div class="layui-col-xs4 not-data-base">
+                <label class="layui-form-label"><span style="color:red">*</span>类名</label>
+                <div class="layui-input-inline">
+                    <select name="classNameForNoDatabase" id="classNameForNoDatabase" label="类名" lay-search="" lay-verify="required" required lay-filter='classNameForNoDatabase'>
+                            <option value='EmrPatientOtherData' #if("EmrPatientOtherData" == "$!{controlModel.className}") selected='selected' #end>EmrPatientOtherData</option>
+                            <option value='EmrPatientOtherMultData' #if("EmrPatientOtherMultData" == "$!{controlModel.className}") selected='selected' #end>EmrPatientOtherMultData</option>
+                            <option value='EmrPatientDicData' #if("EmrPatientDicData" == "$!{controlModel.className}") selected='selected' #end>EmrPatientDicData</option>
+                            <option value='EmrEnumerate' #if("EmrEnumerate" == "$!{controlModel.className}") selected='selected' #end>EmrEnumerate</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-col-xs4 not-data-base">
+                <label class="layui-form-label">字段名</label>
+                <div class="layui-input-inline">
+                    <input type="text" id="fieldNameForNoDatabase" name="fieldNameForNoDatabase" maxlength="20" autocomplete="off" placeholder="请输入字段名" class="layui-input" #if("$!controlParam.dataType" == '0') lay-verify="required" value="$!{controlModel.fieldName}" #end>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs4">
+                <label class="layui-form-label"><span style="color:red">*</span>数据元</label>
+                <div class="layui-input-inline">
+                    <select name="dataElementId" id="dataElementId" label="数据元" lay-verify="required" lay-search="" required lay-filter='dataElementId'>
+                        <option value=""></option>
+                        #foreach($emrDataElement in $emrDataElementList)
+                            <option value='${emrDataElement.dataElementId}'
+                                #if("${emrDataElement.dataElementId}" == "$!{controlModel.dataElementId}")
+                                    selected='selected'
+                                #end>${emrDataElement.dataElementName}   ${emrDataElement.dataElementId}</option>
+                        #end
+                    </select>
+                </div>
+                <div style="float: right; width: 40px; height: 30px; background-color: #41cc90; font-size: 20px; color: #fff; text-align: center; cursor: pointer;" onclick="addDataElement()">
+                    <i class="layui-icon layui-icon-add-1" style="padding-top: 5px; font-size: 27px;"></i>
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label">字体颜色</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="fontColor" id="fontColor" class="jscolor {required:false} layui-input" placeholder="颜色" value="$!{controlModel.fontColor}">
+                </div>
+            </div>
+            <div class="layui-col-xs4">
+                <label class="layui-form-label">背景颜色</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="backgroundColor" id="backgroundColor" class="jscolor {required:false} layui-input" placeholder="颜色" value="$!{controlModel.backgroundColor}">
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row">
+            <div class="layui-col-xs4 date-only">
+                <label class="layui-form-label">日期格式</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("dateFormat" "$!{controlModel.dateFormat}" $dicData.dicControlModelDateFormat "id='dateFormat' lay-filter='dateFormat' label='格式' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-col-xs4 text-only">
+                <label class="layui-form-label">数据类型</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("verifyFormat" "$!{controlModel.verifyFormat}" $dicData.dicVerifyType "id='verifyType' lay-filter='verifyFormat' label='类型' lay-verify='required' ")
+                </div>
+            </div>
+            <div class="layui-col-xs4 text-only">
+                <label class="layui-form-label">默认值</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="defaultValue" id="defaultValue" lay-verify="defaultValue" autocomplete="off" placeholder="请输入默认值" class="layui-input" value="$!{controlParam.defaultValue}">
+                </div>
+            </div>
+            <div class="layui-col-xs4 radio-only">
+                <label class="layui-form-label">动态数据url</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="remoteUrl" id="remoteUrl" lay-verify="remoteUrl" maxlength="200" autocomplete="off" placeholder="请输入url" class="layui-input" value="$!{controlModel.remoteUrl}">
+                </div>
+            </div>
+            <div class="layui-col-xs4 select-only">
+                <label class="layui-form-label">是否多选</label>
+                <div class="layui-input-inline">
+                    <input id="multiSelectFlag" name="multiSelectFlag" type="checkbox" title="多选" lay-filter="multiSelectFlag" value="1" #if("$!{controlModel.multiSelectFlag}" == "1") checked #end>
+                </div>
+            </div>
+
+            <div class="layui-col-xs4 click-only">
+                <label class="layui-form-label">标签内容</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="labelName" id="labelName" maxlength="20" placeholder="请输入标签内容" class="layui-input" value="$!{controlParam.labelName}">
+                </div>
+            </div>
+            <div class="layui-col-xs4 click-only">
+                <label class="layui-form-label">调用方法名</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="functionName" id="functionName" maxlength="20" placeholder="请输入调用方法名" class="layui-input" value="$!{controlParam.functionName}">
+                </div>
+            </div>
+            <div class="layui-col-xs4 list-only">
+                <label class="layui-form-label">字段名</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="fieldShowName" id="fieldShowName" maxlength="100" placeholder="请输入字段名" class="layui-input" value="$!{controlParam.fieldShowName}">
+                </div>
+            </div>
+            <div class="layui-col-xs4 section-only">
+                <label class="layui-form-label">多行类型</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("sectionType" "$!{controlParam.sectionType}" $dicData.dicSectionType "id='sectionType' lay-filter='sectionType' label='多行文本类型' ")
+                </div>
+            </div>
+            <div class="layui-col-xs4 formula-only">
+                <label class="layui-form-label">医学公式类型</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectDictionaryCommon("formulaType" "$!{controlParam.formulaType}" $dicData.dicFormulaType "id='formulaType' lay-filter='formulaType' label='医学公式类型' ")
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-row radio-only">
+            <div class="layui-col-xs12">
+                <label class="layui-form-label">固定选项<i class="layui-icon layui-icon-add-1" style="color: green; padding-left: 5px;" onclick="addOption()"></i></label>
+                <div class="layui-input-block" id="options">
+                ##                            <div class="layui-form-item option">
+##                                <label class="layui-form-label">值</label>
+##                                <div class="layui-input-inline">
+##                                    <input type="text" lay-verify="title" autocomplete="off" placeholder="值" class="layui-input" value="">
+##                                </div>
+##                                <label class="layui-form-label">描述</label>
+##                                <div class="layui-input-inline">
+##                                    <input type="text" lay-verify="title" autocomplete="off" placeholder="描述" class="layui-input" value="">
+##                                </div>
+##                                <div class="layui-btn-group oprate">
+##                                    <button class="layui-btn layui-btn-sm" lay-event="btn_add">新增模板</button>
+##                                    <button class="layui-btn layui-btn-sm" lay-event="btn_edit_emrtlp">修改属性</button>
+##                                    <button class="layui-btn layui-btn-sm" lay-event="btn_edit_content">修改模板</button>
+##                                </div>
+##                            </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认" />
+        </div>
+    </form>
+##    <div class="layui-form-item layui-layout-admin">
+##        <div class="layui-input-block">
+##            <div class="layui-footer" style="left: 0;">
+##                <button class="layui-btn layui-btn-sm" lay-submit="" lay-filter="component-form-demo1" onclick="saveProgrammeTlp()">立即提交</button>
+##            </div>
+##        </div>
+##    </div>
+</div>
+        #parse("./common/common.js.vm")
+        #parse("./common/layuiJs.vm")
+<!-- form检验 -->
+<script src="../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+<script src="../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+<script>
+    var aipCaseFileds = JSON.parse('$aipCaseFiledsStr');
+    var fieldName = '$!{controlModel.fieldName}';
+    var bindingData = #if(!${controlModel.bindingData}) [] #else JSON.parse('$!{controlModel.bindingData}') #end;
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        formSelects : 'modules/formSelects/formSelects-v4.min'
+    }).use(['form','formSelects'], function() {
+        var  formSelects = layui.formSelects,form = layui.form;
+        //如下写法定义所有的多选 按钮
+        //formSelects.btns([]);
+        //监听select选择
+        formSelects.on('className', function(id, vals, val, isAdd, isDisabled){
+            generateFieldNameSelect(val.value);
+        }, true);
+        //大小写进行搜索
+        formSelects.filter(function(id, inputVal, val, isDisabled){
+            var isCaseIndexOf =val.name.toLowerCase().indexOf(inputVal.toLowerCase())!= -1;//转为小写且文本是否包含
+            var isHump = val.name.toLowerCase().indexOf(inputVal.toLowerCase().split('_').join(''))!= -1;//转为小写不包含下划线且文本是否包含
+            if(isCaseIndexOf || isHump){
+                return false;
+            }
+            return true;
+        });
+        layui.form.render('select');
+
+        /* form.on('select(className)', function(data){
+            generateFieldNameSelect(data.value);
+            layui.form.render('select');
+        }); */
+
+        form.on('select(modelType)', function(data){
+            showDom(data.value)
+            layui.form.render('select');
+        });
+
+        form.on('switch(dataType)', function(data){
+            if (data.elem.checked) {
+                $(".data-base").show();
+                $(".not-data-base").hide();
+                $('#fieldNameForNoDatabase').val('');
+                $('#fieldNameForNoDatabase').attr("lay-verify","");
+            } else {
+                $(".data-base").hide();
+                $(".not-data-base").show();
+                $('#fieldNameForNoDatabase').attr("lay-verify","required");
+            }
+        });
+
+        form.verify({
+            remoteUrl: function(value, item){ //value：表单的值、item：表单的DOM对象
+                var checkName = /[\u4E00-\u9FA5]/g;
+                console.log(checkName.test(value));
+                if (checkName.test(value)) {
+                    return 'url中不能有中文';
+                }
+            }
+        });
+
+        $(function() {
+            // $('.i-checks').iCheck({
+            //     checkboxClass: 'icheckbox_square-green',
+            //     radioClass: 'iradio_square-green'
+            // });
+            var className = $("#className").val();
+            console.log(className);
+            if (className != "") {
+                formSelects.value('className', [className]);      //赋值 className
+                generateFieldNameSelect(className);
+            }
+            var modelType = $("#modelType").val();
+            if (modelType != "") {
+                showDom(modelType)
+            }
+            $("#modelType").on('change', function(){
+                var modelType = $(this).val();
+                showDom(modelType)
+            });
+            for (var i = 0; i < bindingData.length; i++) {
+                addOption(bindingData[i])
+            }
+            var dataType = $('#dataType').attr('checked');
+            if (dataType) {
+                $(".data-base").show();
+                $(".not-data-base").hide();
+            } else {
+                $(".data-base").hide();
+                $(".not-data-base").show();
+            }
+        });
+
+        function showDom(modelType) {
+            switch (modelType) {
+                case '1': $(".radio-only").hide(); $(".text-only").show(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").hide(); break;
+                case '2': $(".radio-only").hide(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").show(); $(".list-only").hide(); $(".click-only").show(); $(".formula-only").hide(); break;
+                case '3': $(".radio-only").hide(); $(".text-only").hide(); $(".date-only").show(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").hide(); break;
+                case '4': $(".radio-only").show(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").show(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").hide(); break;
+                case '5': $(".radio-only").show(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").hide(); break;
+                case '6': $(".radio-only").show(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").hide(); break;
+                case '7': $(".radio-only").hide(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").show(); $(".click-only").show(); $(".formula-only").hide(); break;
+                case '8': $(".radio-only").hide(); $(".text-only").hide(); $(".date-only").hide(); $(".select-only").hide(); $(".section-only").hide(); $(".list-only").hide(); $(".click-only").hide(); $(".formula-only").show(); break;
+                default: break;
+            }
+        }
+
+        function generateFieldNameSelect(className) {
+            console.log(className);
+            var html = [];
+            // html.push('<option value="">请选择字段名</option>');
+            for (var i = 0; i < aipCaseFileds[className].length; i++) {
+                if (fieldName == aipCaseFileds[className][i]) {
+                    html.push('<option selected="selected" value="' + aipCaseFileds[className][i] + '">' + aipCaseFileds[className][i] + '</option>');
+                } else{
+                    html.push('<option value="' + aipCaseFileds[className][i] + '">' + aipCaseFileds[className][i] + '</option>');
+                }
+            }
+            $("#fieldName").html(html.join(''));
+            //form.render('select');
+            formSelects.render('fieldName');
+            var fieldNameVal = $("#fieldName").val();
+            if(fieldNameVal){
+                formSelects.value('fieldName', [fieldNameVal]);      //赋值 className
+            }
+
+        }
+    });
+    $.validator.addMethod("noChinese",function(value,element,params){
+        var checkName = /[\u4E00-\u9FA5]/g;
+        if (checkName.test(value)) {
+            return false;
+        }
+        return true;
+    },"不允许输入中文！");
+    $(function() {
+        $("#controlModelForm").validate({
+            rules : {
+                modelName : {
+                    required : true,
+                    maxlength : 50,
+                    remote: {
+                        url: contextPath + '/controlModel/checkModelNameExist.jo',
+                        dataType:"json",
+                        type: "post",
+                        data: {
+                            modelName: function() {
+                                return $('#modelName').val();
+                            }
+                        }
+                    }
+                }
+            },
+            messages : {
+                modelName : {
+                    required : '控件名称不能为空',
+                    maxlength : '控件名称长度不能超过50位',
+                    remote : '控件名称已存在'
+                }
+            }
+        });
+    });
+
+    function addOption(data){
+        if (!data) {
+            data = {
+                value: '',
+                label: ''
+            };
+        }
+        var html = [];
+        html.push('<div class="layui-form-item option">');
+        html.push('<label class="layui-form-label">值</label>');
+        html.push('<div class="layui-input-inline">');
+        html.push('<input type="text" lay-verify="title" autocomplete="off" placeholder="值" class="layui-input" value="' + data.value + '">');
+        html.push('</div>');
+        html.push('<label class="layui-form-label">描述</label>');
+        html.push('<div class="layui-input-inline">');
+        html.push('<input type="text" lay-verify="title" autocomplete="off" placeholder="描述" class="layui-input" value="' + data.label + '">');
+        html.push('</div>');
+        html.push('<div class="layui-btn-group oprate">');
+        html.push('<button class="layui-btn layui-btn-sm" onclick="upOption(this);return false;"><i class="layui-icon layui-icon-up"></i></button>');
+        html.push('<button class="layui-btn layui-btn-sm" onclick="downOption(this);return false;"><i class="layui-icon layui-icon-down"></i></button>');
+        html.push('<button class="layui-btn layui-btn-sm" onclick="deleteOption(this);return false;"><i class="layui-icon layui-icon-delete"></i></button>');
+        html.push('</div>');
+        html.push('</div>');
+
+        $("#options").append(html.join(''));
+    }
+
+    function upOption(dom) {
+        $(dom).parent().parent().prev().before($(dom).parent().parent()[0]);
+        // $(dom).parent().parent().remove();
+    }
+
+    function downOption(dom) {
+        $(dom).parent().parent().next().after($(dom).parent().parent()[0]);
+    }
+
+    function deleteOption(dom) {
+        console.log($(dom).parent().parent().remove());
+    }
+
+    function addDataElement() {
+        var title = '新增国家电子病历标准数据集';
+        var url = contextPath + '/emrDataElement/emrDataElementEdit.do';
+        layer.open({
+            type: 2
+            ,title: title
+            ,content: url
+            ,area: ['80%', '80%']
+            ,btn: ['确定', '取消']
+            ,yes: function(index, layero){
+                var iframeWindow = window['layui-layer-iframe'+ index]
+                        ,submitID = 'btn_save'
+                        ,submit = layero.find('iframe').contents().find('#'+ submitID);
+                //监听提交
+                iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+                    var field = data.field; //获取提交的字段
+                    console.log(field);
+                    $.post('$contextPath/emrDataElement/saveEmrDataElement.jo', field, function(result){
+                        if (result.code == "0") {
+                            common.alertCall("保存成功!", 1, function (){
+                                // 刷新页面
+                                refreshDataElement(field.dataElementId);
+
+                                // 关闭窗口
+                                layer.close(index);
+                            });
+
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                    //提交 Ajax 成功后，静态更新表格中的数据
+                ## saveEmrTlp(field, index);
+                });
+
+                submit.trigger('click');
+            }
+            ,success: function(layero, index){
+
+            }
+        });
+        // common.open(contextPath + '/emrDataElement/EmrDataElementEdit.do', '新增国家电子病历标准数据集', {area: ['50%', '80%']});
+    }
+
+
+    function refreshDataElement(selectData) {
+        $.post('$contextPath/emrDataElement/getAllEmrDataElement.jo', {}, function(result){
+            if (result.code == "0") {
+                var html = [];
+                for (var i = 0; i < result.data.length; i++) {
+                    if (selectData == result.data[i].dataElementId) {
+                        html.push('<option selected="selected" value="' + result.data[i].dataElementId + '">' + result.data[i].dataElementId + ' ' + result.data[i].dataElementName + '</option>');
+                    } else{
+                        html.push('<option value="' + result.data[i].dataElementId + '">' + result.data[i].dataElementId + ' ' + result.data[i].dataElementName + '</option>');
+                    }
+                }
+                $('#dataElementId').html(html.join(''));
+                layui.form.render('select');
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }
+</script>
+</body>
+
+</html>

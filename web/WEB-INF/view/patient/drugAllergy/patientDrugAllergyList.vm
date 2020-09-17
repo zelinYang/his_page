@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>${SessionSysPortal.appTitle}</title>
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+    <style>
+        .layui-fluid{overflow: auto;}
+        .layui-form-item .layui-btn.layui-btn-sm { margin-bottom: 0;}
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+      <div class="layui-row layui-bg-white">
+        <form class="layui-form" id="queryForm">
+            #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+            <div class="layui-row-query search-term">
+              <div class="layui-form-item">
+                <div class="layui-inline">
+                  <label class="layui-form-label">过敏名称</label>
+                  <div class="layui-input-inline">
+                      #formTextInput("allergyDrugName" "" "class='layui-input' placeholder='请输入过敏名称'")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                  <label class="layui-form-label">过敏症状</label>
+                  <div class="layui-input-inline">
+                      #formTextInput("allergySymptom" "" "class='layui-input' placeholder='请输入过敏症状'")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                  <label class="layui-form-label">严重程度</label>
+                  <div class="layui-input-inline">
+                      #formTextInput("severity" "" "class='layui-input' placeholder='请输入严重程度'")
+                  </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                  <button class="layui-btn layui-btn-sm" type="button" id="btn_query" title="查询"><i class="layui-icon layui-icon-search"></i></button>
+                  <button class="layui-btn layui-btn-sm" type="button" id="btn_clean" title="清空"><i class="iconfont icon-qingchu"></i></button>
+                </div>
+                <!-- 按钮 -->
+                <div class="layui-inline layui-btn-group fr">
+                  <button class="layui-btn layui-btn-sm" id="btn_add" type="button" title="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                  <button class="layui-btn layui-btn-sm" type="button" id="btn_refresh" title="刷新"><i class="layui-icon layui-icon-refresh"></i></button>
+                </div>
+              </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!--列表 begin-->
+        <table id="allergyList" lay-filter="allergyList" lay-skin="row"></table>
+      </div>
+    </div>
+</div>
+</body>
+<script type="text/html" id="operateBar">
+    <a class="layui-btn layui-btn-xs" title="编辑" lay-event="edit"><i class="layui-icon layui-icon-edit"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" title="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script type="text/javascript">
+layui.use(['table', 'form', 'laydate'], function(){
+    var rowId;
+    var table = layui.table, form = layui.form, laydate = layui.laydate;
+
+	// 重置表格高度
+	$(window).resize(function () {
+		var height = getTableHgt()
+		table.reload('allergyList', {
+			height: height
+		})
+	});
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/patient/patientDrugAllergyJsonList.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'allergyList',
+        elem: '#allergyList',
+        height: $('body').height() - $('#queryForm').height() - 10,
+        where: {patientId: $('#patientId').val()},
+        cols: [[
+            {field:'allergyDrugName', title: '过敏名称'},
+            {field:'allergySymptom', title: '过敏症状'},
+            {field:'severity', title: '严重程度'},
+            {field:'firstOccurTime', title: '首发时间', templet: function (row) { if (row.firstOccurTime) return getFormatDateByLong(row.firstOccurTime, 'yyyy-MM-dd HH:mm:ss'); return "";}},
+            {fixed: 'right', title:'操作', toolbar: '#operateBar', width:150}
+        ]]
+      })
+    );
+
+    //监听行工具事件(编辑和删除)
+    table.on('tool(allergyList)', function(obj){
+        if(obj.event === 'del'){
+            common.confirm('确定要删除吗？', function (){
+                common.requestServer(contextPath + '/patient/delPatientDrugAllergy.jo', {ids: obj.data.drugAllergyId}, function (result){
+                    if (result.code == "0") {
+                        $('#btn_refresh').click();
+                    } else {
+                        common.alert(result.msg, 2)
+                    }
+                });
+            });
+        } else if(obj.event === 'edit'){
+            common.open(contextPath + '/patient/patientDrugAllergyEdit.do?drugAllergyId=' + obj.data.drugAllergyId, "编辑", {area:['80%', '390px']});
+        }
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function (){
+        tableList.reload({url: tableUrl, page: {curr: 1}, where: common.serializeObject($('#queryForm'))});
+    });
+
+    // 清空按钮
+    $('#btn_clean').click(function (){
+        common.cleanForm('queryForm');
+        form.render('select');
+    });
+
+    // 刷新列表
+    $('#btn_refresh').click(function (){
+        $('#btn_query').click();
+    });
+
+    // 新增
+    $('#btn_add').click(function (){
+        common.open(contextPath + '/patient/patientDrugAllergyEdit.do', "编辑", {area:['80%', '390px']});
+    });
+});
+</script>
+</html>

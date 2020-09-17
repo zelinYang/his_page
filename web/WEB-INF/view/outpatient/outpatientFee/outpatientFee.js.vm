@@ -1,0 +1,844 @@
+<script>
+//医生没有结束处方，不能结算！
+var PATIENT_KIND_SELF_PAYING = '$!{CONST.AppConstants.PATIENT_KIND_SELF_PAYING}';
+var CHARGE_CLASSIFY_PRESCRIPTION = '$!{CONST.AppConstants.CHARGE_CLASSIFY_PRESCRIPTION}';
+var dicClearSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicClearSex)')
+var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)')
+var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)')
+var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)')
+var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+//区医保业务配置信息
+var sysDistrictMedicalInsurance = JSON.parse('$dicTools.changeMapToJson($dicData.sysDistrictMedicalInsurance)')
+var patCardNo = '';//存放就诊卡号
+var recipeItemTable, techItemTable;
+
+//=========== 报价器实现begin ============
+var BS_TdBjq;
+$(document).ready(function () {
+    //报价器需要在加载完页面后初始化下面这两行代码
+    BS_TdBjq = new ActiveXObject("Tdbjq.BS_Tdbjq");
+    BS_TdBjq.BS_dsbdll(0, "&TLINK$");
+});
+
+//报价
+$('#btn_quotedPrice').click(function () {
+    //患者姓名
+    var patientName = $("#patientName").val();
+    //应收款
+    var actualChargeAmount = $("#actualChargeAmount").val();
+
+    BS_TdBjq.BS_dsbdll(0, "&Sc$");
+    BS_TdBjq.BS_dsbdll(0, "&C21您好，请稍等！$");
+    BS_TdBjq.BS_dsbdll(0, "A1");
+    BS_TdBjq.BS_dsbdll(0, "&Sc$");
+    BS_TdBjq.BS_dsbdll(0, "&C11尊敬的"+ patientName +"，您好！$");
+    BS_TdBjq.BS_dsbdll(0, actualChargeAmount + "J");
+});
+
+//找零
+$('#btn_smallChange').click(function () {
+
+    //实收款
+    var actualCharge = $("#actualCharge").val();
+    //找零
+    var changeCharge = $("#changeCharge").val();
+
+    changeCharge = changeCharge ? changeCharge : 0;
+    BS_TdBjq.BS_dsbdll(0, actualCharge + "Y");
+    BS_TdBjq.BS_dsbdll(0, changeCharge + "Z");
+});
+//=========== 报价器实现end ============
+
+//Popover参数
+var iframeSettings = {
+    width:700,
+    height:350,
+    closeable:false,
+    padding:false,
+    type:'iframe',
+    url:'../register/registerSelectPropover.do'
+};
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    index: 'lib/index'
+}).use(['index', 'form', 'table', 'laytpl', 'layer'], function () {
+    var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl
+    var layer = layui.layer;
+    //绑定Popover
+    function bindKeyWordPop() {
+        $('#q_keyWord').webuiPopover($.extend({},iframeSettings));
+    }
+    bindKeyWordPop();
+    //搜索框监听
+    $("#q_keyWord").on("input propertychange",function(){
+        var popoverId = $(this).attr('data-target');
+        var keyWord = $(this).val();
+        $('#'+popoverId+' iframe')[0].contentWindow.query({keyWord:keyWord}); //调用iframe的方法
+    }).click(function () {
+        layui.layer.closeAll('tips'); //关闭所有的tips层
+    });
+
+    //回车触发查询
+    $("#q_keyWord").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query').click();
+            return false;
+        }
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+        findPatient($("#q_keyWord").val())
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('outpatientFeeGroup_queryForm');
+    })
+
+    //输入框赋值方法
+    window.selectRegisterSelectPropoverrCallBack = function(data) {
+        findPatient(data.visitCardNo)
+    }
+    //销毁弹窗方法
+    window.popoverHide = function(){
+        // $('#inhospitalNo').webuiPopover('destroy');
+        $('#q_keyWord').webuiPopover('hide');
+    }
+    // 获取表格高度
+    function getTableHgt() {
+        return ($('body').height() - $('#outpatientFeeGroup_queryForm').height()  - $('#outpatientFeeGroupForm').height() - 60)
+    }
+
+    // 获取表格高度
+    function getBillItemTableHgt() {
+        return ($('body').height() - $('#billRecipient_queryForm').height() - 60)
+    }
+
+    //根据就诊卡号获取患者信息
+    function findPatient(visitCardNo) {
+        if (!visitCardNo) {
+            return
+        }
+        var params = {
+            visitCardNoEqu: visitCardNo
+        };
+        patCardNo = visitCardNo;
+        common.requestServer('$contextPath/register/findPatientIndex.jo', params, function (result) {
+            if (result.code === '0') {
+                var data = $.extend({}, result.data.patient, result.data.patientIndex, result.data.register);
+                setPatient(data);
+                //执行重载
+                table.reload('outpatientFeeGroupListGrid', {
+                    url: contextPath + '/outpatientFee/getRecipeToPayList.jo',
+                    where: {patCardNo: data.visitCardNo}
+                })
+            } else {
+                common.msg('该就诊卡号 <span class="layui-badge layui-bg-gray">' + visitCardNo + '</span> 不存在', iconType.warn);
+                resetPatient();
+            }
+        })
+    }
+
+    //设置患者表单
+    function setPatient(data) {
+        $('#visitCardNo').val(data.visitCardNo)
+        $('#patientId').val(data.patientId)
+        $('#patientIdCard').val(data.patientIdCard)
+        $('#patientName').val(data.patientName)
+        $('#patientSex').val(dicClearSex[data.patientSex] || '')
+        $('#patientAge').val(data.patientAge || '')
+        $('#patientKind').val(data.patientKind || PATIENT_KIND_SELF_PAYING)
+        $('#patientAttribute').val(dicPatientAttribute[data.patientAttribute] || '')
+        form.render();
+        resizeInputWidth();
+    }
+    function resizeInputWidth() {
+        $('#outpatientFeeGroupForm input').each(function () {
+            //先把中文替换成两个字节的英文，在计算长度默认 5
+            $(this).attr('size',$(this).val() ? ++$(this).val().replace(/[\u0391-\uFFE5]/g,"  ").length : 5);
+        })
+    }
+    resizeInputWidth();
+    //重置患者表单
+    function resetPatient() {
+		console.log('in');
+        $('#visitCardNo').val('').focus();
+        $('#patientId').val('')
+        $('#patientIdCard').val('')
+        $('#patientName').val('')
+        $('#patientSex').val('')
+        $('#patientAge').val('')
+        $('#patientKind').val(PATIENT_KIND_SELF_PAYING)
+        $('#patientAttribute').val('').addClass('layui-form-danger');
+        form.render()
+    }
+
+    //设置处方表单
+    function setOutpatientRecipe(outpatientRecipe) {
+        $('#recipeNum').val(outpatientRecipe.recipeNum)
+        $('#medicineType').val(outpatientRecipe.medicineType)
+        $('#outpatientOfficeId').val(outpatientRecipe.outpatientOfficeId)
+        $('#signDoctorId').val(outpatientRecipe.signDoctorId)
+        form.render()
+    }
+
+    //根据处方ID获取处方信息
+    function getOutpatientRecipe(recipeId, payNameType) {
+        common.requestServer('$contextPath/outpatient/findOutpatientRecipe.jo', {
+            recipeId: recipeId,
+            payNameType: payNameType
+        }, function (result) {
+            if (result.code === '0') {
+                var data = result.data;
+                setOutpatientRecipe(data);
+                var diseaseName = $.map(data.outpatientDiagnoses, function (item, index) {
+                    return (index + 1) + "、" + item.diseaseName
+                })
+                $("#outpatientDiagnosis").val(diseaseName.join())
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    }
+
+    //设置发票号码
+    function initBillNum() {
+        common.requestServer('$contextPath/billRecipient/findUseOutpatientBillRecipient.jo', {}, function (result) {
+            if (result.code === '0') {
+                $("#billNum").val(result.data.currentNum);
+            } else {
+                common.alert(result.msg, 0);
+            }
+            resizeInputWidth();
+        });
+    }
+
+    //统计处方费用
+    function setTotalAmt(data) {
+        //统计处方费用数组
+        //费用总和
+        var totalPrice = $.map(data, function (item) {
+            return item.totalPrice;
+        }).reduce(function (total, num) {
+            return total + num
+        }, 0).toFixed(2);
+
+        $('#actualChargeAmount').val(totalPrice);
+        $(".recipeTotalPriceValue").text('￥' + totalPrice);
+    }
+
+    //初始化发票号码
+    initBillNum();
+
+    //计算找零金额
+    function jsChangeCharge () {
+        $("#changeCharge").val(Number($("#actualCharge").val() - $("#actualChargeAmount").val()).toFixed(2));
+    }
+    /* 挂号缴费方式 */
+    form.on('radio(payMode)', function (data) {
+        //不是现金的查询支付状态
+        if (data.value != 1) {
+            $('#QRCode').removeAttr("readonly");
+            //不是现金支付 实收金额=应收金额
+            $('#actualCharge').val($('#actualChargeAmount').val());
+            $('#changeCharge').attr("readonly","readonly");
+            $('#changeCharge').val("");
+        } else {
+            $('#QRCode').val("");
+            $('#QRCode').attr("readonly","readonly");
+            jsChangeCharge();
+            $("#changeCharge").removeAttr("readonly");
+        }
+        $('input:radio[name=dicPatientKind]').each(function () {
+            this.checked = false;
+        })
+        form.render('radio');
+    });
+
+    form.on('radio(dicPatientKind)', function (data) {
+        $('input:radio[name=payMode]').each(function () {
+            console.log(this.checked)
+            this.checked = false;
+        })
+        form.render('radio');
+        $('.payCode').hide()
+    });
+
+    //取消按钮
+    $('#btn_reset').click(function () {
+        resetPatient();
+    });
+
+    $("#actualCharge").on('input propertychange', function () {
+        jsChangeCharge();
+    });
+
+
+    //处方列表
+    table.render($.extend(singlePageTable, {
+        elem: '#outpatientFeeGroupListGrid',
+        height: $('body').height() - $('#outpatientFeeGroup_queryForm').height() - $('#outpatientFeeGroupForm').height() - 55,
+        data: [],
+
+        cols: [[{
+            type: 'checkbox'
+        }, {
+            field: 'payName',
+            title: '类型',
+            minwidth: 100
+        }, {
+            field: 'totalPrice',
+            title: '金额',
+            style:'text-align: right;'//金额居右显示
+        }, {
+			field: 'date',
+			title: '日期',
+            width: 130,
+			templet: function (res) {
+				if (res.date) {
+					return layui.util.toDateString(res.date, 'yyyy-MM-dd HH:mm');
+				}
+				return '';
+			}
+		}, {
+            field: 'remark',
+            title: '备注'
+        }
+        ]],
+        done: function (res) {
+            var data = res.data;
+            //统计处方费用
+            setTotalAmt(data);
+            refreshItemTable(data);
+            // var trDom = this.elem.next().find('.layui-table-main tr:first');
+            // if (trDom.length === 0) {
+            //     if (recipeItemTable) {
+            //         table.reload('billRecipientListGrid', {
+            //             data: []
+            //         });
+            //     }
+            //     if (techItemTable) {
+            //         table.reload('techItemTable', {
+            //             data: []
+            //         });
+            //     }
+            // } else {
+            //     trDom.click();
+            // }
+        }
+    }));
+
+     table.on('checkbox(outpatientFeeGroupListGrid)', function(obj){
+         console.log(obj);
+         var checkStatus = table.checkStatus('outpatientFeeGroupListGrid');
+         console.log(checkStatus);
+         var actualChargeAmount = 0;
+         var actualCharge = parseFloat($('#actualCharge').val());
+         if (checkStatus.data.length === 0) {
+             actualChargeAmount = 0;
+         } else {
+             $.each(checkStatus.data, function (index, value) {
+                 actualChargeAmount += value.totalPrice;
+             });
+         }
+         $('#actualChargeAmount').val(actualChargeAmount);
+         if (actualCharge) {
+             $('#changeCharge').val(actualCharge - actualChargeAmount);
+         }
+         $(".recipeTotalPriceValue").text('￥' + Number(actualChargeAmount).toFixed(2));
+         refreshItemTable(checkStatus.data, obj.data.recipeType? (obj.data.recipeType === '1'? 0: 1): 2);
+
+     });
+
+     function refreshItemTable(data, flag) {
+         var recipeIds = [];
+         var outpatientTechIds = [];
+         $.each(data, function (index, value) {
+             if (value.recipeType === '1') {
+                 recipeIds.push(value.id);
+             } else {
+                 outpatientTechIds.push(value.id);
+             }
+         });
+         if (flag === 0) {
+             generateRecipeItemTable(recipeIds.join(','));
+         } else if (flag === 1) {
+             generateTechItemTable(outpatientTechIds.join(','));
+         } else {
+             generateRecipeItemTable(recipeIds.join(','));
+             generateTechItemTable(outpatientTechIds.join(','));
+         }
+     }
+
+    function showOutpatientFeeItem(data) {
+        var recipeIds = [];
+        var techIds = []
+        $.each(data, function (index, value) {
+            if (value.recipeType === '1') {
+                recipeIds.push(value.id);
+            } else {
+                techIds.push(value.id);
+            }
+        });
+        //执行重载
+        table.reload('billRecipientListGrid', {
+            url: contextPath + '/outpatientFee/getRecipeItemToPayList.jo',
+            where: {recipeIdStr: recipeIds.join(','), techIdStr: techIds.join(',')}
+        });
+    }
+
+    //监听行单击事件
+    table.on('row(outpatientFeeGroupListGrid)', function (obj) {
+        console.log(obj);
+        var data = obj.data;
+        var params = {
+            recipeId: '',
+            outpatientTechId: ''
+        }
+        // if (data.recipeType === '1') {
+        //     // $('#recipeDiv').show();
+        //     // $('#techDiv').hide();
+        //     generateRecipeItemTable(data.id)
+        // } else {
+        //     // $('#recipeDiv').hide();
+        //     // $('#techDiv').show();
+        //     generateTechItemTable(data.id)
+        // }
+
+        //标注选中样式
+        obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+    });
+
+    //设置项目小计金额
+    function setSubtotal(id, totalPrice) {
+        $('#actualChargeAmount').val(Number(totalPrice).toFixed(2));
+        $('#actualCharge').val(Number(totalPrice).toFixed(2));
+
+        $(".recipeTotalPriceValue").text('￥' + Number(totalPrice).toFixed(2));
+        $('[lay-id="' + id + '"] .layui-table-total [data-field="totalPrice"] .layui-table-cell').text(totalPrice);
+    }
+
+    //获取项目小计金额
+    function getSubtotal(id) {
+        return $('[lay-id="' + id + '"] .layui-table-total [data-field="totalPrice"] .layui-table-cell').text();
+    }
+
+    //项目是否结算
+    form.on('checkbox(settlement)', function (data) {
+        var index = $(data.elem).parents('tr').data('index');
+        var id = $(data.elem).parents('.layui-table-view').attr('lay-id');
+        var totalPrice = table.cache[id][index].totalPrice;
+        var subtotal = getSubtotal(id);
+        if (data.elem.checked) {
+            totalPrice = Number(subtotal) + Number(totalPrice);
+        } else {
+            totalPrice = Number(subtotal) - Number(totalPrice);
+        }
+        setSubtotal(id, totalPrice.toFixed(2));
+    });
+
+    function generateRecipeItemTable(recipeIds) {
+        console.log(recipeItemTable);
+        var url = contextPath + '/outpatientFee/getRecipeItemToPayList.jo';
+        if (recipeItemTable) {
+            table.reload('billRecipientListGrid', {
+                url: url,
+                where: {recipeIds: recipeIds}
+            });
+        } else {
+            //处方列表
+            recipeItemTable = table.render($.extend(singlePageTable, {
+                elem: '#billRecipientListGrid',
+                height: $('body').height() / 2 - 54,
+                url: url,
+                where: {
+                    recipeIds: recipeIds
+                },
+                cols: [[{
+                    type: 'numbers'
+                }, {
+                    field: 'feeName',
+                    title: '处方'
+                }, {
+                    field: 'orderName',
+                    title: '药品名称',
+                    minWidth: 150
+                }, {
+                    field: 'medicineSpec',
+                    title: '规格'
+                }, {
+                    field: 'giveTotalQuantity',
+                    title: '数量'
+                }, {
+                    field: 'giveTotalQuantityUnit',
+                    title: '单位',
+                    templet: function (row) {
+                        if (null != row.giveTotalQuantityUnit) {
+                            return dicDrugNumUnit[row.giveTotalQuantityUnit];
+                        }
+                        return "";
+                    }
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    style:'text-align: right;'//金额居右显示
+                }, {
+                    field: 'actualPrice',
+                    title: '金额',
+                    style:'text-align: right;'//金额居右显示
+                }, {
+                ##     field: 'medicineUsage',
+                ##     title: '用法'
+                ## }, {
+                ##      field: 'validFlag',
+                ##      title: '费用类型'
+                ##  }, {
+                    field: 'orderDay',
+                    title: '用药天数'
+                }, {
+                    field: 'pharmacyId',
+                    title: '药房',
+                    templet: function (row) {
+                        if (null != row.pharmacyId) {
+                            return dicPharmacy[row.pharmacyId];
+                        }
+                        return "";
+                    }
+                }, {
+                    field: 'feeCode', title: '费用编码', hide: true
+                }]],
+                parseData: function (res) { //res 即为原始返回的数据
+                    var feeNameMap = {};
+                    var recipeNum = 1;
+                    var newDataMap = {};
+                    $.each(res.data, function (index, outpatientRecipeItem) {
+                        if (outpatientRecipeItem.recipeId) {
+                            if (!newDataMap[outpatientRecipeItem.recipeId]) {
+                                newDataMap[outpatientRecipeItem.recipeId] = [];
+                            }
+                            if (feeNameMap[outpatientRecipeItem.recipeId]) {
+                                outpatientRecipeItem.feeName = feeNameMap[outpatientRecipeItem.recipeId];
+                            } else {
+                                outpatientRecipeItem.feeName = '处方' + recipeNum + '（' + (outpatientRecipeItem.deliverFlag === '1'? '已发药': '未发药') + '）';
+                                feeNameMap[outpatientRecipeItem.recipeId] = outpatientRecipeItem.feeName;
+                                recipeNum++;
+                            }
+                            console.log(outpatientRecipeItem.recipeId + '-' + outpatientRecipeItem.feeName);
+                            outpatientRecipeItem.feeCode = 'r' + outpatientRecipeItem.recipeId;
+                            newDataMap[outpatientRecipeItem.recipeId].push(outpatientRecipeItem);
+                        }
+                    });
+                    console.log(newDataMap);
+                    var newDatas = [];
+                    for(let key in newDataMap){
+                        $.each(newDataMap[key], function (index, data) {
+                            newDatas.push(data);
+                        });
+                    }
+                    res.data = newDatas.reverse();
+                    console.log(res);
+                    return res;
+                },
+                done: function (res, curr, count) {
+                    var that = this;
+                    var recipeIds = $.unique($.map(res.data, function (item) {
+                        return item.recipeId;
+                    }));
+                    //合并显示单元格字段
+                    var groupCells = ['feeName'];
+                    //合并关键字段
+                    var groupKeyWord = 'feeCode';
+                    $.each(recipeIds, function (index, contains) {
+                        var trs = that.elem.next().find('.layui-table-main tr td[data-field="'+ groupKeyWord +'"]>.layui-table-cell:contains('+ contains +')').filter(function () {
+                            return $(this).text() == contains;
+                        }).parents('tr');
+                        $.each(groupCells, function (i, field) {
+                            trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+                        })
+                        //移入背景颜色
+                        trs.hover(function () {
+                            trs.addClass('layui-table-hover');
+                        }, function () {
+                            trs.removeClass('layui-table-hover');
+                        })
+                    });
+                }
+            }))
+        }
+    }
+
+    function generateTechItemTable(outpatientTechIds) {
+        var url = contextPath + '/outpatientFee/getRecipeItemToPayList.jo';
+        if (techItemTable) {
+            table.reload('techItemTable', {
+                url: url,
+                where: {outpatientTechIds: outpatientTechIds}
+            });
+        } else {
+            //处方列表
+            techItemTable = table.render($.extend(singlePageTable, {
+                elem: '#techItemTable',
+                height: $('body').height() / 2 - 54,
+                data: url,
+                where: {
+                    outpatientTechIds: outpatientTechIds
+                },
+                cols: [[{
+                    type: 'numbers'
+                }, {
+                    field: 'feeName',
+                    title: '项目名称',
+                    minWidth: 150
+                }, {
+                    field: 'orderName',
+                    title: '费用名称',
+                    minWidth: 150
+                }, {
+                    field: 'giveTotalQuantity',
+                    title: '数量'
+                }, {
+                    field: 'itemUnit',
+                    title: '单位',
+                    minWidth: 150
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    style:'text-align: right;'//金额居右显示
+                }, {
+                    field: 'actualPrice',
+                    title: '金额',
+                    style:'text-align: right;'//金额居右显示
+                }, {
+                    field: 'itemSpec',
+                    title: '费用类型',
+                    minWidth: 150
+                }, {
+                    field: 'techName',
+                    title: '组套名称'
+                }, {
+                    field: 'outpatientTechId', title: '医技ID', hide: true
+                }]],
+                parseData: function (res) { //res 即为原始返回的数据
+                    var feeNameMap = {};
+                    var techNum = 1;
+                    var newDataMap = {};
+                    $.each(res.data, function (index, outpatientTechItem) {
+                        if (outpatientTechItem.outpatientTechId) {
+                            if (!newDataMap[outpatientTechItem.outpatientTechId]) {
+                                newDataMap[outpatientTechItem.outpatientTechId] = [];
+                            }
+                            if (feeNameMap[outpatientTechItem.outpatientTechId]) {
+                                outpatientTechItem.feeName = feeNameMap[outpatientTechItem.outpatientTechId];
+                            } else {
+                                outpatientTechItem.feeName = '（' + outpatientTechItem.techApplyName + '）' + outpatientTechItem.chargeGroupName;
+                                feeNameMap[outpatientTechItem.outpatientTechId] = outpatientTechItem.feeName;
+                                techNum++;
+                            }
+                            outpatientTechItem.feeCode = 't' + outpatientTechItem.outpatientTechId;
+                            newDataMap[outpatientTechItem.outpatientTechId].push(outpatientTechItem);
+                        }
+                    });
+                    console.log(newDataMap);
+                    var newDatas = [];
+                    for(let key in newDataMap){
+                        $.each(newDataMap[key], function (index, data) {
+                            newDatas.push(data);
+                        });
+                    }
+                    res.data = newDatas.reverse();
+                    console.log(res);
+                    return res;
+                },
+                done: function (res, curr, count) {
+                    var that = this;
+                    //合并显示单元格字段
+                    var groupCells = ['feeName'];
+                    var oldData = {};
+                    //合并关键字段
+                    var groupKeyWord = 'outpatientTechId';
+                    $.each(res.data, function (index, contains) {
+                        var allTrs = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains.outpatientTechId + ')').filter(function () {
+                            return $(this).text() == contains.outpatientTechId;
+                        }).parents('tr');
+                        $.each(groupCells, function (i, field) {
+                            if (oldData[field] === contains[field]) {
+                                return;
+                            }
+                            var trs = that.elem.next().find('.layui-table-main tr td[data-field="' + field + '"]>.layui-table-cell:contains(' + contains[field] + ')').filter(function () {
+                                return $(this).text() == contains[field];
+                            }).parents('tr');
+                            console.log(field + '-' + trs.length);
+                            trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+                            oldData[field] = contains[field];
+                        })
+                        //移入背景颜色
+                        allTrs.hover(function () {
+                            allTrs.addClass('layui-table-hover');
+                        }, function () {
+                            allTrs.removeClass('layui-table-hover');
+                        })
+                    });
+                }
+            }))
+        }
+    }
+
+    //结算按钮
+    $("#btn_settlement").click(function () {
+        var checkStatus = table.checkStatus('outpatientFeeGroupListGrid');
+        if (checkStatus.data.length === 0) {
+            common.msg("请选择要结算的项目");
+            return;
+        }
+        var params = {recipeItemIds: [], techItemIds: [], recipeIds: [], techIds: []};
+        var registerIds = [];
+		$.each(table.cache.billRecipientListGrid, function (index, value) {
+			if (!registerIds.contains(value.registerId)) {
+				registerIds.push(value.registerId);
+			}
+			params.recipeItemIds.push(value.recipeItemId);
+		});
+        $.each(table.cache.techItemTable, function (index, value) {
+        	if (!registerIds.contains(value.registerId)) {
+				registerIds.push(value.registerId);
+            }
+			params.techItemIds.push(value.outpatientTechItemId);
+        });
+		$.each(checkStatus.data, function (index, value) {
+			if (!registerIds.contains(value.registerId)) {
+				registerIds.push(value.registerId);
+			}
+			if (value.recipeType === '1') {
+				params.recipeIds.push(value.id);
+			} else {
+				params.techIds.push(value.id);
+			}
+		});
+        if (registerIds.length > 1) {
+			common.alert("请选择不同挂号的缴费请分开支付", 0);
+			return;
+        }
+		var actualCharge = $("#actualCharge").val();
+		if (!actualCharge) {
+			common.msg("请输入实际收款");
+			$("#actualCharge").addClass('layui-form-danger').focus();
+			return;
+		}
+		params.registerId = registerIds[0];
+		var lockParams = {recipeIds: params.recipeIds.join(','), techIds: params.techIds.join(','), orderLockFlag: 1};
+		var flag = true;
+		common.requestServer('$contextPath/outpatientFee/updateRecipeAndTechLockFlag.jo', lockParams, function (result) {
+			common.confirm('确定结算？', function () {
+				flag = false;
+				openSettlement(params);
+			}, function () {
+
+			}, '',  function () {
+				console.log(flag);
+				if (flag) {
+					lockParams.orderLockFlag = 0;
+					common.requestServer('$contextPath/outpatientFee/updateRecipeAndTechLockFlag.jo', lockParams, function (result) {});
+				}
+            });
+		})
+    });
+
+    //打开结算页面
+    function openSettlement(params) {
+        var payMode = $("input[name='payMode']:checked").val();
+        var dicPatientKind = $("input[name='dicPatientKind']:checked").val();
+        var authCode = $('#QRCode').val();
+        var patientKind = $("#patientKind").val();
+        var rows = table.cache.outpatientFeeGroupListGrid;
+
+        if (payMode === '1' || payMode === '2' || payMode === '3' || payMode === '4') {
+            common.openLoad();
+			$.extend(params, {
+				patCardType: "1",
+				patCardNo: patCardNo,
+				payChannel: payMode,
+				payAmt: 0,
+				actualCharge: $("#actualCharge").val(),
+				actualChargeAmount: $("#actualChargeAmount").val(),
+				recipeIds: params.recipeIds.join(),
+				techIds: params.techIds.join(),
+				recipeItemIds: params.recipeItemIds.join(),
+				techItemIds: params.techItemIds.join(),
+				authCode: authCode,
+				payMode: payMode,
+				changeCharge: $("#changeCharge").val()
+			});
+            $.post('$contextPath' + '/outpatientFee/outpatientFeePay.jo', params, function(result){
+                common.closeLoad();
+                if (result.code === '0') {
+                    common.msg('缴费成功', 1, function (){
+						resetPatient();
+                        //执行重载,清空表格
+                        table.reload('billRecipientListGrid', {
+                            url: '',
+                            data: [],
+                            where: {recipeId: ''}
+                        });
+                        table.reload('techItemTable', {
+                            url: '',
+                            data: [],
+                            where: {outpatientTechId: ''}
+                        });
+                        table.reload('outpatientFeeGroupListGrid', {
+                            url: '',
+                            data: [],
+                            where: {patCardNo: ''}
+                        });
+                        // findPatient();
+                        initBillNum();
+                        $('#actualChargeAmount').val('');
+                        $('#actualCharge').val('');
+                        $('#changeCharge').val('');
+                        $('#QRCode').val('');
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            }, 'json').error(function (e){jqueryPostError(e)});
+        }
+        if (dicPatientKind === '2') {
+            layer.open({
+                type: 2,
+                title: '区医保',
+                shadeClose: false,
+                shade: 0.3,
+                area: ['99%', '99%'],
+                content: contextPath + '/outpatientFee/cityMedicalInsurance.do?recipeIds=' + params.recipeIds.join() + '&recipeItemIds=' + params.recipeItemIds.join() + '&techIds=' + params.techIds.join() + '&techItemIds=' + params.techItemIds.join() + '&patCardNo=' + patCardNo + '&registerId=' + params.registerId
+            });
+        }
+
+    }
+
+    // 重置表格高度
+    $(window).resize(function () {
+        var height = getTableHgt();
+        table.reload('outpatientFeeGroupListGrid', {
+            height: height
+        });
+        table.reload('billRecipientListGrid', {
+            height: getBillItemTableHgt()
+        });
+    });
+
+    form.on('select(dicDistrictMedicalInsurance)', function (data) {
+        var code = data.value;
+        var text = data.elem[data.elem.selectedIndex].text
+        var url = sysDistrictMedicalInsurance[data.value] + "?tradeCode=" + code;
+        layer.open({
+            title: text,
+            area: ['80%', '80%'],
+            type: 2,
+            content: '$contextPath' + url
+        });
+    });
+})
+
+    </script>

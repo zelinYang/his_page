@@ -1,0 +1,248 @@
+<script type="text/javascript">
+    var inpatientSymptomPrj = '$!{inpatientSymptomPrj}'? JSON.parse('$!{inpatientSymptomPrj}'): '', inpatientSymptomTime = '$!{inpatientSymptomTime}'? JSON.parse('$!{inpatientSymptomTime}'): '';
+    var dicInpatientSymptomPrj = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientSymptomPrj)');
+    var curHours = [];
+    var curDatas = [];
+    layui.use(['element', 'form', 'table', 'layer'], function () {
+        var table = layui.table;
+        var layer = layui.layer;
+
+        laydate.render({
+            elem: '#temperatureDate'
+            ,type: 'date'
+            ,format: 'yyyy-MM-dd' //可任意组合
+            ,value: new Date()
+            ,done: function(value, date, endDate){
+                console.log(value); //得到日期生成的值，如：2017-08-18
+                showInpatientSymptom(value);
+            }
+        });
+
+        $("#btn_set_item").click(function () {
+            layer.open({
+                type: 2
+                , title: '编辑项目'
+                , content: '../inpatient/selectInpatientSymptomPrj.do?inhospitalId=' + $("#inhospitalId").val()
+                , area: ['820px', '500px']
+                , btn: ['确定', '取消']
+                , scrollbar: true
+                , yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                            , submitID = 'LAY-emr-submit'
+                            , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field; //获取提交的字段
+                        if (!field.paramEnColumn) {
+                            layer.msg('请选择项目', {icon: 2});
+                            return;
+                        }
+                        //提交 Ajax 成功后，静态更新表格中的数据
+                        saveInpatientSymptomPrj(field, index);
+                    });
+
+                    submit.trigger('click');
+                }
+                , success: function (layero, index) {
+
+                }
+            });
+        });
+
+        function saveInpatientSymptomPrj(params, index) {
+            common.requestServer(contextPath + '/inpatient/saveInpatientSymptomPrj.jo', params, function (result) {
+                layer.close(index); //关闭弹层
+                if (result.code === "0") {
+                    common.msg(result.msg);
+                    inpatientSymptomPrj = result.data;
+                    generateTable(curDatas);
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        $("#btn_set_time").click(function () {
+            var editFlag = '1';
+            if (curDatas.length > 0) {
+                editFlag = '0';
+            }
+            layer.open({
+                type: 2
+                , title: '编辑时间间隔'
+                , content: '../inpatient/selectInpatientSymptomTime.do?inhospitalId=' + $("#inhospitalId").val() + '&editFlag=' + editFlag
+                , area: ['820px', '500px']
+                , btn: ['确定', '取消']
+                , scrollbar: true
+                , yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                            , submitID = 'LAY-emr-submit'
+                            , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    //监听提交
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field; //获取提交的字段
+                        field.symptomStartTime += ':00';
+                        field.symptomEndTime += ':00';
+                        //提交 Ajax 成功后，静态更新表格中的数据
+                        saveInpatientSymptomTime(field, index);
+                    });
+
+                    submit.trigger('click');
+                }
+                , success: function (layero, index) {
+
+                }
+            });
+        });
+
+        function saveInpatientSymptomTime(params, index) {
+            common.requestServer(contextPath + '/inpatient/saveInpatientSymptomTime.jo', params, function (result) {
+                layer.close(index); //关闭弹层
+                if (result.code === "0") {
+                    common.msg(result.msg);
+                    inpatientSymptomTime = result.data;
+                    generateTable(curDatas);
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        $("#btn_save").click(function () {
+            common.confirm('确定保存吗？', function () {
+                saveInpatientSymptom();
+            });
+        });
+
+        function saveInpatientSymptom() {
+            var data = [];
+            $('#tbodyDom tr').each(function (index, tr) {
+                var name = '';
+                $(this).find('td').each(function (index) {
+                    if (index === 0) {
+                        name = $(this).attr('name');
+                        return;
+                    }
+                    var inpatientSymptom = {};
+                    if (data[index - 1]) {
+                        inpatientSymptom = data[index - 1];
+                    } else {
+                        data.push(inpatientSymptom);
+                    }
+                    inpatientSymptom.inpatientSymptomId = $(this).attr('inpatient-symptom-id');
+                    inpatientSymptom.temperatureTimeSort = curHours[index - 1];
+                    inpatientSymptom[name] = $(this).find('input').val();
+
+                });
+            });
+            console.log(data);
+            common.requestServer('../inpatient/saveInpatientSymptom.jo', {inpatientSymptomListJson: JSON.stringify(data), inhospitalId: $("#inhospitalId").val(), temperatureDate: $("#temperatureDate").val()}, function (result) {
+                if (result.code == "0") {
+                    generateTable(result.data);
+                    common.msg('保存成功', 1);
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        function showInpatientSymptom(temperatureDate) {
+            common.requestServer('../inpatient/inpatientSymptomListData.jo', {temperatureDate: temperatureDate, inhospitalId: $("#inhospitalId").val()}, function (result) {
+                if (result.code === "0") {
+                    if (result.count > 0) {
+                        generateTable(result.data);
+                        curDatas = result.data;
+                    } else {
+                        generateTable([]);
+                    }
+                } else {
+                    parent.common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        $(function () {
+            showInpatientSymptom(new Date().format('yyyy-MM-dd'));
+        });
+    });
+
+    function generateTable(inpatientSymptoms) {
+        var showFlag = $("#showFlag").val();
+        if ((!inpatientSymptomPrj || !inpatientSymptomTime) && showFlag === '0') {
+            common.msg('没有体温数据', 0);
+            return;
+        }
+        if (!inpatientSymptomPrj) {
+            common.msg('请设置项目', 0);
+            return;
+        }
+        if (!inpatientSymptomTime) {
+            common.msg('请设置时间间隔', 0);
+            return;
+        }
+        var symptomStartTime = new Date(inpatientSymptomTime.symptomStartTime);
+        var symptomEndTime = new Date(inpatientSymptomTime.symptomEndTime);
+        var startHour = symptomStartTime.format('HH');
+        var startMinute = symptomStartTime.format('MM');
+        if (symptomStartTime.format('yyyy-MM-dd') === new Date().format('yyyy-MM-dd')) {
+            if (inpatientSymptomTime.timeDicTypeId === 229) {
+                startHour = '02';
+            } else {
+                startHour = '00';
+            }
+        }
+        var hours = [];
+        for (var i = parseInt(startHour) * 60; i < 24 * 60; i += inpatientSymptomTime.timeInterval) {
+            console.log(genarateHourAndMinute(i));
+            hours.push(genarateHourAndMinute(i));
+        }
+        curHours = hours;
+        var theadDomHtml = [];
+        var tbodyDomHtml = [];
+        var paramEnColumns = inpatientSymptomPrj.paramEnColumn.split(',');
+        for (var i = 0, iLen = paramEnColumns.length + 1; i < iLen; i++) {
+            if (i === 0) {
+                theadDomHtml.push('<tr>');
+            } else {
+                tbodyDomHtml.push('<tr>');
+            }
+            for (var j = 0, jLen = hours.length + 1; j < jLen; j++) {
+                if (i === 0) {
+                    if (j === 0) {
+                        theadDomHtml.push('<th>名称</th>');
+                    } else {
+                        theadDomHtml.push('<th inpatient-symptom-id="' + id + '">' + hours[j - 1] + '</th>');
+                    }
+                } else {
+                    if (j === 0) {
+                        tbodyDomHtml.push('<td name="' + paramEnColumns[i - 1] + '">' + dicInpatientSymptomPrj[paramEnColumns[i - 1]] + '</td>');
+                    } else {
+                        var attrStr = '';
+                        if ("temperature" == paramEnColumns[i - 1]){
+                            //设置体温显示最大值 最小值 temperature.js
+                            attrStr = 'type="number" max="43" min="33.8" step="0.1"'
+                        }
+                        var value = inpatientSymptoms[j - 1] && inpatientSymptoms[j - 1][paramEnColumns[i - 1]]? inpatientSymptoms[j - 1][paramEnColumns[i - 1]]: '';
+                        var id = inpatientSymptoms[j - 1] && inpatientSymptoms[j - 1].inpatientSymptomId? inpatientSymptoms[j - 1].inpatientSymptomId: '';
+                        tbodyDomHtml.push('<td inpatient-symptom-id="' + id + '"><input class="layui-input"' + attrStr +' value="'+ value + '" ' + (showFlag === '0'? 'readonly': '') + ' /></td>');
+                    }
+                }
+            }
+            if (i === 0) {
+                theadDomHtml.push('</tr>');
+            } else {
+                tbodyDomHtml.push('</tr>');
+            }
+        }
+        $("#theadDom").html(theadDomHtml.join(''));
+        $("#tbodyDom").html(tbodyDomHtml.join(''));
+    }
+
+    function genarateHourAndMinute(minutes) {
+        var hour = minutes / 60;
+        var minute = minutes % 60;
+        return (hour < 10? '0' + hour: hour) + ':' + (minute < 10? '0' + minute: minute);
+    }
+</script>

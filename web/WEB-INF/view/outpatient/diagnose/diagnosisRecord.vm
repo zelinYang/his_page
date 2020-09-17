@@ -1,0 +1,63 @@
+<title>门诊诊断</title>
+#parse("./common/pageCss.vm")
+<style>
+
+    .layui-table > thead > tr > th,
+    .layui-table > tbody > tr > td{
+        text-align: center;
+        line-height: 25px;
+    }
+</style>
+<div class="layui-content-wrapper layui-bg-white">
+    #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+	<table class="layui-table custom-table m-t-n">
+		<colgroup>
+			<col width="60px">
+			<col width="150px">
+			<col width="90px">
+			<col width="150px">
+			<col width="75px">
+			<col width="75px">
+			<col width="75px">
+			<col width="60px">
+			<col width="90px">
+			<col width="170px">
+		</colgroup>
+		<thead>
+		<tr>
+			<th>序号</th>
+			<th>疾病名称</th>
+			<th>诊断ICD</th>
+			<th>描述性诊断</th>
+			<th>中西医</th>
+			<th>传染病</th>
+			<th>慢性病</th>
+			<th>肿瘤</th>
+			<th>诊断医生</th>
+			<th>诊断时间</th>
+		</tr>
+		</thead>
+		<tbody id="diagnosisEnterList">
+        #foreach($opt in $!diagnosiList)
+				<tr>
+					<td>
+						<span id="tr-index">$!velocityCount</span>
+              #formHiddenInput("diagnosisId" "$!opt.diagnosisId" "")
+					</td>
+					<td>#htmlEscape($!opt.diseaseDiagnosisName)</td><!-- 疾病标准名称 -->
+					<td>#htmlEscape($!opt.diseaseIcdTcd)</td><!-- ICD -->
+					<td>#htmlEscape($!opt.diseaseDiagnosisDesc)</td> <!-- 描述性诊断 -->
+					<td>#lookUpDict($dicData.dicDiseaseTypeFlag $!opt.diseaseTypeFlag) </td><!-- 中西医诊断 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.infectiousFlag)</td><!-- 是否传染病 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.chronicFlag)</td><!-- 是否慢性病 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.tumourFlag)</td><!-- 是否肿瘤 -->
+					<td>#htmlEscape($!opt.makeOrderDoctorName)</td><!-- 诊断医生 -->
+					<td>#htmlEscape($!date.format('yyyy-MM-dd HH:mm:ss', $!opt.diagnosisTime))</td><!-- 诊断时间 -->
+				</tr>
+        #end
+		</tbody>
+	</table>
+</div>
+
+#parse("./common/pageJs.vm")
+#parse("./outpatient/diagnose/diagnosisRecord.js.vm")

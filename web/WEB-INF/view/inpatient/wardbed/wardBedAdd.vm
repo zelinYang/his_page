@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-病床管理-新增</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-card.left-box {
+            height: calc(100vh - 10px);
+        }
+
+        .layui-card.right-box {
+            height: calc(100vh - 50px);
+            overflow-y: auto;
+        }
+
+        .layui-card-header .caller-seach {
+            display: inline-block;
+            width: calc(100% - 85px);
+        }
+
+        .layui-card-header .caller-seach > .caller-icon {
+            right: 110px;
+        }
+
+        .layui-card-header .caller-seach > input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-card-header .layui-btn-group {
+            height: 35px;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+
+        .layui-input-inline .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 3px;
+            cursor: pointer;
+        }
+
+        .layui-input-inline input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-input-inline .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 3px;
+            right: 6px;
+            cursor: pointer;
+        }
+
+        /* 防止下拉框的下拉列表被隐藏---必须设置--- */
+        .layui-table-col-special > .layui-table-cell {
+            overflow: visible;
+        }
+
+        td .layui-form-select {
+            margin-left: -5px;
+            margin-right: -5px;
+            margin-top: -2px;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #FF5722 !important;
+        }
+
+        /*单元格 必填红框*/
+        .layui-table-cell-danger {
+            border: 1px solid rgb(255, 87, 34) !important;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md3 layui-col-xs3">
+                <div class="layui-card left-box">
+                    <div class="layui-card-header">
+                        <div class="layui-form caller-seach" action="">
+                            <input type="text" id="q_keyWord"
+                                   autocomplete="off" class="layui-input caller-pl32" required title="">
+                            <i class="layui-icon layui-icon-close caller-dump-icon caller-icon" lay-tips="清空"></i>
+                        </div>
+                        <div class="layui-btn-group">
+                            <button id="btn_query" class="layui-btn layui-btn-primary layui-btn-sm" type="button"
+                                    lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" type="button"
+                                    lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                        </div>
+                    </div>
+                    <div class="layui-card-body">
+                        <table id="inpatientWardOfficeListGrid" lay-filter="inpatientWardOfficeListGrid"></table>
+                        <!--  列表表格 end -->
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md9 layui-col-xs9">
+                <form class="layui-form" lay-filter="inpatientWardBedForm" id="inpatientWardBedForm">
+                    <div class="layui-card right-box">
+                        <div class="layui-card-header">病床设置</div>
+                        <div class="layui-card-body">
+                            <input type="hidden" id="submitFlag">
+                            <input type="hidden" name="wardId" value="$!{wardId}" id="wardId"
+                                   lay-verify="wardId">
+                            <div class="layui-form-item">
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()病区</label>
+                                    <div class="layui-input-inline">
+                                        <input name="wardName" id="wardName"
+                                               lay-length='100' lay-verify='required|length'
+                                               class='layui-input' readonly>
+                                    </div>
+                                </div>
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()科室</label>
+                                    <div class="layui-input-inline">
+                                        <input type="hidden" name="inpatientWardOfficeId" value="$!{inpatientWardOfficeId}"
+                                               id="inpatientWardOfficeId">
+                                        <input name="wardOfficeName" id="wardOfficeName" lay-verify='required'
+                                               class='layui-input' readonly>
+                                    </div>
+                                </div>
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()是否有效</label>
+                                    <div class="layui-input-inline">
+                                        #formRadioGroup("validFlag" "$!{CONST.AppConstants.YES_FLAG}"
+                                        ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <table id="inpatientWardBedListGrid"
+                               lay-filter="inpatientWardBedListGrid"
+                               lay-verify="inpatientWardBedListGrid"></table>
+                    </div>
+                    <div class="tool-bottom-fixed " style="position: sticky;">
+                        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                class="layui-btn layui-btn-sm">保 存
+                        </button>
+                        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./inpatient/wardbed/wardBedAdd.js.vm")
+</body>
+</html>

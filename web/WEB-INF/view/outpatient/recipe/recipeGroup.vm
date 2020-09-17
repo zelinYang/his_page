@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>组套</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/recipe/recipe.css.vm")
+	<style>
+		.main-right tbody tr:nth-of-type(1) td[data-field="show"] { background-color: #FF2D2D;}
+		.main-right tbody tr:nth-of-type(2) td[data-field="show"] { background-color: #00cd1e;}
+		.main-right tbody tr:nth-of-type(3) td[data-field="show"] { background-color: #0400e9;}
+		.main-right tbody tr:nth-of-type(4) td[data-field="show"] { background-color: #5d00ad;}
+		.main-right tbody tr:nth-of-type(5) td[data-field="show"] { background-color: #c8b700;}
+		.main-right tbody tr:nth-of-type(6) td[data-field="show"] { background-color: #00cee1;}
+		.main-right tbody tr:nth-of-type(7) td[data-field="show"] { background-color: #9e009d;}
+		.main-right tbody tr:nth-of-type(8) td[data-field="show"] { background-color: #ee5c00;}
+		.main-right tbody tr:nth-of-type(9) td[data-field="show"] { background-color: #97d933;}
+		.main-right tbody tr:nth-of-type(10) td[data-field="show"] { background-color: #0090fc;}
+		.main-right tbody tr:nth-of-type(11) td[data-field="show"] { background-color: #c358c3;}
+		.main-right tbody tr:nth-of-type(12) td[data-field="show"] { background-color: #00bc40;}
+		.main-right tbody tr:nth-of-type(13) td[data-field="show"] { background-color: #FF9224;}
+		.main-right tbody tr:nth-of-type(14) td[data-field="show"] { background-color: #c0006e;}
+		.main-right tbody tr:nth-of-type(15) td[data-field="show"] { background-color: #6e2ed6;}
+		.main-right tbody tr:nth-of-type(16) td[data-field="show"] { background-color: #FF5809;}
+		.main-right tbody tr:nth-of-type(17) td[data-field="show"] { background-color: #5bec71;}
+		.main-right tbody tr:nth-of-type(18) td[data-field="show"] { background-color: #B15BFF;}
+		.main-right tbody tr:nth-of-type(19) td[data-field="show"] { background-color: #E6CAFF;}
+		.main-right tbody tr:nth-of-type(20) td[data-field="show"] { background-color: #9393FF;}
+		.main-right tbody tr:nth-of-type(21) td[data-field="show"] { background-color: #C2FF68;}
+		.main-right tbody tr:nth-of-type(22) td[data-field="show"] { background-color: #B87070;}
+		.main-right tbody tr:nth-of-type(23) td[data-field="show"] { background-color: #AFAF61;}
+		.main-right tbody tr:nth-of-type(24) td[data-field="show"] { background-color: #6FB7B7;}
+		.main-right tbody tr:nth-of-type(25) td[data-field="show"] { background-color: #9999CC;}
+		.main-right tbody tr:nth-of-type(26) td[data-field="show"] { background-color: #B766AD;}
+		.main-right tbody tr:nth-of-type(27) td[data-field="show"] { background-color: #FF9D6F;}
+		.main-right tbody tr:nth-of-type(28) td[data-field="show"] { background-color: #79FF79;}
+		.main-right tbody tr:nth-of-type(29) td[data-field="show"] { background-color: #ffd306;}
+		.main-right tbody tr:nth-of-type(30) td[data-field="show"] { background-color: #a8ff24;}
+		.main-right tbody tr:nth-of-type(31) td[data-field="show"] { background-color: #4555b4;}
+		.main-right tbody tr:nth-of-type(32) td[data-field="show"] { background-color: #66B3FF;}
+	</style>
+</head>
+
+<body class="full-height white-bg">
+
+<div class="layui-row full-height">
+    <form id="recipeGroup_queryForm" class="layui-form">
+        <!-- 组套类型，MZZTLX   0住院  1西药 2成药 3草药 4检查 5化验（检验） 6处置 7针剂 1-7都是门诊的组套 -->
+        <!--01=药品类医嘱 (非草药）0103=草药  0104针剂  06=材料类医嘱 07=嘱托医嘱 08=输血类医嘱 09=护理类医嘱 10=饮食类医嘱 99=其他医嘱-->
+        #formHiddenInput("orderGroupTypesNot" "0103" " ")
+        #formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+        <div class="layui-form-item p-t-xs">
+            <div class="layui-inline">
+                #formTextInput("orderGroupName" "" " maxlength='50' class='layui-input' placeholder='组套检索' ")
+            </div>
+            <div class="layui-inline">
+                <input type="checkbox" name="commonMedicineFlag" value="1" lay-filter="commonMedicineFlag" title="常用" lay-skin="primary" >
+            </div>
+            <div class="layui-inline">
+                #formRadioGroup("orderGroupClassify" "1" ${dicData.dicBelongSysType} " lay-filter='orderGroupClassify' ")
+            </div>
+            <button id="btn_query_recipeGroup" class="layui-btn layui-btn-sm" type="button"><i class="layui-icon layui-icon-search"></i></button>
+            <button id="btn_import_recipeGroupItem" class="layui-btn layui-btn-sm" type="button">导入</button>
+            <button id="btn_save_recipeGroup" class="layui-btn layui-btn-sm" type="button">组套保存</button>
+        </div>
+    </form>
+    <!-- 历史处方主信息 -->
+    <div class="main-left full-height">
+        <!-- 查询表单 -->
+
+
+        <table id="recipeGroupTable" lay-filter="recipeGroupTable"></table> <!-- 数据表格 -->
+    </div>
+
+    <!-- 历史处方明细 -->
+    <div class="main-right layui-hide">
+        <!-- 查询表单 -->
+        <form id="recipeGroupItem_queryForm">
+            #formHiddenInput("orderGroupId" "" "id='orderGroupId'")
+        </form>
+        <table id="recipeGroupItemTable" lay-filter="recipeGroupItemTable"></table> <!-- 数据表格 -->
+    </div>
+
+</div><!-- layui-row -->
+
+#parse("./outpatient/recipe/recipeGroup.js.vm")<!-- 页面js -->
+</body>
+</html>

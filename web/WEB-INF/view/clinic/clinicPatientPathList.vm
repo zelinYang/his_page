@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+</head>
+<body style="background-color: #ffff;">
+    <div class="layui-fluid">
+        <div class="layui-card full-height">
+            <div class="layui-card-body p-n full-height-scroll">
+                <table class="layui-table abuui-table-zljh">
+                    <colgroup>
+                        <col width="9%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col>
+                    </colgroup>
+                    <thead>
+                    <tr id="inhospitalDateNum">
+                        <th>时间</th>
+                        <th>2018-11-20</th>
+                        <th>2018-11-21</th>
+                        <th>2018-11-22</th>
+                        <th>2018-11-23</th>
+                        <th>2018-11-24</th>
+                        <th>2018-11-25</th>
+                        <th>2018-11-26</th>
+                    </tr>
+                    <tr id="inhospitalDayNum">
+                        <th>住院天数</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                        <th>第&nbsp;<font >0</font>&nbsp;天</th>
+                    </tr>
+                    </thead>
+                </table>
+                <table class="layui-table abuui-table-zljh">
+                    <colgroup>
+                        <col width="9%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col width="13%">
+                        <col>
+                    </colgroup>
+                    <tbody>
+                        #set($activityType = $!dicData.dicPathActivityType)
+                        #foreach($option in $!activityType.keySet())
+                            <tr id="activityType_$!option">
+                                <th>$!activityType.get($!option)</th>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                                <td></td>
+                            </tr>
+                        #end
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var activityJson = #if("$!activityJson" != "")$!activityJson;#else{};#end
+layui.use(['element', 'layer'], function(){
+    layer = layui.layer;
+    var index = 0, element = layui.element;
+
+    var otherActivityIds = [];
+    var inhospitalDayNum = $('#inhospitalDayNum');
+    var inhospitalDateNum = $('#inhospitalDateNum');
+    
+    $.each(activityJson, function (k, v){
+        index++;
+        var key = k.split(',');
+        $(inhospitalDateNum).find('th').eq(index).text(key[0]);
+        $(inhospitalDayNum).find('th').eq(index).find('font').text(key[1]);
+
+        $(v).each(function (i, o){
+            var html = "";
+            var activityType = $('#activityType_' + o.activityType);
+            if (o.activityType === 1 || o.activityType === 2) {
+                otherActivityIds.push(o.clinicOrderGroup);
+                html = '<div id="' + o.clinicOrderGroup + '"></div>';
+            } else {
+                html = '<p>' + o.activityContent + '</p>';
+            }
+            $(activityType).find('td').eq((index - 1)).append(html);
+        });
+    });
+    /*
+    common.requestServer('', {}, function (data){
+        $(data).each(function (i, d){
+            $('#' + d.clinicOrderGroup).append('<p>' + o.activityContent + '</p>');
+        });
+    });*/
+});
+</script>
+</html>

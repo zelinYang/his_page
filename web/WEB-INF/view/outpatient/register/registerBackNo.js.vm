@@ -1,0 +1,188 @@
+
+<script>
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+   var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+   var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}';
+ //挂号类型
+   var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'xmSelect', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+      var curRow = [];//当前页数组列表
+      var curRows = [];//当前页数组列表
+
+      var viewMode = ['table','block'];
+      var curViewMode = viewMode[0];
+      var tableBoxHight = 0;
+
+       // 获取查询表单参数对象
+       function getQueryParams() {
+           return $.extend({
+               registerTime:'',
+               keyWord: '',
+               registerType: '',
+               visitDoctorName: '',
+               visitOfficeIds: '',
+               validFlag: YES_FLAG
+           }, common.serializeObject($('#register_queryForm')));
+       }
+//根据name 加载 下拉框 dicMap = {"code":"name"}
+       function loadSelect(name, dicMap) {
+           $('select[name=' + name + ']').empty();
+           var options = $.map(dicMap, function (key, value) {
+               return '<option value="' + value + '">' + key + '</option>';
+           })
+           options.unshift('<option value=""></option>')
+           $('select[name=' + name + ']').html(options.join(''));
+           form.render();
+       }
+
+       // 门诊科室
+       var visitOfficeIds = xmSelect.render({
+           el: '#visitOfficeIds',
+           size: 'small',
+           theme: {
+               color: '#5FB878'
+           },
+           name: 'visitOfficeIds',
+           filterable: true, //开启搜索
+           remoteSearch: true,//开启自定义搜索
+           paging: true,  //启用分页
+           pageRemote: true,//远程分页
+           remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+               common.requestServer('../outpatient/arrangeDutyOfficePageData.jo', {
+                   pageNumber: pageIndex,
+                   keyWord: val
+               }, function (result) {
+                   var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                       return {name: item.arrangeDutyOfficeName, value: item.arrangeDutyOfficeId};
+                   })
+                   cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+               })
+           }
+       });
+       //回车触发查询
+       $("#q_keyWord").keydown(function (event) {
+           if (event.keyCode == 13) {
+               $('#btn_query').click();
+               return false;
+           }
+       })
+
+       // 查询按钮
+       $('#btn_query').click(function (){
+           tableIns.reload({ where: getQueryParams() });
+           cleanBills()
+       });
+
+       // 清空按钮
+       $('#btn_clean').click(function () {
+           common.cleanForm('register_queryForm');
+           visitOfficeIds.setValue([]);
+           $("#registerTime").prop("disabled",false);//禁用当前日期输入框
+           cleanBills()
+       })
+
+      //第一个实例
+      var tableIns = table.render({
+         elem: '#regPatientTable'
+        ,defaultToolbar: []
+        ,height: getTableHgt()
+        ,url: '../register/registerListData.jo' //数据接口
+        ,page: true //开启分页
+        ,limit:10
+        ,request: {
+           pageName: 'pageNumber' //页码的参数名称，默认：page
+          ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,where: getQueryParams(),cols: [[ //表头
+        	{field : 'visitCardNo',title : '就诊卡号'}
+           ,{field : 'registerTime',title : '挂号时间',
+                  templet :function (row) {
+                      return layui.util.toDateString(row.registerTime, 'yyyy-MM-dd HH:mm');
+                  }}
+          ,{field : 'patientName',title : '患者姓名'}
+          ,{field : 'visitOfficeName',title : '科室名称'}
+          ,{field : 'visitDoctorName',title : '医生姓名'}
+          ,{field : 'registerType', title : '挂号类型',
+            templet :function (row) { return dicRegisterType[row.registerType] || ""}
+          }
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+            curRows = res.data;
+        }
+      });
+
+	// 获取表格高度
+	function getTableHgt () {
+	return ($('body').height() - $('#register_queryForm').height() - 213)
+}
+
+	// 重置表格高度
+	$(window).resize(function () {
+	var height = getTableHgt()
+	table.reload('regPatientTable', {
+	height: height
+})
+})
+      //监听行单击事件
+      table.on('row(regTab)', function(obj){
+        var row = obj.data;
+        setBills(row);
+      });
+
+
+    //设置单据
+      function setBills(register){
+          var val=0;
+          //转两位小数 '.toFixed(2)'
+          $("#serialNum").html(register.serialNum);//就诊号码
+          $("#patientName").html(register.patientName);//患者姓名
+          $("#visitOfficeName").html(register.visitOfficeName);//挂号科室
+          $("#medicalRecordsFee").html(register.medicalRecordsFee.toFixed(2));//病历费
+          $("#diagnosisFee").html(register.diagnosisFee.toFixed(2));//诊查费
+          var payableSum = register.medicalRecordsFee+register.diagnosisFee;
+          $("#payableSum").html(payableSum.toFixed(2));//合计
+          $("#cash").html(payableSum.toFixed(2));//现金
+          $("#registerId").val(register.registerId);//挂号记录id
+      }
+    //监听勾选未就诊
+      form.on('checkbox(allUnattended)', function(data){
+          $("#registerTime").prop("disabled",data.elem.checked);//禁用当前日期输入框
+          $('#btn_query').click();
+       });
+      function clean(){
+          //清除值
+    	  $("input[name='visitCardNo']").val(null);
+          $("input[name='patientName']").val(null);
+      }
+    //清除单据
+      function cleanBills(){
+          //清除值
+          $(".billInput").html(null);
+          $("#registerId").val(null);
+      }
+
+      //监听提交
+      //提交表单
+      form.on('submit(btn_save)', function(data){
+          var registerId=$("#registerId").val();
+    	  if(!registerId){
+    	      common.alert(' 请在列表选中患者后，再操作！', 0);
+    	      return false;
+    	  }
+    	  var url = contextPath + '/register/saveRegisterBackNo.jo', params = {registerId:registerId}, msg = "退号成功";
+    	  common.requestServerHandler(url, params, msg, function(result) {
+              $('#btn_query').click();
+    	  })
+         return false;
+      });
+
+  });
+</script>

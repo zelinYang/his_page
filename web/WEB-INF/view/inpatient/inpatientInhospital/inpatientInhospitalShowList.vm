@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-住院医生-报表管理-在院患者查询</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1920px){
+            .layui-form.autoWidth .layui-input-inline {
+                 width: initial;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item ">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">住院病区</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectFirstNone("currentWardId" "" $!inpatientWardMap "id='currentWardId' lay-filter='currentWardId' " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline" >
+                        <label class="layui-form-label">入院时间</label>
+                        <div class="layui-input-inline input-inline-long" style="width:180px;">
+                            #formTextInput("" "" "class='layui-input layer-date' tag='inhospitalDateBegin,inhospitalDateEnd' id='inhospitalDate' autocomplete='off' placeholder='入院时间范围' ")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">床位号</label>
+                        <div class="layui-input-inline input-inline-short">
+                            #formTextInput("currentBedNo" "" " class='layui-input' id='q_currentBedNo' autocomplete='off'")
+                        </div>
+                    </div>
+                    <div class="layui-inline" >
+                        <div class="layui-input-inline wd-220">
+                            #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='姓名/电话/身份证/就诊卡号/住院流水号/医保号/健康卡' lay-tips='姓名/电话/身份证/就诊卡号/住院流水号/社保号/健康卡查询'")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline" >
+                    <div class="layui-inline">
+                        <label class="layui-form-label">护理级别</label>
+                        <div class="layui-input-inline input-inline-auto">
+                            #formCheckboxeGroup("nurseLevels" "" $!dicData.dicNurseLevel "lay-skin='primary' lay-filter='nurseLevels'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">患者情况</label>
+                        <div class="layui-input-inline input-inline-auto">
+                            #formCheckboxeGroup("inpatientConditions" "" $!dicData.dicPatientCondition "lay-skin='primary' lay-filter='inpatientConditions'")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline" >
+                    <div class="layui-inline">
+                        <label class="layui-form-label">在院状态</label>
+                        <div class="layui-input-inline input-inline-auto">
+                            #set($inhospitalStates=["$!{CONST.AppConstants.INHOSPITAL_STATE_IN}", "$!{CONST.AppConstants.INHOSPITAL_STATE_PASS_OUT}", "$!{CONST.AppConstants.INHOSPITAL_STATE_CONFIRM_OUT}",
+                            "$!{CONST.AppConstants.INHOSPITAL_STATE_EXPECT_BALANCE}", "$!{CONST.AppConstants.INHOSPITAL_STATE_UNBALANCEED}"])
+                            #formCheckboxeGroup("inhospitalStates" $inhospitalStates $!dicData.dicInhospitalStatePatient "lay-skin='primary' lay-filter='inhospitalStates'")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="syncInpatientInhospitalListGrid" lay-filter="syncInpatientInhospitalListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 列表表格 工具栏-->
+<script type="text/html" id="operateFormatter">
+    <a class=""><i class="iconfont icon-shou"></i></a>
+</script>
+<!-- 本页面js -->
+<script>
+    var NO_FLAG = '$!{CONST.AppConstants.NO_FLAG}';
+    var YES_FLAG = '$!{CONST.AppConstants.YES_FLAG}';
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicBloodType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBloodType)');
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    //患者证件类型
+    var dicPatientIdType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientIdType)');
+    //患者类别
+    var dicPatientClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientClassify)');
+    //人员类型
+    var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)');
+    var dicRhBloodType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRhBloodType)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)');
+    var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+    var dicFoodGuide = JSON.parse('$dicTools.changeMapToJson($dicData.dicFoodGuide)');
+
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        //住院病区
+        form.on('select(currentWardId)', function () {
+            $('#btn_query').click();
+        });
+
+        //按入院日期范围查询
+        laydate.render({
+            elem: '#inhospitalDate', range: true
+            ,trigger: 'click' //采用click弹出
+            , done: function (value, date, endDate) {
+                $("#inhospitalDate").val(value);
+                $('#btn_query').click();
+            }
+        });
+
+        //责任护士
+        form.on('select(dutyNurserRange)', function () {
+            $('#btn_query').click();
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        //护理级别
+        form.on('checkbox(nurseLevels)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //病情
+        form.on('checkbox(inpatientConditions)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //在院状态
+        form.on('checkbox(inhospitalStates)', function (data) {
+            $('#btn_query').click();
+        });
+
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                currentWardId:'',
+                currentBedNo:'',
+                dutyNurserRange:'',
+                keyWord: '',
+                nurseLevels: '',
+                inpatientConditions: '',
+                inhospitalStates: '',
+                arrangeBedFlag: '',
+            }, common.serializeObject($('#queryForm'), ['inhospitalDate']));
+        }
+
+//按入院日期范围查询
+        laydate.render({
+            elem: '#inhospitalDate', range: true
+            , done: function (value, date, endDate) {
+                if (date.year && endDate.year) {
+                    var inhospitalDateBegin = date.year + "-" + date.month + "-" + date.date;
+                    var inhospitalDateEnd = endDate.year + "-" + endDate.month + "-" + endDate.date;
+                    $("#inhospitalDate").val(inhospitalDateBegin + " - " + inhospitalDateEnd);
+                    $("#inhospitalDateBegin").val(inhospitalDateBegin);
+                    $("#inhospitalDateEnd").val(inhospitalDateEnd);
+                } else {
+                    $("#inhospitalDate").val("");
+                    $("#inhospitalDateBegin").val("");
+                    $("#inhospitalDateEnd").val("");
+                }
+                query();
+            }
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('syncInpatientInhospitalListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('queryForm');
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#syncInpatientInhospitalListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/inpatient/inpatientHospitalPageList.jo',
+            where: getQueryParams(),
+            cols: [[{
+                fixed: 'left',
+                align: 'center',
+                event: 'open',
+                templet: '#operateFormatter',
+            },
+                {field: 'currentBedNo', title: '床位号', width: 105, sort: true, fixed: true}, {
+                field: 'patientName',
+                title: '姓名',
+                width: 90,
+                sort: true,
+                fixed: true
+            }, {field: 'inhospitalNo', title: '住院号', width: 140}, {
+                field: 'inhospitalState',
+                title: '在院状态',
+                width: 130,
+                templet: function (row) {
+                    if (row.inhospitalState) {
+                        if (row.inhospitalState == "0" || row.inhospitalState == "1" || row.inhospitalState == "3") {
+                            return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                        } else {
+                            return dicInhospitalState[row.inhospitalState];
+                        }
+                    } else {
+                        return ""
+                    }
+                }
+            }, {
+                field: 'nurseLevel', title: '护理级别', width: 90, templet: function (row) {
+                    return dicNurseLevel[row.nurseLevel] || '';
+                }
+            }, {field: 'visitCardNo', title: '就诊卡号', width: 180}, {
+                field: 'patientIdCard',
+                title: '身份证号',
+                width: 180
+            }, {
+                field: 'patientSex', title: '性别', width: 100, templet: '#sexTpl'
+            }, {field: 'patientAgeYear', title: '年龄', width: 80},
+                {
+                    title: '入院日期',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.inhospitalDate ? util.toDateString(row.inhospitalDate, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                field: 'currentOfficeName', title: '当前科室', width: 120
+            }, {
+                field: 'inpatientCondition', title: '患者情况', width: 90, templet: function (row) {
+                    return dicPatientCondition[row.inpatientCondition] || '';
+                }
+            }, {
+                field: 'foodGuide', title: '饮食情况', width: 90, templet: function (row) {
+                    return dicFoodGuide[row.foodGuide] || '';
+                }
+            }, {field: 'managerDoctorName', title: '主管医生', width: 90}, {
+                field: 'dutyNurserName',
+                title: '责任护士',
+                width: 90
+            }, {field: 'outOfficelDate', title: '转入时间', width: 105},
+                {field: 'allergyHistory', title: '过敏药物', width: 150},
+                {
+                    field: 'patientAge',
+                    title: '年龄',
+                    minWidth: 90
+                }, {
+                    title: '出生日期',
+                    minWidth: 105,
+                    templet: function (row) {
+                        return row.patientBirth ? util.toDateString(row.patientBirth, 'yyyy-MM-dd') : '';
+                    }
+                }, {
+                    field: 'patientClassify',
+                    title: '患者类型',
+                    minWidth: 90,
+                    templet: function (row) {
+                        return dicPatientClassify[row.patientClassify] || ''
+                    }
+                }, {
+                    field: 'patientIdCard',
+                    title: '证件号码',
+                    minWidth: 180
+                }, {
+                    field: 'patientAddr',
+                    title: '现居住地',
+                    minWidth: 180
+                }, {
+                    field: 'patientPhone',
+                    title: '患者电话',
+                    minWidth: 120
+                }, {
+                    field: 'guardName',
+                    title: '监护人姓名',
+                    minWidth: 100
+                }, {
+                    field: 'guardIdCard',
+                    title: '监护人证件号码',
+                    minWidth: 180
+                }, {
+                    field: 'inhospitalId',
+                    title: '住院流水号',
+                    minWidth: 90
+                }, {
+                    field: 'patientMedicalNo',
+                    title: '病案号',
+                    minWidth: 90
+                }, {
+                    title: '入院来源标志',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.newInhospitalFlag;
+                    }
+                }, {
+                    title: '省内/外患者',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.provinceFlag;
+                    }
+                }, {
+                    title: '在职退休',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.jobRetireFlag;
+                    }
+                }, {
+                    field: 'inhospitalOfficeName',
+                    title: '入院科室',
+                    minWidth: 130
+                }, {
+                    title: '转科-最近转入时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.inOfficeDate ? util.toDateString(row.inOfficeDate, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'outOfficeName',
+                    title: '转出科室',
+                    minWidth: 130
+                }, {
+                    title: '转科-最近转出时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.outOfficeDate ? util.toDateString(row.outOfficeDate, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'inpatientDiseaseState',
+                    title: '入院时病情',
+                    minWidth: 130
+                }, {
+                    title: '是否出院31天内再住院标志',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicYesNo[row.oneMonthVisitFlag] || "";
+                    }
+                }, {
+                    field: 'oneMonthVisitAim',
+                    title: '出院31天内再住院目的',
+                    minWidth: 130
+                }, {
+                    title: '是否颅脑损伤',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicYesNo[row.brainInjuryFlag] || "";
+                    }
+                }, {
+                    title: '颅脑损伤患者人院前昏迷时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return (row.beBrainInjuryDay || "") + '天' + (row.beBrainInjuryHour || "") + '时' + (row.beBrainInjuryMinute || "") + ' 分';
+                    }
+                }, {
+                    field: 'wardName',
+                    title: '入院病区',
+                    minWidth: 130
+                }, {
+                    field: 'currentWardName',
+                    title: '当前病区',
+                    minWidth: 130
+                }, {
+                    title: '病人性质',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicPatientKind[row.patientKind] || "";
+                    }
+                }, {
+                    title: '是否分配床号',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicYesNo[row.arrangeBedFlag] || "";
+                    }
+                }, {
+                    field: 'inhospitalRoomNo',
+                    title: '入院房间号',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalBedNo',
+                    title: '入院床号',
+                    minWidth: 130
+                }, {
+                    field: 'currentRoomNo',
+                    title: '当前房间号',
+                    minWidth: 130
+                }, {
+                    field: 'patientBirthAddr',
+                    title: '患者出生地',
+                    minWidth: 130
+                }, {
+                    field: 'patientHeight',
+                    title: '患者身高',
+                    minWidth: 130
+                }, {
+                    field: 'patientWeight',
+                    title: '入院患者体重(kg)',
+                    minWidth: 130
+                }, {
+                    field: 'patientAgeMonth',
+                    title: '患者年龄（岁）',
+                    minWidth: 130
+                }, {
+                    title: '血型',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicBloodType[row.bloodType] || ""
+                    }
+                }, {
+                    title: 'RH血型',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return dicRhBloodType[row.rhBloodType] || ""
+                    }
+                }, {
+                    field: 'patientNation',
+                    title: '民族名称',
+                    minWidth: 130
+                }, {
+                    field: 'nativeRegionAddr',
+                    title: '患者户口地址（门牌号）',
+                    minWidth: 130
+                }, {
+                    field: 'nativePlaceId',
+                    title: '籍贯',
+                    minWidth: 130
+                }, {
+                    field: 'postalCode',
+                    title: '邮编(户口)',
+                    minWidth: 130
+                }, {
+                    field: 'companyPostalCode',
+                    title: '工作单位/学校邮编',
+                    minWidth: 130
+                }, {
+                    field: 'companyPhone',
+                    title: '工作单位/学校电话',
+                    minWidth: 130
+                }, {
+                    field: 'companyAddr',
+                    title: '工作单位/学校地址（门牌号）',
+                    minWidth: 130
+                }, {
+                    field: 'companyAddr',
+                    title: '工作单位/学校地址（门牌号）',
+                    minWidth: 130
+                }, {
+                    field: 'companyName',
+                    title: '工作单位/学校名称',
+                    minWidth: 130
+                }, {
+                    field: 'contactName',
+                    title: '联系人',
+                    minWidth: 130
+                }, {
+                    field: 'contactRelation',
+                    title: '联系人关系',
+                    minWidth: 130
+                }, {
+                    field: 'contactPhone',
+                    title: '联系电话',
+                    minWidth: 130
+                }, {
+                    field: 'contactPatientAddr',
+                    title: '联系（现居住）地址（门牌号）',
+                    minWidth: 130
+                }, {
+                    field: 'guardIdType',
+                    title: '监护人证件类型',
+                    minWidth: 130
+                }, {
+                    field: 'recvDoctorName',
+                    title: '收治医师姓名',
+                    minWidth: 130
+                }, {
+                    field: 'socialSecurityCard',
+                    title: '社保号，医/农保卡号',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalType',
+                    title: '住院业务类型',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalNum',
+                    title: '入院次数',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalCause',
+                    title: '入院原因描述',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalSource',
+                    title: '入院途径，入院来源',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalWay',
+                    title: '入院方式，入病房方式',
+                    minWidth: 130
+                }, {
+                    field: 'solarTerm',
+                    title: '发病节气',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalDiagnosisDate',
+                    title: '入院确诊日期',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.inhospitalDiagnosisDate ? util.toDateString(row.inhospitalDiagnosisDate, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'outpatientDoctorName',
+                    title: '门诊医师姓名',
+                    minWidth: 130
+                }, {
+                    field: 'diagnosisDoctorName',
+                    title: '当前主治医师姓名',
+                    minWidth: 130
+                }, {
+                    field: 'diagnosisDoctorTime',
+                    title: '当前主治医师签名时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.diagnosisDoctorTime ? util.toDateString(row.diagnosisDoctorTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'archiaterDoctorName',
+                    title: '当前主任医师姓名',
+                    minWidth: 130
+                }, {
+                    field: 'archiaterDoctorTime',
+                    title: '当前主任医师签名时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.diagnosisDoctorTime ? util.toDateString(row.diagnosisDoctorTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'managerDoctorTime',
+                    title: '当前主管医师签名时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.managerDoctorTime ? util.toDateString(row.managerDoctorTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'dutyNurserName',
+                    title: '当前责任护士姓名',
+                    minWidth: 130
+                }, {
+                    field: 'bedDoctorName',
+                    title: '当前管床医师姓名',
+                    minWidth: 130
+                }, {
+                    field: 'bedDoctorTime',
+                    title: '当前主管医师签名时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.bedDoctorTime ? util.toDateString(row.bedDoctorTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'treatmentGroupId',
+                    title: '当前诊疗小组序号',
+                    minWidth: 130
+                }, {
+                    field: 'healthAssessAbnormal',
+                    title: '健康评价异常描述',
+                    minWidth: 130
+                }, {
+                    field: 'tcmCondition',
+                    title: '中医体质情况',
+                    minWidth: 130
+                }, {
+                    field: 'infectiousDiseaseFlag',
+                    title: '入院是否传染病',
+                    minWidth: 130
+                }, {
+                    field: 'chiefAction',
+                    title: '主诉',
+                    minWidth: 130
+                }, {
+                    field: 'cardinalSymptom',
+                    title: '主要症状',
+                    minWidth: 130
+                }, {
+                    field: 'patientSign',
+                    title: '体征',
+                    minWidth: 130
+                }, {
+                    field: 'presentDisease',
+                    title: '现病史，疾病史(含外伤)',
+                    minWidth: 130
+                }, {
+                    field: 'inoculationHistory',
+                    title: '预防接种史',
+                    minWidth: 130
+                }, {
+                    field: 'bloodTransHistory',
+                    title: '输血史',
+                    minWidth: 130
+                }, {
+                    field: 'personalHistory',
+                    title: '个人史',
+                    minWidth: 130
+                }, {
+                    field: 'menstrualHistory',
+                    title: '月经史',
+                    minWidth: 130
+                }, {
+                    field: 'obstericalHistory',
+                    title: '婚育史',
+                    minWidth: 130
+                }, {
+                    field: 'pastDisease',
+                    title: '既往史',
+                    minWidth: 130
+                }, {
+                    field: 'familyHeredityDisease',
+                    title: '遗传家族史',
+                    minWidth: 130
+                }, {
+                    field: 'tcmObservedResult',
+                    title: '中医（四诊）观察结果等描述',
+                    minWidth: 130
+                }, {
+                    field: 'bodyExam',
+                    title: '体格检查记录，病例特点',
+                    minWidth: 130
+                }, {
+                    field: 'assistExam',
+                    title: '辅助检查记录',
+                    minWidth: 130
+                }, {
+                    field: 'treatMeasure',
+                    title: '处理措施',
+                    minWidth: 130
+                }, {
+                    field: 'treatPlan',
+                    title: '诊疗计划',
+                    minWidth: 130
+                }, {
+                    field: 'hbsagFlag',
+                    title: 'HbsAg，乙肝病毒',
+                    minWidth: 130
+                }, {
+                    field: 'hcvabFlag',
+                    title: 'HCV-Ab，丙型肝炎病毒(HCV)',
+                    minWidth: 130
+                }, {
+                    field: 'hcvabFlag',
+                    title: 'HCV-Ab，丙型肝炎病毒(HCV)',
+                    minWidth: 130
+                }, {
+                    field: 'hivabFlag',
+                    title: 'HIV-Ab，HIV是艾滋病毒',
+                    minWidth: 130
+                }, {
+                    field: 'syphilisFlag',
+                    title: '梅毒',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalEmrFlag',
+                    title: '电子病历归档状态',
+                    minWidth: 130
+                }, {
+                    field: 'outhospitalWayHospital',
+                    title: '离院方式-医嘱转院',
+                    minWidth: 130
+                }, {
+                    field: 'inhospitalDays',
+                    title: '在院天数',
+                    minWidth: 130
+                }, {
+                    field: 'outhospitalWay',
+                    title: '离院去向',
+                    minWidth: 130
+                }, {
+                    field: 'antibioticFlag',
+                    title: '住院期间是否使用抗生素',
+                    minWidth: 130
+                }, {
+                    field: 'emrParting',
+                    title: '入院病历分型',
+                    minWidth: 130
+                }, {
+                    field: 'emrPartingTime',
+                    title: '入院病历分型时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.emrPartingTime ? util.toDateString(row.emrPartingTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'emrPartingDoctorType',
+                    title: '入院医师职称或类别',
+                    minWidth: 130
+                }, {
+                    field: 'emrPartingUserName',
+                    title: '入院病历分型医生姓名',
+                    minWidth: 130
+                }, {
+                    field: 'modifyEmrParting',
+                    title: '修正病历分型',
+                    minWidth: 130
+                }, {
+                    field: 'modifyPartingDoctorType',
+                    title: '修正医师职称或类别',
+                    minWidth: 130
+                }, {
+                    field: 'modifyPartingUserName',
+                    title: '修正病历分型医生姓名',
+                    minWidth: 130
+                }, {
+                    field: 'modifyPartingTime',
+                    title: '修正病历分型时间',
+                    minWidth: 130,
+                    templet: function (row) {
+                        return row.modifyPartingTime ? util.toDateString(row.modifyPartingTime, 'yyyy-MM-dd HH:mm') : '';
+                    }
+                }, {
+                    field: 'addEmrParting ',
+                    title: '补充病历分型',
+                    minWidth: 130
+                }]]
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 13)
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(syncInpatientInhospitalListGrid)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'open':
+                    top.common.open('$contextPath' + '/inpatient/inpatientInfoMain.do?inhospitalId=' + data.inhospitalId, '住院信息（' + data.patientName + '）', {
+                        area: ['90%', '90%'],
+                        scroll: true
+                    })
+                    break;
+            }
+        });
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('syncInpatientInhospitalListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>
+
+
+</body>
+</html>

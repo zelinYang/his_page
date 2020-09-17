@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+.layui-table-view .layui-table td {padding: 3px 0;}
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper layui-bg-white">
+        <!-- 缴费清单 -->
+        <form id="queryForm" class="layui-form">
+            <div class="layui-form-item search-term layui-row-query">
+              #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+              #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+              #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+              #formHiddenInput("chargeTimeBegin" "$!inpatientInhospital.chargeTimeBegin" "id='chargeTimeBegin'")
+              #formHiddenInput("chargeTimeEnd" "$!inpatientInhospital.chargeTimeEnd" "id='chargeTimeEnd'")
+                <div class="layui-inline">
+                    <label class="layui-form-label">费用日期</label>
+                    <div class="layui-input-inline">
+                  #formTextInput("" "" "id='chargeTime' tag='chargeTimeBegin,chargeTimeEnd' class='layui-input'")
+                    </div>
+                </div>
+            </div>
+        </form>
+        <div class="layui-row p-t-n full-height" style="height: calc(100% - 50px);">
+            <table class="layui-hide full-height" id="feeItemListTab" lay-filter="feeItemListTab"></table>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script>
+    var dicInhospitalChargeGroupCodeName = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCodeName)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)');
+    var mergeTd = {};// 存放计算表格数据需要合并的组号
+
+    layui.use(['jquery','table', 'element', 'form', 'laydate'], function(){
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var element = layui.element;
+        element.render();
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#feeItemListTab'
+            ,defaultToolbar: []
+            ,height: 'full-48'//高度
+            ,url: '../inpatient/payInventoryList.jo' //数据接口
+            ,page:true
+            ,totalRow: true
+            ,request: {pageName: 'pageNumber', limitName: 'pageSize' }
+            ,where: common.serializeObject($('#queryForm'))
+            ,cols: [[ //表头
+				{   field : 'chargeName',
+					title : '费用名称',
+					width :'200'
+				}
+				,{
+                    field : 'chargeGroupName',
+                    width:100,
+                    title : '类别',
+                    templet : function (row) {
+                        if (row.chargeGroupId) {
+                            return dicInhospitalChargeGroupCodeName[row.chargeGroupId]
+                        }
+                        return "";
+                    }
+                }
+                , {
+                    field : 'giveTotalQuantity',
+                    title : '数量'
+                }
+                ,{
+                    field : 'unitPrice',
+                    title : '单价'
+                },
+                {
+                    field : 'chargeTime',
+                    width :'200',
+                    title : '费用日期',
+					templet :function (row) {
+						if (row.chargeTime) {
+							return getFormatDateByLong(row.chargeTime, 'yyyy-MM-dd hh:mm');
+						}
+						return "";
+					}
+                }
+                ,{
+                    field : 'chargingDate',
+                    width :'200',
+                    title : '计费日期',
+					templet :function (row) {
+						if (row.chargingDate) {
+							return getFormatDateByLong(row.chargingDate, 'yyyy-MM-dd hh:mm');
+						}
+						return "";
+					}
+                }
+                ,{
+                    field : '',
+                    width :'200',
+                    totalRowText:'统计',
+                    title : '标准编码'
+                }
+                ,{
+                    field : 'settlementPrice',
+                    width :'100',
+                    totalRow:true,
+                    title : '金额'
+                }
+                ,{
+                    field : 'chargeGroupId',
+                    hide : true,
+                    templet : function (row) {
+                        if (row.chargeGroupId) {
+                            mergeTd[row.chargeGroupId] = row.chargeGroupId;
+                            return '<span group-id="' + row.inhospitalFeeItemId + '" tr-group="' + row.chargeGroupId + '"></span>';
+                        }
+                        return "";
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            ,done: function(res, curr, count){
+                $("#feeItemListTab").find("tr").each(function () {
+                    if ($(this).find("div").text() == "") {
+                        $(this).css({"background-color": "#009966", 'color': '#99CCCC'});
+                    }
+
+                });
+
+                // 遍历计算同组号的合并单元个
+                $.each(mergeTd, function (key, val){
+
+                    var trGroup = $('div.layui-table-cell span[tr-group="' + key + '"]');
+                    var trGroupLen = $(trGroup).length - 1;
+                    console.log(trGroup);
+                    $(trGroup).each(function (i, ele){
+                        var allTd = $(ele).parent().parent().siblings();
+                        if (i < trGroupLen) {
+                            $(allTd[0]).css("border-bottom", "0");
+                        }
+                        if (i > 0){
+                            $(allTd[0]).html('');
+                        }
+                    });
+                });
+            }
+        });//table.render
+
+        //按日期范围查询
+        laydate.render(
+            {
+                elem: '#chargeTime',
+                range: true,
+                done: function (value, date, endDate){
+                    if (date.year && endDate.year){
+                        var chargeTimeBegin = date.year + "-" + date.month + "-" + date.date;
+                        var chargeTimeEnd = endDate.year + "-" + endDate.month + "-" + endDate.date;
+                        $("#chargeTimeBegin").val(chargeTimeBegin);
+                        $("#chargeTimeEnd").val(chargeTimeEnd);
+                    } else {
+                        $("#chargeTimeBegin").val("");
+                        $("#chargeTimeEnd").val("");
+                    }
+
+                    reloadList();
+                }
+            });
+        // 刷新列表
+        function reloadList() {
+            if (table) {
+                table.reload('feeItemListTab', {
+                    where: { //设定异步数据接口的额外参数，任意设
+                        chargeTimeBegin: $("#chargeTimeBegin").val()
+                        ,chargeTimeEnd: $("#chargeTimeEnd").val()
+                    }
+                    ,page: {
+                        curr: 1 //重新从第 1 页开始
+                    }
+                }); //只重载数据
+            }
+        }
+    });
+
+    //对数据进行排序
+    function compare(property) {
+        return (firstobj, secondobj) =>{
+            const firstValue = firstobj[property];
+            const secondValue = secondobj[property];
+            return firstValue - secondValue; //升序
+        };
+    }
+
+</script>
+</html>

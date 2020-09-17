@@ -1,0 +1,500 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
+    "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+        <script src="../../plugins/jquery/jquery.min.js?_=sfafa"></script>
+        <script type="text/javascript" src="../internal.js"></script>
+        <script src="../../../ueditor.parse.js"></script>
+        <style>
+            .view {
+                padding:0;
+                word-wrap:break-word;
+                cursor:text;
+                height:90%;
+            }
+            body {
+                margin:8px;font-family: 宋体, SimSun;
+                font-size:14px;
+                line-height: 1.4
+            }
+            p {
+                margin:0;
+                line-height: 1.4;
+            }
+            #printarea {
+                border: 1px solid #d4d4d4;
+                border-radius: 4px;
+                box-shadow: 0 0 0 1px #d1d1d1, 0 0 3px 1px #ccc;
+            }
+            .footer {
+                /*border-bottom: 4px solid #d4d4d4;*/
+                /*margin: 0 -40px;*/
+            }
+            .footer-p {
+                border-bottom: 4px solid #d4d4d4;
+                margin: 0 -40px;
+            }
+            #preview table {
+                margin-bottom: 0px !important;
+                border-collapse: collapse;
+                display: table;
+            }
+            .pagination {
+                page-break-before: auto;
+                page-break-after: always;
+            }
+            span.emr-ctrl span.emr-value input {
+                border: none;
+            }
+
+            span.emr-ctrl span.emr-value input.underline {
+                border-bottom: 1px solid #000;
+            }
+            #preview td, #preview th {
+                border: 1px solid #000;
+            }
+
+            input[type=checkbox] {
+                margin-right: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                width: 15px;
+                height: 12px;
+                position: relative;
+            }
+
+            input[type=checkbox]:after {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                top: 0;
+                left: 0;
+                content: " ";
+                border: #555 1px solid;
+                background-color: #ededed;
+                display: inline-block;
+                visibility: visible;
+                padding: 3px;
+                border-radius: 3px;
+            }
+
+            input[type=checkbox]:checked:before {
+                content: "✔";
+                display: block;
+                position: relative;
+                font-size: 18px;
+                top: -3px;
+                left: 1.5px;
+                width: 6px;
+                height: 6px;
+                color: #222;
+                font-weight: 400;
+                z-index: 1;
+            }
+
+            input[type=radio] {
+                margin-right: 5px;
+                cursor: pointer;
+                font-size: 14px;
+                width: 15px;
+                height: 12px;
+                position: relative;
+                border: #333 2px solid;
+            }
+
+            input[type=radio]:after {
+                position: absolute;
+                width: 8px;
+                height: 8px;
+                top: 0;
+                left: -1px;
+                content: " ";
+                color: #fff;
+                display: inline-block;
+                visibility: visible;
+                padding: 3px;
+                border-radius: 50%;
+                border: #555 1px solid;
+                background-color: #ededed;
+
+            }
+
+            input[type=radio]:checked:before {
+                content: "●";
+                display: block;
+                position: relative;
+                font-size: 18px;
+                top: -3px;
+                left: 1.5px;
+                width: 6px;
+                height: 6px;
+                color: #222;
+                font-weight: 400;
+                z-index: 1;
+            }
+            table {
+                margin-bottom: 0px;
+                margin-top: -1px;
+                display: table;
+            }
+            .ctrl-hide {
+                display: none;
+            }
+            .layui-btn-sm {
+                height: 30px;
+                line-height: 30px;
+                padding: 0 10px;
+                font-size: 12px;
+            }
+            .layui-btn {
+                display: inline-block;
+                height: 38px;
+                line-height: 38px;
+                padding: 0 18px;
+                background-color: #009688;
+                color: #fff;
+                white-space: nowrap;
+                text-align: center;
+                font-size: 14px;
+                border: none;
+                border-radius: 2px;
+                cursor: pointer;
+                vertical-align: middle;
+                outline: 0;
+                -webkit-appearance: none;
+                transition: all .3s;
+                -webkit-transition: all .3s;
+                box-sizing: border-box;
+            }
+        </style>
+        <title></title>
+    </head>
+    <body class="view">
+    <div style="position: absolute; left: 0; top: 0; bottom: 5px; right: 0;-webkit-overflow-scrolling:touch; overflow: auto;">
+        <div style="float: left;">
+            <button class="layui-btn layui-btn-sm" onclick="doPrint()">打印</button>
+        </div>
+        <div id="printarea" style=" width:784px;margin: 5px auto 0px;">
+            <div id="preview" style="margin: 30px 40px;">
+
+            </div>
+        </div>
+    </div>
+    </body>
+    <script>
+        var previewDom = document.getElementById('preview');
+        var printareaDom = document.getElementById('printarea');
+        previewDom.innerHTML = editor.getContent(); //把电子病历内容放到打印区
+        var printType = editor.options.editor.printType; //打印方式，1=正常打印，2=横向打印
+        var pageHeight = (printType === '1'? 1074: 779 - 40);// 打印页面高度
+        printareaDom.style.width = (printType === '1'? '784px': '1074px');//打印宽度
+
+        window.onload = function () {
+            console.log(editor.getOpt());
+            //获取打印字体大小,没有值就用默认的
+            if (editor.getOpt('fontSize')) {
+                document.getElementById('printarea').style['font-size'] = editor.getOpt('fontSize') + 'px';
+            }
+            //编辑区域设置只读
+            $('#printarea').find('.emr-value').attr('contenteditable', 'false');
+            var emrValues = document.getElementsByClassName( "emr-value" );
+            $( document ).find('input').attr('readonly', 'readonly');
+            $( document ).find('input[type="radio"]').attr('disabled', 'false');
+            $( document ).find('input[type="checkbox"]').attr('disabled', 'false');
+            //对部分控件复制页面后没有值的控件进行赋值
+            console.log($(editor.getContent()).find('.emr-ctrl[emr-type="text"]'));
+            $(editor.getContent()).find('.emr-ctrl[emr-type="text"]').each(function() {
+
+            });
+            var controls = editor.getControlById();
+            for (var i = 0, len = controls.length; i < len; i++) {
+                var opt = controls[i].getOpt();
+                var ctrlElement = $('#' + controls[i].getCtrlElement().id)[0];
+                if (opt.saveFlag === 1) {
+                    continue;
+                }
+                //单行文本没有填写的显示'-'
+                if (opt.type === 'text' && opt.inputFlag === 1) {
+                    var value = '-';
+                    if (opt.fieldName) {
+                        var fieldNames = opt.fieldName.split(',');
+                        value = controls[i].getValue()? controls[i].getValue()[fieldNames[0]]: '-'
+                    } else {
+                        value = controls[i].getValue()? controls[i].getValue(): '-';
+                    }
+                    ctrlElement.firstChild.innerHTML = value;
+                    if (opt.underlineFlag === 1) {
+                        ctrlElement.style['border-bottom'] = '1px solid #000';
+                    }
+                    if (opt.width) {
+                        ctrlElement.style.display = 'inline-block';
+                        ctrlElement.style.width = opt.width + 'px';
+                    }
+                }
+                if (opt.type === 'edittable') {
+                    var ctrlValue = controls[i].getValue();
+                    var $lastTrDom = $( ctrlElement.firstChild ).children().eq( opt.rowsNum );
+                    if ( Array.isArray( ctrlValue ) ) {
+                        fieldNames = opt.fieldName.split( ',' );
+                        var volumeIndex = 0;
+                        var volumeLen = 0;
+                        $.each( ctrlValue, function( index, obj ) {
+                            var $newTrDom = $lastTrDom.clone();
+                            $newTrDom.removeAttr( 'data' );
+                            $newTrDom.find( 'td' ).each( function( index ) {
+                                $( this ).attr( 'rowspan', 1 );
+                                var $ctrlDoms = $( this ).find( '.emr-ctrl' );
+                                $ctrlDoms.each( function() {
+                                    var ctrl = new parent.MiniControl( this );
+                                    var ctrlId = ctrl.getCtrlId();
+                                    var data;
+                                    if (ctrl.getTypeName() === 'text' && ctrl.getOpt().fieldName) {
+                                        var textFields = ctrl.getOpt().fieldName.split( ',' );
+                                        data = obj[ textFields[ 0 ] ];
+                                    } else if ( ctrlId.indexOf( '_' ) > -1 ) {
+                                        var volumeFields = ctrlId.split( '_' );
+                                        var firstVolumeField = volumeFields[ 0 ];
+                                        if ( Array.isArray( obj[ firstVolumeField ] ) && obj[ firstVolumeField ].length > 0 ) {
+                                            var volumeData = obj[ firstVolumeField ];
+                                            volumeLen = volumeData.length;
+                                            data = volumeData[ volumeIndex ][ volumeFields[ 1 ] ];
+                                        } else if ( obj[ firstVolumeField ] ) {
+                                            data = obj[ firstVolumeField ][ volumeFields[ 1 ] ];
+                                        }
+                                    } else {
+                                        data = obj[ ctrlId ]? obj[ ctrlId ]: '';
+                                    }
+                                    if ( ctrl.getOpt().inputFlag === 1 ) {
+                                        ctrl.getValueElement().innerHTML = data;
+                                    } else {
+                                        ctrl.setValue( data );
+                                    }
+                                } );
+                            });
+                            volumeIndex++;
+                            $lastTrDom.before( $newTrDom );
+                            if ( volumeLen > 1 ) {
+                                $newTrDom.children().each( function() {
+                                    if ( $( this ).find( '.emr-ctrl' ).attr( 'id' ).indexOf( '_' ) === -1 ) {
+                                        $( this ).attr( 'rowspan', volumeLen );
+                                    }
+                                } );
+                                for ( var i = volumeIndex; i < volumeLen; i++ ) {
+                                    $newTrDom = $lastTrDom.clone();
+                                    $newTrDom.removeAttr( 'data' );
+                                    $newTrDom.children().each( function() {
+                                        $( this ).attr( 'rowspan', 1 );
+                                        if ( $( this ).find( '.emr-ctrl' ).attr( 'id' ).indexOf( '_' ) === -1 ) {
+                                            $( this ).remove();
+                                        } else {
+                                            $( this ).find( '.emr-ctrl' ).each( function() {
+                                                var ctrl = new parent.MiniControl( this );
+                                                var ctrlId = ctrl.getCtrlId();
+                                                var volumeFields = ctrlId.split( '_' );
+                                                var firstVolumeField = volumeFields[ 0 ];
+                                                if ( ctrl.getOpt().inputFlag === 1 ) {
+                                                    ctrl.getValueElement().innerHTML = obj[ firstVolumeField ][ volumeIndex ][ volumeFields[ 1 ] ]?
+                                                        obj[ firstVolumeField ][ volumeIndex ][ volumeFields[ 1 ] ]: '';
+                                                } else {
+                                                    ctrl.setValue( obj[ firstVolumeField ][ volumeIndex ][ volumeFields[ 1 ] ] );
+                                                }
+                                            } );
+                                        }
+                                    } );
+                                    $lastTrDom.before( $newTrDom );
+                                }
+                            }
+                            volumeIndex = 0;
+                        });
+                        if ( ctrlValue.length > 0 ) {
+                            while ($lastTrDom.length > 0) {
+                                var $nextTrDom = $lastTrDom;
+                                $lastTrDom = $lastTrDom.next();
+                                $nextTrDom.remove();
+                            }
+                        }
+                    }
+                }
+            }
+
+            //动态添加打印样式
+            var style = document.createElement("style");
+            style.type = "text/css";
+            var pageStyle = (printType === '2' ? '@page { size: A4 landscape; }' : '@page { size: A4 portrait; }');
+            try{
+                style.appendChild(document.createTextNode(pageStyle));
+            }catch(ex){
+                style.styleSheet.cssText = pageStyle;//针对IE
+            }
+            var head = document.getElementsByTagName("head")[0];
+            var body = document.getElementsByTagName("body")[0];
+            head.appendChild(style);
+            // 计算页面高度
+            var headerDom = document.getElementById('header');
+            var footerDom, footerHeight;
+            var headerHeight = headerDom.clientHeight;
+            if (document.getElementById('footer')) {
+                footerDom = document.getElementById('footer').cloneNode(true);
+                $(footerDom).addClass('pagination');
+                footerHeight = document.getElementById('footer').clientHeight;
+            } else {
+                footerDom = UE.dom.domUtils.createElement(document, 'div', {
+                    contenteditable: false,
+                    title: "页脚",
+                    class: "footer pagination"
+                });
+                var footerPDom = UE.dom.domUtils.createElement(document, 'p', {});
+                footerPDom.innerHTML = '<br/>';
+                footerDom.append(footerPDom);
+                footerHeight = 21
+            }
+            $('#footer').remove();
+            var marginTop = previewDom.style.marginTop? parseInt(previewDom.style.marginTop.replace('px', '')): 0;
+            var marginBottom = previewDom.style.marginBottom? parseInt(previewDom.style.marginBottom.replace('px', '')): 0;
+            console.log(marginTop + '--' + marginBottom);
+            var height = marginTop + marginBottom + headerHeight + footerHeight;
+            var footerPageDom = UE.dom.domUtils.createElement(document, 'p', {
+                class: 'footer',
+                style: 'text-align: center;'
+            });
+            var pDom = UE.dom.domUtils.createElement(document, 'p', {});
+            var hideDom = UE.dom.domUtils.createElement(document, 'p', {
+                // style: 'height: 40px',
+                class: 'hide-p'
+            });
+            var footerPDom = UE.dom.domUtils.createElement(document, 'p', {
+                style: 'height: 40px',
+                class: 'footer-p'
+            });
+            var pageNumber = 1;
+            var preDom;
+            $('#preview').children().each(function () {
+                if (this.id === 'header' || this.id === 'footer') {
+                    return;
+                }
+                var thisDom = this;
+                var isCtrl = $(thisDom).hasClass('emr-ctrl');
+                var ctrlOpt = $(thisDom).attr('emr-model')? JSON.parse(decodeURIComponent($(thisDom).attr('emr-model'))): {};
+                if ($(this).height() === 0) {
+                    return;
+                }
+                height += $(this).height();
+                if (height > pageHeight) {
+                    height = height - $(this).height();
+                    if (this.nodeName === 'TABLE') {
+                        var isExceed = false;//是否超过页面最高高度
+                        var rowSelected = 0;//插入tbody的tr数量
+                        var headerRows = ctrlOpt && ctrlOpt.rowsNum || 0;//表头占有的行数
+                        var tableDomModel = UE.dom.domUtils.createElement(document, 'table', { width: '100%'});//新建新的table
+                        var tbodyDomModel = UE.dom.domUtils.createElement(document, 'tbody', {});//新建新的tbody
+                        tableDomModel.append(tbodyDomModel);//将tbody放进table
+                        var tableHeaderHeight = 0;
+                        for (var i = 0; i < headerRows; i++) {
+                            $(tbodyDomModel).append($(this.firstChild).children().eq(i).clone());
+                            tableHeaderHeight += $(this.firstChild).children().eq(i).height();
+                        }
+                        var tableDom = tableDomModel.cloneNode(true);
+                        height += tableHeaderHeight;
+                        if (height > pageHeight) {
+                            height -= tableHeaderHeight;
+                            pDom.style = 'height:' + (pageHeight - height) + 'px';
+                            addNewHeader(preDom);
+                            addNewFooter(preDom, pDom, pageNumber);
+                            preDom = tableDom;
+                            tableDom = tableDomModel.cloneNode(true);
+                            $(thisDom).before(tableDom);
+                            height = marginTop + marginBottom + headerHeight + footerHeight + tableHeaderHeight;
+                            pageNumber ++;
+                        } else {
+                            preDom = tableDom;
+                            $(thisDom).before(tableDom);
+                        }
+                        var trSize = $(this.firstChild).children().length;
+                        $(this.firstChild).children().each(function (index, dom) {
+                            if (isCtrl && headerRows > index) {
+                                return true
+                            }
+                            height += $(this).height();
+                            if (height > pageHeight) {
+                                height -= $(this).height();
+                                pDom.style = 'height:' + (pageHeight - height) + 'px';
+                                addNewHeader(preDom);
+                                addNewFooter(preDom, pDom, pageNumber);
+                                tableDom = tableDomModel.cloneNode(true);
+                                $(thisDom).before(tableDom);
+                                height = marginTop + marginBottom + headerHeight + footerHeight + tableHeaderHeight + $(this).height();
+                                tableDom.firstChild.append(this);
+                                pageNumber ++;
+                                preDom = thisDom.previousSibling;
+                            } else {
+                                tableDom.firstChild.append(this);
+                            }
+                        });
+                        thisDom = tableDom;
+                        $(this).remove();
+                    } else {
+                        pDom.style = 'height:' + (pageHeight - height) + 'px';
+                        footerPageDom.innerHTML = editor.getOpt('footerFlag')? '第' + pageNumber + '页': '';
+                        var footerDomClone = footerDom.cloneNode(true);
+                        footerDomClone.firstChild.append(footerPageDom.cloneNode(true));
+                        $(thisDom).before($(pDom).clone());
+                        $(thisDom).before($(footerDomClone).clone());
+                        $(thisDom).before($(footerPDom).clone());
+                        $(thisDom).before($(hideDom).clone());
+                        $(thisDom).before($(headerDom).clone());
+                        height = marginTop + marginBottom + headerHeight + footerHeight + $(thisDom).height();
+                        pageNumber ++;
+                    }
+                }
+                preDom = thisDom;
+            });
+            console.log(height);
+            pDom.style = 'height:' + (pageHeight - height) + 'px';
+            $('#preview').append($(pDom).clone());
+            footerPageDom.innerHTML = editor.getOpt('footerFlag')? '第' + pageNumber + '页': '';
+            footerDom.firstChild.append(footerPageDom.cloneNode(true));
+            $('#preview').append(footerDom.cloneNode(true).setAttribute('class', ''));
+
+            function addNewHeader(preDom) {
+                $(preDom).after($(headerDom).clone());
+            }
+
+            function addNewFooter(preDom, pDom, index) {
+                footerPageDom.innerHTML = editor.getOpt('footerFlag')? '第' + pageNumber + '页': '';
+                var footerDomClone = footerDom.cloneNode(true);
+                footerDomClone.firstChild.append(footerPageDom.cloneNode(true));
+                $(preDom).after($(hideDom).clone());
+                $(preDom).after($(footerPDom).clone());
+                $(preDom).after($(footerDomClone).clone());
+                $(preDom).after($(pDom).clone());
+            }
+        };
+        uParse('#preview',{
+            rootPath : '../../',
+            chartContainerHeight:500
+        })
+        // dialog.oncancel = function(){
+        //     document.getElementById('preview').innerHTML = '';
+        // }
+
+        function doPrint() {
+            var bdhtml = window.document.body.innerHTML;
+            var printarea = document.getElementById('preview');
+            var marginTop = printarea.style.marginTop? parseInt(printarea.style.marginTop.replace('px', '')): 0;
+            var marginBottom = printarea.style.marginBottom? parseInt(printarea.style.marginBottom.replace('px', '')): 0;
+            var marginLeft = printarea.style.marginLeft? parseInt(printarea.style.marginLeft.replace('px', '')): 0;
+            var marginRight = printarea.style.marginRight? parseInt(printarea.style.marginRight.replace('px', '')): 0;
+            printarea.style.marginTop = (marginTop - 40) + 'px';
+            printarea.style.marginBottom = (marginBottom - 40) + 'px';
+            printarea.style.marginLeft = (marginLeft - 40) + 'px';
+            printarea.style.marginRight = (marginRight - 40) + 'px';
+            $(printarea).find('.hide-p').hide();
+            $(printarea).find('.footer-p').hide();
+            window.document.body.innerHTML = printarea.outerHTML; //把需要打印的指定内容赋给body.innerHTML
+            window.print(); //调用浏览器的打印功能打印指定区域
+
+            window.document.body.innerHTML = bdhtml;//重新给页面内容赋值；
+        }
+    </script>
+</html>

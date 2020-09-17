@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+    <div class="white-bg full-height m-n">
+        <form class="layui-form ">
+                <div class="layui-inline">
+                       <div class="layui-input-inline" >
+                        #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" $!emrTlpMap "id='emrTlpId' ")
+     				    #formHiddenInput("registerId" "$!{register.registerId}" "id='registerId'")
+     				    #formHiddenInput("outpatientId" "$!{outpatient.outpatientId}" "id='outpatientId'")
+     				    #formHiddenInput("patientId" "$!{patient.patientId}" "id='patientId'")
+     				    #formHiddenInput("emrTlpClassifyId" "$!{emrTlpClassifyId}" "id='emrTlpClassifyId' ")
+                       </div>	                   
+                </div>
+            </form>
+        	
+            <iframe id="emrEdit" name="emrEdit" src="" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 33px); " ></iframe>
+	         
+	        
+    </div>
+<script>
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+layui.use(['jquery','element','table','form'],function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    layer = layui.layer;
+  	
+    var registerId = $("#registerId").val();
+    var patientId = $("#patientId").val();
+    var returnVisitFlag = $('input[name=returnVisitFlag]:checked').val();
+    var emrTlpClassifyId = $("#emrTlpClassifyId").val();
+    
+    if(patientId && registerId){
+
+    	if(returnVisitFlag == "1"){
+    		loadEmrTlp(526); // TODO 复诊
+    	} else {
+    		loadEmrTlp(222); // 默认 id为222的模板,初诊
+    	}
+    	
+    } else {
+    	return ;
+    }
+    
+    function selectPatientHospitalEmr(registerId, emrTlpClassifyId){
+    	var patientHospitalEmrId;
+    	$.ajax({
+        	type: "GET",  
+            url: '$contextPath/emr/getPatientEmrByClassify.jo',  
+            data: {registerId: registerId,
+            	emrTlpClassifyId: emrTlpClassifyId	
+            },
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	if(result.length > 0){
+            		patientHospitalEmrId = result[0].patientHospitalEmrId;
+            	}
+            },  
+            error: function(res){ 
+                    jqueryPostError(res);
+            } 
+        });
+    	return patientHospitalEmrId;
+    }
+
+
+    
+    function loadEmrTlp(emrTlpId){
+    	var patientHospitalEmrId = selectPatientHospitalEmr(registerId, '11') ? selectPatientHospitalEmr(registerId, '11') : '';
+    	if(!returnVisitFlag){
+    		returnVisitFlag = "0";
+    	}
+        $("#emrEdit").attr("src","../emr/commonEmrTemplate.do?emrTlpId=" + emrTlpId + "&patientHospitalEmrId=" + patientHospitalEmrId + "&registerId=" + registerId + "&patientId=" + patientId +'&view=outpatient/outpatientEmr/outpatientEmrEdits&serviceId=outpatientService');
+    }
+    
+});
+
+</script>
+</body>
+
+</html>

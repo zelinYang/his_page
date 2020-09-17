@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-门诊护士-分配床位</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        #editForm .layui-input-inline {
+            width: 150px
+        }
+        .tableSelect.layui-anim.layui-anim-upbit {
+            min-width: 260px!important;
+        }
+    </style>
+</head>
+
+<body class="white-bg">
+<form class="layui-form" lay-filter="" id="editForm" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("registerId" "$!{outpatient.registerId}" "id='registerId'")
+    #formHiddenInput("chargeItemId" "" "id='chargeItemId'")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">患者姓名</label>
+            <div class="layui-input-inline ">
+                #formTextInput("" "$!{outpatient.patientName}" "id='patientName' class='layui-input' lay-verify='required' readOnly")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">床位号</label>
+            <div class="layui-input-inline ">
+                #formSingleSelectSearchFirstNone("wardBedNo" "$!{outpatient.wardBedNo}" ${bedNoMap} " lay-verify='required' lay-filter='mytext'  lay-search" " ")
+            </div>
+        </div>
+       #if(!$!{outpatient.wardBedNo})
+        <div class="layui-inline">
+            <label class="layui-form-label">床位等级</label>
+            <div class="layui-input-inline ">
+                #formTextInput("chargeName" ""  " id='chargeName' maxlength='10' lay-verify='required' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="tool-bottom-fixed ">
+        <button type="button" class="layui-btn layui-btn-sm" id="btn_save" lay-submit="" lay-filter="btn_save">保 存</button>
+    </div>
+</form>
+</body>
+<!-- 全局js -->
+#parse("./common/pageJs.vm")
+#parse("./outpatient/outpatientNurse/outpatientNurseLeaveBed.js.vm")
+</html>

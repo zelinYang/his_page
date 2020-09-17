@@ -1,0 +1,137 @@
+<div class="layui-form top-win top-win-full">
+    <div class="main-content full-height table-width-full" style="overflow-x: scroll;">
+        <table class="layui-table recipe" style="width: 1600px;">
+            <colgroup>
+                <col width="20">
+                <col width="70">
+                <col data-index="1" width="200">
+                <col data-index="2" width="80">
+                <col data-index="4" width="200">
+                <col data-index="5" width="80">
+                <col data-index="9" width="200">
+                <col data-index="10" width="60">
+                <col data-index="11" width="60">
+                <col data-index="13" width="150">
+                <col data-index="14" width="100">
+                <col>
+            </colgroup>
+            <thead>
+            <tr>
+                <th><!-- <input type="checkbox" name="checkAll" id='checkAll' lay-filter='checkAll' lay-skin="primary" > --></th>
+                <th><i id="btn_add" class="layui-icon layui-icon-add-1 icon-btn btn_add_tr " ></i></th>
+                <th data-index="1">药品名称</th>
+                <th data-index="2">规格</th>
+                <th data-index="4">每付剂量</th>
+                <th data-index="5">次数</th>
+                <th data-index="9">备注</th>
+                <th data-index="10">单价</th>
+                <th data-index="11">金额</th>
+                <th data-index="13">药品产地</th>
+                <th data-index="14">自付比例</th>
+            </tr>
+            </thead>
+            <tbody class="tbody-data" >
+            <!-- 显示行 foreach 循环-->
+            #foreach($recipeItem in $recipeItemList)
+            <tr>
+                <td><input type="checkbox" name="isCheck" lay-skin="primary" ></td>
+                <td >
+                    <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeTrRecipeItem(this)" ></i>
+                </td>
+                <td data-index="1" style="width: 200px; ">
+                    #formHiddenInput("recipeItemId" "$!recipeItem.recipeItemId" "")
+                    #formHiddenInput("medicineId" "$!recipeItem.medicineId" "")
+                    #formTextInput("medicineName" "$!recipeItem.medicineName" "class='layui-input' ")
+                </td>
+                <td data-index="2">#formTextInput("medicineSpec" "$!recipeItem.medicineSpec" "class='layui-input' readonly")</td>
+
+                <td data-index="4">
+                    #formTextInput("usageQuantity" "$!recipeItem.usageQuantity" "class='wd-50' ")
+                    #formTextInput("dosage" "$!recipeItem.dosage" "class='wd-50' ")
+                    #formHiddenInput("dosageUnit" "$!recipeItem.dosageUnit" "placeholder='单位' class='wd-50' readonly")
+                    #formTextInput("dosageUnitText" "#lookUpDict($!dicData.dicDrugNumUnitDosageUnit $!recipeItem.dosageUnit)" "class='wd-50' readonly")
+                </td>
+                <td data-index="5"> #formSingleSelectFirstNone("usageFrequencyCode" "$!recipeItem.usageFrequencyCode" $dicData.dicPharmacyFreq "class='layui-input' style='border:0;'" "")</td>
+                <td data-index="9">
+                    #formHiddenInput("herbCookingName" "$!recipeItem.herbCookingName" "")
+                    #formSingleSelectFirstNone("herbHerbTcmCookingCode" "$!recipeItem.herbHerbTcmCookingCode" $dicData.dicHerbCooking "class='layui-input'" "")
+                </td>
+                <td data-index="10">#formTextInput("itemPrice" "$!recipeItem.itemPrice" "class='layui-input' style='width: 100%;display: inline;' readOnly")</td>
+                <td data-index="11">#formTextInput("itemTotalPrice" "$!recipeItem.itemTotalPrice" "class='layui-input' style='width: 100%;display: inline;' readOnly")</td>
+                <td data-index="13">
+                    <span id="producingAreaIdText">#lookUpDict($dicData.dicProducingArea $!recipeItem.producingAreaId)</span>
+                    #formHiddenInput("producingAreaId" "$!recipeItem.producingAreaId" "placeholder='药品产地' class='layui-input' ")
+                </td>
+                <td data-index="14">#formTextInput("selfPayRatio" "$!recipeItem.selfPayRatio" "placeholder='自付比例' class='layui-input' readonly ")</td>
+            </tr>
+            #end
+            </tbody>
+        </table>
+
+        <!-- 表格模板 -->
+        <table class="rowTpl layui-hide">
+            <tbody>
+            <!-- tpl_row 模板行 数据 -->
+            <tr class="tplRow trRow">
+                <td><input type="checkbox" name="isCheck" lay-skin="primary" ></td>
+                <td >
+                    <i class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeTrRecipeItem(this)" ></i>
+                </td>
+                <td data-index="1" style="width: 200px; ">
+                    #formHiddenInput("recipeItemId" "" "")
+                    #formHiddenInput("medicineId" "" "")
+                    #formTextInput("medicineName" "" "placeholder='选择药品' class='layui-input' ")
+                </td>
+                <td data-index="2">#formTextInput("medicineSpec" "" "class='layui-input' readonly")</td>
+
+                <td data-index="4">
+                    #formTextInput("usageQuantity" "" "class='wd-50' ")
+                    #formTextInput("dosage" "" "class='wd-50' ")
+                    #formHiddenInput("dosageUnit" "" "placeholder='单位' class='wd-50' readonly")
+                    #formTextInput("dosageUnitText" "" "placeholder='单位' class='wd-50' readonly")
+                </td>
+                <td data-index="5"> #formSingleSelectFirstNone("usageFrequencyCode" "$!recipeItem.usageFrequencyCode" $dicData.dicPharmacyFreq "class='layui-input' style='border:0;'" "")</td>
+                <td data-index="9">
+                    #formHiddenInput("herbCookingName" "$!recipeItem.herbCookingName" "")
+                    #formSingleSelectFirstNone("herbHerbTcmCookingCode" "$!recipeItem.herbHerbTcmCookingCode" $dicData.dicHerbCooking "class='layui-input'" "")
+                </td>
+                <td data-index="10">#formTextInput("itemPrice" "" "class='layui-input' style='width: 100%;display: inline;' readOnly")</td>
+                <td data-index="11">#formTextInput("itemTotalPrice" "" "class='layui-input' style='width: 100%;display: inline;' readOnly")</td>
+                <td data-index="13">
+                    #formSpanText("producingAreaIdText" "" "")
+                    #formHiddenInput("producingAreaId" "" "class='layui-input' ")
+                </td>
+                <td data-index="14">#formTextInput("selfPayRatio" "1.00" "class='layui-input' readonly ")</td>
+            </tr>
+            </tbody>
+        </table><!--table 模板  -->
+
+    </div><!-- main-content -->
+</div><!-- top-win -->
+
+<!-- 底部窗口 -->
+<div class="bottom-win bottom-show bottom-win-hide">
+    <div class="content full-height">
+        <!-- 导航切换 -->
+        <div class="layui-tab layui-tab-card blod full-height outRecipeTabs" lay-filter="outRecipeTabs">
+            <!-- 导航 名称 -->
+            <ul class="layui-tab-title"  >
+                <li lay-id="recipeGroup" class="layui-this">组套</li>
+                <li lay-id="history" >历史处方</li>
+                <i id="btn_win_hide" class="layui-icon layui-icon-triangle-d icon-btn-nav-sm" ></i><!-- 缩小按钮 -->
+            </ul>
+
+            <!-- 导航内容 -->
+            <div class="layui-tab-content" style="height: calc(100% - 36px);">
+                <div class="layui-tab-item recipeGroup full-height layui-show" style="padding: 0px;">
+                    <iframe src="../outpatient/recipeGroup.do"  width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+                </div>
+                <div class="layui-tab-item history full-height" style="padding: 0px;">
+                    <iframe src="" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+

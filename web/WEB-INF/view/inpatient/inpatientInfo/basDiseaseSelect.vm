@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>疾病列表</title>
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+	<style type="text/css">
+	/* 页面样式调整 */
+	.layui-table-view .layui-table td, .layui-table-view .layui-table th{
+	  padding: 3px 0px;
+	}
+	.layui-input, .layui-select, .layui-textarea {
+	    height: 30px;
+	    line-height: 1.3;
+	    line-height: 38px\9;
+	    border-width: 1px;
+	    border-style: solid;
+	    background-color: #fff;
+	    border-radius: 2px;
+	}
+	.layui-form-label{
+	    padding: 5px 9px;
+	}
+	.layui-table td, .layui-table th {
+	    padding: 6px 15px;
+	}
+	/* 页面样式调整  end*/
+	 .layui-table, .layui-table-view {
+		    margin: 0px 0;
+		}
+	</style>
+</head>
+
+<body class="full-height white-bg table-width-full" >
+  <!-- 查询表单 -->
+  <form id="basDisease_queryForm">
+    #formHiddenInput("keyWord" "" " id='keyWord' class='layui-input' placeholder='疾病检索' ")
+    #formHiddenInput("diseaseTypeFlag" "$!{diseaseTypeFlag}" " id='diseaseTypeFlag' ")
+  </form>
+
+  <!-- 数据表格 -->
+  <table id="basDiseaseTable" lay-filter="basDiseaseTable"></table>
+
+  <script type="text/html" id="operateFormatter">
+      <a class="" title="选择"><i class="layui-icon layui-icon-ok-circle"></i></a>
+  </script>
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var query;
+  layui.use(['jquery','table', 'laypage','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var laypage = layui.laypage;
+    var $ = layui.$;
+
+    element.render();
+
+    var tableIns = table.render({
+       elem: '#basDiseaseTable'
+      ,defaultToolbar: []
+      //,height: '230'//高度
+      ,height: '320'//高度
+      ,url: '../basDisease/basDiseaseListData.jo' //数据接口
+      //,page: true //开启分页
+      ,limit:200
+      ,request: {
+         pageName: 'pageNumber' //页码的参数名称，默认：page
+        ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+      }
+      ,cols: [[ //表头
+            { width : 40, templet: '#operateFormatter',event:'select'}
+             // {type:'radio',fixed: 'left',width : 30}
+            ,{field : 'diseaseIcdTcd',title : 'ICD/TCD', width : 160}
+            ,{field : 'diseaseName', title : '疾病名称'}
+            ,{field : 'diseaseIcdTcd',title : 'ICD/TCD', width : 160}
+      ]]
+      //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+      ,done: function(res, curr, count){
+      }
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function (){
+        query();
+    });
+
+
+
+   //查询列表
+    query = function() {
+        var queryParams = common.serializeObject($('#basDisease_queryForm'));
+            /* if (common.isExistChina(queryParams.keySearch)) {
+                  queryParams.diseaseName = queryParams.keySearch;
+            } else {
+                  queryParams.pinyinCode = queryParams.keySearch;
+            } */
+        tableIns.reload({ where: queryParams });
+      }
+
+
+    //监听行单击事件
+    table.on('row(basDiseaseTable)', function(obj){
+      var row = obj.data;
+        // layer.alert(JSON.stringify(row));
+      parent.basDiseaseRowSelect(row);
+    });
+
+    //监听行工具事件
+      table.on('tool(basDiseaseTable)', function(obj){
+          var layEvent = obj.event; //获得 lay-event 对应的值
+          if (layEvent === "select") {
+              var row = obj.data;
+              parent.basDiseaseRowSelect(row);
+          }
+      });
+  });//layui.use
+</script>
+</body>
+</html>

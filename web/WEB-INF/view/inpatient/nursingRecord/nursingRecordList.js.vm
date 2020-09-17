@@ -1,0 +1,509 @@
+<script type="text/javascript">
+  var dicTemperatureTimeSort = JSON.parse('$dicTools.changeMapToJson($!dicData.dicTemperatureTimeSort)')
+  var dicInputVolume = JSON.parse('$dicTools.changeMapToJson($!dicData.dicInputVolume)')
+  var dicOutputVolume = JSON.parse('$dicTools.changeMapToJson($!dicData.dicOutputVolume)')
+  var dicDrainTube = JSON.parse('$dicTools.changeMapToJson($!dicData.dicDrainTube)')
+  var dicAware = JSON.parse('$dicTools.changeMapToJson($!dicData.dicAware)')
+  var dicMeasureDicName = JSON.parse('$dicTools.changeMapToJson($!dicData.dicMeasureDicName)')
+  var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($!dicData.dicNurseLevel)')
+  var dicSkinColor = JSON.parse('$dicTools.changeMapToJson($!dicData.dicSkinColor)')
+  layui.use(['element', 'form', 'table','util','laydate'], function () {
+    var table = layui.table,form = layui.form, util = layui.util,element = layui.element,  laydate = layui.laydate
+    
+    $('input[name=\'temperatureTimeSort\']').click(function () {
+      refreshIframe()
+    })
+
+    //初始化iframe
+    refreshIframe()
+
+    //radio被选中事件
+    form.on('radio(temperatureTimeSort)', function (data) {
+      refreshIframe()
+    })
+
+    //日期控件初始化
+    laydate.render({
+      elem: '#temperatureDate',trigger: 'click', type: 'date', value: new Date(), istime: true, max: getSmpFormatNowDate(true)
+      //日期被选中事件
+      , done: function (value, date, endDate) {
+        if (date.year) {
+          var temperatureDate = date.year + '-' + date.month + '-' + date.date
+          $('#temperatureDate').val(temperatureDate)
+        } else {
+          $('#temperatureDate').val('')
+        }
+        refreshIframe()
+      }
+    })
+
+    //刷新iframe，模拟刷新表格
+    function refreshIframe () {
+      var temperatureDateStr = $('#temperatureDate').val()
+      var checkedRadio = $('input[name=\'temperatureTimeSort\']:checked')
+      //	var sortTime = checkedRadio[0].title;
+      var temperatureTimeSort = checkedRadio.val()
+      $('#temperatureEditIframe').attr('src', '../inpatient/temperatureBatchEdit.do?temperatureDateStr=' + temperatureDateStr + '&temperatureTimeSort=' + temperatureTimeSort)
+    }
+    // 刷新按钮
+    $('#btn_refresh').click(function (){
+       window.location.href = window.location.href;
+    }); 
+     
+    $('#btn_add').click(function () {
+      common.open('$contextPath' + '/inpatient/nursingRecordEdit.do?inhospitalId='+$!inhospitalId, '新增', {
+        area: ['99%', '99%']
+      })
+    })
+    element.render()
+    table.render({
+      elem: '#publicNursing'
+      , id: 'publicNursing'
+      , url: '../inpatient/publicNursingInfo.jo' //数据接口
+      ,height : getPublicNursingHgt()
+      , where: { inhospitalId: '$!inhospitalId' }   
+   
+      /*,where:{inhospitalId:123}*/
+      , cols: [[ //表头
+        {
+          field: 'temperatureDate'
+          , title: '日期'
+          , rowspan: 2
+          , width: 90          
+          , templet: function (row) {
+        	  if(row.inpatientSymptom){
+                  return util.toDateString(row.inpatientSymptom.temperatureDate, 'yyyy-MM-dd') || ''
+                }else if($.isArray(row.inpatientOutVolumes)){
+                	
+                  return util.toDateString(row.inpatientOutVolumes.temperatureDate, 'yyyy-MM-dd') || ''
+                }
+                else if($.isArray(row.inpatientInVolumes)){
+                    return util.toDateString(row.inpatientInVolumes.temperatureDate, 'yyyy-MM-dd') || ''
+                  }
+                return ''
+              }          
+        }      
+        , {
+          field: 'temperatureTimeSort'
+          , title: '时间段'
+          , rowspan: 2
+          , width: 90
+          , templet: function (row) {
+        	  if(row.inpatientSymptom){
+                  return dicTemperatureTimeSort[row.inpatientSymptom.temperatureTimeSort] || ''
+                }
+                else if($.isArray(row.inpatientInVolumes) && (row.inpatientInVolumes.length > 0)){
+                	
+               	return dicTemperatureTimeSort[row.inpatientInVolumes[0].temperatureTimeSort] || ''
+                }  
+                else if($.isArray(row.inpatientOutVolumes) && (row.inpatientOutVolumes.length > 0)){
+                   	return dicTemperatureTimeSort[row.inpatientOutVolumes[0].temperatureTimeSort] || ''
+                    } 
+                 return ''
+                }        
+          
+        }
+        , {
+          field: 'temperature', title: '体温(.c)', rowspan: 2, width: 90, templet: function (row) {
+        	  
+            return row.inpatientSymptom ? (row.inpatientSymptom.temperature  || '') :''
+          }
+        }
+        , {
+          field: 'pulseRate', title: '脉搏(次/分)', rowspan: 2, width: 90, templet: function (row) {
+            return  row.inpatientSymptom ? (row.inpatientSymptom.pulseRate || '') : ''
+          }
+        }
+        , {
+          field: 'breathing', title: '呼吸(次/分)', rowspan: 2, width: 90, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.breathing || '') : ''
+          }
+        }
+        , {
+          field: 'bloodOxygenSaturation', title: 'SPO₂(%)', rowspan: 2, width: 90, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.bloodOxygenSaturation || '') : ''
+          }
+        }
+        , { title: '血压/mmhg', colspan: 4, width: 90 }
+        , { title: '入量', colspan: 2, width: 90 }
+        , { title: '出量', colspan: 3, width: 90 }
+      ], [  //二级表头
+        {
+          field: 'diastolicNbp', title: '收缩压', rowspan: 2, width: 105, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.diastolicNbp || '') : ''
+          }
+        }
+        , {
+          field: 'systolicNbp', title: '舒张压', rowspan: 2, width: 105, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.systolicNbp || '') : ''
+          }
+        }
+        , { field: 'diastolicAbp', title: '动脉收缩压', rowspan: 2, width: 116, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.diastolicAbp || '') : ''
+          } 
+        }
+        , { field: 'systolicAbp', title: '动脉舒张压', rowspan: 2, width: 116, templet: function (row) {
+            return row.inpatientSymptom ? (row.inpatientSymptom.systolicAbp || '') : ''
+          } 
+        }
+        , {
+          field: 'inpatientInVolumes', title: '名称' ,templet: function (row) {
+            if(!$.isArray(row.inpatientInVolumes)){
+              return ""
+            }
+            var inDicNames = $.map(row.inpatientInVolumes,function (item) {           
+                return item.inDicName;             
+              })
+            return inDicNames.join("</br>") || '';
+          
+          }
+        }
+        , {
+          field: 'factVolume', title: '量（ml）', templet: function (row) {
+        	  if(!$.isArray(row.inpatientInVolumes)){
+                  return ""
+                }
+           var inFactInVolume = $.map(row.inpatientInVolumes,function(item){
+        	   return item.factVolume;
+           })
+           return inFactInVolume.join("</br>") || '';        
+          }
+        }
+        , {
+            field: 'inpatientOutVolumes', title: '名称', templet: function (row) {
+              if(!$.isArray(row.inpatientOutVolumes)){
+                return ""
+              }
+              var outDicName = $.map(row.inpatientOutVolumes,function (item) {
+            	  
+                return item.outDicName;
+              })       
+              return outDicName.join("</br>") || '';
+            }
+          }
+        , {
+            field: 'outVolume', title: '量（ml）', templet: function (row) {
+          	  if(!$.isArray(row.inpatientOutVolumes)){
+                    return ""
+                  }
+             var outVolume = $.map(row.inpatientOutVolumes,function(item){
+          	   return item.outVolume;
+             })
+             return outVolume.join("</br>") || '';        
+            }
+          }
+       // , {//根据字典取字符
+           // field: 'outColor', title: '颜色性状', templet: function (row) {
+          //	  if(!$.isArray(row.inpatientOutVolumes)){
+           //         return ""
+           //       }
+           //  var outColors = $.map(row.inpatientOutVolumes,function(item){
+          	//   return item.outColor;
+            // })
+            // return outColors.join("</br>") || '';        
+            //}
+          //}
+      ]]
+      
+    })
+    especialNursingRecord()
+  //获取特殊护理记录显示
+   function especialNursingRecord(){    	
+    	if('' != "$!inpatientInhospital.patientAgeMonth"){  	
+    		$("#specialNursingRecord").text("新生儿患者护理记录");
+    		//新生儿普通护理
+    		table.render({
+    				 //新生儿普通护理
+    				 elem:'#specialNursing'
+    				,id:'newbornNursing'
+    				,url:'../inpatient/inpatientNewbornNursingInfo.jo'//请求路径
+    				,height : getPublicNursingHgt()
+    				, where: { inhospitalId: '$!inhospitalId' }
+    				,cols:[[
+    					{field: 'temperatureDate'
+  				      	,title: '日期'
+  				        ,rowspan: 3
+  				        ,width: 90
+  				        ,templet: function (row) {
+  			                 if(row.inpatientSymptoms){
+  			                    return util.toDateString(row.inpatientSymptoms.temperatureDate, 'yyyy-MM-dd') || ''
+  			              	}
+  			                else if($.isArray(row.InpatientNursingDrainTubes)){
+  			                 return util.toDateString(row.InpatientNursingDrainTubes.settingDate, 'yyyy-MM-dd') || ''
+  			               }
+  			              return ''
+  			            	} 
+  						}
+  				          ,{field: 'temperatureTimeSort'
+  					      , title: '时间段'
+  					      , rowspan: 3
+  					      , width: 90
+  					    , templet: function (row) {
+  			        	  if(row.inpatientSymptoms){
+  			                  return dicTemperatureTimeSort[row.inpatientSymptoms.temperatureTimeSort] || ''
+  			                } 			             
+  			                else if($.isArray(row.InpatientNursingDrainTubes) && (row.InpatientNursingDrainTubes.length > 0)){
+  			                   	return dicTemperatureTimeSort[row.InpatientNursingDrainTubes[0].InpatientNursingDrainTubes] || ''
+  			                    } 
+  			                 return ''
+  			                }  
+  				  			 }
+  				       
+    					,{field:'boxTemperature'
+    						,title:'温箱'
+    						,width:90
+    						,rowspan:2
+    						,function (item) {           
+			                return row.inpatientSymptoms ? (row.inpatientSymptoms.boxTemperature || '') : '';
+			              }
+    					}
+    				   ,{field:'skinColor'
+    					   ,title:'肤色'
+    					   ,width:90
+    					   ,rowspan:2
+    					   ,function (item) {           
+			                return row.inpatientSymptoms ? (dicskinColor[row.inpatientSymptoms.skinColor] || '') : '';
+			              }}
+    				   ,{title:'置管'
+    					   ,width:90
+    					   ,colspan:6
+    					   }
+    				   ,{field:'measureDicName'
+    					   ,title:'措施名称'
+    					   ,width:90
+    					   ,rowspan:2
+    					   ,templet: function (row) {
+    				            if(!$.isArray(row.inpatientNursingMeasures)){
+    				              return ""
+    				            }
+    				            var dicMeasureDicNames = $.map(row.inpatientNursingMeasures,function (item) {           
+    				                return dicMeasureDicName[item.MeasureDicName];             
+    				              })
+    				            return dicMeasureDicName.join("</br>") || '';
+    				          
+    				          }}
+    				   ,{field:'nursingMeasure'
+    					   ,title:'措施描述'
+    					   ,width:90
+    					   ,rowspan:2
+    					   ,templet: function (row) {
+				            if(!$.isArray(row.inpatientNursingMeasures)){
+  				              return ""
+  				            }
+  				            var nursingMeasures = $.map(row.inpatientNursingMeasures,function (item) {           
+  				                return item.nursingMeasure;             
+  				              })
+  				            return nursingMeasures.join("</br>") || '';
+  				          
+  				          }
+    					   }
+    				],[
+    					{field:'drainTubeModel'
+    						,title:'置管型号'
+    						,width:130
+    						,function (item) {           
+			                return row.InpatientNursingDrainTubes ? (row.InpatientNursingDrainTubes.drainTubeModel || '') : '';             
+			              }}
+    				,{field:'drainTube'
+    					,title:'置管类型'
+    					,width:130
+    					,templet: function (row) {
+			            if(!$.isArray(row.InpatientNursingDrainTubes)){
+				              return ""
+				            }
+				            var DrainTubes = $.map(row.InpatientNursingDrainTubes,function (item) {           
+				                return dicDrainTube[item.dicDrainTube];             
+				              })
+				            return DrainTubes.join("</br>") || '';
+				          
+				          }}
+    				   ,{field:'insertionLength'
+    					   ,title:'插入长度(cm)'
+    					   ,width:130
+    					   ,function (item) {           
+			                return row.InpatientNursingDrainTubes ? (row.InpatientNursingDrainTubes.insertionLength || '') : '';             
+			              }}
+    				   ,{field:'injectionWater'
+    					   ,title:'注水(ml)'
+    					   ,width:110
+    					   ,function (item) {           
+			                return row.InpatientNursingDrainTubes ? (row.InpatientNursingDrainTubes.injectionWater || '') : '';             
+			              }}
+    				   ,{field:'exposureLength'
+    					   ,title:'外露长度(cm)'
+    					   ,width:140
+    					   ,function (item) {           
+			                return row.InpatientNursingDrainTubes ? (row.InpatientNursingDrainTubes.exposureLength || '') : '';             
+			              }}
+    				   ,{field:'drainTubeNuring'
+    					   ,title:'管路护理'
+    					   ,width:100
+    					   ,function (item) {           
+			                return row.InpatientNursingDrainTubes ? (row.InpatientNursingDrainTubes.drainTubeNuring || '') : '';             
+			              }}
+    				]]		 
+    })
+    		$("#specialNursingShow")[0].style.display = 'block';
+    	}
+    	else if("$!inpatientInhospital.inhospitalOfficeName"== "产科"){
+    		table.render({//孕妇护理
+    			 //孕妇普通护理
+				 elem:'#specialNursing'
+				,id:'maternalNursing'
+				,url:'../inpatientMaternalNursingInfo.jo'//请求路径
+				,height : getPublicNursingHgt()
+				,cols:[[
+					{field: 'temperatureDate'
+				          , title: '日期'
+				          , rowspan: 3
+				          , width: 90
+				          ,function (item) {           
+			                return util.toDateString(row.inpatientSymptoms.temperatureDate, 'yyyy-MM-dd') || '';
+			              }
+					}
+				   ,{field: 'temperatureTimeSort'
+					   , title: '时间段'
+					   , rowspan: 3
+					   , width: 90
+					   ,function (item) {           
+				        return row.inpatientSymptoms ? (dicTemperatureTimeSort[row.inpatientSymptoms.temperatureTimeSort] || '') : '';
+					   }
+				   }
+				   ,{field:'aware'
+					   ,title:'意识'
+					   ,rowspan:3
+					   , width: 90
+					   ,function (item) {           
+		                return row.inpatientSymptoms ? (dicAware[row.inpatientSymptoms.aware] || '') : '';
+		              }
+				   }
+				   ,{field:'nurseLevel'
+					   ,title:'护理级别',rowspan:3,width:110
+					   ,function (item) {           
+		                return row.inpatientSymptoms ? (dicNurseLevel[row.inpatientSymptoms.nurseLevel] || '') : '';
+		              }
+				   }
+				   ,{title:'瞳孔',colspan:4, width: 90}
+				   ,{field:'oxygenUptakeVolume',title:'吸氧',rowspan:3, width: 90}
+				   ,{field:'skinCondition',title:'皮肤情况',rowspan:3, width: 90}
+				   ,{field:'patientPaunch',title:'患者腹围(cm)',rowspan:3, width: 130}
+				   ,{field:'fundusHeight',title:'宫底高度(cm)',rowspan:3, width: 130}
+				   ,{title:'伤口敷科',rowspan:3, width: 110}
+				   ,{field:'drainTubeCondition',title:'管路情况',rowspan:3, width: 110}
+				],[
+				   {title:"瞳孔",width:90,colspan:2}
+				   ,{title:"对光反射",width:90,colspan:2}
+				],[
+				   {field:"pupilDiameterLeft",title:"左(mm)",width:90, width: 150}
+				   ,{field:"pupilDiameterRight",title:"右(mm)",width:90, width: 150}
+				   ,{field:"lightReflexLeft",title:"左",width:90, width: 150}
+				   ,{field:"lightReflexRight",title:"右",width:90, width: 150}
+				]]
+    		})
+    			$("#specialNursingRecord").text("产妇护理记录");
+    			
+    		}
+    	else if("$!inpatientInhospital.inhospitalOfficeName" == "ICU病房"){
+    		$("#specialNursingRecord").text("重症护理记录");		
+    		table.render({//重症护理 				 
+    			  elem: '#specialNursing'
+    		    , id: 'specialNursing'
+    			, url: '../inpatient/severeNursingInfo.jo'//请求路径
+    			, where: { inhospitalId: '$!inhospitalId' }
+    			,cols:[[
+    				{field: 'temperatureDate'
+				          , title: '日期'
+				          , rowspan: 3
+				          , width: 90
+				          ,function (item) {           
+			               return util.toDateString(row.inpatientSymptoms.temperatureDate, 'yyyy-MM-dd') || '';
+			              }
+					}
+				   ,{field: 'temperatureTimeSort'
+					      , title: '时间段'
+					      , rowspan: 3
+					      , width: 90
+					      ,function (item) {           
+				           return row.inpatientSymptoms ? (dicTemperatureTimeSort[row.inpatientSymptoms.temperatureTimeSort] || '') : '';
+				              }
+				   }
+    				,{field:"aware"
+    					,title:"神志"
+    					,width:90
+    					,rowspan:3
+					   ,function (item) {           
+		                return row.inpatientSymptoms ? (dicAware[row.inpatientSymptoms.aware] || '') : '';
+		              }
+    				}
+    			   ,{title:"瞳孔",width:90,colspan:4}
+    			   ,{title:"吸痰",width:90,rowspan:3}
+    			   ,{title:"雾化",width:90,rowspan:3}
+    			   ,{title:"吸氧",width:90,rowspan:2,colspan:2}
+    			   ,{field:'measureDicName'
+    				   ,title:'措施名称'
+    				   ,width:90
+    				   ,rowspan:2
+					   ,templet: function (row) {
+				            if(!$.isArray(row.inpatientNursingMeasures)){
+				              return ""
+				            }
+				            var dicMeasureDicNames = $.map(row.inpatientNursingMeasures,function (item) {           
+				                return dicMeasureDicName[item.MeasureDicName];             
+				              })
+				            return dicMeasureDicName.join("</br>") || '';
+				          
+				          }}
+    			   ,{field:'nursingMeasure'
+    				   ,title:'措施描述'
+    				   ,width:90
+    				   ,rowspan:2
+    				   ,templet: function (row) {
+			            if(!$.isArray(row.inpatientNursingMeasures)){
+				              return ""
+				            }
+				            var nursingMeasures = $.map(row.inpatientNursingMeasures,function (item) {           
+				                return item.nursingMeasure;             
+				              })
+				            return nursingMeasures.join("</br>") || '';
+				          
+				          }
+					   }
+    			   //护理措施
+	    			],[
+	    		     {title:"瞳孔",width:90,colspan:2}
+				    ,{title:"对光反射",width:90,colspan:2}
+				    ,{field:'oxygnUptakeWay',title:"方式",width:90}
+				    ,{field:'oxygenUptakeVolume',title:"流量(L/min)",width:90}
+	    			],[
+	    			 {field:"pupilDiameterLeft",title:"左(mm)",width:90, width: 150}
+				    ,{field:"pupilDiameterRight",title:"右(mm)",width:90, width: 150}
+				    ,{field:"lightReflexLeft",title:"左",width:90, width: 150}
+				    ,{field:"lightReflexRight",title:"右",width:90, width: 150}
+	    			]]
+    		
+  			 })
+    		}
+    		$("#specialNursingShow")[0].style.display = 'block';
+    	}
+	function getPublicNursingHgt(){
+		return (($('body').height() - $('#headerBtn').height() - $('#fieldTitle').height() - $('#fieldTitle1').height() - 95)/2)
+	}
+	function getSpecialNursingHgt(){
+		return (($('body').height() - $('#headerBtn').height() - $('#fieldTitle').height() - $('#fieldTitle1').height() - 95)/2 - 30)
+	}
+	$(window).resize(function(){
+		table.reload('publicNursing',{
+			height : getPublicNursingHgt()
+		})
+		table.reload('newbornNursing',{
+			height : getSpecialNursingHgt()
+		})
+		table.reload('maternalNursing',{
+			height : getSpecialNursingHgt()
+		})
+		table.reload('specialNursing',{
+			height : getSpecialNursingHgt()
+		})
+	})
+  })
+</script>

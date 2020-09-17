@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+</head>
+<body class="gray-bg">
+<div class="layui-fluid layui-content-wrapper">
+    <!-- 医嘱查询条件 -->
+        <form class="layui-form" id="queryForm">
+            <div class="layui-form-item search-term layui-row-query">
+                <div class="layui-inline">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("patientName" "" "id='patientName' class='layui-input' readonly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">床号</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("currentBedNo" "" "id='currentBedNo' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">申请科室</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("surgeryOfficeName" "" "id='surgeryOfficeName' class='layui-input'")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="button" id="btn_search" class="layui-btn layui-btn-sm" title="查 询"><i
+                            class="layui-icon layui-icon-search "></i></button>
+                </div>
+            </div>
+        </form>
+
+
+    <!-- 医嘱列表 -->
+    <div class="layui-row p-t-n full-height white-bg" style="height: calc(100% - 50px);">
+        <table class="layui-hide full-height" id="surgeryArrangeList" lay-filter="surgeryArrangeList"></table>
+    </div>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicBodyPartClassifySurgery = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifySurgery)');
+    var dicSurgeryPosition = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryPosition)');
+    layui.use(['form', 'laydate', 'element', 'table'], function () {
+        var laydate = layui.laydate, form = layui.form, table = layui.table;
+        // 初始化医嘱表格列表数据
+        var surgeryArrangeUrl = contextPath + '/surgeryArrange/surgeryArrangeListData.jo';
+        var surgeryApplyList = table.render($.extend(basePageTable, {
+            url: surgeryArrangeUrl,
+            id: 'surgeryArrangeList',
+            elem: '#surgeryArrangeList',
+            height: tableHight(),
+            where: getParams(),
+            cols: [[
+                {
+                    type: 'numbers'
+                },
+                {
+                    field: 'fastFlag',
+                    title: '加急',
+                    templet: function (row) {
+                        if (row.fastFlag === '1') {
+                            return '<span class="layui-badge">急</span>';
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'inhospitalId',
+                    title: '住院号'
+                }, {
+                    field: 'patientName',
+                    title: '姓名'
+                }, {
+                    field: 'patientSex',
+                    title: '性别'
+                }, {
+                    field: 'currentBedNo',
+                    title: '床号'
+                }, {
+                    field: 'applyOfficeName',
+                    title: '申请科室'
+                }, {
+                    field: 'applyTime',
+                    title: '申请日期',
+                    templet: function (res) {
+						if (res.applyTime) {
+							return layui.util.toDateString(res.applyTime, 'yyyy-MM-dd HH:mm');
+						}
+						return '';
+                    }
+                }, {
+                    field: 'surgeryDate',
+                    title: '手术日期',
+                    templet: function (res) {
+						if (res.surgeryDate) {
+							return layui.util.toDateString(res.surgeryDate, 'yyyy-MM-dd HH:mm');
+						}
+						return '';
+                    }
+                }, {
+                    field: 'beforeDiagnosis',
+                    title: '术前诊断'
+                }, {
+                    field: 'surgeryName',
+                    title: '手术名称'
+                }, {
+                    field: 'surgeryRoom',
+                    title: '手术房间'
+                }, {
+                    field: 'surgeryTableNo',
+                    title: '台号'
+                }, {
+                    field: 'surgeryDoctorName',
+                    title: '手术者'
+                }, {
+                    field: 'scrubNurseName',
+                    title: '洗手护士'
+                }, {
+                    field: 'circulatingNurseName',
+                    title: '巡回护士'
+                }, {
+                    field: 'chargingFlag',
+                    title: '是否计费'
+                }, {
+                    field: 'anesthesiaMode',
+                    title: '麻醉方式'
+                }, {
+                    field: 'anesthesiaDoctorName',
+                    title: '麻醉医生'
+                }, {
+                    field: 'surgeryAssitOneName',
+                    title: '助手1'
+                }, {
+                    field: 'surgeryAssitTwoName',
+                    title: '助手2'
+                }, {
+                    field: 'surgeryAssitThreeName',
+                    title: '助手3'
+                }, {
+                    field: 'surgeryAssitFourName',
+                    title: '助手4'
+                }
+                , {fixed: 'right', title: '操作', align: 'center', toolbar: '#barDemo', width: 60}
+            ]]
+        }));
+
+        function getParams() {
+            var params = common.serializeObject($('#queryForm'));
+            return params;
+        }
+
+        $("#btn_search").click(function () {
+            refreshList();
+        });
+
+        function refreshList() {
+            surgeryApplyList.reload({
+                where: getParams()
+            });
+        }
+
+        //按手术日期范围查询
+        laydate.render({
+            elem: '#surgeryDate', trigger: 'click', range: true, done: function (value, date, endDate) {
+                var items = value.split(' - ');
+                $('#surgeryDateEnd').val(items[1]);
+                $('#surgeryDateBegin').val(items[0]);
+                reloadSurgeryArrangeList()
+            }
+        });
+
+        function tableHight() {
+            return ($('body').height() - $('#queryForm').height() - 12);
+        }
+
+    });
+</script>
+</html>

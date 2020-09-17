@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table-cell{padding: 0 5px;}
+.layui-table td, .layui-table th{padding: 5px}
+.layui-input, .layui-textarea {padding-left: 5px;}
+.layui-table-view .layui-table td {padding: 3px 0;}
+</style>
+</head>
+<body>
+    <div class="layui-content-wrapper layui-bg-white">
+
+        <!-- 历史结算记录 -->
+        <form id="queryForm" class="layui-form">
+            #formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+        </form>
+        <div class="layui-row p-t-n full-height" style="height: calc(100% - 50px);">
+            <table class="layui-hide full-height" id="orderList" lay-filter="orderList"></table>
+        </div>
+
+
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var mergeTd = {};// 存放计算医嘱表格数据需要合并的组号（子医嘱）
+layui.use(['form', 'laydate', 'element', 'table','util'], function(){
+    var util = layui.util;
+    var laydate = layui.laydate, form = layui.form, table = layui.table;
+    // 初始化医嘱表格列表数据
+    var tableIns = table.render($.extend(basePageTable, {
+        id: 'orderList',
+        elem: '#orderList',
+        height: 'full-1',
+        where:common.serializeObject($('#queryForm')),
+        url: '../inpatient/selectInpatientSettlementPage.jo',
+        cols : [ [
+            {
+                field : 'settlementTime',
+                fixed: 'left',
+                width : 200,
+                title : '结算时间',
+                templet : function(row) {
+                    if(row.settlementTime != null ){
+                        return util.toDateString(row.settlementTime);
+                    }else{
+                        return "";
+                    }
+                }
+            }, {
+                field : 'billNo',
+                fixed: 'left',
+                width : 100,
+                title : '发票号码',
+            }, {
+                field : 'settlementType',
+                fixed: 'left',
+                width : 60,
+                title : '类型',
+                templet :function (row) {
+                    if (row.doctorOrderType){
+                        return $('#editOrderList > tr:last').find('select[name="doctorOrderType"]').find('option[value="' + row.doctorOrderType + '"]').text();
+                    }
+                    return "";
+                }
+            }, {
+                field : 'exeOrderStartTime',
+                fixed: 'left',
+                width : 130,
+                title : '住院号码',
+                templet :function (row) {
+                    if (row.exeOrderStartTime) return getFormatDateByLong(row.exeOrderStartTime, 'yyyy-MM-dd hh:mm');
+                    return "";
+                }
+            }, {
+                field : 'actualChargeAmount',
+                title : '总费用',
+                width : 100
+            }, {
+                field : '',
+                title : '补偿金额',
+                width : 100
+            }, {
+                field : 'totalSelfPay',
+                title : '自负',
+                width : 100,
+
+            }, {
+                field : 'totalBeforehandPay',
+                title : '预缴款',
+                width : 100
+            }, {
+                field : 'cutSettlementSum',
+                title : '退补金额',
+                width : 100
+            }, {
+                field : 'operUserName',
+                title : '操作员',
+                width : 100
+            },  {
+                field : 'cancelDate',
+                title : '作废日期',
+                width : 200,
+                templet : function(row) {
+                    if(row.cancelDate != null ){
+                        return util.toDateString(row.cancelDate);
+                    }else{
+                        return "";
+                    }
+                }
+
+            }
+        ] ]
+    }));
+
+    // 重载刷新医嘱列表
+    function reloadOrderList() {
+        mergeTd = {};
+        var params = common.serializeObject($('#queryForm'), ['exeOrderStartTime']);
+        tableIns.reload({url: '../inpatient/inpatientOrderJsonPageList.jo', where: params});
+        initOrderButton("layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled", "layui-btn layui-btn-sm layui-btn-disabled");
+    }
+
+
+    // 按医嘱状态查询
+    form.on('select(orderState)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱类别查询
+    form.on('select(orderClassify)', function (){
+        reloadOrderList();
+    });
+    // 按医嘱项目和医嘱开始日期查询
+    $('#orderName').bind('input propertychange', function (){
+        reloadOrderList();
+    });
+    //按日期范围查询
+    laydate.render({elem: '#exeOrderStartTime', range: true, done: function (value, date, endDate){ reloadOrderList() }});
+
+
+    // 刷新按钮
+    $('#btn_refresh').click(function (){
+        reloadOrderList();
+    });
+});
+</script>
+</html>

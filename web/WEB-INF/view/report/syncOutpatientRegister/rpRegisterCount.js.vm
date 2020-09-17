@@ -1,0 +1,120 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+
+layui.use(['table', 'element', 'form'], function () {
+    var table = layui.table, form = layui.form;
+    var $ = layui.jquery, element = layui.element;
+    var techTable = table.render($.extend(basePageTable, {
+        elem: '#tech'
+        , id: 'tech'
+        , height: getTableHgt()
+        , url: '$contextPath/report/syncRegisterOutPatientListData.jo' //数据接口
+        , cols: [[ //表头
+            {field: '' ,type: 'numbers',fixed:'left'}
+            , {field: 'visitCardNo', title: '诊疗卡号',width:100,fixed:'left'}
+            , {field: 'visitOfficeName', title: '挂号科室',fixed:'left'}
+            , {
+                field: 'patientName', title: '姓名',width:80,fixed:'left'
+            }
+            , {field: 'patientSex', title: '性别',templet:function(res){
+                    return dicSex[res.patientSex];
+                }
+            }
+            , {field: 'patientBirthBegin', title: '出生日期',width:150,templet:function (res) {
+                    return layui.util.toDateString(res.patientBirthBegin,"yyyy-MM-dd HH:mm:ss")
+                }
+            }
+            , {field: 'registerType', title: '挂号类别',templet:function(res){
+                    return dicRegisterType[res.registerType] == undefined ? '' : dicRegisterType[res.registerType];
+                }
+            }
+            , {field: 'visitDoctorName', title: '挂号医生',width:80}
+            , {field:'feeExeFlag',title:'缴费状态',width:80,templet:'#payFeeTpl'}
+            , {field: 'visitDateBegin',title: '就诊时间',width:150, templet: function (res) {
+                    return layui.util.toDateString(res.visitDateBegin, 'yyyy-MM-dd HH:mm')
+                }
+            },{field: 'socialSecurityCard', title: '社保卡号'}
+            ,{field:'insuredPayInWay',title:'付费方式-医保',width: 90,templet:function (res) {
+                    return dicPatientKind[res.insuredPayInWay] != null ? dicPatientKind[res.insuredPayInWay] : '';
+                }
+            }
+            ,{field: 'registerFee', title: '诊查费',align:'right'}
+            , {
+                field: 'medicalRecordsFee', title: '病例金额',align:'right'
+            }, {
+                field: 'diagnosisFee', title: '诊疗金额',align:'right'
+            },{
+                field:'',title:'合计',align:'right',templet:function (res) {
+                    return res.registerFee + res.medicalRecordsFee + res.diagnosisFee;
+                }
+            }
+        ]]
+    }));
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 13);
+    }
+    // 重置表格高度
+    $(window).resize(function () {
+        var height = getTableHgt()
+        table.reload('tech', {
+            height: height
+        })
+    })
+
+    //监听搜索
+    $('#search').on('click', function () {
+        techTable.reload({
+            where: getQueryParams()
+        })
+    });
+
+    function getQueryParams() {
+        var params = $.extend({
+            visitCardNo:'',
+            patientName:'',
+            registerType:'',
+            visitOfficeId:'',
+            visitDoctorId:'',
+            feeExeFlag:'',
+            visitDateBegin:'',
+            visitDateEnd:''
+        }, common.serializeObject($('#queryForm')));
+        var chargeDate = $('#chargeDate').val();
+        if (chargeDate) {
+            var chargeDates = chargeDate.split(' - ');
+            params.visitDateBegin = chargeDates[0];
+            params.visitDateEnd = chargeDates[1];
+        }
+        return params;
+    }
+    //日期时间范围
+    laydate.render({
+        elem: '#chargeDate',trigger: 'click'
+        , range: true
+    });
+
+    //新增事件
+    $('#btn_add').click(function() {
+        editBasDisease();
+    });
+    //编辑
+    function editBasDisease(data) {
+        var title = '导出数据'
+        var iframeEnvironment = 'I4028804601699abb9abbf0080169bcee4329366c';
+        var content = diResource + iframeEnvironment
+        //true 执行
+        if (data) {
+            title = data.diseaseName;
+            content += '?regionPopuId=' + data.regionPopuId;
+        }
+        common.open(content, title, {
+            area : [ '1160px', '80%' ],
+            scroll:'yes'
+        });
+    }
+})
+</script>

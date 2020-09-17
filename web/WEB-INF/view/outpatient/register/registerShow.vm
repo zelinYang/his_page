@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}-挂号记录 MS_GHMX详细信息</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+</head>
+<body class="white-bg">
+        <!-- 显示内容begin -->
+        <div class="table-content">
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">诊室</label>
+                <div class="col-sm-2 p-r-none">
+                    #formIntInput("consultingRoomId" $!{register.consultingRoomId} " id='consultingRoomId' maxlength='255' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">挂号时间</label>
+                <div class="col-sm-2 p-r-none">
+                    #formLayDateInput("createTime" $!{register.createTime} " maxlength='10' class='form-control layer-date' ")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">科室名称</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("depName" "#htmlEscape($!{register.depName})" " id='depName' maxlength='20' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()诊疗金额</label>
+                <div class="col-sm-2 p-r-none">
+                    #formFloInput("diagnosisFee" $!{register.diagnosisFee} " id='diagnosisFee' maxlength='255' adapter='required' required-msg='请填写诊疗金额' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()接诊医生编号</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("doctorId" "#htmlEscape($!{register.doctorId})" " id='doctorId' maxlength='10' adapter='required' required-msg='请填写接诊医生编号' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">挂号职称</label>
+                <div class="col-sm-2 p-r-none">
+                    #formIntInput("chargeName" $!{register.chargeName} " id='chargeName' maxlength='255' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">接诊医生姓名</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("doctorName" "#htmlEscape($!{register.doctorName})" " id='doctorName' maxlength='5' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">监护人证件号码</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("guardIdCard" "#htmlEscape($!{register.guardIdCard})" " id='guardIdCard' maxlength='20' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">监护人证件类型</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("guardIdType" "$!{register.guardIdType}" ${dicData.dicIdType} "&nbsp;" "class='checkbox-inline i-checks' ")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">监护人姓名患者为儿童必输</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("guardName" "#htmlEscape($!{register.guardName})" " id='guardName' maxlength='10' class='form-control'")
+                </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()病历金额</label>
+                <div class="col-sm-2 p-r-none">
+                    #formFloInput("medicalRecordsFee" $!{register.medicalRecordsFee} " id='medicalRecordsFee' maxlength='255' adapter='required' required-msg='请填写病历金额' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">家庭现居住地址</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("patientAddr" "#htmlEscape($!{register.patientAddr})" " id='patientAddr' maxlength='100' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">出生年月</label>
+                <div class="col-sm-2 p-r-none">
+                    #formLayDateInput("patientBirth" $!{register.patientBirth} " maxlength='10' class='form-control layer-date' ")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()就诊卡号</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("visitCardNo" "#htmlEscape($!{register.visitCardNo})" " id='visitCardNo' maxlength='20' adapter='required' required-msg='请填写就诊卡号' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()诊疗卡类型</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("visitCardType" "$!{register.visitCardType}" ${dicData.dicCardType} "&nbsp;" "class='checkbox-inline i-checks' adapter='check' check-msg='请选择诊疗卡类型'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">证件号码</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("patientIdCard" "#htmlEscape($!{register.patientIdCard})" " id='patientIdCard' maxlength='20' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">证件类型</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("patientIdType" "$!{register.patientIdType}" ${dicData.dicIdType} "&nbsp;" "class='checkbox-inline i-checks' ")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()患者姓名</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("patientName" "#htmlEscape($!{register.patientName})" " id='patientName' maxlength='10' adapter='required' required-msg='请填写患者姓名' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">患者电话</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("patientPhone" "#htmlEscape($!{register.patientPhone})" " id='patientPhone' maxlength='15' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()性别</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("patientSex" "$!{register.patientSex}" ${dicData.dicSex} "&nbsp;" "class='checkbox-inline i-checks' adapter='check' check-msg='请选择性别'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()患者类型</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("dicPatientAttribute" "$!{register.dicPatientAttribute}" ${dicData.dicPatientAttribute} "&nbsp;" "class='checkbox-inline i-checks' adapter='check' check-msg='请选择患者类型'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">结账时间</label>
+                <div class="col-sm-2 p-r-none">
+                    #formLayDateInput("payTime" $!{register.payTime} " maxlength='10' class='form-control layer-date' ")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">患者退款主键流水号</label>
+                <div class="col-sm-2 p-r-none">
+                    #formIntInput("refundOrderId" $!{register.refundOrderId} " id='refundOrderId' maxlength='255' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()挂号费</label>
+                <div class="col-sm-2 p-r-none">
+                    #formFloInput("regFee" $!{register.regFee} " id='regFee' maxlength='255' adapter='required' required-msg='请填写挂号费' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">#requiredTag()挂号状态</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("regStatus" "$!{register.regStatus}" ${dicData.null} "&nbsp;" "class='checkbox-inline i-checks' adapter='check' check-msg='请选择挂号状态'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">挂号类型</label>
+                <div class="col-sm-2 p-r-none">
+                    #formRadioButtonsLabel("registerType" "$!{register.registerType}" ${dicData.dicRegisterType} "&nbsp;" "class='checkbox-inline i-checks' ")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">诊室名称</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("roomName" "#htmlEscape($!{register.roomName})" " id='roomName' maxlength='20' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">排队号就诊序号</label>
+                <div class="col-sm-2 p-r-none">
+                    #formIntInput("serialNum" $!{register.serialNum} " id='serialNum' maxlength='255' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">交易结果代码</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("transactionCode" "#htmlEscape($!{register.transactionCode})" " id='transactionCode' maxlength='5' class='form-control'")
+                </div>
+            </div>
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">交易信息失败必填</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("transactionMsg" "#htmlEscape($!{register.transactionMsg})" " id='transactionMsg' maxlength='100' class='form-control'")
+                </div>
+
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">就诊说明</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("visitDesc" "#htmlEscape($!{register.visitDesc})" " id='visitDesc' maxlength='50' class='form-control'")
+                </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label text-right p-r-none p-l-none">就诊位置</label>
+                <div class="col-sm-2 p-r-none">
+                    #formTextInput("visitPosition" "#htmlEscape($!{register.visitPosition})" " id='visitPosition' maxlength='50' class='form-control'")
+                </div>
+            </div>
+
+        </div>
+        <!-- 显示内容begin -->
+ </body>
+<script type="text/javascript">
+    // 下载附件
+    function downFile(fileId) {
+        common.downLoadFile('downLoadFile', 'emAffixService', fileId);
+    }
+</script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>挂号记录 MS_GHMX - 详细信息</title>
+<link href="../resource/css/bootstrap.min.css" rel="stylesheet">
+<link href="../resource/css/font-awesome.css" rel="stylesheet">
+<link href="../resource/css/animate.css" rel="stylesheet">
+<link href="../resource/css/style.css" rel="stylesheet">
+<link href="../resource/css/plugins/blueimp/css/blueimp-gallery.min.css" rel="stylesheet">
+
+<link href="../resource/css/plugins/datapicker/datepicker3.css" rel="stylesheet">
+<link href="../resource/css/plugins/iCheck/custom.css" rel="stylesheet">
+<link href="../resource/css/plugins/chosen/chosen.css" rel="stylesheet">
+<link href="../resource/style/css/page.css" rel="stylesheet">
+
+
+
+<style>
+.lightBoxGallery img {
+    margin: 5px;
+    width: 90px;
+}
+
+.hzzb-tool {
+    height: 48px;
+    background: #ccc;
+    width: 100%;
+    line-height: 48px;
+    padding: 0 15px;
+}
+
+.hzzb-yxzl-left {
+    width: 20%
+}
+
+.hzzb-yxzl-right {
+    width: 77.5%
+}
+
+.form-control.full-height {
+    height: 100%
+}
+
+table.table-jcdj>tbody>tr>th, table.table-jcdj>tbody>tr>td {
+    padding: 9px 15px
+}
+
+table.table-jcdj>tbody>tr>td:hover {
+    border-bottom: #00b7ee 1px solid
+}
+
+.modal-dialog {
+    width: 100%;
+    margin: 0 auto
+}
+</style>
+</head>
+
+<body class="gray-bg top-navigation">
+    <div class="wrapper wrapper-content full-height">
+        <div class="ibox-content">
+            表格显示内容 开始
+            <div class="table-responsive">
+                <table class="table table-bordered table-jcdj">
+                    <tbody>
+                        <tr>
+
+                            <th class="text-nowrap">诊室：</th>
+                            <td >$!{register.consultingRoomId}</td>
+
+                            <th class="text-nowrap">挂号时间：</th>
+                            <td >$!date.format('yyyy-MM-dd HH:mm', $!{register.createTime})</td>
+
+                            <th class="text-nowrap">科室名称：</th>
+                            <td > #htmlEscape($!{register.depName})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">诊疗金额：</th>
+                            <td >$!{register.diagnosisFee}</td>
+
+                            <th class="text-nowrap">接诊医生编号：</th>
+                            <td > #htmlEscape($!{register.doctorId})</td>
+
+                            <th class="text-nowrap">挂号职称：</th>
+                            <td >$!{register.registerFeeId}</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">接诊医生姓名：</th>
+                            <td > #htmlEscape($!{register.doctorName})</td>
+
+                            <th class="text-nowrap">监护人证件号码：</th>
+                            <td > #htmlEscape($!{register.guardIdCard})</td>
+
+                            <th class="text-nowrap">监护人证件类型：</th>
+                            <td > #htmlEscape($!{register.guardIdType})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">监护人姓名患者为儿童必输：</th>
+                            <td > #htmlEscape($!{register.guardName})</td>
+
+                            <th class="text-nowrap">病历金额：</th>
+                            <td >$!{register.medicalRecordsFee}</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">家庭现居住地址：</th>
+                            <td > #htmlEscape($!{register.patientAddr})</td>
+
+                            <th class="text-nowrap">出生年月：</th>
+                            <td >$!date.format('yyyy-MM-dd HH:mm', $!{register.patientBirth})</td>
+
+                            <th class="text-nowrap">就诊卡号：</th>
+                            <td > #htmlEscape($!{register.visitCardNo})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">诊疗卡类型：</th>
+                            <td > #htmlEscape($!{register.visitCardType})</td>
+
+                            <th class="text-nowrap">证件号码：</th>
+                            <td > #htmlEscape($!{register.patientIdCard})</td>
+
+                            <th class="text-nowrap">证件类型：</th>
+                            <td > #htmlEscape($!{register.patientIdType})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">患者姓名：</th>
+                            <td > #htmlEscape($!{register.patientName})</td>
+
+                            <th class="text-nowrap">患者电话：</th>
+                            <td > #htmlEscape($!{register.patientPhone})</td>
+
+                            <th class="text-nowrap">性别：</th>
+                            <td > #htmlEscape($!{register.patientSex})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">患者类型：</th>
+                            <td > #htmlEscape($!{register.dicPatientType})</td>
+
+                            <th class="text-nowrap">结账时间：</th>
+                            <td >$!date.format('yyyy-MM-dd HH:mm', $!{register.payTime})</td>
+
+                            <th class="text-nowrap">患者退款主键流水号：</th>
+                            <td >$!{register.refundOrderId}</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">挂号费：</th>
+                            <td >$!{register.regFee}</td>
+
+                            <th class="text-nowrap">挂号状态：</th>
+                            <td > #htmlEscape($!{register.regStatus})</td>
+
+                            <th class="text-nowrap">挂号类型：</th>
+                            <td > #htmlEscape($!{register.registerType})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">诊室名称：</th>
+                            <td > #htmlEscape($!{register.roomName})</td>
+
+                            <th class="text-nowrap">排队号就诊序号：</th>
+                            <td >$!{register.serialNum}</td>
+
+                            <th class="text-nowrap">交易结果代码：</th>
+                            <td > #htmlEscape($!{register.transactionCode})</td>
+                        </tr>
+                        <tr>
+
+                            <th class="text-nowrap">交易信息失败必填：</th>
+                            <td > #htmlEscape($!{register.transactionMsg})</td>
+
+                            <th class="text-nowrap">就诊说明：</th>
+                            <td > #htmlEscape($!{register.visitDesc})</td>
+
+                            <th class="text-nowrap">就诊位置：</th>
+                            <td colspan="7"> #htmlEscape($!{register.visitPosition})</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+            表格显示内容 结束
+        </div>
+    </div>
+
+    全局js
+    <script src="../resource/js/jquery.min.js"></script>
+    <script src="../resource/js/bootstrap.min.js"></script>
+
+    Flot
+    <script src="../resource/js/plugins/flot/jquery.flot.js"></script>
+    <script src="../resource/js/plugins/flot/jquery.flot.tooltip.min.js"></script>
+    <script src="../resource/js/plugins/flot/jquery.flot.resize.js"></script>
+
+    ChartJS
+    <script src="../resource/js/plugins/chartJs/Chart.min.js"></script>
+
+    Data picker
+    <script src="../resource/js/plugins/datapicker/bootstrap-datepicker.js"></script>
+
+
+    Chosen
+    <script src="../resource/js/plugins/chosen/chosen.jquery.js"></script>
+
+    iCheck
+    <script src="../resource/js/plugins/iCheck/icheck.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+
+            $('#myTabs a[href="#tab-one"]').tab('show') // Select tab by name
+            $('#myTabs a:first').tab('show') // Select first tab
+            $('#myTabs a:last').tab('show') // Select last tab
+            $('#myTabs li:eq(2) a').tab('show') // Select third tab (0-indexed)
+
+            //下拉表单
+            var config = {
+                '.chosen-select': {},
+                '.chosen-select-deselect': {
+                    allow_single_deselect: true
+                },
+                '.chosen-select-no-single': {
+                    disable_search_threshold: 10
+                },
+                '.chosen-select-no-results': {
+                    no_results_text: 'Oops, nothing found!'
+                },
+                '.chosen-select-width': {
+                    width: "350px;"
+                }
+            };
+            for (var selector in config) {
+                $(selector).chosen(config[selector]);
+            };
+
+
+            $('#data_4 .input-group.date').datepicker({
+                minViewMode: 1,
+                keyboardNavigation: false,
+                forceParse: false,
+                autoclose: true,
+                todayHighlight: true
+            });
+
+            $('#data_5 .input-daterange').datepicker({
+                keyboardNavigation: false,
+                forceParse: false,
+                autoclose: true
+            });
+
+
+            $('.i-checks').iCheck({
+                checkboxClass: 'icheckbox_square-green',
+                radioClass: 'iradio_square-green',
+            });
+
+            //性别switch
+            $(".switch").click(function () {
+                if ($(".switch-left").hasClass('chosen') == true) {
+                    $(".switch-left").removeClass('chosen');
+                    $("input[name=male]").attr("checked", false);
+                    $(".switch-right").addClass('chosen');
+                    $("input[name=female]").attr("checked", true);
+                } else {
+                    $(".switch-right").removeClass('chosen');
+                    $("input[name=female]").attr("checked", false);
+                    $(".switch-left").addClass('chosen');
+                    $("input[name=male]").attr("checked", true);
+                }
+            });
+
+            $(".chosen-container.chosen-container-single").css({width:"150px",height:"30px"});
+            $(".chosen-container.chosen-container-multi").css({width:"100%",height:"30px"});
+            $("a.chosen-single").css("line-height","30px");
+
+
+
+        });
+    </script>
+
+
+</body>
+
+</html>
+ -->

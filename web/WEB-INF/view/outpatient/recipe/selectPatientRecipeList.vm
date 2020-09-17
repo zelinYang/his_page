@@ -1,0 +1,111 @@
+#parse("./common/pageCss.vm")
+<style>
+    .layui-table > thead > tr > th, td {
+        text-align: center;
+    }
+
+    .btn-add {
+        font-size: 24px;
+        color: #009587;
+        position: relative;
+        top: 10%;
+        left: 0;
+        cursor: pointer;
+    }
+
+</style>
+<div class="layui-bg-white " style="height:calc(100% - 10px);">
+    #formHiddenInput("registerId" "$!registerId" "id='registerId'")
+    <table class="layui-table " id="medicineTable" lay-filter="medicineTable"></table>
+    <div class="tool-bottom-fixed">
+        <button class="layui-btn layui-btn-sm" id="btn_import" type="button" operate-type="0"> 导入医嘱</button>
+        <button type="button" class="layui-btn layui-btn-sm" id="btn_close">关 闭</button>
+    </div>
+</div>
+#parse("./common/pageJs.vm")
+<script>
+    var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+    var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');//数量
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');//数量
+    layui.use(['table', 'element', 'form'], function () {
+        var table = layui.table, element = layui.element, form = layui.form;
+
+        var medicineList = [];
+        var medicineTable = table.render({
+            elem: '#medicineTable'
+            ,id: 'medicineTable'
+            , url: '../outpatient/recipeItemEmrData.jo'
+            , where: {registerId: $("#registerId").val()}
+            , page: false
+            , height: 'full-60'
+            , cols: [[
+                {type: 'checkbox'}
+                , {
+                    field: 'medicineName', title: '药品名称', width: 150
+                }
+                , {field: 'medicineSpec', title: '药品规格', width: 120}
+                , {field: 'usageQuantity', title: '数量', width: 60}
+                , {
+                    field: 'usageQuantityUnit', title: '', width: 60
+                    , templet: function (row) {
+                        if (row.usageQuantityUnit)
+                            return dicDrugNumUnit[row.usageQuantityUnit] ? dicDrugNumUnit[row.usageQuantityUnit] :''
+                        else return ""
+                    }
+                }
+
+                , {field: 'dosage', title: '剂量', width: 60}
+                , {
+                    field: 'dosageUnit', title: '', width: 60
+                    , templet: function (row) {
+                            return  dicDrugNumUnitDosageUnit[row.dosageUnit] || '';
+                    }
+                }
+                , {
+                    field: 'usageFrequencyCode', title: '频次', width: 120
+                    , templet: function (row) {
+                        if (row.usageFrequencyCode)
+                            return dicPharmacyFreq[row.usageFrequencyCode] ? dicPharmacyFreq[row.usageFrequencyCode] : ''
+                        else return ""
+                    }
+                }
+                , {field: 'giveTotalQuantity', title: '总量', width: 90}
+                , {field: 'specialTreatment', title: '医生说明', width: 200}
+
+            ]]
+            , done: function (res, curr, count) {
+                //表格加载完成将列表数据保留 用于导入诊断
+                medicineList = res.data;
+                console.log(medicineList);
+            }
+        });
+
+
+        $('#btn_close').click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        });
+
+
+        //判断父页面是否是电子病历
+        if (parent.minieditorDesign) {
+            // 导入诊断
+            $('#btn_import').click(function () {
+                var checkRows = table.checkStatus('medicineTable');
+
+                if (!checkRows.data.length) {
+                    common.alert('请选择需要导入的数据', 0);
+                    return false;
+                }
+                $(checkRows.data).each(function (i, v) {
+                    checkRows.data[i].orderName = v.medicineName;
+                });
+                var flag = parent.selectMultiMedicineCall(checkRows.data);
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+
+            });
+        }
+    });
+</script>
+            

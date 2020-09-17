@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+#parse("./datacenter/datacenter.js.vm")
+#parse("./datacenter/datacenter.css.vm")
+</head>
+<body>
+<div class="layui-fluid"  style="height:calc(100% - 40px);">
+    <!-- 油表盘 -->
+    <div class="layui-row" style="height:280px;">
+        <iframe id="oil_dial" width="100%" height="100%" src="" frameborder="0"></iframe>
+    </div>
+    <!-- 指标1 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button id="this_week_register_count" class="layui-btn bg-blue">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("weekRegisterNum") -->26</p>
+                    <p class="quota-title">本周累计挂号人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="this_week_inpatient_outhospital_count" class="layui-btn bg-green">
+                <i class="icon iconfont icon-huanzhe1"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("weekInfusionsNum") -->6</p>
+                    <p class="quota-title">本周出院人数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="inpatient_inhospital_list" class="layui-btn bg-orange">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("currInpatientNum") -->174</p>
+                    <p class="quota-title">当前在院人数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="today_surgery_count" class="layui-btn bg-purple">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("daySurgeryNum") -->4</p>
+                    <p class="quota-title">当日计划手术人次</p>
+                </div>
+            </button>
+        </div>
+    </div>
+    <!-- 指标2 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button id="last_week_register_count" class="layui-btn bg-blue">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("monthRegisterNum") -->11</p>
+                    <p class="quota-title">上月挂号人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="last_week_inpatient_outhospital_count" class="layui-btn bg-green">
+                <i class="icon iconfont icon-huanzhe1"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("lastMonthOuthospitalNum") -->1</p>
+                    <p class="quota-title">上月出院人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-orange">
+                <i class="icon iconfont icon-zhuyuanxinxi"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("inhospitalDayAvg") -->3</p>
+                    <p class="quota-title">上月平均住院天数</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button id="last_month_surgery_count" class="layui-btn bg-purple">
+                <i class="icon iconfont icon-huanzhe2"></i>
+                <div class="quota-content">
+                    <p class="number"><!-- $!quotaMap.get("lastMonthSurgeryNum") -->16</p>
+                    <p class="quota-title">上月住院手术人次</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- 收入比例 -->
+    <div class="layui-row" style="height:310px;">
+        <iframe id="fee_propertion" width="100%" height="100%" src="" frameborder="0"></iframe>
+    </div>
+
+    <!-- 指标2 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-blue">
+                <i class="icon iconfont icon-jiaofei"></i>
+                <div class="quota-content">
+                    <p class="number">$!quotaMap.get("medicalSum")</p>
+                    <p class="quota-title">上月医疗收入</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-green">
+                <i class="icon iconfont icon-24x24shoufeisvg"></i>
+                <div class="quota-content">
+                    <p class="number">$!quotaMap.get("lastMonthOutpatientFeeAvg")</p>
+                    <p class="quota-title">上月门诊均次费用</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-orange">
+                <i class="icon iconfont icon-yiliaomedical44 "></i>
+                <div class="quota-content">
+                    <p class="number">$!quotaMap.get("drugProportion")</p>
+                    <p class="quota-title">上月药占比</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 quota">
+            <button class="layui-btn bg-purple">
+                <i class="icon iconfont icon-zhuyuanxinxi"></i>
+                <div class="quota-content">
+                    <p class="number">$!quotaMap.get("materialProportion")</p>
+                    <p class="quota-title">上月材占比</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+layui.use(['element', 'layer'], function(){
+    //初始化油表盘
+    $("#oil_dial").attr("src",smartBiResource + "200ec9dc01d487e33c6c5d83ff8f8b30");
+
+    //初始化费用比例图
+    $("#fee_propertion").attr("src",smartBiResource + "eec669a649fa1907fee9e6c91d368175");
+
+    //点击本周累计挂号人数时显示明细列表
+    $('#this_week_register_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '本周挂号人数'
+            ,content: smartBiResource + "e33a8f660f78bd3253296a50d5f84f2d"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击本周出院人数时显示明细列表
+    $('#this_week_inpatient_outhospital_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '本周出院人数'
+            ,content: smartBiResource + "5c783c33ab5422bf1ecc332bbabe1f2f"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击当前在院人数时显示明细列表
+    $('#inpatient_inhospital_list').click(function() {
+        layer.open({
+            type: 2
+            ,title: '当前在院患者'
+            ,content: smartBiResource + "cc5341e4ff7695881f16e8db02017846"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击上月挂号人数时显示明细列表
+    $('#last_week_register_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '上月挂号人数'
+            ,content: smartBiResource + "cada6f6cd3b61eec443bda4319e3e1fb"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击上月出院人数时显示明细列表
+    $('#last_week_inpatient_outhospital_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '上月出院人数'
+            ,content: smartBiResource + "fb83fc2fe7d4584cb1244d0564430a4a"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击当日手术人数时显示明细列表
+    $('#today_surgery_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '当日手术人数'
+            ,content: smartBiResource + "be34765ce2cb6c8fd8c320ccb9283d7e"
+            ,area: ['60%', '60%']
+        });
+    });
+
+    //点击上月手术人数时显示明细列表
+    $('#last_month_surgery_count').click(function() {
+        layer.open({
+            type: 2
+            ,title: '上月手术人数'
+            ,content: smartBiResource + "670363bdbf16f0706b397c37e364d5ff"
+            ,area: ['60%', '60%']
+        });
+    });
+
+});
+
+
+
+</script>
+</body>
+
+</html>

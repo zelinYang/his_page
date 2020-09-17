@@ -1,0 +1,191 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var ORDER_TYPE_LIS = "$!{CONST.AppConstants.ORDER_TYPE_LIS}";
+    var dicRpPatientType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRpPatientType)');
+    var dicDoctorOrderType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+    var dicDoctorOrderSubtype = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderSubtype)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        $('#q_chargeTime').each(function () {
+            var that = this;
+            //按出院日期范围查询
+            laydate.render({
+                elem: that,
+                range: true,
+                trigger: 'click',
+                done: function (value, date, endDate) {
+                    setTimeout(function () {
+                        $('#btn_query').click();
+                    })
+                }
+            });
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#syncInpatientSettlement_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                chargeTimeBegin: '',
+                chargeTimeEnd: '',
+                patientTypes: '',
+                doctorOrderType: ORDER_TYPE_LIS,
+                validFlag: YES_FLAG
+            }, common.serializeObject($('#syncInpatientSettlement_queryForm'), ['q_chargeTime']));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('rpHospitalFeeTechListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('syncInpatientSettlement_queryForm');
+        })
+
+        //导出事件
+        $('#btn_import').click(function () {
+            var title = '导出数据'
+            var iframeEnvironment = 'I4028804601699abb9abbf0080169bd1596c93925';
+            var content = diResource + iframeEnvironment
+            //true 执行
+            if (data) {
+                title = data.diseaseName;
+                content += '?regionPopuId=' + data.regionPopuId;
+            }
+            common.open(content, title, {
+                area: ['1660px', '80%'],
+                scroll: 'yes'
+            });
+        });
+        var leftCols = [
+            {
+                title: '序号',
+                type: 'numbers',
+
+                align: 'center',
+            },
+            {
+                field: 'chargeTime',
+                title: '结账日期',
+                width: 16 * 10,
+                align: 'center',
+                templet: function (row) {
+                    return row.chargeTime ? util.toDateString(row.chargeTime) : '';
+                },
+            },
+            {
+                field: 'exeOfficeName',
+                title: '医技执行科室',
+                width: 90,
+                align: 'center'
+
+            },
+            {
+                field: 'patientType',
+                title: '门诊/住院',
+                width: 90,
+                align: 'center',
+                templet: function (d) {
+                    return dicRpPatientType[d.patientType] || "";
+                }
+            },
+            {
+                field: 'outpatientCount',
+                title: '门诊人次',
+                align: 'center'
+            },
+            {
+                field: 'inhospitalCount',
+                title: '住院人次',
+                align: 'center'
+            },
+            {
+                field: 'doctorOrderType',
+                title: '医嘱项目类型',
+                width: '医嘱项目类型'.length * 15,
+                align: 'center',
+                templet: function (d) {
+                    return dicDoctorOrderType[d.doctorOrderType] || "";
+                }
+            }, {
+                title: '总金额',
+                align: 'right',
+                templet: function (row) {
+                    return $.map(dicDoctorOrderSubtype, function (value, key) {
+                        var field = 'techFeeAmount' + Number(key);
+                        return Number(row[field]) || 0;
+                    }).reduce(function (total, num) {
+                        return total + num
+                    }, 0).toFixed(2);
+                }
+            }
+        ];
+        var lisFeeCols = $.map(dicDoctorOrderSubtype, function (value, key) {
+            return {
+                field: 'techFeeAmount' + Number(key),
+                title: value,
+                align: 'center',
+                style: 'text-align: right;'
+            }
+        });
+        var rightCols = [
+            {
+                field: 'hospitalName',
+                title: '医疗机构',
+                align: 'center',
+                rowspan: 2
+            }];
+        //宽度 = (字数: 不好含符号) * (字符宽度: 全角字符宽度 = 15，字符宽度 = 10);
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#rpHospitalFeeTechListGrid',
+            url: '../report/rpHospitalFeeTechListData.jo',//数据接口
+            where: getQueryParams(),
+            cols: [
+                [].concat(leftCols, lisFeeCols, rightCols)
+            ],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

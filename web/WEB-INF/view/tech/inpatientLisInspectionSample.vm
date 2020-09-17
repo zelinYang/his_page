@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+.layui-table, .layui-table-view{margin:0}
+.layui-table th {padding: 7px 8px;}
+.layui-table td {padding: 2px 3px;}
+</style>
+</head>
+<body>
+    <div class="layui-row full-height white-bg layui-fluid">
+        <div class="layui-row white-bg p-t-xs p-b-xs p-l-sm p-r-sm">
+            <form class="layui-form" id="queryForm" action="">
+                #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                <div class="layui-inline">
+                    <label class="layui-form-label">检验时间</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("" "" "id='inspectionTime' tag='inspectionTimeBegin,inspectionTimeEnd' class='layui-input' placeholder='检验时间范围' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">单据名称</label>
+                    <div class="layui-input-inline">
+                        #formTextInput("chineseName" "" " id='chineseName' class='layui-input' placeholder='单据名称'")
+                    </div>
+                </div>
+                <div class="layui-inline m-l-sm">
+                    <div class="layui-input-inline">
+                         <button class="layui-btn layui-btn-sm" type="button" id="btn_query"> 查 询 </button>
+                         <button class="layui-btn layui-btn-sm" type="reset" id="btn_clean"> 清 空  </button>
+                         <button class="layui-btn layui-btn-sm" type="button" id="btn_refresh"> 刷 新  </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="full-height" style="height: calc(100% - 65px);">
+            <form class="layui-form full-height" action="">
+                <table id="lisInspectionList" class="layui-table m-t-n" lay-skin="row line"></table>
+            </form>
+        </div>
+        <div class="tool-bottom-fixed">
+            <button type="button" id="btn_print" class="layui-btn layui-btn-sm">选择打印</button>
+            <button type="button" id="btn_general" class="layui-btn layui-btn-sm">一般检验单打印</button>
+            <button type="button" id="btn_allergy" class="layui-btn layui-btn-sm">药敏检验单打印</button>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form', 'laydate', 'table'], function() {
+    var form = layui.form, laydate = layui.laydate, table = layui.table;
+    laydate.render({elem: '#inspectionTime', range: true});
+
+    var lisInspectionList = table.render({
+        elem: '#lisInspectionList'
+        ,defaultToolbar: []
+        ,height: 'full-80'//高度
+        ,url: '../tech/inInspectionSampleResult.jo' //数据接口
+        ,page: true //开启分页
+        ,where:{inhospitalId: $('#inhospitalId').val()}
+        //,limit:200
+        ,request: {
+            pageName: 'pageNumber' //页码的参数名称，默认：page
+            ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,cols: [[ //表头
+             {type:'checkbox'}
+            ,{field : 'chineseName',title : '单据' }
+            ,{field : 'sampleNumber',title : '样本'}
+            ,{field : 'inspectionPerson',title : '检验人'}
+            ,{field : 'inspectionTime',title : '检验时间'}
+            ,{field : 'checkPerson',title : '审核人'}
+            ,{field : 'checkTime',title : '核收时间'}
+            ,{field : 'checkTime',title : '申请人'}
+            ,{field : 'checkTime',title : '申请时间'}
+            ,{field : 'printId',title : '打印次数'}
+        ]]
+    });
+
+
+    function query() {
+        var queryParams = common.serializeObject($('#queryForm'));
+        lisInspectionList.reload({ where: queryParams });
+    }
+
+    //查询
+    $('#btn_query').click(function () {
+        query();
+    });
+
+    //刷新
+    $('#btn_refresh').click(function () {
+        window.location.href = window.location.href;
+    });
+
+});
+</script>
+</html>

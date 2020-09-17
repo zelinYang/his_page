@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .layui-content-wrapper .layui-fluid{overflow: auto}
+        .layui-content-wrapper.layui-bg-white .layui-fluid {
+            min-height: 200px;
+            padding-bottom: 0;
+            height: calc(100% - 10px);
+        }
+        .layui-table-body{min-height: 70px}
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form id="queryForm" class="layui-form" action="">
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            <div class="layui-row-query search-term">
+              <div class="layui-form-item">
+                <div class="layui-inline">
+                  <div class="layui-input-inline">
+                      #formTextInput("techApplyName" "" "id='techApplyName' class='layui-input' placeholder='请输入项目名称' maxLength='50'")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                  <div class="layui-input-inline m-l-sm">
+                      #formSingleSelectFirstNone("historyFlag" "" $!dicData.dicYesNo "lay-filter='historyFlag' id='historyFlag' class='layui-input'" "完成情况")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                  <div class="layui-input-inline m-l-sm">
+                      #formSingleSelectFirstNone("printFlag" "" $!dicData.dicYesNo "lay-filter='printFlag' id='printFlag' class='layui-input'" "是否打印")
+                  </div>
+                </div>
+                <div class="layui-inline">
+                  <div class="layui-input-inline m-l-sm">
+                      #formTextInput("" "" "id='makeOrderDate' tag='makeOrderDateBegin,makeOrderDateEnd' placeholder='申请日期' class='layui-input'")
+                  </div>
+                </div>
+                <div class="layui-inline layui-btn-group">
+                  <button class="layui-btn layui-btn-sm" id="btn_query" type="button" title="查 询"> <i class="layui-icon layui-icon-search"></i></button>
+                  <button class="layui-btn layui-btn-sm" id="btn_clean" type="button" title="清 空"> <i class="iconfont icon-qingchu"></i> </button>
+                  <button class="layui-btn layui-btn-sm" id="btn_insert" type="button" title="导 入"> <i class="iconfont icon-daoru3 "></i></button>
+                </div>
+              </div>
+            </div>
+        </form>
+        <div class="layui-row layui-col-sm4 layui-col-xs4">
+            <table id="techPacsList" lay-filter="techPacsList" class="layui-hide"></table>
+        </div>
+        <div class="layui-row layui-col-sm8 layui-col-xs8" id="emrDiv">
+            <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 0px); " src=""></iframe>
+        </div>
+    </div>
+</div>
+
+</body>
+    #parse("./common/common.js.vm")
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+
+    console.log(JSON.stringify($!patientId)+"patirn")
+    layui.use(['table', 'form', 'laydate','util'], function () {
+        var rowId;
+        var table = layui.table, form = layui.form, laydate = layui.laydate,util = layui.util;
+        laydate.render({elem: '#makeOrderDate', trigger: 'click', range: true});
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('.layui-fluid').height() - $('#queryForm').height())
+        };
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                techApplyName: '',
+                historyFlag: '',
+                printFlag: '',
+                makeOrderDateBegin: '',
+                makeOrderDateEnd: '',
+                patientId: "$!patientId",
+                validFlag: "$!{CONST.AppConstants.YES_FLAG}",
+                doctorOrderType: "$!{CONST.AppConstants.ORDER_TYPE_EXAM}",
+                orderGroupFlag: "$!{CONST.AppConstants.YES_FLAG}"
+            }, common.serializeObject($('#queryForm'), ['makeOrderDate']));
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('techPacsList', {
+                height: height
+            })
+            $('#emrDiv').height(getTableHgt());
+            // table.reload('techPacsListItem', {
+            //     height: height
+            // })
+            /*var _iframe1= document.getElementById('pacs');
+            var divDom = _iframe1.parentNode;
+            _iframe1.width = divDom.clientWidth;
+            _iframe1.height= divDom.clientHeight;*/
+        });
+
+        // 路径分页列表
+        var tableUrl = contextPath + '/inpatient/inpatientOrderPageDate.jo';
+        var tableList = table.render($.extend(basePageTable, {
+                    url: tableUrl,
+                    id: 'techPacsList',
+                    elem: '#techPacsList',
+                    height: getTableHgt(),
+                    where: getQueryParams(),
+                    cols: [[
+                    	/*
+                        {
+                            field: 'doctorOrderType', title: '医学影像', width: 80, templet: function (row) {
+                                if (row.doctorOrderType === '0201') {
+                                    return '<button onclick="showPacs(\''+row.thirdpartyExamNo + '\')" class="layui-btn layui-btn-xs">医学影像</button>';
+                                }
+                                return "";
+                            }
+                        },
+                        */
+                        {field: 'techApplyName', title: '项目分类', width: 100},
+                        {field: 'chargeGroupName', title: '项目名称', width: 100},
+                        //{field:'techExamNo', title: '申请编号'},
+                        //{field:'clinicPathVersion', title: '取部位方式', width:100},
+                        //{field:'diseaseId', title: '部位规则', width:100},
+                        //{field: 'examSampleOffice', title: '检查科室', width: 130},
+                        {field: 'makeOrderDoctorName', title: '申请医生', width: 90},
+                        {
+                            field: 'makeOrderDate', title: '申请时间', width: 130, templet: function (res) {
+                                return util.toDateString(res.makeOrderDate,  'yyyy-MM-dd HH:mm');
+                            }
+                        },
+                        {
+                            field: 'historyFlag', title: '完成', templet: function (row) {
+                                return dicYesNo[row.historyFlag] || '';
+                            }
+                        },
+                        {
+                            field: 'finishTime', title: '完成时间', width: 130, templet: function (res) {
+                                return util.toDateString(res.finishTime,  'yyyy-MM-dd HH:mm');
+                            }
+                        }
+                        /*,
+                        {
+                            field: 'printFlag', title: '打印', templet: function (row) {
+                                return dicYesNo[row.printFlag] || "";
+                            }
+                        }
+                        */
+                        //{field:'validFlag', title: '有效', width:70, templet :function (row) { if (row.validFlag) return dicYesNo[row.validFlag]; else return "" }}
+                    ]]
+                })
+        );
+
+        table.on('row(techPacsList)', function (obj) {
+            var patientId =  obj.data.patientId;
+            var inhospitalId = obj.data.inhospitalId;
+            var src = '';
+            switch (obj.data.doctorOrderType) {
+                case "$!{CONST.AppConstants.ORDER_TYPE_PACS_EXAM}":
+                    //0201=B超放射内镜
+                    break;
+                case "$!{CONST.AppConstants.ORDER_TYPE_ECG_EXAM}":
+                    //0202=心电
+                    break;
+            }
+            if(obj.data.techApplyName ==="DR"){
+                //src = '$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + "inhospitalId=" + inhospitalId + '&patientId='+ patientId +'&emrTlpId=93'
+                src = 'http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=1.2.840.112618.2.216.6947.2378723.78426921.47679177829192233';
+            }else if(obj.data.techApplyName ==="超声"){
+                src ='$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&'
+                        + "inhospitalId=" + inhospitalId + '&patientId='+ patientId +'&emrTlpId=91';
+            } else if (obj.data.techApplyName === '心电') {
+                //src = 'http://192.168.0.199:8082/HisReportList.aspx?HISpatientID=xdt20190800632';
+                src = contextPath + '/view/xtd/ReportECG.html?inhospitalId='+ inhospitalId + '&patientId='+ patientId +'&emrTlpId=91';
+            } else if (obj.data.techApplyName === 'CT') {//临时使用
+            	src = 'http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=1.2.840.112618.2.216.6947.2378723.56558703.47677611756602419';
+                if (obj.data.techApplyId == 40725) {
+                    src = '$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&' + "inhospitalId=" + inhospitalId + '&patientId='+ patientId +'&emrTlpId=93';
+                }
+            } else if (obj.data.techApplyName === 'MRI') {
+                src = 'http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=1.3.6.1.4.1.23438.1.1.0500702.20200603.3359';
+            } else {
+                common.msg("无报告")
+            }
+            $("#emrEdit").attr("src", src);
+
+            // var tableListItem = table.render($.extend(basePageTable, {
+            //             url: '../tech/examResultDetailListData.jo',
+            //             id: 'techPacsListItem',
+            //             elem: '#techPacsListItem',
+            //             // height: getTableHgt(),
+            //             height: 'full-72',
+            //             where: {
+            //                 techExamApplyId: obj.data.techExamApplyId
+            //             },
+            //             cols: [[
+            //                 {type: 'checkbox', width: 50},
+            //                 {field: 'patientName', width: 130, title: '患者姓名'},
+            //                 {field: 'examPartName', width: 130, title: '检查部位'},
+            //                 {field: 'diagnosisDoctorName', width: 130, title: '诊断医生'},
+            //                 {field: 'examFindings', width: 130, title: '检查所见'},
+            //                 {field: 'examHint', width: 130, title: '检查提示'},
+            //                 {
+            //                     field: 'clinicFlag', width: 130, title: '是否符合临床',
+            //                     templet: function (row) {
+            //                         if (row.clinicFlag) {
+            //                             return dicYesNo[row.clinicFlag]
+            //                         }
+            //                         return "";
+            //                     }
+            //                 },
+            //                 {
+            //                     field: 'reportFlag', width: 130, title: '是否合格报告',
+            //                     templet: function (row) {
+            //                         if (row.clinicFlag) {
+            //                             return dicYesNo[row.clinicFlag]
+            //                         }
+            //                         return "";
+            //                     }
+            //                 },
+            //                 {
+            //                     field: 'criticalFlag', width: 130, title: '是否危急检查',
+            //                     templet: function (row) {
+            //                         if (row.clinicFlag) {
+            //                             return dicYesNo[row.clinicFlag]
+            //                         }
+            //                         return "";
+            //                     }
+            //                 },
+            //                 {
+            //                     field: 'infectiousFlag', width: 130, title: '是否传染病检查',
+            //                     templet: function (row) {
+            //                         if (row.clinicFlag) {
+            //                             return dicYesNo[row.clinicFlag]
+            //                         }
+            //                         return "";
+            //                     }
+            //                 },
+            //                 {field: 'infectiousDisease', width: 130, title: '传染病描述'},
+            //
+            //                 {field: 'surgicalProcedure', width: 130, title: '手术过程'},
+            //                 {field: 'pathologicDiagnosis', width: 130, title: '病理诊断'},
+            //                 {field: 'examAdvise', width: 130, title: '检查建议'},
+            //                 {field: 'biopsySites', width: 130, title: '活检部位'},
+            //                 {field: 'filmFlag', width: 130, title: '拍片属性', width: 100}
+            //             ]]
+            //         })
+            // );
+
+        })
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            tableList.reload({
+                where:getQueryParams()
+            });
+        });
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('queryForm');
+            form.render('select');
+        });
+        //导入
+        $('#btn_insert').click(function () {
+            var checkStatus = table.checkStatus('techPacsListItem'); //idTest 即为基础参数 id 对应的值
+            if (checkStatus.data.length === 0) {
+                common.alert('请选择要导入的检查数据', 0);
+                return;
+            }
+            var value = [];
+            for (var i = 0, len = checkStatus.data.length; i < len; i++) {
+                if (checkStatus.data[i].examFindings) {
+                    value.push(checkStatus.data[i].examFindings);
+                    value.push(checkStatus.data[i].examHint ? checkStatus.data[i].examHint : '');
+                }
+            }
+            parent.parent.inserthtml(value.join(','));
+        });
+        // 关键字检索
+        $('#techApplyName').on('input propertychange', function () {
+            $('#btn_query').click();
+        });
+        // 是否完成检索
+        form.on('select(historyFlag)', function (data) {
+            $('#btn_query').click();
+        });
+        // 是否打印检索
+        form.on('select(printFlag)', function (data) {
+            $('#btn_query').click();
+        });
+        // 刷新列表
+        //$('#btn_refresh').click(function (){
+        //    $('#btn_query').click();
+        //});
+    });
+
+    function showPacs(thirdpartyExamNum) {
+        $.post(contextPath + '/tech/getStuuid.jo', {pid: thirdpartyExamNum}, function (res){
+            if(res.code === "0") {
+                window.open('http://bofan.eicp.net:9008/yifanwebpacs/wpacs.aspx?user=bofanpacs&pswd=bofanpacs123&stuuid=' + res.data);
+            } else {
+                common.msg("没有影响数据", 0);
+            }
+        }, 'json');
+    }
+    $(document).ready(function () {
+        $('#emrDiv').height($('.layui-fluid').height() - $('#queryForm').height());
+    })
+</script>
+</html>

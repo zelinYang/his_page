@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-字典主界面</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-tab-card {
+            height: 100%;
+            border: 0;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* 导航当前样式*/
+        layui-tab-card > .layui-tab-title.highlight > .layui-this:after {
+            top: 0;
+        }
+
+        .layui-tab-card > .layui-tab-content {
+            height: calc(100% - 33px);
+            padding: 0;
+        }
+
+        .layui-tab-card > .layui-tab-content > .layui-tab-item {
+            height: 100%;
+        }
+
+        .layui-tab-card > .layui-tab-content > .layui-tab-item > iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+    </style>
+    <style>
+
+        @keyframes picmove {
+            from {
+                transform: translate(0);
+            }
+            to {
+                transform: translate(-750px);
+            }
+        }
+        .layer-photos-demo {
+            animation: picmove 5s linear infinite forwards;
+        }
+        .layer-photos-demo:hover {
+            animation-play-state: paused;
+        }
+
+    </style>
+</head>
+<body>
+<div class="layui-tab layui-tab-card" lay-filter="childrenNav">
+    <ul class="layui-tab-title highlight">
+    </ul>
+    <div class="layui-tab-content">
+    </div>
+</div>
+<script>
+    /************************ 导航 ********************************/
+    var childrenNav = [
+        {
+            'id': 'basSurgeryCode',
+            'text': '手术名称代码',
+            'href': 'bas/basSurgeryCodeList.do'
+        }, {
+            'id': 'basSurgeryIncisionLevel',
+            'text': '手术等级',
+            'href': 'bas/basSurgeryIncisionLevelList.do'
+        }
+    ]
+
+    layui.use(['element', 'layer'], function () {
+        var element = layui.element
+        $ = layui.$
+
+        //新增导航
+        function addNav(href, text, iframeId) {
+            //遍历页签选项卡
+            var isExistNav = Boolean($('.layui-tab[lay-filter="childrenNav"] > ul.layui-tab-title > li[lay-id="' + iframeId + '"]').length);
+            //已经存在就退出了
+            if (isExistNav) return;
+            //新增一个Tab项
+            element.tabAdd('childrenNav', {
+                id: iframeId,
+                title: text,
+                attr: href
+            })
+        }
+
+        //监听导航菜单点击事件
+        element.on('tab(childrenNav)', function (data) {
+            var href = $(this).attr("lay-attr");
+            data.elem.find('.layui-tab-content > .layui-tab-item.layui-show').html(function () {
+                //已经存在就不重复加载了
+                if ($(this).children('iframe').prop('src')) return;
+                common.openLoad();
+                return $('<iframe/>').prop('src', href).load(function () {
+                    common.closeLoad();
+                })
+            });
+        })
+
+        //加载导航
+        /**
+         *
+         * @param childrenNav  [
+         {
+            'id': '',
+            'text': '',
+            'href': ''
+        },'' ]
+         */
+        function initNav(childrenNav) {
+            $.each(childrenNav, function (index, item) {
+                addNav(contextPath + '/' + item.href, item.text, item.id)
+            })
+            $('.layui-tab[lay-filter="childrenNav"]').find('.layui-tab-title li').first().click()
+        }
+
+        /**
+         * 打开一个新的选项卡窗口，一般在子窗口调用
+         * @param href
+         * @param text
+         * @param iframeId
+         */
+        window.openNav = function (href, text, iframeId) {
+            addNav(href, text, iframeId)
+            element.tabChange('childrenNav', iframeId) //切换到导航
+        }
+
+        //初始化菜单
+        initNav(childrenNav)
+    })
+
+</script>
+</body>
+</html>

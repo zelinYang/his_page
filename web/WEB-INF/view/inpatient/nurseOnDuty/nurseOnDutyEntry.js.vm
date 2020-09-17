@@ -1,0 +1,63 @@
+<script>
+    layui.use(['form','element','table','layer'],function(){
+        var form = layui.form;
+        var table = layui.table;
+        
+        //日期控件初始化
+        laydate.render({elem: '#onDutyDate', type: 'date', value:new Date(), istime: true
+            //日期被选中事件
+            ,done: function (value, date, endDate){
+                    if(date.year){
+                        var onDutyDate = date.year+"-"+date.month+"-"+date.date;
+                        $("#onDutyDate").val(onDutyDate);
+                    }else{
+                        $("#onDutyDate").val("");
+                    }
+                    query();
+                }
+        });
+        
+        $(".refresh").click(function(){
+           window.location.href =  window.location.href;
+        });
+        
+        form.on("select(onDutyWardId)",function(data){
+            query();
+        });
+        
+        $("#btn_save").click(function(){
+            var childWindow1 = $(".J_iframe1")[0].contentWindow;
+            childWindow1.submitForm();
+            var childWindow2 = $(".J_iframe2")[0].contentWindow;
+            childWindow2.submitForm();
+            
+        });
+        
+        table.render({
+           elem:"#dutyItem" 
+           ,url:"../inpatient/nurseOnDutyItemListData.jo"
+           ,height:'full'
+           ,page:true
+           ,cols:[[
+               {field: 'patientName', title: '姓名',width:105}
+               ,{field: 'currentBedNo', title: '床位号',width:105}
+               ,{field: 'inhospitalBedNo', title: '状态',width:105}
+               ,{field: 'inhospitalBedNo', title: '值班类型',width:105}
+               ,{field: 'inhospitalBedNo', title: '标识',width:105}
+           ]]
+        });
+        
+        
+        function query(){
+            var onDutyWardId = $("#onDutyWardId").val();
+            var onDutyDate = $("#onDutyDate").val();
+            console.log("onDutyWardId:"+onDutyWardId+" onDutyDate:"+onDutyDate);
+            $(".J_iframe1").attr("src","../inpatient/nurseOnDutyEdit.do?onDutyWardId="
+              + onDutyWardId + "&onDutyDate=" + onDutyDate);
+            $(".J_iframe2").attr("src","../inpatient/nurseOnDutyItemList.do?onDutyWardId="
+              + onDutyWardId + "&onDutyDate=" + onDutyDate);
+        }
+        
+    });
+    
+</script>

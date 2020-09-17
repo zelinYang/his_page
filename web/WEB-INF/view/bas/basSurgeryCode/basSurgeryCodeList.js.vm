@@ -1,0 +1,327 @@
+<script>
+    var DIC_TYPE_TREE = "$!{CONST.AppConstants.DIC_TYPE_TREE}";
+    var DIC_TYPE_SURGERY_CLASSIFY = "$!{CONST.AppConstants.DIC_TYPE_SURGERY_CLASSIFY}";
+    var dicTypeIds = DIC_TYPE_SURGERY_CLASSIFY;
+    //清空分类
+    $('.caller-icon').click(function () {
+        $("#q_keyWord_classify").val("");
+    })
+
+    //回车触发查询分类
+    $("#q_keyWord_classify").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query_classify').click();
+            return false;
+        }
+    });
+
+    //查询分类
+    $("#btn_query_classify").click(function () {
+        var keyWord = $("#q_keyWord_classify").val();
+        refreshRootNode(keyWord);
+    })
+
+    //刷新分类
+    $("#btn_refresh_classify").click(function () {
+        var nodes = zTreeObj.getNodes();
+        zTreeObj.reAsyncChildNodes(nodes[0], "refresh", false);
+
+    })
+
+    /**
+     * 刷新根结点树
+     */
+    window.refreshRootNode = function (keyWord) {
+        var nodes = zTreeObj.getNodes();
+        zTreeObj.setting.async.otherParam.keyWord = keyWord;
+        zTreeObj.setting.async.otherParam.treeChildNodes = !keyWord;
+        $.each(nodes, function (i, node) {
+            if (keyWord) {
+                zTreeObj.selectNode(node, true);
+                refreshNode({type: "refresh", silent: false});
+            } else {
+                zTreeObj.removeChildNodes(node);
+                node.zAsync = false;
+                node.isParent = true;
+                zTreeObj.updateNode(node);
+            }
+        })
+        zTreeObj.cancelSelectedNode(); //取消所有选中
+    }
+
+    //刷新子节点
+    function refreshNode(data) {
+        var type = data.type,
+            silent = data.silent,
+            nodes = zTreeObj.getSelectedNodes();
+        if (nodes.length == 0) {
+            alert("请先选择一个父节点");
+        }
+        for (var i = 0, l = nodes.length; i < l; i++) {
+            zTreeObj.reAsyncChildNodes(nodes[i], type, silent);
+            if (!silent) zTreeObj.selectNode(nodes[i]);
+        }
+    }
+
+    // 初始化树形分类
+    var zTreeObj, setting = {
+        view: {
+            selectedMulti: false,
+            showIcon: false
+        },
+        data: {
+            simpleData: {
+                enable: true
+            }
+        },
+        async: {
+            enable: true,
+            url: '../basDic/basDicListData.jo?pageSize=99999&validFlag=1',
+            otherParam: {"treeChildNodes": true, dicTypeIds: dicTypeIds},
+            autoParam: ["dicTypeId", "treeSort=treeNodeCode"],
+            dataFilter: function (treeId, parentNode, result) {
+                var childNodes = result.data;
+                if (!childNodes) return null;
+                $.each(childNodes, function (index, item) {
+                    //判断是否是最大级别的最大长度
+                    item.name = item.dicName + ' ' + item.dicCode;
+                    item.isParent = true;
+                })
+                return childNodes;
+            }
+        },
+        callback: {
+            onAsyncSuccess: function (event, treeId, treeNode, msg) {
+                if (!(!!window.ActiveXObject || 'ActiveXObject' in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false) //只展开第一个节点
+                }
+                zTreeObj.setting.async.otherParam['includeRoot'] = false
+            },
+            onClick: function (event, treeId, treeNode) {
+                query(getQueryParams({surgeryClassifyLeftLike: treeNode.dicCode}));
+            }
+        }
+    }
+
+    //初始化字典分类名称 请求参数
+    var basDicTypeOption = {
+        url: contextPath + '/basDicType/basDicTypeListData.jo?validFlag=1',
+        data: {
+            dicTypeIds: dicTypeIds,
+            dicType: DIC_TYPE_TREE
+        },
+        success: function (result) {
+            var data = result.data;
+            if (data && data.length > 0) {
+                $.each(data, function (index, item) {
+                    item.name = item.dicTypeName;
+                    item.isParent = true;
+                })
+                //根节点
+                var zNodes = data;
+                zTreeObj = $.fn.zTree.init($('#basDicTree'), setting, zNodes);
+                var nodes = zTreeObj.getNodes();
+                zTreeObj.reAsyncChildNodes(nodes[0], "refresh", false);
+            }
+        }
+    }
+    common.requestServer(basDicTypeOption.url, basDicTypeOption.data, basDicTypeOption.success);
+</script>
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicSurgeryLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryLevel)');
+    var dicSurgerySourceFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgerySourceFlag)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        window.getQueryParams = function (params) {
+            return $.extend({
+                surgeryClassifyLeftLike: '',
+                surgeryIncisionLevelIds: '',
+                surgeryLevels: '',
+                surgerySourceFlags: '',
+                keyWord: ''
+            }, params || common.serializeObject($('#basSurgeryCode_queryForm')));
+        }
+
+        //全选/反选
+        form.on('checkbox(checkboxMulti)', function (data) {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            forCheckbox.prop('checked', data.elem.checked);
+            that.indeterminate = false;//状态不确定
+            form.render('checkbox');
+        });
+        $(':checkbox[for-checkbox]').each(function () {
+            var that = this;
+            var forName = $(that).attr('for-checkbox');
+            var forCheckbox = $(':checkbox[name="' + forName + '"]');
+            form.on('checkbox(' + forName + ')', function (data) {
+                that.checked = !Boolean(forCheckbox.not(':checked').length);
+                that.indeterminate = !that.checked == forCheckbox.is(':checked');//其中部分选中时，状态不确定
+                form.render('checkbox');
+            });
+        })
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            query(queryParams);
+            zTreeObj.cancelSelectedNode(); //取消所有选中
+        })
+        window.query = function (queryParams) {
+            //执行重载
+            table.reload('basSurgeryCodeListGrid', {
+                where: queryParams
+            });
+        }
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basSurgeryCode_queryForm');
+            $("#basSurgeryCode_queryForm").find(':checkbox').prop('indeterminate', false);
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            var node = zTreeObj.getSelectedNodes()[0];
+            var surgeryClassify = node && node.dicCode || '';
+            common.open('$contextPath' + '/bas/BasSurgeryCodeEdit.do?surgeryClassify=' + surgeryClassify, '新增手术名称代码', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basSurgeryCodeListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basSurgeryCodeListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'surgeryName',
+                    title: '手术名称',
+                    minWidth: 200
+                },
+                {
+                    field: 'surgeryCodeId',
+                    title: '手术CM3码 ',
+                    width: 100
+                }, {
+                    field: 'surgeryClassify',
+                    title: '手术分类'
+                },
+                {
+                    field: 'surgeryLevel',
+                    title: '手术等级',
+                    templet: function (d) {
+                        return dicSurgeryLevel[d.surgeryLevel] || '';
+                    }
+                },
+                {
+                    field: 'incisionLevelName',
+                    title: '切口等级'
+                },
+                {
+                    field: 'surgerySourceFlag',
+                    title: '来源标识',
+                    templet: function (d) {
+                        return dicSurgerySourceFlag[d.surgerySourceFlag] || '';
+                    }
+                },
+                {
+                    field: 'sort',
+                    title: '排序序号'
+                },
+                {
+                    field: 'remark',
+                    title: '备注'
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }]], done: function () {
+                tableReHeight(this, getTableHgt);autoSetHeigt()
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#basSurgeryCode_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/updateBasSurgeryCodeValidFlag.jo', {
+                ids: data.surgeryCodeId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basSurgeryCodeListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/bas/basSurgeryCodeShow.do?surgeryCodeId=' + row.surgeryCodeId, '手术名称代码详情', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/bas/BasSurgeryCodeEdit.do?surgeryCodeId=' + row.surgeryCodeId, '手术名称代码', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break
+            }
+        });
+
+    })
+</script>

@@ -1,0 +1,246 @@
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox"  lay-filter="validFlag" name="validFlag" value="{{d.docChargeGroupId}}" lay-skin="switch" lay-text="有效|无效" {{d.validFlag == 1 && 'checked' }} >
+</script>
+<script>
+    var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+    var dicInhospitalChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalChargeGroupCode)');
+    var dicChargeType = JSON.parse('$dicTools.changeMapToJson($dicData.dicChargeType)');
+    var updateValidFlagUrl = contextPath + '/doc/updateDocChargeGroupValidFlag.jo';
+    layui.config({
+        base : '../resource/layuiadmin/' //静态资源所在路径
+    }).extend({
+        index : 'lib/index', //主入口模块
+        autocomplete : 'autocomplete'
+    }).use([ 'index', 'table', 'form', 'layer', 'autocomplete' ], function() {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, autocomplete = layui.autocomplete;
+
+        //表列表
+        table.render({
+            elem : '#docChargeGroupListGrid',
+            url : '../doc/docChargeGroupListData.jo',
+            limit : 20,
+            cols : [ [
+                    {
+                        type : 'numbers',
+                        fixed : 'left'
+                    },
+                    {
+                        field : 'chargeGroupName',
+                        title : '收费类型名称'
+                    },
+                    {
+                        field : 'basChargeGroupId',
+                        title : '收费项目归并',
+                        templet : function(d) {
+                            return dicInhospitalChargeGroupCode[d.basChargeGroupId] || '';
+                        }
+                    },
+                    {
+                        field : 'chargeType',
+                        title : '项目类型',
+                        templet : function(d) {
+                            return dicChargeType[d.chargeType] || '';
+                        }
+                    },
+                    {
+                        field : 'validFlag',
+                        title : '是否有效',
+                        unresize : true,
+                        width : 100,
+                        templet : '#validFlagTpl'
+                    }, {
+                        title : '操作',
+                        width : 60,
+                        align : 'center',
+                        fixed : 'right',
+                        toolbar : '#colstoolbar'
+                    } ] ],
+            page : true,
+            height : 'full-60',
+            done : function() {
+                this.where = {};//清空所有查询条件
+            },
+            request : {
+                pageName : 'pageNumber' //页码的参数名称，默认：page
+                ,
+                limitName : 'pageSize' //每页数据量的参数名，默认：limit
+            }
+        });
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function(data) {
+            var field = data.field;
+            //执行重载
+            table.reload('docChargeGroupListGrid', {
+                where : field
+            });
+            return false;
+        });
+
+        //重置查询表单并刷新表格
+        $("#btn_reset").click(function() {
+            setTimeout(function() {
+                $('#btn_query').click();
+            }, 50);
+        })
+
+        //新增事件
+        $('#btn_add').click(function() {
+            editDocChargeGroup();
+        });
+
+        //批量新增事件
+        $('#btn_batch_add').click(function() {
+            batchEditDocChargeGroup();
+        });
+
+        //监听有无效操作
+        form.on('switch(validFlag)', function(obj) {
+            var validFlag = Number(obj.elem.checked);
+            var params = {
+                ids : obj.value,
+                validFlag : validFlag
+            }
+            updateValidFlag(updateValidFlagUrl, params, obj.elem);
+        });
+
+        //监听工具条
+        table.on('tool(docChargeGroupListGrid)', function(obj) {
+            var data = obj.data;
+            switch (obj.event) {
+            case 'edit':
+                editDocChargeGroup(data);
+                break;
+            case 'del':
+                delDocChargeGroup(data);
+                break;
+            }
+        });
+
+        //监听行单击事件
+        table.on('row(docChargeGroupListGrid)', function(obj) {
+            showDocChargeGroup(obj.data);
+        });
+       
+        //编辑
+        function editDocChargeGroup(data) {
+            var title = '新增病案收费项目归并'
+            var content = '$contextPath/doc/docChargeGroupEdit.do';
+            //true 执行
+            if (data) {
+                title = data.chargeGroupName;
+                content += '?docChargeGroupId=' + data.docChargeGroupId;
+            }
+            common.open(content, title, {
+                area : [ '420px', '420px' ],
+                btn : [ '保存' ],
+                yes : function(index, layero) {
+                    save(index, layero);
+                }
+            });
+        }
+        //批量编辑 
+        function batchEditDocChargeGroup(data) {
+            var title = '批量新增病案收费项目归并'
+            var content = '$contextPath/doc/docChargeGroupBatchEdit.do';
+            common.open(content, title, {
+                area : [ '80%', '80%' ],
+                btn : [ '保存' ],
+                yes : function(index, layero) {
+                    batchSave(index, layero);
+                }
+            });
+        }
+       
+        //显示
+        function showDocChargeGroup(data) {
+            var title = data.chargeGroupName + '详情'
+            var content = '$contextPath' + '/doc/docChargeGroupShow.do?docChargeGroupId=' + data.docChargeGroupId
+            common.open(content, title, {
+                area : [ '420px', '420px' ],
+                btn : [ '关闭' ]
+            });
+        }
+
+        //保存
+        function batchSave(index, layero) {
+            var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID), id = 'docChargeGroupListGrid';
+            //监听提交
+            iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                var docChargeGroupParams = iframeWindow.layui.table.checkStatus('docChargeGroupListGrid').data;
+                if (!docChargeGroupParams.length) {
+                    layer.msg('无数据，请填写表格！');
+                    return false;
+                }
+                var settings = {
+                    "url" : contextPath + "/doc/batchSaveDocChargeGroup.jo",
+                    "method" : "POST",
+                    "contentType" : "application/json",
+                    "data" : JSON.stringify(docChargeGroupParams)
+                }
+                $.ajax(settings).done(function(result) {
+                    if (result.code == "0") {
+                        common.alertCall("保存成功。", 1, function() {
+                            $('#btn_query').click();
+                            layer.close(index); //关闭弹层
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+            submit.trigger('click');
+        }
+        //保存
+        function save(index, layero) {
+            var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+            //监听提交
+            iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                var docChargeGroupParams = data.field; //获取提交的字段
+                //提交 Ajax 成功后，静态更新表格中的数据
+                common.requestServer(contextPath + '/doc/saveDocChargeGroup.jo', docChargeGroupParams, function(result) {
+                    if (result.code == "0") {
+                        common.alertCall("保存成功。", 1, function() {
+                            $('#btn_query').click();
+                            layer.close(index); //关闭弹层
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+            submit.trigger('click');
+        }
+        //删除
+        function delDocChargeGroup(data) {
+            common.confirm("确定要删除吗？", function() {
+                common.requestServer('$contextPath/doc/delDocChargeGroup.jo', {
+                    ids : data.docChargeGroupId
+                }, function(result) {
+                    if (result.code == "0") {
+                        $('#btn_query').click();
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        }
+        
+        // 更新有效标志状态
+        function updateValidFlag(url, params, elem) {
+            common.requestServer(url,params, function(result) {
+                if (result.code == "0") {
+                    layer.msg('设置 ' + dicIsValid[params.validFlag] + ' 成功', {
+                        icon : 1
+                    });
+                } else {
+                    layer.msg('设置 ' + dicIsValid[params.validFlag] + ' 失败', {
+                        icon : 2
+                    });
+                    elem.checked = !elem.checked;
+                    form.render('checkbox');
+                }
+            });
+        }
+    });
+</script>

@@ -1,0 +1,58 @@
+<script type="text/javascript">
+$(document).ready(function (){
+    laydate.render({elem: '#inhospitalDate',trigger: 'click', type: 'datetime', istime: true, max: getSmpFormatNowDate(true)});
+
+	var params = {currentOfficeName: $('#currentOfficeName').val()};
+	if(params.currentOfficeName!="产科"){
+	$("#babyRecord").hide();
+}
+    
+    
+});
+
+layui.use(['element','layer'],function(){
+	var element = layui.element;
+	var layer = layui.layer;
+#*	var table1= table.render({
+	elem: '#deluveryRecordTable'
+	,url: '../inpatient/babyDeliveryRecordListData.jo' //数据接口
+	,where: {pageSize : 24,inhospitalId: "$!inpatientInhospital.inhospitalId"}
+	,width: 800
+	,cols: [[ //表头
+{field: 'gravidityNum', title: '孕次',width:105}
+	,{field: 'parityNum', title: '产次',width:90}
+	]]
+	,done: function (result){
+	if(result.data.length>0){
+	console.log("有数据");
+	$("#babyRecord").hide();
+}
+}
+})*#
+	$("#main_save").click(function(){
+		var iframe = $("#tabContent > .layui-show iframe");
+		iframe.contents().find("#btn_save").click();
+	});
+	
+	
+	/*随机改变图标背景色*/
+    $(".member-left .icon-mune-list a i").each(function(){
+        var x = 9;
+        var y = 0;
+        var rand = parseInt(Math.random() * (x - y + 1) + y);
+        $(this).addClass("tags"+rand);
+    });
+	
+	
+	$("#leftMenu > a").click(function(){
+	    $(this).addClass("mune-this").siblings().removeClass("mune-this");
+	}).first()[0].click();
+});
+
+// 打开一个新的选项卡窗口，一般在子窗口调用
+function openTab(url, text, id) {
+    if (parent && parent.layui && parent.layui.index) {
+        parent.layui.index.openTabsPage(url, text, id);
+    }
+}
+</script>

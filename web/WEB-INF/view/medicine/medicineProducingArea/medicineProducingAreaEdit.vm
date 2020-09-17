@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+
+        .label-red {
+            color: #ff4500 !important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" style="padding: 20px 30px 0 0;" id="medicineProducingAreaForm">
+    #formHiddenInput("producingAreaId" "$!{medicineProducingArea.producingAreaId}" " id='producingAreaId' ")
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">#requiredTag()产地名称</label>
+        <div class="layui-input-block ">
+            #formTextarea("producingArea"
+            "#htmlEscape($!{medicineProducingArea.producingArea})" "id='producingArea' class='layui-textarea'
+            lay-verify='required' maxlength='200' placeholder='请输入内容，字数最多200字'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()产地简称</label>
+        <div class="layui-input-block">
+            #formTextInput("producingArea" "$!{medicineProducingArea.producingArea}" " maxlength='200'
+            autocomplete='off'
+            id='producingArea' lay-verify='required' class='layui-input' ")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        #if($!{producingAreaType})
+        #formHiddenInput("producingAreaType" "$!{producingAreaType}" " id='producingAreaType' ")
+        #else
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()生产厂商类型</label>
+            <div class="layui-input-block">#formRadioGroup("producingAreaType" "$!{medicineProducingArea.producingAreaType}"
+                ${dicData.dicProducingAreaType} "lay-verify='reqRedio' check-msg='请选择生产厂商类型'")
+            </div>
+        </div>
+        #end
+        <div class="layui-inline">
+            <label class="layui-form-label label-red">#requiredTag()使用限制</label>
+            <div class="layui-input-inline">
+                <!--默认为公用-->
+                #if(!$!{medicineProducingArea.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} ==
+                $!{medicineProducingArea.hospitalId})
+                #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                #else
+                #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                #end
+                #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary'
+                class='layui-input' check-msg='请选择使用限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+        #if(${medicineProducingArea})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{medicineProducingArea.validFlag}"
+                ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+            </div>
+        </div>
+        #end
+    </div>
+
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+</form>
+#parse("./medicine/medicineProducingArea/medicineProducingAreaEdit.js.vm")
+</body>
+</html>

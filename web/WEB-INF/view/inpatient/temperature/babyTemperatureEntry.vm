@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <style type="text/css">
+        .layout-left{
+            display: inline-block;
+            width:261px;
+            float: left;
+        }
+        .layout-main{
+            width: calc(100% - 266px);
+            float: right;
+        }
+        table#inpatientTable{ margin:0px; }
+    </style>
+</head>
+
+<body class="full-height" >
+<form class="layui-form layui-bg-white  p-t-xs m-b-xs" id="queryForm">
+    <div class="layui-form-item m-b-n">
+        <div class="layui-inline">
+            <label class="layui-form-label">房间：</label>
+            <div class="layui-input-inline">
+                #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" " id='inhospitalId' ")
+                    #formTextInput("inhospitalRoomNo" "" "class='layui-input ' id='q_inhospitalRoomNo' autocomplete='off'  ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">床号：</label>
+            <div class="layui-input-inline">
+                #formTextInput("currentBedNo" "" "class='layui-input' id='q_currentBedNo' autocomplete='off' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">姓名：</label>
+            <div class="layui-input-inline">
+                #formTextInput("patientName" "" "class='layui-input' id='q_patientName' autocomplete='off' " )
+            </div>
+        </div>
+        <div class="layui-inline layui-btn-group m-l-sm">
+            <button type="button" class="layui-btn layui-btn-sm search" id="btn-query"><i class="layui-icon layui-icon-search" style="font-size:20px"></i></button>
+            <button type="button" class="layui-btn layui-btn-sm refresh"><i class="layui-icon layui-icon-refresh-3" style="font-size:20px"></i></button>
+        </div>
+    </div>
+</form>
+<div class="main-content " style="height:calc(100% - 53px);">
+    <div class="layout-left full-height layui-bg-white">
+        <table class="layui-table" id="inpatientTable" lay-filter="inpatientTable"></table>
+    </div>
+    <div class="layout-main full-height">
+    ##            <iframe src="../inpatient/temperatureShow.do?inhospitalId=$!inhospitalId" class="J_iframe" id="temperatureshowIframe" name="iframe0" height="100%" width="100%" frameborder="0" data-id="" seamless></iframe>
+        <iframe src="../inpatient/babyTemperatureShow.do?inhospitalId=$!{inpatientInhospital.inhospitalId}" class="J_iframe" id="temperatureshowIframe" name="iframe0" height="100%" width="100%" frameborder="0" data-id="" seamless></iframe>
+    </div>
+
+</div>
+<!-- 全局js -->
+    #parse("./inpatient/temperature/temperatureEntry.js.vm")
+</body>
+</html>

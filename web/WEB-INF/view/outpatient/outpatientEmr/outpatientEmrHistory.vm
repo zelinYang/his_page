@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>历史病历</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./outpatient/outpatientEmr/outpatientEmr.css.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientEmr/outpatientEmrHistory.js.vm")
+    <script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+
+<body class="white-bg emrTreeTemplateVertical">
+     <!-- 门诊病历信息 -->
+     <div class="main full-height">
+        #if($visitOfficeType == 1)<!-- 本科室 -->
+           <div class="layui-collapse full-height-scroll b-n" >
+               #foreach($outpatient in $outpatientList)
+                  <div class="layui-colla-item" emrTlpId="222" registerId="$!{outpatient.registerId}" patientId="$!{outpatient.patientId}">
+                    <h2 class="layui-colla-title">
+                       <span class="time">$!date.format('yyyy-MM-dd', $!outpatient.outpatientDate)</span>
+                       <span class="tit">$!outpatient.firstDiagnosis</span>
+                       <span class="doctor">医生：$!outpatient.diagnosisDoctorName</span>
+                    </h2>
+
+                    <div class="layui-colla-content layuiShow">
+                         #set($emr = $patientHospitalEmrMap.get($outpatient.patientHospitalEmrId))
+                         #set($emrShowUrl = "$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&showBtn=0")
+                         #set($emrParam = "&emrTlpId=$emr.emrTlpId&registerId=$!{outpatient.registerId}&patientId=$!{outpatient.patientId}&patientHospitalEmrId=$emr.patientHospitalEmrId")
+                         <iframe id="emrIframe" targetSrc="$emrShowUrl$emrParam"  #iframeAttr style="height: 900px;" ></iframe>
+                    </div>
+                  </div>
+               #end
+            </div>
+
+        #elseif($visitOfficeType == 2)  <!-- 其他科室 -->
+            <div id="container">
+                 <div class="ui-layout-west">
+                     <div class="oupatient-list">
+			              <table class="layui-table full-height" style="width: 100%">
+			              <tr height="30">
+			                <td><span class="title">病历列表</span></td>
+			              </tr>
+			              <tr>
+			                <td>
+			                   <div class="full-height" >
+			                       <ul id="treeDemo" class="ztree"></ul>
+			                   </div>
+			                </td>
+			              </tr>
+			            </table>
+			          </div>
+                </div>
+                <div class="ui-layout-center" style="text-align: center;">
+                      <div class="oupatient-detail">
+			               <div class="title">
+			                    <i class="layui-icon  layui-icon-prev  expend"></i>
+			                    <span class="emr-title">病历详情</span>
+			               </div>
+			               <div class="emr-content">
+			                     <!-- <iframe id="emrIframe" width="100%;" height="100%" scrolling="no" frameBorder="0"
+			                        targetSrc="$contextPath/patient/commonEmrOutShow.do"></iframe> -->
+			               </div>
+			          </div>
+                </div>
+            </div>
+		#end
+     </div>
+</body>
+</html>

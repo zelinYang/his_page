@@ -1,0 +1,140 @@
+<script>
+    var APPOINT_REGISTER_FLAG_APPOINT = "${CONST.AppConstants.APPOINT_REGISTER_FLAG_APPOINT}"
+    var dicTreatDicTypeId = JSON.parse('$dicTools.changeMapToJson($dicData.dicTreatDicTypeId)');
+    //性别 样式字典
+    var dicSexClass = {
+        1: 'layui-bg-blue',
+        2: 'layui-bg-orange',
+        0: 'layui-bg-gray'
+    }
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#treatRecord_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                treatDicTypeId: '',
+                treatMeasures: '',
+                cureBodyPart: '',
+                therapyMethod: '',
+                therapyTimeBegin: '',
+                therapyTimeEnd: ''
+            }, common.serializeObject($('#treatRecord_queryForm')));
+        }
+
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('treatRecord_ListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('treatRecord_queryForm');
+        })
+
+        //表格设置
+        var treatRecord_ListGrid = table.render($.extend(basePageTable, {
+            elem: '#treatRecord_ListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/surgery/treatRecordPageData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field: 'treatDicTypeId',
+                title: '治疗类型',
+                minWidth: 100,
+                templet: function (d) {
+                    return dicTreatDicTypeId[d.dicTreatDicTypeId] || '';
+                }
+            }, {
+                field: 'treatDicCode',
+                title: '治疗项目',
+                minWidth: 200
+            }, {
+                field: 'treatMeasures',
+                title: '治疗措施',
+                minWidth: 200
+            }, {
+                field: 'cureBodyPart',
+                title: '治疗部位',
+                minWidth: 100
+            }, {
+                field: 'therapyMethod',
+                title: '理疗方法',
+
+            }, {
+                field: 'therapyTotalTime',
+                title: '治疗用时',
+
+            }, {
+                field: 'therapyDosage',
+                title: '治疗用量',
+
+            }, {
+                field: 'therapyFrequency',
+                title: '治疗频次',
+
+            }, {
+                field: 'therapyReaction',
+                title: '治疗反应',
+
+            }, {
+                field: 'therapyResult',
+                title: '治疗结果',
+
+            }, {
+                field: 'therapyNote',
+                title: '治疗处置注意事项',
+
+            }, {
+                title: '治疗时间',
+                width: 150,
+                templet: function (d) {
+                    return d.therapyTime ? util.toDateString(d.therapyTime, 'yyyy-MM-dd HH:mm') : '';
+                }
+            }]], done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

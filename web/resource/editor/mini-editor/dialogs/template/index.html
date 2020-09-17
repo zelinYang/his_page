@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>控件模板库</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <meta http-equiv="X-UA-Compatible" content="IE=Edge,chrome=1">
+  <link href="../../../../../resource/hplus/css/bootstrap.min.css?v=3.3.6" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/font-awesome.min.css?v=4.4.0" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/animate.css" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/plugins/chosen/chosen.css" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/plugins/iCheck/custom.css" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/plugins/bootstrap-table/bootstrap-table.min.css" rel="stylesheet">
+  <link href="../../../../../resource/hplus/css/style.css?v=4.1.0" rel="stylesheet">
+  <link href="../../../../../resource/layuiadmin/layui/css/layui.css" rel="stylesheet">
+  <script src="../template.min.js?dd=132"></script>
+  <script src="../../../../../resource/hplus/js/jquery.min.js"></script>
+  <script src="../../../../../resource/hplus/js/bootstrap.min.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/chosen/chosen.jquery.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/iCheck/icheck.min.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/layer/layer.min.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script><!--layer-->
+  <script src="../../../../../resource/hplus/js/plugins/bootstrap-table/bootstrap-table.min.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/bootstrap-table/locale/bootstrap-table-zh-CN.min.js"></script>
+  <!-- form检验 -->
+  <script src="../../../../../resource/hplus/js/plugins/validate/jquery.validate.min.js"></script>
+  <script src="../../../../../resource/hplus/js/plugins/validate/messages_zh.min.js"></script>
+  <style>
+    .selected {
+      background-color: #08c !important;
+    }
+
+    .selected:hover {
+      background-color: #08c !important;
+    }
+
+    .sde-header {
+      width: 100%;
+      padding: 10px;
+      border-bottom: 1px solid #d3d3d3;
+      top: 0;
+      position: fixed;
+      background: white;
+    }
+    .wrapper-content {
+      padding: 10px;
+    }
+  </style>
+</head>
+
+<body class="white-bg">
+<div class="wrapper-content full-height">
+  <div class="ibox float-e-margins m-b-none">
+    <div class="">
+      <div class="row">
+        <form id="queryForm" class="form-horizontal">
+          <div class="col-xs-6 m-b-sm m-r-n">
+            <label class="control-label p-r-n p-l-n col-xs-4">名称</label>
+            <div class="col-xs-8 p-r-n">
+              <input type="text" id="modelName" name="modelName" class="form-control" autofocus title="“类名.字段名”或“类名_字段名”；查询类名：“类名.”或者“类名_”；查询字段名：“.字段名”或者“_字段名”">
+            </div>
+          </div>
+        </form>
+        <div class="col-xs-6 m-b-sm m-r-n">
+          <button id="btn_query" type="button" class="btn btn-sm btn-primary" title="查询"><i class="layui-icon layui-icon-search"></i>
+          </button>
+          <!--<button id="btn_add" class="btn btn-sm btn-primary" title="新增"><i class="fa fa-plus"></i>-->
+          <!--</button>-->
+          <!--<button id="btn_edit" class="btn btn-sm btn-primary" title="修改"><i-->
+          <!--class="fa fa-pencil-square-o edit"></i></button>-->
+          <!--<button id="btn_del" class="btn btn-sm btn-primary" title="删除"><i class="fa fa-trash"></i>-->
+          <!--</button>-->
+        </div>
+      </div>
+    </div>
+  </div>
+  <!--list start-->
+  <div class="">
+    <div class="table-responsive">
+      <!-- 列表表格 工具栏-->
+      <!-- 列表表格 工具栏 结束-->
+      <div class="example">
+        <table id="controlModelTable" class="table table-hover table-striped"
+               data-mobile-responsive="true"></table>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="text/javascript">
+    var dicControlModelType = {
+        1: '单行文本',
+        2: '多行文本',
+        3: '日期',
+        4: '下拉',
+        5: '多选',
+        6: '单选',
+        7: '区域',
+        8: '医学公式'
+    };
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+      var queryParams = serializeObject($('#queryForm'));
+      var modelName = queryParams.modelName;
+      var exp = RegExp(/[_]|[.]/);//下划线或点号
+      if(modelName && exp.test(modelName) ){
+        var keyWords =  modelName.split(exp);
+        queryParams = {modelName:'',
+          className: keyWords[0],
+          fieldName: keyWords[1]
+        }
+      }
+
+      return queryParams;
+    }
+
+    $(function () {
+        $('#controlModelTable').bootstrapTable({
+            url: "../../../../../controlModel/controleModelPageData.jo",
+            mobileResponsive: true,
+            pagination: true,
+            pageNumber: true,
+            cache: false,
+            striped: true,
+            clickToSelect: true,
+            singleSelect: true,
+            pageSize: "10",
+            pageNumber: "1",
+            height: "800",
+            queryParams: function (params) {
+                var requestParams = getQueryParams();
+                requestParams.pageSize = params.pageSize;
+                requestParams.pageNumber = params.pageNumber;
+                return requestParams;
+            },
+            queryParamsType: "",
+            sidePagination: 'server',
+            columns: [
+                {checkbox: true},
+                {
+                    field: 'modelName',
+                    title: '名称'
+                }, {
+                    field: 'modelType',
+                    title: '类型',
+                    formatter: modelTypeFormatter
+                }, {
+                    field: 'description',
+                    title: '描述名'
+                }, {
+                    field: 'className',
+                    title: '类名'
+                }, {
+                    field: 'fieldName',
+                    title: '字段名'
+                }],
+            onDblClickRow: function (row, element) {
+                $('#controlModelTable').bootstrapTable('checkBy',{field:"controlModelId",values:[row.controlModelId]});
+                dialog.onok();
+                dialog.close();
+            },
+            onLoadSuccess: function () {
+                adaptTableHeight();
+            }
+        });
+    });
+
+    $(window).resize(function () {
+        adaptTableHeight();
+    })
+
+    function adaptTableHeight() {
+        var height = ($('#controlModelTable').parents("body").height() - $('#queryForm').parents(".ibox").height() - 10);
+        $('#controlModelTable').bootstrapTable('resetView', {height: height});
+    }
+
+    function modelTypeFormatter(value, row, index) {
+        return dicControlModelType[value];
+    }
+
+    var sourceData, currentData;
+    var oNode = null,
+        thePlugins = 'sdectrltext';
+    $('#btn_query').click(function () {
+        var queryParams = getQueryParams();
+        var options = {url: '../../../../../controlModel/controleModelPageData.jo', silent: false, query: queryParams};
+        $('#controlModelTable').bootstrapTable('refresh', options);
+    });
+
+     $('#modelName').on('keydown',function(event){
+        if (event.keyCode == 13) {
+          $('#btn_query').click();
+          return false;
+        }
+      })
+    $('#btn_add').click(function () {
+        openWin('../../../../../controlModel/editEmrControlModel.do', false, {});
+    });
+
+    $('#btn_edit').click(function () {
+        var rows = $('#controlModelTable').bootstrapTable('getSelections');
+        if (rows.length < 1) {
+            layer.alert('请选择要修改的数据', {icon: 0, skin: 'layui-layer-molv'});
+            return;
+        }
+        var url = '../../../../../controlModel/editEmrControlModel.do?controlModelId=' + rows[0].controlModelId;
+        var title = rows[0].modelName;
+        open(url, title, {area: ['98.6%', '97%']});
+    });
+
+    $('#btn_del').click(function () {
+        var rows = $('#controlModelTable').bootstrapTable('getSelections');
+        if (rows.length < 1) {
+            layer.alert('请选择要修改的数据', {icon: 0, skin: 'layui-layer-molv'});
+            return;
+        }
+        var url = '../../../../../controlModel/deleteEmrControlModel.jo?controlModelId=' + rows[0].controlModelId;
+        $.post(url, params, function (result) {
+            if (result.code == '0') {
+                layer.alert('删除成功', {icon: 0, skin: 'layui-layer-molv'});
+                $('#btn_query').click();
+            }
+        }, 'json').error(function (e) {
+            jqueryPostError(e)
+        });
+    });
+
+    $('#btn_clean').click(function () {
+        $('#proName').val('');
+        $('#createTimeBegin').val('');
+        $('#createTimeEnd').val('');
+        $('#creatorName').val('');
+    });
+
+    function openWin(url, title, options) {
+        var opt = {
+            id: 'win',
+            type: 2,
+            move: false,
+            title: title,
+            shadeClose: false,
+            shade: 0.5,
+            maxmin: false, //开启最大化最小化按钮
+            area: ['100%', '100%'],
+            content: [url, ((options.scroll == undefined || options.scroll == "") ? 'no' : options.scroll)]
+        }
+        $.extend(opt, options);
+        layer.open(opt);
+    }
+
+    function getTableSelectRow(tableId, isMultiSelect) {
+        var rows = $('#' + tableId).bootstrapTable('getSelections');
+        if (!isMultiSelect && rows.length > 1) {
+            return [];
+        }
+        return rows;
+    }
+
+    function serializeObject(form) {
+        var o = {};
+        $.each(form.serializeArray(), function (index) {
+            if (this['value'] == "") {
+                return true;
+            }
+            if (o[this['name']]) {
+                o[this['name']] = o[this['name']] + "," + this['value'];
+            } else {
+                o[this['name']] = this['value'];
+            }
+        });
+        return o;
+    }
+
+    dialog.oncancel = function () {
+
+    };
+    dialog.onok = function () {
+        var rows = getTableSelectRow('controlModelTable', true);
+        if (rows.length == undefined || rows.length <= 0) {
+            layer.alert("请选择模板", {icon: 0, skin: 'layui-layer-molv'});
+            return;
+        }
+        switch (rows[0].modelType) {
+            case '1':
+                generateTextHtml(rows[0]);
+                break;
+            case '2':
+                generateTextareaHtml(rows[0]);
+                break;
+            case '3':
+                generateDateHtml(rows[0]);
+                break;
+            case '4':
+                generateSelectHtml(rows[0]);
+                break;
+            case '5':
+                generateCheckboxHtml(rows[0]);
+                break;
+            case '6':
+                generateRadioHtml(rows[0]);
+                break;
+            case '7':
+                generateListHtml(rows[0]);
+                break;
+            case '8':
+                generateFormulaHtml(rows[0]);
+                break;
+        }
+    };
+</script>
+</body>
+
+</html>

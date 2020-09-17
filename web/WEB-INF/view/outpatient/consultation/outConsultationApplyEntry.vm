@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>医疗文书(电子病历)编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <form class="queryForm">
+        #formHiddenInput("emrTlpId" "$!emrTlpId" "")
+            #formHiddenInput("registerId" "$!registerId" "id='registerId'")
+            #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+            #formHiddenInput("patientHospitalEmrId" "$!patientHospitalEmrId" "id='patientHospitalEmrId'")
+            #formHiddenInput("consultationApplyId" "$!consultationApply.consultationApplyId" "id='consultationApplyId'")
+            #formHiddenInput("consultationStateFlag" "$!consultationApply.consultationStateFlag" "id='consultationStateFlag'")
+            #formHiddenInput("modelType" "$!modelType" "id='modelType'")
+            #formHiddenInput("showBtn" "$!showBtn" "id='showBtn'")
+    </form>
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10 full-height-scroll">
+            <div class="layui-col-md3 full-height">
+                <div style="height: calc(100% - 40px); overflow-y: auto; overflow-x: hidden;" id="resultList">
+                    <div class="layui-card" name="result" style="display: none;">
+                        <div class="layui-card-header" name="doctorName"></div>
+                        <div class="layui-card-body" name="consultationResult">
+
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item" style="text-align: center; " >
+                    <button id="btn_finish" class="layui-btn layui-btn-sm layui-btn-danger" style="display: none;">结束会诊</button>
+                    <button id="btn_refresh" type="button" class="layui-btn layui-btn-sm " style="margin-left: 30px" lay-tips="刷新">
+                        <i class="layui-icon layui-icon-refresh"></i>
+                    </button>
+                </div>
+
+            </div>
+            <div class="layui-col-md9 full-height">
+                <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 0px); "
+                        src=""></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var winClose, saveAfterCall;
+    var resultDom = $("div[name=result]").clone().removeAttr('style');
+    layui.use(['element', 'table', 'form'], function () {
+        var form = layui.form;
+        var registerId = $("#registerId").val();
+        var patientId = $("#patientId").val();
+
+        if (patientId && registerId) {
+            loadEmrTlp();
+        }
+
+        $(function () {
+            var consultationApplyId = $("#consultationApplyId").val();
+            if (consultationApplyId) {
+                genarateConsultationResultList(consultationApplyId);
+                if ($("#consultationStateFlag").val() !== '4') {
+                    $("#btn_finish").show();
+                }
+            } else {
+                $("#resultList").html('<blockquote class="layui-elem-quote">还未申请会诊，暂无数据</blockquote>');
+            }
+        })
+
+        //加载电子病历编辑iframe
+        function loadEmrTlp() {
+            var params = {
+                patientHospitalEmrId: '$!patientHospitalEmrId'
+                , emrTlpId: '$!emrTlpId'
+                , serviceId: '$!serviceId'
+                , patientId: '$!patientId'
+                , registerId: '$!registerId'
+                , modelType: $("#modelType").val()
+                , showBtn: $("#showBtn").val()
+            }
+            $("#emrEdit").attr("src", '$contextPath/emr/commonEmrTemplate.do' + common.objToParamStr(params));
+        }
+
+        function genarateConsultationResultList(consultationApplyId) {
+            common.requestServer('$contextPath/consultationDoctorItem/consultationDoctorItemListData.jo', {consultationApplyId: consultationApplyId}, function (result) {
+                if (result.code == '0') {
+                    $("#resultList").html('');
+                    $.each(result.data, function (index, consultationDoctorItem) {
+                        var divDom = resultDom.clone();
+                        divDom.find('div[name=doctorName]').html(consultationDoctorItem.consultationDoctorName);
+                        divDom.find('div[name=consultationResult]').html(consultationDoctorItem.consultationResult ? consultationDoctorItem.consultationResult : '<span style="color: red;">未填写</span>');
+                        $("#resultList").append(divDom);
+                    })
+                } else {
+                    common.msg(result.msg, 0);
+                }
+            })
+        }
+
+        $("#btn_finish").click(function () {
+            common.confirm('确定结束会诊吗？', function () {
+                common.requestServer('$contextPath/consultationApply/saveConsultationApplyFinish.jo', {consultationApplyId: $("#consultationApplyId").val()}, function (result) {
+                    if (result.code == '0') {
+                        common.msg(result.msg, 1);
+                        $("#btn_finish").hide();
+                        window.location.reload();
+                    } else {
+                        common.msg(result.msg, 0);
+                    }
+                })
+            });
+        });
+
+        winClose = function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+        //电子病历保存完之后调用
+        saveAfterCall = function (idMap) {
+            console.log(idMap);
+            $("#patientHospitalEmrId").val(idMap.PatientHospitalEmr_patientHospitalEmrId);
+            $("#consultationApplyId").val(idMap.ConsultationApply_id);
+            genarateConsultationResultList(idMap.ConsultationApply_id);
+            $("#btn_finish").show();
+        }
+        //刷新页面按钮
+        $("#btn_refresh").click(function () {
+            common.confirm("刷新会删掉未保存的数据，确定要刷新页面吗？", function () {
+                location.reload();
+            })
+        });
+    });
+
+</script>
+</body>
+</html>

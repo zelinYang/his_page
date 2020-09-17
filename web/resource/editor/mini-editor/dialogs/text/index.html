@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>文本输入</title>
+    <link rel="stylesheet" href="../../plugins/layer/theme/default/layer.css">
+    <link rel="stylesheet" href="../bootstrap/css/bootstrap.min.css">
+    <!--[if lte IE 6]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/bootstrap-ie6.css">
+    <![endif]-->
+    <!--[if lte IE 7]>
+    <link rel="stylesheet" type="text/css" href="../bootstrap/css/ie.css">
+    <![endif]-->
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../bootstrap/js/bootstrap.min.js"></script>
+    <script src="../template.min.js"></script>
+    <script src="../jscolor-2.0.4/jscolor.min.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+    <style>
+        .inputSetting {
+            display: none;
+        }
+        .signSetting {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+<div class="content">
+    <table class="table table-bordered table-striped table-hover">
+        <tr>
+            <th><span>控件ID</span><span class="label label-important">*</span></th>
+            <th><span>控件描述</span><span class="label label-important">*</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="ctrlId" placeholder="请输入控件ID"></td>
+            <td><input type="text" id="ctrlDesc" placeholder="请输入控件描述"></td>
+        </tr>
+        <tr>
+            <th><span>返回内容字段名（以英文,隔开）</span></th>
+            <th><span>调用方法名</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="fieldName" placeholder="请输入返回内容字段名"></td>
+            <td><input type="text" id="functionName" placeholder="请输入调用方法名"></td>
+        </tr>
+        <tr>
+            <th><span>初始化字段</span></th>
+            <th><span>默认值</span></th>
+        </tr>
+        <tr>
+            <td><input type="text" id="initField" placeholder="请输入初始化字段"></td>
+            <td><input type="text" id="defaultValue" placeholder="请输入默认值"></td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="requiredFlag" type="checkbox"/> 是否必填 </label>
+            </td>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="saveFlag" type="checkbox"/> 不保存 </label>
+            </td>
+        </tr>
+        <tr>
+            <td style="background-color: white;">
+                <label class="checkbox inline"><input id="inputFlag" type="checkbox"/> 是否input框 </label>
+            </td>
+            <td>
+                <label class="checkbox inline"><input id="imageFlag" type="checkbox"/> 是否签名图片 </label>
+            </td>
+        </tr>
+        <tr class="inputSetting">
+            <th><span>宽度</span></th>
+            <th></th>
+        </tr>
+        <tr class="inputSetting">
+            <td><input type="text" id="width" placeholder="请输入默认值"></td>
+            <td><label class="checkbox inline"><input id="underlineFlag" type="checkbox"/> 是否有下划线 </label></td>
+        </tr>
+        <tr class="signSetting">
+            <th><span>校验正则</span></th>
+            <th></th>
+        </tr>
+        <tr class="signSetting">
+            <td>
+                <select id="signLevel">
+                    <option value="1" selected="selected">一级</option>
+                    <option value="2">二级</option>
+                    <option value="3">三级</option>
+                    <option value="4">四级</option>
+                </select>
+            </td>
+            <td>
+            </td>
+        </tr>
+        <tr>
+            <th><span>校验正则</span></th>
+            <th><span>控件模式</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input id="verifyFormat" placeholder="校验正则" type="text"/>
+            </td>
+            <td>
+                <select id="editModeFlag">
+                    <option value="1" selected="selected">编辑模式</option>
+                    <option value="0">只读模式</option>
+                    <option value="2">隐藏模式</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <th><span>字体颜色</span></th>
+            <th><span>背景色</span></th>
+        </tr>
+        <tr>
+            <td>
+                <input type="text" id="fontColor" class="jscolor {required:false}" placeholder="字体颜色">
+            </td>
+            <td>
+                <input type="text" id="backgroundColor" placeholder="背景颜色" class="jscolor {required:false}">
+            </td>
+        </tr>
+    </table>
+</div>
+<script>
+    ( function(UE) {
+        $( '#verifyFormat' ).popover( {
+            placement: 'top',
+            trigger: 'click',
+            html: true,
+            title: '示例：',
+            content: function() {
+                var htmls = [];
+                htmls.push( '文本：\\S<br/>' );
+                htmls.push( '整数：^[0-9]*$<br/>' );
+                htmls.push( '小数：^-?\\d+\\.\\d+$<br/>' );
+                htmls.push( '身份证：^\\d{15}|\\d{}18$<br/>' );
+                return htmls.join( '' );
+            }
+        } );
+        window.rgb = function() {
+            return arguments;
+        };
+
+        $('#inputFlag').change( function( e ) {
+            if ( this.checked ) {
+                $( '.inputSetting' ).show();
+            } else {
+                $( '.inputSetting' ).hide();
+            }
+        } );
+        $('#imageFlag').change( function( e ) {
+            if ( this.checked ) {
+                $( '.signSetting' ).show();
+            } else {
+                $( '.signSetting' ).hide();
+            }
+        } );
+
+        function formatRGB( rgbStr ) {
+            return eval( rgbStr );
+        }
+        var thePlugins = 'minitext',
+            ctrl, opt, domCtrl, domValue;
+        window.onload = function() {
+            if ( UE.plugins[ thePlugins ].editdom ) {
+                ctrl = UE.plugins[ thePlugins ].editdom; //获取具体的组件
+                opt = ctrl.getOpt();
+                domCtrl = ctrl.getCtrlElement();
+                domValue = ctrl.getValueElement();
+                $( '#ctrlId' ).val( domCtrl.getAttribute( 'id' ) ).attr( 'readonly', 'readonly' );
+                $( '#ctrlDesc' ).val( opt.desc );
+                $( '#fieldName' ).val( opt.fieldName );
+                $( '#initField' ).val( opt.initField );
+                $( '#functionName' ).val( opt.functionName );
+                $( '#defaultValue' ).val( opt.defaultValue );
+                if ( opt.required === 1 ) {
+                    $G( 'requiredFlag' ).checked = true;
+                }
+                if ( opt.saveFlag === 1 ) {
+                    $G( 'saveFlag' ).checked = true;
+                }
+                if ( opt.imageFlag === 1 ) {
+                    $G( 'imageFlag' ).checked = true;
+                    $( '.signSetting' ).show();
+                    $( '#signLevel' ).val( opt.signLevel );
+                }
+                if ( opt.inputFlag === 1 ) {
+                    $G( 'inputFlag' ).checked = true;
+                    $( '.inputSetting' ).show();
+                    $( '#width' ).val( opt.width );
+                    if ( opt.underlineFlag === 1 ) {
+                        $G( 'underlineFlag' ).checked = true;
+                    }
+                }
+                $( '#verifyFormat' ).val( opt.verify );
+                $( '#editModeFlag' ).val( opt.mode );
+                if ( domValue.style.color.indexOf( 'rgb' ) === 0 ) {
+                    var tempColor = formatRGB( ( domValue.style.color || '' ).trim( '#' ) );
+                    document.getElementById( 'fontColor' ).jscolor.fromRGB( tempColor[ 0 ], tempColor[ 1 ], tempColor[ 2 ] );
+                } else {
+                    document.getElementById( 'fontColor' ).value = ( domValue.style.color || '' ).trim( '#' );
+                }
+                if ( domValue.style.backgroundColor.indexOf( 'rgb' ) === 0 ) {
+                    var tempBGColor = formatRGB( ( domValue.style.backgroundColor || '' ).trim( '#' ) );
+                    document.getElementById( 'backgroundColor' ).jscolor.fromRGB( tempBGColor[ 0 ], tempBGColor[ 1 ], tempBGColor[ 2 ] );
+                } else {
+                    document.getElementById( 'backgroundColor' ).value = ( domValue.style.backgroundColor || '' ).trim( '#' );
+                }
+            }
+        };
+        dialog.oncancel = function() {
+            if ( UE.plugins[ thePlugins ].editdom ) {
+                delete UE.plugins[ thePlugins ].editdom;
+            }
+        };
+        dialog.onok = function() {
+            if ( $G( 'ctrlId' ).value == '' ) {
+                $G( 'ctrlId' ).focus();
+                layer.msg( '请输入控件ID', {icon: 2} );
+                return false;
+            }
+            if ( $G( 'ctrlDesc' ).value == '' ) {
+                $G( 'ctrlDesc' ).focus();
+                layer.msg( '请输入控件描述', {icon: 2} );
+                return false;
+            }
+            var newOpt = opt || {};
+            newOpt.type = 'text';
+            newOpt.desc = $( '#ctrlDesc' ).val();
+            newOpt.required = $G( 'requiredFlag' ).checked ? 1 : 0;
+            newOpt.saveFlag = $G( 'saveFlag' ).checked ? 1 : 0;
+            newOpt.inputFlag = $G( 'inputFlag' ).checked ? 1 : 0;
+            newOpt.imageFlag = $G( 'imageFlag' ).checked ? 1 : 0;
+            if (newOpt.inputFlag === 1) {
+                newOpt.width = $( '#width' ).val();
+                newOpt.underlineFlag = $G( 'underlineFlag' ).checked ? 1 : 0;;
+            }
+            if (newOpt.imageFlag === 1) {
+                newOpt.signLevel = $( '#signLevel' ).val();
+            }
+            newOpt.verify = $( '#verifyFormat' ).val();
+            newOpt.mode = $( '#editModeFlag' ).val();
+            newOpt.fieldName = $( '#fieldName' ).val();
+            newOpt.initField = $( '#initField' ).val();
+            newOpt.functionName = $( '#functionName' ).val();
+            newOpt.defaultValue = $( '#defaultValue' ).val();
+            newOpt.fontColor = $( '#fontColor' ).val().length > 0? '#' + $( '#fontColor' ).val(): '';
+            newOpt.backgroundColor = $( '#backgroundColor' ).val().length > 0? '#' + $( '#backgroundColor' ).val(): '';
+            var domValue, widthStyle, img, imgDom;
+            if ( !!domCtrl ) {
+                domValue = ctrl.getValueElement();
+                domCtrl.setAttribute( 'id', $G( 'ctrlId' ).value );
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                domCtrl.className = 'emr-ctrl' + ( newOpt.required? ' ctrl-required': '' ) + ( newOpt.mode === '2'? ' ctrl-hide': '' );
+                //修改
+                ctrl.setOpt( newOpt );
+                if (newOpt.imageFlag === 1) {
+                    img = 'data:image/jpeg;base64,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'
+                    imgDom = UE.dom.domUtils.createElement( document, 'img', {
+                        src: img
+                    } );
+                    domValue.innerHTML = imgDom.outerHTML;
+                } else {
+                    if (newOpt.inputFlag === 1) {
+                        widthStyle = 'style="width: ' + (newOpt.width? newOpt.width + 'px': '40px') + '"';
+                        domValue.innerHTML = '<input type="text"' + widthStyle +
+                            ( newOpt.underlineFlag === 1? 'class="underline"': '' ) +
+                            ( newOpt.mode === "0"? 'readonly': '' ) +
+                            ' placeholder="' + newOpt.desc + '" />';
+                    } else {
+                        domValue.innerHTML = newOpt.defaultValue? newOpt.defaultValue: newOpt.desc;
+                    }
+                }
+                domValue.setAttribute('contenteditable', newOpt.mode === "1");
+                delete UE.plugins[ thePlugins ].editdom;
+            } else {
+                domCtrl = UE.dom.domUtils.createElement( document, 'span', {
+                    class: 'emr-ctrl' + ( newOpt.required? ' ctrl-required': '' ) + ( newOpt.mode === '2'? ' ctrl-hide': '' ),
+                    contenteditable: false,
+                    id: $G( 'ctrlId' ).value,
+                    'emr-type': 'text',
+                    'emr-right': '.',
+                    'emr-model': encodeURIComponent( JSON.stringify( newOpt ) )
+                } );
+                domValue = UE.dom.domUtils.createElement( document, 'span', {
+                    class: 'emr-value',
+                    contenteditable: ( newOpt.mode === "1" ),
+                    'emr-left': '[',
+                    'emr-right': ']'
+                } );
+                if (newOpt.imageFlag === 1) {
+                    img = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEAYABgAAD/2wBDAAIBAQIBAQICAgICAgICAwUDAwMDAwYEBAMFBwYHBwcGBwcICQsJCAgKCAcHCg0KCgsMDAwMBwkODw0MDgsMDAz/2wBDAQICAgMDAwYDAwYMCAcIDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAz/wAARCAAyAFADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD9/KKKKACiiigAooooAKKKKACiiigAoor4O/4KxfDjQvj18WtDjTSPCnjTWfgv4M1rxpqnh7xL8NIfHOlS2c5gihUwS6lYLHfSm1uTbDzG3i3uc7Nq7s6k+XX9bWSTbfySbNKdNzdv6u3ZL5tpLzZ6X8LP+CivjP4q6VrV7pP7Mvxf16w0nxHrPh+LUtE1vws9jff2fqNxYmWP7bq1pcLuNuSVeBdrEgNIoEjehfF39uHwt8ELsWWveGvi2dU/s9L94NI+GniHxBbwb1LeU95ptlc2nmKQQwWZtvXoQT+b3j79knwF/ZXiC8Gjfsq6PY/Dm08L/EK+1nwH+zZDpWsHRLi8W5TULC7/AOEhcxxIlncec5jLrHHLsjkJQN7R+0N8Svgdon7eXxZ8KfFj4vaj8OtMXwhovibQJbr4+eJfC6atc3z6mlykFuNZhtDCi2lqVjt4FC+cd2d64MVz0qMujV/W6XRbau/TeNu9ppONSTqL4dGu1pSVvPRSjr1Tue+/sb/8FUvB/wC1v8Mvh9q6+EPixoGseO7C1uvsz/DfxPPpNjLOgbZ/a502OyeJScfaPMWIjnIFcp4j/wCCwkGhfEvxjbWvwZ+IevfDvw1YTajZeO7TVtB0zSdZgs5DFqVxGdWv7EG2tpTGnnRtIsm/eMRmN5Pi/wDYa+IHwOH7Of7GfhTwb8XdV8S+PvGt9pOh+KfDem/H7xM11otuNJvLmZ00uz1lI7bZPbwRlGg8pRIUMfzLj6X/AGnP2b/HHxL+IHje78R/ET4qeJviB8MNJHjnwfoHh210O18O6yu6VreG00+/03UUS+guLVVW4uDc3CSSo8UsSTGGPoxaVOrJx+FSnHuvdUZaa3aSd3qrpP3k0TTu7Re7UX98pR16K7XKt7NrSz09d/Zo/wCCkPiT9ob4gR6JJ+zv8WPD1nqDxahputXOoaCLKfRLg5tNUkil1CK8UOnMkMdtLJCSEb5ztrb8bft4a7d/E2HTfhT8G/GXxv8ACumXN1YeJfEnhrWNHsrXSbyIYFrbf2jd20d/IsgaOcwy7LdlZGYyo8SeOfsf/BzxD4Y8ceI9B+GPxC8beJPCWm29vf8AinRPiNpWmJo0l9qFuJ30S3s7CwszpdykPkSzmMNBE18xksrmaV3j+Xv2ldNX4o/tlf2X8R/2h/2Yf2R9R+Blrb6FpvhjTp7rT5Nf0e90+2uBp8+pRaxo95c6dBLjZFBFbQl1+aM4xWc/dlGD/P8APTXb7KV/i92NotU/eUpb/wBJ6eettXp8OslJx/R79kf9uCP9rbxf420eD4Z/EXwU3gO7XTr+916TR7nT7i9ywltILjTdQu45J4CuJkDAxMQj4f5a9yr4v/4JnftSxeO/jL4r+E/h3x/+zv8AEbwF4A8J6PqOkXvwj0T+ytM0l7m5v4HsHiTVL+IbEtInUI0ZAm5XGCftCrnGyi11X39Numq+7q92lfmlGW6/C6TWvXRr59Fsisq38DaJaarq99Fo+lx3viBY01S4S0jEupLGhjQTtjMgVCVG4nAOBxWrRWbSasyk2ndHK6D8CvBHhWCCLS/B3hXTY7XRY/DcCWukwQrDpcedlgoVBi1XJxCPkGTha6LSdJtdA0q2sbG2t7Kysokgt7eCMRxQRqAqoijAVQAAABgAVYoqrv7/APgv823833Cy/r5L9F9yMvxH4H0Xxjd6VPq+kaXqs+hXo1LTJLy0jnfTroRvGJ4SwJjlCSyLvXDbZHGcMa8i8U/8Ex/2bPHPiXUNa1r9nv4H6xrGrXMl5fX994E0u4ub2eRi0kssjwFndmJJZiSSSSa9xoqbL+vl/kvuQ7vb+v61f3njXw6/4Jzfs9/CDxrp/iTwl8CPg14X8RaTIZbHVdI8FabZXtm5UqWimihV0O0kZUjgkd69U0rwhpOha1qmpWOl6dZ6jrckcuo3UFskc2oPHGI0aZwA0hWNVQFicKoA4FaNFO72F1uZsPg/SLbxbca/HpenR67eWkVhcaktsgu57aJ5HihaXG9o0eWVlQnCmVyACxzpUUUB1uFFFFABRRRQAUUUUAFFFFABRRRQB//Z'
+                    imgDom = UE.dom.domUtils.createElement( document, 'img', {
+                        src: img
+                    } );
+                    domValue.innerHTML = imgDom.outerHTML;
+                } else {
+                    if (newOpt.inputFlag === 1) {
+                        widthStyle = 'style="width:' + (newOpt.width? newOpt.width + 'px': '40px') + '"';
+                        domValue.innerHTML = '<input type="text" ' + widthStyle +
+                            ( newOpt.underlineFlag === 1? ' class="underline"': '' ) +
+                            ( newOpt.mode === "0"? 'readonly': '' ) +
+                            '" placeholder="' + newOpt.desc + '" />';
+                    } else {
+                        domValue.innerHTML = newOpt.defaultValue? newOpt.defaultValue: newOpt.desc;
+                    }
+                }
+                domCtrl.appendChild( domValue );
+                domValue.style.color = newOpt.fontColor;
+                domValue.style.backgroundColor = newOpt.backgroundColor;
+                //新建
+                editor.execCommand( 'insertControl', domCtrl, newOpt );
+                UE.plugins[ thePlugins ].domListener();
+            }
+        };
+    } )( UE );
+</script>
+</body>
+
+</html>

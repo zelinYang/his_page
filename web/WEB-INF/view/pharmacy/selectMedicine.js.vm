@@ -1,0 +1,45 @@
+<script>
+    var dataUrl = contextPath + '/medicine/medicineSimpleListData.jo';
+    layui.config({
+        base: '../resource/layuiadmin/' //静态资源所在路径
+    }).use(['transfer'], function () {
+        common.requestServer(dataUrl, function (res) {
+//            var count = res.count;
+            var count = 100;
+            var selectMedIds = parent.selectMedIds || [];
+            var $ = layui.$
+                , transfer = layui.transfer;
+            common.requestServer(dataUrl + '?pageSize=' + count, function (result) {
+                var data = result.data;
+                //显示搜索框
+                transfer.render({
+                    elem: '#medicine_select'
+                    , showSearch: true
+                    , data: data
+                    , width: 250
+                    , height: 400
+                    , value: selectMedIds
+                    , id: 'medicine-selected'
+                    , parseData: function (res) {
+                        return {
+                            "value": res.medicineId //数据值
+                            , "title": res.medicineName //数据标题
+                            , "disabled": res.disabled  //是否禁用
+                            , "checked": res.checked //是否选中
+                        }
+                    }
+                });
+            });
+
+            $('#save-btn').click(function () {
+                selectedData();
+            });
+
+            //将右侧选中数据写入INPUT框
+            function selectedData() {
+                var getData = transfer.getData('medicine-selected');
+                parent.setDataCall(getData);
+            }
+        });
+    });
+</script>

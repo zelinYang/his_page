@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style type="text/css">
+
+    .content-left{
+    }
+    .content-right{
+        border-left:1px solid #c9c9c9;
+        border-top: 1px solid #cccccc;
+    }
+</style>
+</head>
+<body class="full-height ">
+    <form class="layui-form layui-bg-white  p-t-xs m-b-xs" id="queryForm">
+        <div class="layui-form-item m-b-n">
+            <div class="layui-inline">
+                <label class="layui-form-label">病区：</label>
+                <div class="layui-input-inline">
+                    #formSingleSelect("onDutyWardId" "" $!wardMap "class='layui-input' id='onDutyWardId' lay-filter='onDutyWardId'" )
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">日期：</label>
+                <div class="layui-input-inline">
+                    #formTextInput("onDutyDate" "$!date.format('yyyy-MM-dd',$!nurseOnDuty.onDutyDate)" "class='layui-input layer-date' id='onDutyDate' readonly")
+                </div>
+            </div>
+        </div>
+    </form>
+    
+    <div class="main-content " style="height:calc(100% - 93px);">
+        <div class="layui-col-xs6 full-height layui-bg-white content-left">
+            <iframe src="../inpatient/nurseOnDutyEdit.do?onDutyWardId=$!nurseOnDuty.onDutyWardId&onDutyDate=$!date.format('yyyy-MM-dd',$!nurseOnDuty.onDutyDate)"
+              class="J_iframe1" height="100%" width="100%" frameborder="0" data-id="" seamless></iframe>
+        </div>
+        
+        <div class="layui-col-xs6 full-height content-right" style="" >
+            <iframe src="../inpatient/nurseOnDutyItemList.do?onDutyWardId=$!nurseOnDuty.onDutyWardId&onDutyDate=$!date.format('yyyy-MM-dd',$!nurseOnDuty.onDutyDate)"
+             class="J_iframe2" height="100%" width="100%" frameborder="0" data-id="" seamless></iframe>
+        </div>
+    </div>
+    <div class=" text-center p-t-xs" style="background: #e6e6e6;">
+        <button class="layui-btn layui-btn-sm" id="btn_save">保存</button>
+    </div>
+
+#parse("./inpatient/nurseOnDuty/nurseOnDutyEntry.js.vm")
+
+</body>
+</html>

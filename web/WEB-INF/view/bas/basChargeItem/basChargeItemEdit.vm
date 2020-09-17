@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-医疗收费项目明细</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        /* 底部按钮条 */
+        #basChargeItemForm.layui-form {
+            margin-bottom: 50px;
+        }
+
+        .layui-form .layui-form-label {
+            width: 100px;
+            text-overflow: inherit!important;
+        }
+        .input2 {
+            width: calc(2px * 2 + (120px + 180px) * 2 - 120px) !important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" id="basChargeItemForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("chargeItemId" "$!{basChargeItem.chargeItemId}" " id='chargeItemId' ")
+    <div class="layui-form-item">
+        #if(${basChargeItem})
+        <div class="layui-inline">
+            <label class="layui-form-label">院内收费编码</label>
+            <div class="layui-input-inline">
+                #formTextInput("" "C$!basChargeItem.chargeItemId" "readonly class='layui-input'")
+            </div>
+        </div>
+        #end
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()诊疗项目名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("chargeName" "$!basChargeItem.chargeName" "id='chargeName'
+                class='layui-input'
+                maxlength='50' autocomplete='off' lay-verify='required'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()医嘱项目类型</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("doctorOrderType" "$!basChargeItem.doctorOrderType"
+                $!dicData.dicDoctorOrderType " lay-filter='doctorOrderType' id='doctorOrderType'
+                lay-verify='required' autocomplete='off' lay-search" " ")
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">数量</label>
+            <div class="layui-input-inline">
+                #formTextInput("chargeItemCount" "$!basChargeItem.chargeItemCount" "id='chargeItemCount'
+                class='layui-input'
+                maxlength='18' autocomplete='off' ")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()单价</label>
+            <div class="layui-input-inline">
+                #formTextInput("unitPrice" "$!basChargeItem.unitPrice" "id='unitPrice'
+                class='layui-input'
+                maxlength='18' autocomplete='off' lay-verify='required'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">单位</label>
+            <div class="layui-input-inline">
+                #formTextInput("chargeItemUnit" "$!basChargeItem.chargeItemUnit" "id='chargeItemUnit'
+                class='layui-input'
+                maxlength='10' autocomplete='off' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">规格/备注</label>
+            <div class="layui-input-inline">
+                #formTextInput("remark" "$!basChargeItem.remark" "id='remark'
+                class='layui-input'
+                maxlength='50' autocomplete='off' ")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()门诊费用分类</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("outpatientFeeCode" "$!basChargeItem.outpatientFeeCode"
+                $!dicData.dicOutpatientFeeCodeChargeItem " lay-filter='outpatientFeeCode' id='outpatientFeeCode'
+                lay-verify='required' autocomplete='off' lay-search" " ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()住院费用分类</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("inhospitalChargeGroupCode" "$!basChargeItem.inhospitalChargeGroupCode"
+                $!dicData.dicInhospitalChargeGroupCodeChargeItem " lay-filter='inhospitalChargeGroupCode'
+                id='inhospitalChargeGroupCode'
+                lay-verify='required' autocomplete='off' lay-search" " ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()病案首页费用分类</label>
+            <div class="layui-input-inline input2">
+                #formSingleSelectSearchFirstNone("docChargeGroupCode" "$!basChargeItem.docChargeGroupCode"
+                $!dicData.dicDocChargeGroupCodeChargeItem " lay-filter='docChargeGroupCode' id='docChargeGroupCode'
+                lay-verify='required' autocomplete='off' lay-search" " ")
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()门诊使用</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("outpatientUsageFlag" "$!{basChargeItem.outpatientUsageFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择门诊使用'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()住院使用</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("inhospitalUsageFlag" "$!{basChargeItem.inhospitalUsageFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择住院使用'")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()体检使用</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("phyExamUsageFlag" "$!{basChargeItem.phyExamUsageFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择体检使用'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label" style="color: #ff4500!important;">#requiredTag()使用限制</label>
+            <div class="layui-input-inline">
+                <!--默认为公用-->
+                #if(!$!{basChargeItem.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} ==
+                $!{basChargeItem.hospitalId})
+                #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                #else
+                #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                #end
+                #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary'
+                class='layui-input' check-msg='请选择药品使用限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()检查标志</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("examFlag" "$!{basChargeItem.examFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择检查标志'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()检验标志</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("lisFlag" "$!{basChargeItem.lisFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择检验标志'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()处置/治疗标志</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("treatFlag" "$!{basChargeItem.treatFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择处置/治疗标志'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()皮试标志</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("skinTestFlag" "$!{basChargeItem.skinTestFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择皮试标志'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">省医保项目编码</label>
+            <div class="layui-input-inline">#formTextInput("provinceInsuranceCode" "$!{basChargeItem.provinceInsuranceCode}" "class='layui-input' id='provinceInsuranceCode' autocomplete='off' maxlength='30' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">市医保项目编码</label>
+            <div class="layui-input-inline">#formTextInput("cityInsuranceCode" "$!{basChargeItem.cityInsuranceCode}" "class='layui-input' id='cityInsuranceCode' autocomplete='off' maxlength='30' ")</div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">新农合项目编码</label>
+            <div class="layui-input-inline">#formTextInput("countyInsuranceCode" "$!{basChargeItem.countyInsuranceCode}" "class='layui-input' id='countyInsuranceCode' autocomplete='off' maxlength='30' ")</div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">省医保项目费用等级</label>
+            <div class="layui-input-inline">#formSingleSelectSearchFirstNone("provinceInsuranceType" "$!{basChargeItem.provinceInsuranceType}" ${dicData.dicProvinceInsuranceType} " lay-search " "")</div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">市医保项目费用等级</label>
+            <div class="layui-input-inline">#formSingleSelectSearchFirstNone("cityInsuranceType" "$!{basChargeItem.cityInsuranceType}" ${dicData.dicCityInsuranceType} " lay-search " "")</div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">物价局项目编码</label>
+            <div class="layui-input-inline">#formTextInput("priceBureauCode" "$!{basChargeItem.priceBureauCode}" "class='layui-input' id='priceBureauCode' autocomplete='off' maxlength='30' ")</div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">药监局项目编码</label>
+            <div class="layui-input-inline">#formTextInput("fdaCode" "$!{basChargeItem.fdaCode}" "class='layui-input' id='fdaCode' autocomplete='off' maxlength='30' ")</div>
+        </div>
+    </div>
+
+    #if(${basChargeItem})
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("validFlag" "$!{basChargeItem.validFlag}" ${dicData.dicYesNo} "")
+            </div>
+        </div>
+    </div>
+    #end
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./bas/basChargeItem/basChargeItemEdit.js.vm")
+</body>
+</html>

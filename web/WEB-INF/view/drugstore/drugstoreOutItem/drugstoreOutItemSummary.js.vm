@@ -1,0 +1,127 @@
+<script src="../resource/common/bicommon.js"></script>
+<script>
+    var dicPayFeeState = JSON.parse('$dicTools.changeMapToJson($dicData.dicPayFeeState)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugStoreOutFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugStoreOutFlag)');
+    var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+
+    layui.use(['table', 'element', 'form'], function () {
+        var table = layui.table, form = layui.form;
+        var $ = layui.jquery, element = layui.element;
+        var techTable = table.render($.extend(basePageTable, {
+            elem: '#tech'
+            , id: 'tech'
+            , height: getTableHgt()
+            , url: '$contextPath/drugstore/drugstoreOutItemListData.jo' //数据接口
+            , cols: [[ //表头
+                {type:'numbers',fixed:'left'}
+                ,{
+                    field:'medicineName',title:'药品名称',width:126,fixed:'left'
+                },{
+					field: 'drugstoreName', title: '出库药库名称',fixed:'left'
+				},{
+                    field:'drugstoreInOutWay',title:'出库方式',fixed:'left',minWidth:100,templet:function (res) {
+                        return  dicDrugStoreOutFlag[res.drugstoreInOutWay] || '';
+                    }
+                },{
+                    field: 'medicineType', title: '类型',templet:function (res) {
+                        return dicMedicineType[res.medicineType] || '';
+                    }
+                },{
+                    field:'dosageForm',title:'药品剂型',width:300,templet:function (res) {
+                        return dicDosageForm[res.dosageForm] || '';
+                    }
+                },{
+                    field:'producingAreaName',title:'产地名称',minWidth:100
+                },{
+                    field:'medicineSpec',title:'药品规格',width:100
+                },{
+                    field:'medicineDosage',title:'药品剂量',width:100
+                },{
+                    field:'retailPrice',title:'零售价',width:70,align :'right'
+                },{
+                    field:'tradePrice',title:'批发价',width:70,align :'right'
+                },{
+                    field:'expireDateBegin',title:'药效日期',width:120,templet:function (res) {
+                        return res.expireDate ? layui.util.toDateString(res.expireDate,"yyyy-MM-dd ") : ''
+                    }
+                },{
+                    field:'minOutCount',title:'出库数量'
+                },{
+                    field:'medicineUnit',title:'单位',width:50,templet:function (res) {
+                        return dicDrugNumUnit[res.medicineUnit] || '';
+                    }
+                },{
+                    field:'pharmacyName',title:'领药药房名',width:100
+                },{
+                    field:'remark',title:'备注',width:150
+                }
+            ]]
+        }));
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 13);
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('tech', {
+                height: height
+            })
+        })
+        //监听搜索
+        $('#search').on('click', function () {
+            techTable.reload({
+                where: getQueryParams()
+            })
+        });
+
+        function getQueryParams() {
+            var params = $.extend({
+                pharmacyId:'',
+                medicineName:'',
+                medicineType:'',
+				drugstoreInOutWay:'',
+                dosageForm:'',
+                expireDateBegin:'',
+                expireDateEnd:''
+            }, common.serializeObject($('#queryForm')));
+            var chargeDate = $('#chargeDate').val();
+            if (chargeDate) {
+                var chargeDates = chargeDate.split(' - ');
+                params.expireDateBegin = chargeDates[0];
+                params.expireDateEnd = chargeDates[1];
+            }
+
+            return params;
+        }
+        //日期时间范围
+        laydate.render({
+            elem: '#chargeDate',trigger: 'click'
+            , range: true
+        });
+
+        //新增事件
+        $('#btn_add').click(function() {
+            editBasDisease();
+        });
+
+        //编辑
+        function editBasDisease(data) {
+            var title = '导出数据'
+            var iframeEnvironment = 'I40288046017060756075d3d50168d1627c013dda';
+            var content = diResource + iframeEnvironment
+            //true 执行
+            if (data) {
+                title = data.diseaseName;
+                content += '?outpatientFeeId=' + data.outpatientFeeId;
+            }
+            common.open(content, title, {
+                area : [ '1160px', '80%' ],
+                scroll:'yes'
+            });
+        }
+     })
+</script>

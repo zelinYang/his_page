@@ -1,0 +1,227 @@
+<script>
+var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');
+layui.use(['table', 'form', 'element'], function(){
+    var table = layui.table, form = layui.form, element = layui.element;
+    laydate.render({elem: '#recordDate', range: true, done: function (value, date, endDate){
+        var item = value.split(' - ');
+        $('#recordDateEnd').val(item[1]);
+        $('#recordDateBegin').val(item[0]);
+    }});
+
+    // 获取表格高度
+    function getTableHgt() {
+        return ($('body').height() - $('#queryForm').height() - 20)
+    };
+    function getTableHgt1() {
+        return ($('body').height() - $('#queryForm1').height() - 20)
+    };
+    // 重置表格高度
+    $(window).resize(function () {
+        var T_height = getTableHgt(),I_height = getTableHgt1();
+        table.reload('totalList', {
+                height: T_height
+        });
+        table.reload('itemList', {
+            height: I_height
+        });
+    });
+    // 汇总付款处理列表
+    var totalUrl = contextPath + '/drugstore/paymentHandleJsonList.jo';
+    var totalList = table.render($.extend(basePageTable, {
+        url: totalUrl,
+        id:'totalList',
+        elem: '#totalList',
+        height: getTableHgt(),
+        totalRow:true,
+        where: {},
+        done: function (res, curr, count){
+            // 去掉表格头部的全选及取消全选功能
+            common.removeHeadCheckbox('recipeId');
+        },
+        cols: [[
+            {
+                field:'medicineVendorName'
+                ,title: '供货单位'
+                ,templet :function (row) {
+                	return row[0].medicineVendorName;
+                }
+                ,minWidth: 120
+            }, {
+                field:'buySum',
+                title: '进价总额'
+                ,templet :function (row) {
+                	if (null != row[1]) return row[1].toFixed(2);
+                	return '';
+                },
+                totalRow: true
+                ,minWidth: 80
+            }, {
+                field:'tradeSum',
+                title: '批发总额'
+                ,templet :function (row) {
+                	if (null != row[2]) return row[2].toFixed(2);
+                	return '';
+                },
+                totalRow: true
+                ,minWidth: 80
+            }, {
+                field:'retailSum',
+                title: '零售总额'
+                ,templet :function (row) {
+                	if (null != row[1]) return row[3].toFixed(2);
+                	return '';
+                },
+                totalRow: true
+                ,minWidth: 80
+            }, {
+                field:'recordDate',
+                title: '进销差额',
+                templet :function (row) {
+                    if (row.retailSum && row.tradeSum) return row.retailSum - row.tradeSum;
+                    return "";
+                }
+                ,minWidth: 80
+            }, {
+                field:'dicountRatio',
+                title: '扣率(%)'
+    ,minWidth: 80
+            }
+        ]]
+        ,done: function(res, curr, count){
+        }//回调函数
+    }));
+
+    //点击条件搜索
+    $('#btn_query').click(function (){
+        var queryParams = common.serializeObject($('#queryForm'));
+        totalList.reload({where: queryParams});
+    });
+    //点击刷新
+    $('#btn_freshen').click(function (){
+        totalList.reload({where: null});
+    });
+
+    //监听行单击事件
+    table.on('row(totalList)', function(obj){
+        obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        itemList.reload({page: {curr: 1}, where: {medicineVendorId: obj.data[0].medicineVendorId}});
+    });
+
+    // 付款处理明细列表
+    var itemList = table.render($.extend(basePageTable, {
+        url: '../drugstore/getDrugstoreInByMedicineVendorIdMap.jo',
+        id:'itemList',
+        elem: '#itemList',
+        height: getTableHgt1(),
+        done: function (res, curr, count){
+            // 去掉表格头部的全选及取消全选功能
+            common.removeHeadCheckbox('recipeId');
+        },
+        cols: [[
+        	{
+                field:'drugstoreInWay',
+                title: '入库方式',
+                templet :function (row) {
+                    if (null != row[0].drugstoreInWay) return dicDrugstoreInWay[row[0].drugstoreInWay];
+                    return "";
+                }
+    ,minWidth: 80
+            }, {
+                field:'medicineVendorName',
+                title: '供货单位',
+                templet :function (row) {
+                	if (null != row[0].medicineVendorName) return row[0].medicineVendorName;
+                    return "";
+                },
+                minWidth: 150
+            }, {
+                field:'receiptBillNo',
+                title: '验收单号',
+                templet :function (row) {
+                    if (null != row[0].receiptBillNo) return row[0].receiptBillNo;
+                    return "";
+                },
+                minWidth: 100
+            },{
+                field:'buySum',
+                title: '进价总额',
+                templet :function (row) {
+                    if (null != row[1]) return row[1].toFixed(2);
+                    return "";
+                },
+                totalRow: true
+    ,minWidth: 80
+            }, {
+                field:'tradeSum',
+                title: '批发总额',
+                templet :function (row) {
+                    if (null != row[2]) return row[2].toFixed(2);
+                    return "";
+                },
+                totalRow: true
+    ,minWidth: 80
+            }, {
+                field:'retailSum',
+                title: '零售总额',
+                templet :function (row) {
+                    if (null != row[3]) return row[3].toFixed(2);
+                    return "";
+                },
+                totalRow: true
+    ,minWidth: 80
+            }, {
+                field:'recordDate',
+                title: '进销差额',
+                templet :function (row) {
+                    if (row.retailSum && row.tradeSum) return row.retailSum - row.tradeSum;
+                    return "";
+                }
+    ,minWidth: 80
+            }, {
+                field:'dicountRatio',
+                title: '扣率(%)'
+    ,minWidth: 80
+            }
+        ]]
+    }));
+
+    table.on('row(itemList)', function(obj){
+        obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        var url = '$contextPath/drugstore/getDrugstoreInItemList.do?drugstoreInId='+obj.data[0].drugstoreInId;
+        common.open(url, '入库单明细', {
+           area : [ '90%', '90%' ]
+        });
+    });
+
+    // 页面按钮操作配置 操作类型（type）1：直接请求链接； 2： 提示请求链接；  3：打开窗口; 4：回调函数
+    var buttonConfig = {
+        fresh: {type: '4', method: ""},
+        query: {type: '4', method: ""},
+        clean: {type: '4', params: 'queryForm', method: common.cleanForm},
+        delete_: {url: contextPath + '/drugstore/deleteDrugstoreIn.jo', type: '2', rmsg: '已删除', amsg: '确定要删除吗？'},
+        confirm: {url: contextPath + '/drugstore/confirmDrugstoreIn.jo', type: '2', rmsg: '已确认', amsg: '确定要确认提交吗？'},
+        add: {url: contextPath + '/drugstore/drugstoreInEdit.do', title: '新增入库单', type: '3', width: '95%', height: '95%'}
+    }
+    /* // 监听按钮点击动作
+    $('button').click(function (){
+        var configItem;
+        var btnId = $(this).attr('id');
+        if (!btnId || !(configItem = buttonConfig[btnId])) {
+            return ;
+        }
+
+        if (configItem.type === '1') {
+            common.requestServerHandler(configItem.url, configItem.params, configItem.rmsg);
+        } else if (configItem.type === '2') {
+            common.confirm(configItem.amsg, function (){
+                configItem.params = {ids: common.getTableSelectRowField(table, 'recipeList', 'drugstoreInId')}
+                common.requestServerHandler(configItem.url, configItem.params, configItem.rmsg);
+            });
+        } else if (configItem.type === '3') {
+            common.open(configItem.url, configItem.title, {area : [configItem.width, configItem.height ]});
+        }else if (configItem.type === '4') {
+            configItem.params ? configItem.method(configItem.params) : configItem.method();
+        }
+    }); */
+});
+</script>

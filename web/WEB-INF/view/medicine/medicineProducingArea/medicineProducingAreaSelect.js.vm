@@ -1,0 +1,52 @@
+ <script>
+	  var queryProducingArea;//查询药品库存
+
+	  layui.use(['jquery','table', 'laypage','element','form'], function(){
+		  var table = layui.table;
+		  var element = layui.element;
+		  var form = layui.form;
+		  var laypage = layui.laypage;
+		  var $ = layui.$;
+
+		  element.render();
+		  //第一个实例
+		  var tableIns = table.render({
+			  elem: '#medicineProducingAreaTable'
+			  //,toolbar: '#toolbarDemo'
+			  ,defaultToolbar: []
+			  //,height: '230'//高度
+			  ,height: '320'//高度
+			  ,url: contextPath + '/medicine/medicineProducingAreaJsonList.jo' //数据接口
+			  //,page: true //开启分页
+			  ,limit:200
+			  ,request: {
+				  pageName: 'pageNumber' //页码的参数名称，默认：page
+				  ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			  }
+			  ,where: common.serializeObject($('#medicineProducingArea_queryForm'))
+			  ,cols: [[ //表头
+				  {field : 'producingAreaName',title : '产地名称', templet :function (row) {return row.producingAreaName? row.producingAreaName: '';}}
+				  ,{field : 'producingArea', title : '产地全称', templet :function (row) {return row.producingArea? row.producingArea: '';}}
+			  ]]
+			  //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+			  ,done: function(res, curr, count){
+			  }
+		  });
+
+
+		  //查询列表
+		  queryProducingArea = function() {
+			  var queryParams = common.serializeObject($('#medicineProducingArea_queryForm'));
+			  console.log(queryParams);
+			  tableIns.reload({ where: $.extend({keyWord: '', producingAreaIds: ''}, queryParams) });
+		  }
+
+
+		  //监听行单击事件
+		  table.on('row(medicineProducingAreaTable)', function(obj){
+			  var medicineProducingArea = obj.data;
+			  parent.medicineProducingAreaRowSelect(medicineProducingArea);
+		  });
+
+	  });//layui.use
+  </script>

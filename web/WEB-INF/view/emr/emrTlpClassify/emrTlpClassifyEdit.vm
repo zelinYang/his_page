@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-电子病历分类管理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+</head>
+<body>
+<form class="layui-form" id="emrTlpClassifyForm" style="padding: 20px 30px 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("emrTlpClassifyId" "$!{emrTlpClassify.emrTlpClassifyId}" " id='emrTlpClassifyId' ")
+    #formHiddenInput("emrTreeCode" "$!{emrTlpClassify.emrTreeCode}" " id='emrTreeCode' ")
+    #formHiddenInput("parentEmrTreeCode" "$!{parentEmrTreeCode}" " id='parentEmrTreeCode' ")
+    <div class="layui-form-item">
+        <label class="layui-form-label">父级分类</label>
+        <div class="layui-input-block">
+            #formTextInput("" "" " id='parentEmrTreeName' class='layui-input' readonly ")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()分类名称</label>
+        <div class="layui-input-block">
+            #formTextInput("emrTlpClassifyName" "$!{emrTlpClassify.emrTlpClassifyName}" " id='emrTlpClassifyName'
+            lay-verify='required' autocomplete='off' maxlength='50' class='layui-input'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()使用分类</label>
+        <div class="layui-input-block">
+            #formRadioGroup("emrTlpFlag" "$!{emrTlpClassify.emrTlpFlag}" ${dicData.dicEmrTlpFlag}
+            "check-msg='请选择使用分类' lay-verify='reqRedio'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()医护类型</label>
+        <div class="layui-input-block">
+            #formRadioGroup("doctorNurseFlag" "$!{emrTlpClassify.doctorNurseFlag}" ${dicData.dicDoctorNurseFlag}
+            "check-msg='请选择医护类型' lay-verify='reqRedio'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()分类属性</label>
+        <div class="layui-input-block">
+            #formRadioGroup("emrTlpClassifyType" "$!{emrTlpClassify.emrTlpClassifyType}"
+            ${dicData.dicBelongSysType} "check-msg='请选择分类属性' lay-verify='reqRedio' lay-filter='emrTlpClassifyType'")
+        </div>
+    </div>
+
+    <div class="layui-form-item layui-hide" id="officeEle">
+        <div class="layui-input-block">
+            <div class="layui-row p-xs m-l-md">
+                #foreach($option in $!orgMap.keySet())
+                <div class="layui-col-xs2 p-b-xs">
+                    #set($check = "false")
+                    #foreach($item in $!{emrTlpClassify.classifyOfficeIdStr.split(",")})
+                        #if($item == $option)
+                            #set($check = "true")
+                        #end
+                    #end
+                    #formSimpleCheckbox("classifyOfficeIdStr" "$!option" "$!check" " title='$!{orgMap.get($!option)}'" "")
+                </div>
+                #end
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label"  style="width: 150px;">#requiredTag()是否本次就诊仅填一次</label>
+        <div class="layui-input-block">
+            #formRadioGroup("createCountFlag" "$!{emrTlpClassify.createCountFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否本次就诊仅填一次'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">填写时限</label>
+        <div class="layui-input-block">
+            #formIntInput("createTimeLimit" "$!{emrTlpClassify.createTimeLimit}" " id='createTimeLimit'
+            maxlength='5' autocomplete='off' class='layui-input'")
+        </div>
+    </div>
+    #if(${emrTlpClassify.emrTreeCode})
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()是否有效</label>
+        <div class="layui-input-block">
+            #formRadioGroup("validFlag" "$!{emrTlpClassify.validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+        </div>
+    </div>
+    #end
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">注释</label>
+        <div class="layui-input-block ">
+            #formTextarea("remark" "#htmlEscape($!{emrTlpClassify.remark})" "id='remark' class='layui-textarea'
+            maxlength='50' placeholder='请输入内容，字数最多50字'")
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+
+    </div>
+    <!-- 表单 结束 -->
+</form>
+#parse("./emr/emrTlpClassify/emrTlpClassifyEdit.js.vm")
+</body>
+</html>

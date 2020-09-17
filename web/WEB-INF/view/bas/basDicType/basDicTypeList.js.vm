@@ -1,0 +1,147 @@
+
+<script>
+    //字典类型
+    var dicDicType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDicType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                dicTypeId: '',
+                keyWord: '',
+                dicTypeCode: '',
+                standardCode: '',
+                dicTypes: ''
+            }, common.serializeObject($('#basDicType_queryForm')));
+        }
+
+        form.on('checkbox(dicType)', function (data) {
+            //勾选完类型直接进行查询
+            $("#btn_query").click();
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            basDicTypeListGrid.reload({
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basDicType_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/basDicType/basDicTypeEdit.do', '新增', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        var basDicTypeListGrid = table.render($.extend(basePageTable, {
+            elem: '#basDicTypeListGrid',
+            url: contextPath + '/basDicType/basDicTypeListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                field : 'dicTypeId',
+                title : '编号',
+                width: 5*10
+            }, {
+                field: 'dicTypeName',
+                title: '字典分类'
+            },
+                {
+                field: 'dicTypeCode',
+                title: '字典分类编码'
+            }, {
+                field: 'dicType',
+                title: '字典类型',
+                width: 80,
+                templet: function (d) {
+                    return dicDicType[d.dicType] || '';
+                }
+            }, {
+                field: 'standardCode',
+                title: '国际/国家/行业标准编码',
+                minWidth: 200
+            }, {
+                field: 'validFlag',
+                title: '是否有效',
+                unresize: true,
+                width: 100,
+                templet: '#validFlagTpl'
+            }, {
+                title: '操作',
+                width: 100,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../basDicType/updateBasDicTypeValidFlag.jo', {
+                dicTypeId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                if (result.code === '0') {
+                    common.responseAtcion(result);
+                } else {
+                    common.alert(result.msg, 0);
+                    obj.elem.checked = !obj.elem.checked;
+                    form.render('checkbox');
+                }
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool('+ basDicTypeListGrid.config.id +')', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/basDicType/basDicTypeShow.do?dicTypeId=' + row.dicTypeId, row.dicTypeName + '详情', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/basDicType/basDicTypeEdit.do?dicTypeId=' + row.dicTypeId, row.dicTypeName, {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+            }
+        });
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+        function getTableHgt(){
+            return $('body').height() - $('#basDicType_queryForm').height() - ($('body').height() - $('.layui-fluid').height())
+        }
+    })
+</script>

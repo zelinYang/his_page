@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="propertyEditorBind" class="cn.com.base.basesystem.propertyeditor.support.spring.SpringPropertyEditorBind">
+        <property name="bindPropertyBuilder"><ref bean="springBindPropertyBuilder"/></property>
+    </bean>
+    <bean id="springBindPropertyBuilder" class="cn.com.base.robot.propertyeditor.spring.SpringBindPropertyBuilder">
+    </bean>
+
+<!-- 数值属性编辑器 -->
+    <bean id="customNumberEditorManager" class="cn.com.base.robot.propertyeditor.manager.CustomNumberEditorManager">
+        <property name="editedClassList">
+            <list>
+                <value>java.lang.Byte</value>
+                <value>java.lang.Short</value>
+                <value>java.lang.Integer</value>
+                <value>java.lang.Long</value>
+                <value>java.lang.Float</value>
+                <value>java.lang.Double</value>
+                <value>java.math.BigInteger</value>
+                <value>java.math.BigDecimal</value>
+            </list>
+        </property>
+    </bean>
+
+<!-- 日期属性编辑器 -->
+    <bean id="customDateEditorManager" class="cn.com.base.robot.propertyeditor.manager.CustomDateEditorManager">
+        <property name="editedClassList">
+            <list>
+                <value>java.util.Date,yyyy-MM-dd HH:mm:ss</value>
+            </list>
+        </property>
+    </bean>
+
+<!-- MultipartFile属性编辑器, represents an uploaded file received in a multipart request-->
+    <bean id="customInterfaceMultipartFilePropertyEditorManager" class="cn.com.base.robot.propertyeditor.manager.SimplePropertyEditorManager">
+        <property name="propertyEditorClass"><value>cn.com.base.basesystem.common.multipart.support.InterfaceMultipartFilePropertyEditor</value></property>
+        <property name="editedClassList">
+            <list>
+                <value>org.springframework.web.multipart.MultipartFile</value>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="stringTrimEditorManager" class="cn.com.base.robot.propertyeditor.manager.StringTrimEditorManager">
+        <property name="emptyAsNull"><value>true</value></property>
+    </bean>
+
+</beans>

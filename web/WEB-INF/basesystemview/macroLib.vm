@@ -1,0 +1,849 @@
+
+#macro(SpareSelectOption $jsFlag $mtSon) #if($jsFlag) ${jsFlag}SpareSelect(${mtSon}); #end#end
+#**
+ * requiredInput
+ *
+ * 以红色显示文字。
+ *
+ * @param message 要显示的信息
+ *
+*#
+#macro(requiredInput $message)#if($message)<font color="red">$!message</font>#end#end
+
+#**
+ * inputTitle
+ *
+ * 处理输入标题的显示颜色，必须录入的输入项的标题以红色显示。
+ *
+ * @param message 要显示的信息
+ *
+*#
+#macro(inputTitle $message $isRequired)#if($isRequired)#requiredInput($message)#else$!message#end#end
+
+#**
+ * formSingleSelectDictionary2
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectDictionary2 $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' class="js-example-basic-single" $attributes style='border:#ccc 1px solid;height:20px;width:100%;'>
+        #if ($display && $display != "")
+            <option value=''>$display</option>
+        #end
+        #foreach($option in $options.entrySet())
+            <option value='${option.key}'
+            #if("$!fieldValue" == "$option.key")
+                selected='selected'
+            #end>
+            ${option.value}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectDictionary
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formSingleSelectDictionary $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName'  $attributes style='border:#ccc 1px solid;height:20px;width:100%;'>
+        #if ($display && $display != "")
+            <option value=''>$display</option>
+        #end
+        #foreach($option in $options.entrySet())
+            <option value='${option.key}'
+            #if("$!fieldValue" == "$option.key")
+                selected='selected'
+            #end>${option.value}</option>
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectDictionary
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值.
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+ *#
+#macro(formSingleSelectDictionaryCommon $fieldName $fieldValue $options $attributes $display)
+<select name='$fieldName'  $attributes style='border:#ccc 1px solid;width:100%;'>
+    #if ($display && $display != "")
+        <option value=''>$display</option>
+    #end
+    #foreach($option in $options.entrySet())
+        <option value='${option.key}'
+            #if("$!fieldValue" == "$option.key")
+                selected='selected'
+            #end>${option.value}</option>
+    #end
+</select>
+#end
+
+#**
+ * formSingleSelectDictionaryLeftFilter
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值,通过leftFilter过滤option
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ * @param leftFilter 需要过滤的字符串
+ *
+*#
+#macro(formSingleSelectDictionaryLeftFilter $fieldName $fieldValue $options $attributes $display $leftFilter)
+    <select name='$fieldName'  $attributes style='border:#ccc 1px solid;height:20px;width:100%;'>
+        #if ($display && $display != "")
+            <option value=''>$display</option>
+        #end
+        ##若过滤的字符串不为空,取出赋值给$_leftFilterString
+        #set($_leftFilterString = "")
+        #if($leftFilter && $leftFilter != "")
+            #set($_leftFilterString = $_leftFilterString.valueOf($leftFilter))
+        #end
+        #foreach($option in $options.entrySet())
+            ##$leftFilter不为空,进行过滤
+            #if($_leftFilterString && $_leftFilterString != "")
+                #set($_optionKeyValueString = "")
+                #set($_optionKeyValueString = $_optionKeyValueString.valueOf(${option.key}))
+                #if($_optionKeyValueString.indexOf($_leftFilterString) == 0)
+                    <option value='${option.key}'
+                    #if("$!fieldValue" == "$option.key")
+                        selected='selected'
+                    #end>
+                    ${option.value}</option>
+                #end
+            #else
+                <option value='${option.key}'
+                #if("$!fieldValue" == "$option.key")
+                    selected='selected'
+                #end>
+                ${option.value}</option>
+            #end
+        #end
+    </select>
+#end
+
+#**
+ * formSingleSelectDictionaryLeftFilters
+ *
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值,通过leftFilter过滤option
+ *
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ * @param leftFilters 需要过滤的字符串数组
+ *
+*#
+#macro(formSingleSelectDictionaryLeftFilters $fieldName $fieldValue $options $attributes $display $leftFilters)
+    <select name='$fieldName'  $attributes style='border:#ccc 1px solid;height:20px;width:100%;'>
+        #if ($display && $display != "")
+            <option value=''>$display</option>
+        #end
+        ##若过滤的字符串不为空,取出赋值给$_leftFilterString
+        #set($_leftFilterStrings = [])
+        #if($leftFilters && $leftFilters != [])
+            #foreach($_leftFilter in $leftFilters)
+                #set($_leftFilterString = "")
+                #set($_leftFilterString = $_leftFilterString.valueOf($_leftFilter))
+                #if("$!{_leftFilterString}" != "" && $_leftFilterStrings.add($_leftFilterString))
+                #end
+            #end
+        #end
+        #foreach($option in $options.entrySet())
+            ##$_leftFilterStrings不为空,进行过滤
+            #if($_leftFilterStrings && $_leftFilterStrings != [])
+                #set($_optionKeyValueString = "")
+                #set($_optionKeyValueString = $_optionKeyValueString.valueOf(${option.key}))
+                #foreach($_leftFilterString in $_leftFilterStrings)
+                    #if($_optionKeyValueString.indexOf($_leftFilterString) == 0)
+                        <option value='${option.key}'
+                        #if("$!fieldValue" == "$option.key")
+                            selected='selected'
+                        #end>
+                        ${option.value}</option>
+                        #break
+                    #end
+                #end
+            #else
+                <option value='${option.key}'
+                #if("$!fieldValue" == "$option.key")
+                    selected='selected'
+                #end>
+                ${option.value}</option>
+            #end
+        #end
+    </select>
+#end
+
+#**
+ * loadSelect2Script
+ *
+ * 装载Select2脚本,使用之前必须引入jquery-1.10.2.min.js,并且之后不允许再次引入
+ *
+ *#
+#macro(loadSelect2Script)
+#if(!$LOAD_SELECT2_SCRIPT)
+#set($LOAD_SELECT2_SCRIPT=true)
+<link rel="stylesheet" type="text/css" href="../app/right/select2/select2.css">
+<script language="JavaScript" src="../base/js/select2/select2.min.js"></script>
+<script>
+jQuery(document).ready(function(){
+    setTimeout(function(){
+        jQuery(".js-example-basic-single").select2();
+    },200);
+});
+</script>
+#end
+#end
+
+#**
+ * formRadioDictionary
+ *
+ * 由字典数据生成一组单选按钮
+ * @param fieldName  单选组的名字
+ * @param fieldValue  单选组的当前取值
+ * @param options 一个由(value=label)组成的map, 是单选组可选择的选项
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formRadioDictionary $fieldName $fieldValue $options $attributes)
+        #foreach($option in $options.entrySet())
+            <label for=""><input type="radio" name="$fieldName" value='${option.key}' $attributes #if("$!fieldValue" == "$option.key") checked #end/> ${option.value}</label>
+        #end
+#end
+#**
+ * formRadioDictionary
+ *
+ * 由字典数据生成一组复选框,它们有相同名字不同值
+ * @param fieldName  复选框的名字
+ * @param checkValueList  选中的复选框的值列表
+ * @param options 一个由(value=label)组成的map, 是单选组可选择的选项
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(formCheckBoxDictionary $fieldName $checkValueList $options)
+        #foreach($option in $options.entrySet())
+            <input type="checkBox" name="$fieldName" value='${option.key}' #if($checkValueList.contains($option.key)) checked #end/> ${option.value}
+        #end
+#end
+#**
+ * treeSelectOption
+ *
+ * 用制表符构造的树型下拉框
+ * 由字典数据生成一个单选的下拉列表框,但第一个选项为空值.
+ * @param fieldName  列表框的名字
+ * @param fieldValue  列表框的当前取值
+ * @param options 一个由(value=label)组成的map, 是下拉列表框中可选择的列表内容
+ * @param attributes 下拉列表框的其他属性，如："id='fid' width='100' class='t2'" 等
+ * @param display 列表框第一个值（为空的值）的显示内容
+ *
+*#
+#macro(treeSelectOption $fieldName $fieldValue $options $attributes $display)
+    <select name='$fieldName' ${attributes}>
+        #if($display)<option value=''>$display</option>#end
+        #foreach($option in $options.entrySet())
+            #set($nbcount = $option.key.trim().length() - 4)
+            #if("${fieldValue.trim()}" == "${option.key.trim()}")
+                <option value='${option.key.trim()}'
+                    selected='selected'
+                >
+                #if($nbcount == 4)&nbsp;&nbsp;├#end
+                #if($nbcount == 8)&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 12)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 16)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 20)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                ${option.value}</option>
+            ##elseif("$!{option.value.data.isValid}" != "0")
+            #else
+                <option value='${option.key.trim()}'>
+                #if($nbcount == 4)&nbsp;&nbsp;├#end
+                #if($nbcount == 8)&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 12)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 16)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                #if($nbcount == 20)&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├#end
+                ${option.value}</option>
+                ##─
+            #end
+        #end
+    </select>
+#end
+
+#macro(selectYear $editorName $defaultValue $attributes)
+  <select name="$editorName" class="inputobject" $attributes>
+     #foreach($year in [2000..2015])
+       <option value="$year" #if($defaultValue && "$defaultValue" == "$year") selected="true" #end>$year</option>
+     #end
+  </select>
+#end
+
+#macro(selectMonth $editorName $defaultValue $attributes)
+  <select name="$editorName" class="inputobject" $attributes>
+     #foreach($month in [1..12])
+       <option value="$month" #if($defaultValue && "$defaultValue" == "$month") selected="true" #end>$month</option>
+     #end
+  </select>
+#end
+
+#macro(selectPiCi $editorName $defaultValue $max $attributes $display)
+  <select name="$editorName" class="inputobject" $attributes>
+     <option value="">$display</option>
+     #foreach($pc in [1..$max])
+       <option value="$pc" #if($defaultValue && "$defaultValue" == "$pc") selected="true" #end>$pc</option>
+     #end
+  </select>
+#end
+
+#macro(selectYearFirstNone $editorName $defaultValue $attributes $display)
+  <select name="$editorName" class="inputobject" $attributes>
+     <option value="">$display</option>
+     #foreach($year in [2000..2015])
+       <option value="$year" #if($defaultValue && "$defaultValue" == "$year") selected="true" #end>$year</option>
+     #end
+  </select>
+#end
+
+#macro(tableCellCss $index)
+   #if($index % 2 == 0)
+       #set($css = "tabledata")
+   #else
+       #set($css = "tabledata1")
+   #end
+   $css
+#end
+
+#macro(forSelectFuncName $typeName)select${typeName}FromDialog#end;
+
+#macro(commonScriptForSelectDialog $typeName $url)
+<script type="text/javascript">
+function #forSelectFuncName($typeName)(button, param) {
+    var theUrl = "$url";
+    if (param) theUrl = theUrl + "?" + param;
+    FCKDialog.OpenDialog("", "选择", theUrl, 600, 500, new objectForSelect${typeName}(button, button.callbackfunc), window);
+}
+
+function commonSetDataFor${typeName}(data) {
+    if (data) {
+        if (isArrayObject(data)) {
+            for (i = 0; i < data.length; i++) {
+                this.callbackfunc(data[i], this.button);
+            }
+        } else {
+            this.callbackfunc(data, this.button);
+        }
+    }
+}
+
+var objectForSelect${typeName} = function(button, callbackfunc) {
+    this.button = button;
+    this.callbackfunc = callbackfunc;
+    this.setSelectData = commonSetDataFor${typeName};
+}
+</script>
+#end
+
+##########以下是与选择合同有关的宏
+#macro(initSelectContractLib $typeName)
+#if(!$INCLUDE_SHOW_SELECT_CONTRACT_DIALOG_SCRIPT)#set($INCLUDE_SHOW_SELECT_CONTRACT_DIALOG_SCRIPT = true)
+#commonScriptForSelectDialog($typeName "../selectdata/contractSelect.do")
+#end
+#end
+
+#macro(initJavascriptSelectContract )#set($typeName="Contract")#initSelectContractLib($typeName)#end
+#macro(javascriptSelectContract $editorName $defaultValue $attributes $callbackfunc)#set($typeName="Contract")"<input name='$editorName' type='text' $!attributes value='" + $defaultValue + "'><input type='button' value='选择' class='btn' onclick='javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)'>"#end
+#**
+ * selectContract
+ *
+ * 选择合同的宏。
+ *
+ * @param editorName 合同显示域的名字
+ * @param defaultValue 合同显示域的中显示的值
+ * @param attributes 合同显示域的其他属性,该属性里的字符串只能使用单引号，不能使用双引号
+ * @param callbackfunc 接收选择数据的回调函数,该函数的原形大致如下:
+ *
+ *       function getAContract(data) { //data是选择的一条数据，它的属性记录了选择数据的具体值。
+ *            var e = document.queryForm;
+ *            e.contractName.value = data.contractName; //合同名称
+ *            e.contract.value = data.contractId;       //合同id
+ *        }
+ * 该函数接收一条选择的数据，如果选择了多个数据，系统会为每一个数据调用一次callbackfunc函数。
+ *
+ *
+*#
+#macro(selectContract $editorName $defaultValue $attributes $callbackfunc)
+#set($typeName="Contract")<input name='$editorName' type='text' $!attributes value='$defaultValue'><input type='button' value='选择' class='btn' onclick='javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)'>
+#initSelectContractLib($typeName)
+#end
+
+##########以下是与选择供应商有关的宏
+#macro(initSelectProviderLib $typeName)
+#if(!$INCLUDE_SHOW_SELECT_PROVIDER_DIALOG_SCRIPT)#set($INCLUDE_SHOW_SELECT_PROVIDER_DIALOG_SCRIPT = true)
+#commonScriptForSelectDialog($typeName "../selectdata/providerSelect.do")
+#end
+#end
+
+#macro(initJavascriptSelectProvider )#set($typeName="Provider")#initSelectProviderLib($typeName)#end
+#macro(javascriptSelectProvider $editorName $defaultValue $attributes $callbackfunc)#set($typeName="Provider")"<input name='$editorName' type='text' $!attributes value='" + $defaultValue + "'><input type='button' value='选择' class='btn' onclick='javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)'>"#end
+#**
+ * selectProvider
+ *
+ * 选择供应商的宏。
+ *
+ * @param editorName 显示域的名字
+ * @param defaultValue 显示域的中显示的值
+ * @param attributes 显示域的其他属性,该属性里的字符串只能使用单引号，不能使用双引号
+ * @param callbackfunc 接收选择数据的回调函数,该函数的原形大致如下:
+ *
+ *       function getAContract(data) { //data是选择的一条数据，它的属性记录了选择数据的具体值。
+ *            var e = document.queryForm;
+ *            e.contractName.value = data.contractName; //合同名称
+ *            e.contract.value = data.contractId;       //合同id
+ *        }
+ * 该函数接收一条选择的数据，如果选择了多个数据，系统会为每一个数据调用一次callbackfunc函数。
+ *
+ *
+*#
+#macro(selectProvider $editorName $defaultValue $attributes $callbackfunc)
+#set($typeName="Provider")<input name='$editorName' type='text' $!attributes value='$defaultValue'><input type='button' value='选择' class='btn' onclick='javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)'>
+#initSelectProviderLib($typeName)
+#end
+
+
+##########以下是与选择材料供应商有关的宏
+#macro(initSelectMtSupplyLib $typeName)
+#if(!$INCLUDE_SHOW_SELECT_MTSUPPLY_DIALOG_SCRIPT)#set($INCLUDE_SHOW_SELECT_MTSUPPLY_DIALOG_SCRIPT = true)
+#commonScriptForSelectDialog($typeName "../matSetting/materialSupplyInfSelect.do")
+#end
+#end
+
+#macro(initJavascriptSelectMtSupply )#set($typeName="MtSupply")#initSelectMtSupplyLib($typeName)#end
+#macro(javascriptSelectMtSupply $editorName $defaultValue $attributes $callbackfunc)#set($typeName="MtSupply")"<input name='$editorName' type='text' $!attributes value='$defaultValue'><img src='../images/icon_supply.gif' width='34' height='21' align='absmiddle' onclick='javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)' alt='点击选择生产厂商'>"#end
+#**
+ * selectMtSupply
+ *
+ * 选择材料供应商的宏。
+ *
+ * @param editorName 显示域的名字
+ * @param defaultValue 显示域的中显示的值
+ * @param attributes 显示域的其他属性,该属性里的字符串只能使用单引号，不能使用双引号
+ * @param callbackfunc 接收选择数据的回调函数,该函数的原形大致如下:
+ *
+ *       function getAContract(data) { //data是选择的一条数据，它的属性记录了选择数据的具体值。
+ *            var e = document.queryForm;
+ *            e.contractName.value = data.contractName; //合同名称
+ *            e.contract.value = data.contractId;       //合同id
+ *        }
+ * 该函数接收一条选择的数据，如果选择了多个数据，系统会为每一个数据调用一次callbackfunc函数。
+ *
+ *
+*#
+#macro(selectMtSupply $editorName $defaultValue $attributes $callbackfunc)
+#set($typeName="MtSupply")<input name='$editorName' type='text' $!attributes value='$defaultValue'>
+<img src="../images/icon_supply.gif" width="34" height="21" align="absmiddle" onclick="javascript:this.callbackfunc=$callbackfunc;#forSelectFuncName($typeName)(this)" alt="点击选择生产厂商">
+#initSelectMtSupplyLib($typeName)
+#end
+
+#**
+ * importCalendarScript
+ *
+ * 导入日历控件的javascript声明
+ *
+*#
+#macro(importCalendarScript)
+<script type="text/javascript" src="../script/calendar/calendar.js"></script>
+#end
+
+#macro(loginStaff $staff)
+var loginStaff = new Object();
+loginStaff.id = '${staff.id}';
+loginStaff.name = '${staff.name}';
+loginStaff.department = new Object();
+loginStaff.department.id = '${staff.department.id}';
+loginStaff.department.name = '${staff.department.name}';
+loginStaff.department.parentId = '${staff.department.parentId}';
+loginStaff.department.unitDep = '${staff.department.unitDep}';
+#end
+
+#**
+ * requiredContent
+ *
+ * 显示指定长度的内容
+ *
+ * @param $message 要显示的内容
+*#
+#macro(requiredContent $message $length $url)
+    #if($message)
+        #set($innerMessage = ${HELPER_HTMLHELPER.truncChineseString($message,$length)})
+        #if ($url && $url != '' && $url != '#')
+            #if($innerMessage == $message)
+                <a href="$url">#htmlEscape($!{innerMessage})</a>
+            #else
+                <a href="$url" title="#htmlEscape($message)">#htmlEscape($!{innerMessage})</a>
+            #end
+        #else
+            #if($innerMessage == $message)
+                #htmlEscape($!{innerMessage})
+            #else
+                <span title="#htmlEscape($message)">#htmlEscape($!{innerMessage})</span>
+            #end
+        #end
+    #end
+#end
+
+#**
+ * getMainDepartment
+ *
+ * 从员工的部门集合中找出主部门，并根据returnPart返回要求的属性值
+ *
+ * @param $departmentSet 员工的部门集合
+ * @param $returnPart department对象中的属性名称
+*#
+#macro(getMainDepartment $departmentSet $returnPart)#if($departmentSet && $returnPart)$HELPER_TOOLS.getMainDepartment($departmentSet, "$returnPart")#end#end
+#**
+ * showSupplyComponent
+ *
+ * 展示选择供应商的按钮及相关组件
+ *
+ * @param $img 图标
+ * @param $size 文本框大小
+ * @param $scriptEvent 图标点击事件
+*#
+#macro(showSupplyComponent $img $size $scriptEvent)
+  <input type="hidden" name="supplyId"/>
+  <input type="text" name="supplyName"  #if($size != "")size="$size"#end readonly/>
+  <img src="$img" width="23" height="16" align="absmiddle" onclick="javascript:${scriptEvent};" alt="点击选择生产厂商">
+#end
+
+#**
+ * 生成仓库的下拉单选框
+ *
+ * @param $storeList List of MisStore
+ * @param $editorName 下拉框名称
+ * @param $defaultValue 默认值
+ * @param $attribute 属性
+*#
+#macro(selectStore $storeList $editorName $defaultValue $attribute $display)
+   <select name="$editorName" $attribute>
+      #if($display)<option value="">$display</option>#end
+    #foreach ($store in $storeList)
+      <option value="$!{store.storeId}" #if ("$!{store.storeId}" == "$!{defaultValue}") selected #end>$!{store.storeName}</option>
+    #end
+   </select>
+#end
+#macro(depName $depId)
+    $DEP_HELPER.getDepartmentName(${depId})
+#end
+
+#**
+ * 生成供应商选择组件
+ *
+ * @param $supplyType 供应商类型
+ * @param $callbackFunction 回调函数
+*#
+#macro(selectSupplyModel $supplyType $callbackFunction)
+    #if(!$INCLUDE_SELECT_SUPPLY_SCRIPT)
+        #set($INCLUDE_SELECT_SUPPLY_SCRIPT = true)
+<script type="text/javascript">
+function showSupplyDialog(supplyType, callback) {
+    var url = "../misSetting/supplySelectModel.do?supplyType=" + supplyType;
+    var arguments = new Object();
+    arguments.custom = new Object();
+    arguments.custom.idField = "supplyId";
+    arguments.custom.nameField = "supplyName";
+    if (callback != undefined) {
+        arguments.custom.callback = callback;
+        FCKDialog.OpenDialog("selectSupply", "选择厂商", url, 800, 650, arguments, window);
+    } else {
+        FCKDialog.OpenDialog("selectSupply", "选择厂商", url, 800, 650, arguments, window);
+    }
+}
+</script>
+    #end
+<input type="hidden" name="supplyId"/><input type="text" name="supplyName" value="" readonly/><img src="../images/icon_supply.gif" width="34" height="21" align="absmiddle" onclick="javascript:showSupplyDialog('$supplyType'#if($callbackFunction != ""), $callbackFunction#end);" alt="点击选择生产厂商">
+#end
+
+#**
+ * 生成供应商选择组件（提供多个参数入库）
+ *
+ * @param $supplyType 供应商类型
+ * @param $callbackFunction 回调函数
+*#
+#macro(selectSupplyModelDefault $supplyType $supplyIdField $supplyId $supplyName $callbackFunction)
+    #if(!$INCLUDE_SELECT_SUPPLY_SCRIPT)
+        #set($INCLUDE_SELECT_SUPPLY_SCRIPT = true)
+<script type="text/javascript">
+function showSupplyDialog(supplyType, callback) {
+    var url = "../misSetting/supplySelectModel.do?supplyType=" + supplyType;
+    var arguments = new Object();
+    arguments.custom = new Object();
+    arguments.custom.idField = '$supplyIdField';
+    arguments.custom.nameField = '${supplyIdField}Name';
+    if (callback != undefined) {
+        arguments.custom.callback = callback;
+        FCKDialog.OpenDialog("selectSupply", "选择厂商", url, 800, 650, arguments, window);
+    } else {
+        FCKDialog.OpenDialog("selectSupply", "选择厂商", url, 800, 650, arguments, window);
+    }
+}
+</script>
+    #end
+<input type="hidden" name="$supplyIdField" value="$supplyId"/><input type="text" name="${supplyIdField}Name" value="$supplyName" readonly/><img src="../images/icon_supply.gif" width="34" height="21" align="absmiddle" onclick="javascript:showSupplyDialog('$supplyType'#if($callbackFunction != ""), $callbackFunction#end);" alt="点击选择生产厂商">
+#end
+
+#**
+ * 带回调函数的供应商界面弹出组件（仅包含javascript函数）
+ * $supplyType 供应商类型
+ * $callback 回调函数
+ * $url URL地址
+*#
+#macro(setSupplyModelParameter $supplyType $callback $url)
+<script language="javascript">
+var url = "#if($url == "")../misSetting/supplySelectModel.do?supplyType=$supplyType#else$url#end";
+setSupplyDialogParam(url, "800px", "650px", $callback);
+</script>
+#end
+
+#**
+ * 生成选择供应商组件的innerHTML代码
+ * $size 显示供应商名称的text域长度
+ * $quote innerHTML代码是否需要用引号扩起
+ * $script script处理函数
+*#
+#macro(selectSupplyInnerHTML $size $quote $idField $supplyId $supplyName $script)
+    #if($size.indexOf("width") >= 0)
+        #set($style = $size)
+    #end
+    #if($idField == "")
+        #set($supplyIdField = "supplyId")
+        #set($supplyNameField = "supplyName")
+    #else
+        #set($supplyIdField = $idField)
+        #set($supplyNameField = $idField + "Name")
+    #end
+    #if($quote != "")
+'<input type="hidden" name="$supplyIdField" value="$supplyId"><input type="text" name="$supplyNameField" #if($style)style="$style"#else size="$size"#end  value="$supplyName" readonly/><img src="../images/icon_supply.gif" width="34" height="21" align="absmiddle" onclick="javascript:#if($script == "")supplyModalDialogCallback(this)#else$script#end;" alt="点击选择生产厂商">';
+    #else
+<input type="hidden" name="$supplyIdField" value="$supplyId"><input type="text" name="$supplyNameField" #if($style)style="$style"#else size="$size"#end value="$supplyName" readonly/><img src="../images/icon_supply.gif" width="34" height="21" align="absmiddle" onclick="javascript:#if($script == "")supplyModalDialogCallback(this)#else$script#end;" alt="点击选择生产厂商">
+    #end
+#end
+
+#** 以下宏为解析vm模板使用 *#
+#macro(tableCellCss $index)
+   #if($index % 2 == 0)
+       #set($css = "tabledata")
+   #else
+       #set($css = "tabledata1")
+   #end
+   $css
+#end
+
+#macro(inputField $cell $datamap)#set($__fieldFile="fields/input/${cell.type}.vm")#parse($__fieldFile)#end
+
+#macro(viewInputField $cell $datamap)#set($__fieldFile="fields/viewinput/${cell.type}.vm")#parse($__fieldFile)#end
+
+#macro(viewField $cell $datamap)#set($__fieldFile="fields/view/${cell.type}.vm")#parse($__fieldFile)#end
+
+#macro(singleQuotes)'#end
+#macro(buildObjectStr $fieldList $datamap)
+{
+#foreach($afield in $fieldList)
+${afield.title}:#htmlEscape("#singleQuotes()#if('text' == ${afield.type})$!{datamap.get(${afield.field})}#elseif('singleselect' == ${afield.type})#lookUpDict(${afield.dictionary} ${datamap.get(${afield.field})})#{else}0#end#singleQuotes()"),
+#end
+___end:0
+}
+#end
+
+#macro(viewSelectField $cell $datamap $fieldList)
+#if('radio' == ${cell.type})
+<input type="radio" name="$!{cell.dataname}" $!{cell.datakey}="#buildObjectStr($fieldList $datamap)" #if(${cell.onclick})onclick="${cell.onclick}"#end />
+#elseif('checkbox' == ${cell.type})
+<input type="checkbox" name="$!{cell.dataname}" $!{cell.datakey}="#buildObjectStr($fieldList $datamap)" />
+#else
+#viewField($cell $datamap)
+#end
+#end
+
+#macro(buttonUrl $cell $datamap)
+#if(${cell.param})
+#set($temp = [])
+#foreach($p in ${cell.param})
+#set($none=${temp.add(${datamap.get($p)})})
+#end
+${HELPER_BEAN.format(${cell.onclick}, ${temp})}#else
+${cell.onclick}#end
+#end
+
+#macro(buttonField $cell $class $datamap)
+    #if(${cell.hiddenParam})
+        #hiddenButtonField($cell $class $datamap)
+    #else
+        #if(!${cell.notShow})
+            #if('button' == ${cell.type})
+                &nbsp;<input type="button" class="$class" value="${cell.title}" $!{cell.attributes} onclick="#buttonUrl($cell $datamap)" $!{cell.disabled}/>
+            #elseif('imgButton' == ${cell.type})
+                &nbsp;<button class="q-button"  onclick="#buttonUrl($cell $datamap)" ><img src="${cell.src}"> ${cell.title}</button>
+               ## &nbsp;<img src="${cell.src}" title="${cell.title}" onclick="#buttonUrl($cell $datamap)" style="cursor:pointer" $!{cell.attributes}/>
+            #elseif('link' == ${cell.type})
+                &nbsp;<a href="#buttonUrl($cell $datamap)">${cell.title}</a>
+            #elseif('macro' == ${cell.type})
+                &nbsp;$!{cell.data}
+            #end
+        #end
+    #end
+#end
+
+#macro(validatorRange $validator $cell)
+#if(${cell.rangecheck})
+#foreach($rc in ${cell.rangecheck})
+${validator}.addRangeCheckPoint("$!{cell.field}", "$!{cell.title}", "$!{rc.type}", "$!{rc.rangestart}", "$!{rc.rangeend}");
+#end
+#end
+#end
+
+#macro(validatorNormal $validator $cell)
+#if(${cell.normalcheck})
+    ${validator}.addNormalCheckPoint("$!{cell.field}", "$!{cell.title}", "$!{cell.normalcheck}");
+    #if("${cell.type}" == "daterange")
+        ${validator}.addNormalCheckPoint("$!{cell.field2}", "$!{cell.title}", "$!{cell.normalcheck}");
+    #end
+#end
+#end
+
+
+#**mcj 3008-3-31
+ * hiddenButtonField
+ *
+ * 根据按钮隐藏条件显示按钮
+ *
+ * @param hiddenParam  隐藏条件
+ * @param hiddenCondition  隐藏条件组合表达式
+ * @param cell 按钮对象
+ * @param class 按钮样式
+ * @param datamaphid form里数据集
+ *
+*#
+#macro(hiddenButtonField $cell $class $datamaphid)
+#set($temphi = [])
+#foreach($pp in ${cell.hiddenParam})
+    #set($nonehi=${temphi.add(${datamaphid.get($pp)})})
+#end
+#set($abc_hi='#set($_P_P=' + "${HELPER_BEAN.format(${cell.hiddenCondition}, ${temphi})}" + ")")
+## use new method in current version of velocity
+##${render.eval($abc_hi)}
+#evaluate($abc_hi)
+#if($_P_P)
+    #if('button' == ${cell.type})
+        &nbsp;<input type="button" class="$class" value="${cell.title}" $!{cell.attributes} onclick="#buttonUrl($cell $datamaphid)" $!{cell.disabled}/>
+    #elseif('imgButton' == ${cell.type})
+        &nbsp;<img src="${cell.src}" title="${cell.title}" onclick="#buttonUrl($cell $datamaphid)" $!{cell.attributes} style="cursor:pointer"/>
+    #elseif('link' == ${cell.type})
+        &nbsp;<a href="#buttonUrl($cell $datamaphid)">${cell.title}</a>
+    #elseif('macro' == ${cell.type})
+        &nbsp;$!{cell.data}
+    #end
+#end
+#end
+
+#**
+ * conditionView
+ *
+ * 根据按钮隐藏条件显示文本内容
+ *
+ * @param cell 对象
+ * @param datamaphid form里数据集
+ *
+*#
+#macro(conditionView $cell $datamaphid)
+    #foreach($condition in ${cell.titlecondition})
+    #set($temphi = [])
+    #foreach($pp in ${condition.param})
+        #set($nonehi=${temphi.add(${datamaphid.get($pp)})})
+    #end
+    #set($abc_hi='#set($_P_P=' + "${HELPER_BEAN.format(${condition.condition}, ${temphi})}" + ")")
+    ## use new method in current version of velocity
+    ##${render.eval($abc_hi)}
+    #evaluate($abc_hi)
+    #if($_P_P)
+        ${condition.title}
+    #end
+    #end
+#end
+
+#**
+ * 从int值获取Long值
+ * @param data int值
+ *
+*#
+#macro(intToLong $data $longData)
+    #if($data)
+        ##set($tmp =${HELPER_HTMLHELPER.intToLong($data)})
+        #set($tmp = '#set($'+${longData}+' = ' + ${HELPER_HTMLHELPER.intToLong($data)} + ')')
+        #evaluate($tmp)
+    #end
+#end
+
+
+#**
+*限制表单区域最多可以输入的字符串长度
+*maxLength 最大字符串长度，多个用分割符 ， 分开
+*editName 表单编辑名称 ，多个用分割符 ， 分开
+*message 提示信息 ，多个用分割符 ， 分开
+*#
+#macro(maxstrlength $maxLength $editName $message)
+<script>
+function checkLength() {
+    var arrLen = "$maxLength".split(",");
+    var arrEditName = "$editName".split(",");
+    var arrMessage = "$message".split(",");
+    for(var i=0,len=arrEditName.length;i<len;i++){
+       var editObj = document.getElementById(arrEditName[i]);
+       var maxLen = arrLen[i];
+       var mes = arrMessage[i];
+       if (editObj.value.length > maxLen){
+           alert(mes+"不能超过"+maxLen+"个字符");
+           editObj.focus();
+           return false;
+       }
+    }
+    return true;
+}
+</script>
+#end
+
+#macro(notePrint $printViewUrl)
+<script language="javascript">
+function printNote() {
+    var theUrl = "$printViewUrl";
+    var customValue = document.getElementById('noteContent').innerHTML;
+    FCKDialog.OpenDialog("selectNextTransactorForm", "打印预览", theUrl, 800, 670, customValue, window);
+}
+</script>
+<table width="640" border="0" cellpadding="0" cellspacing="1" class="none_line2">
+  <tr><td align="right"><input type="button" class="input_style" value="打印预览" onclick="javascript:return printNote();"/></td></tr>
+</table>
+#end
+
+ 

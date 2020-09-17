@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body class="white-bg">
+<div class="layui-content-wrapper overflow-y-h">
+    <!-- 表单 开始 -->
+    <form id="editForm" class="layui-form full-scroll p-b-62" style="height: calc(100% - 70px);">
+        #formHiddenInput("orderGroupId" "$!orderGroup.orderGroupId" "")
+        <div class="layui-form-item p-t-sm">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()组套名称</label>
+                <div class="layui-input-inline">
+                    #formTextInput("orderGroupName" "#htmlEscape($!orderGroup.orderGroupName)" "lay-verify='required' maxlength='40' class='layui-input'")
+                </div>
+            </div>
+
+<!--             <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()医嘱分类</label>
+                <div class="layui-input-inline">
+                    #formSingleSelectFirstNone("orderGroupType" "$!orderGroupType" $!dicData.dicDoctorOrderType "lay-search='' " "")
+                </div>
+            </div> -->
+                <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()项目类型</label>
+                <div class="layui-input-inline">
+                    <!-- #formSingleSelectFirstNone("doctorOrderType" "$!doctorOrderType" $!dicData.dicDoctorOrderType "lay-search='' " "") -->
+                  #formSingleSelectFirstNone("doctorOrderType" "${CONST.AppConstants.ORDER_TYPE_WTCM_MEDICINE}" $!dicData.dicDoctorOrderType "lay-search='' " "")
+                    
+                </div>
+            </div>
+         
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">检验单</label>
+                <div class="layui-input-inline">
+                    #formHiddenInput("lisSpecimenGroup" "" "id='lisSpecimenGroup' class='layui-input'")
+                    #formTextInput("" "" "id='lisGroup' class='layui-input' readOnly")
+                </div>
+            </div>
+
+            <div class="layui-inline">
+                <label class="layui-form-label">排序号</label>
+                <div class="layui-input-inline">
+                    #formIntZeroInput("sort" "$!orderGroup.sort" "maxlength='5' class='layui-input'")
+                </div>
+            </div>
+
+            <div class="layui-inline">
+                <div class="layui-input-inline m-l-sm p-b-sm" style="width: 250px;">
+                    #if("$!orderGroup.lisFlag" == "1")#set($lisFlag = "checked")#end
+                    #if("$!orderGroup.commonMedicineFlag" == "1")#set($medicineFlag = "checked")#end
+                    #formSimpleCheckbox("commonMedicineFlag" "1" "" "$!medicineFlag id='commonMedicineFlag' lay-skin='primary' title='常用药' lay-filter='commonMedicineFlag'" "")
+                    #formSimpleCheckbox("lisFlag" "1" "" "$!lisFlag id='lisFlag' lay-skin='primary' title='明细项可使用' lay-filter='lisFlag'" "")
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">#requiredTag()所有者</label>
+                <div class="layui-input-inline">
+            #formSingleSelectFirstNone("orderGroupClassify" "${CONST.AppConstants.ORDER_CLASSIFY_LONG}" $!dicData.dicBelongSysType "lay-search='' " "")                
+                </div>
+            </div>
+            <script id="exeDepTpl" type="text/html">
+                <div class="layui-inline exeDep" >
+                    <label class="layui-form-label">#requiredTag()执行科室</label>
+                    <div class="layui-input-inline">
+                        #formSelectOrgForList("exeOfficeId" "$!orderGroup.exeOfficeId" $!deptList "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId'" "执行科室")
+                    </div>
+                </div>
+            </script>
+        </div>
+
+        <div class="layui-form-item">
+            <label class="layui-form-label">备注</label>
+            <div class="layui-input-inline" style="width: 78%">
+                #formTextarea("remark" "#htmlEscape($!orderGroup.remark)" "maxlength='50' class='layui-textarea' rows='2'")
+            </div>
+        </div>
+        <!-- 表单 结束 -->
+        <div class="tool-bottom-fixed">
+            <button class="layui-btn layui-btn-sm" id="btn_save" lay-submit lay-filter="btn_save" type="button" operate-type="0"> 保 存  </button>
+        </div>
+    </form>
+</div>
+ </body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var BELONGS_OFFICE = "${CONST.AppConstants.BELONGS_OFFICE}";
+layui.use(['form'], function(){
+    var form = layui.form;
+    form.on('checkbox(commonMedicineFlag)', function(data){
+        $('#commonMedicineFlag').prop('checked', data.elem.checked);
+    });
+    form.on('checkbox(lisFlag)', function(data){
+        $('#lisFlag').prop('checked', data.elem.checked);
+    });
+    form.on('select(orderGroupClassify)', function(data){
+        chageExeDep(data.value);
+    });
+
+    //修改执行科室
+    function chageExeDep(exeOfficeId){
+        if(exeOfficeId == BELONGS_OFFICE){
+            $('#exeDepTpl').after(function () {
+                return $(this).html();
+            });
+            form.render();
+        } else {
+            $('.exeDep').remove();
+        }
+    }
+
+    chageExeDep($('#orderGroupClassify option:selected').val());
+
+    form.on('submit(btn_save)', function(data){
+        if (parent.selectOrderData && parent.selectOrderData.length > 0) {
+            var orderItems = [];
+            $(parent.selectOrderData).each(function (i, v){
+                orderItems.push({
+                    lisFlag: (v.lisFlag ? v.lisFlag : '0'),
+                    examFlag: (v.examFlag ? v.examFlag : '0'),
+                    surgeryFlag: (v.surgeryFlag ? v.surgeryFlag : '0'),
+                    medicineFlag: (v.medicineFlag ? v.medicineFlag : '0'),
+                    remark: v.remark,
+                    dosage: v.dosage,
+                    dosageUnit: v.dosageUnit,
+                    usageQuantity: v.usageQuantity,
+                    doseWayCode: v.doseWayCode,
+                    firstDayDosage: v.firstDayDosage,
+                    pharmacyFreqId: v.pharmacyFreqId,
+                    orderGroupNo: v.orderGroupNo,
+                    orderName: v.orderName,
+                    doctorOrderType: v.doctorOrderType,
+                    lisSpecimenId: v.lisSpecimenId,
+                    exeOfficeId: v.exeOfficeId,
+                    medicalTechFlag: v.medicalTechFlag,
+                    medicineId: v.medicineId,
+                    chargeItemId: v.chargeItemId
+                });
+            });
+            data.field.itemJsonData = JSON.stringify(orderItems);
+        }
+        common.requestServer(contextPath + '/bas/saveBasOrderGroup.jo', data.field, function (result){
+            if (result.code == "0") {
+                common.msg("保存成功。", 1, function (){
+                    $('#btn_save').addClass('layui-btn-disabled');
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index); 
+                });
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+
+    // 选中检验分组
+    $('#lisGroup').click(function (){
+        common.open(contextPath + '/basDic/selectBasDic.do?dicTypeId=36&valid=true', false, {area:['40%','90%'], maxmin: false});
+    });
+});
+// 选中检验分组回掉函数
+function selectBasDicCall(data) {
+    $('#lisGroup').val(data.name);
+    $('#lisSpecimenGroup').val(data.code);
+}
+</script>
+</html>

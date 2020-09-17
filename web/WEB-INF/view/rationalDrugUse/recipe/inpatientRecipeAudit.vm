@@ -1,0 +1,71 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>处方药物审核结果</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        #audit-content{
+            padding: 10px;
+        }
+    </style>
+</head>
+
+<body class="white-bg">
+<form class="layui-form">
+    <div id="title" class="title" style="font-size: 24px; text-align: center;"></div>
+    <!-- 表单 开始 -->
+    <div id="audit-content" class="table-content">
+
+    </div>
+    <!-- 表单 结束 -->
+##    <div class="tool-bottom-fixed">
+##        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">确认保存</button>
+##        <button type="button" id="btn_return_edit" class="layui-btn layui-btn-sm layui-btn-primary">返回修改</button>
+##    </div>
+</form>
+</body>
+    #parse("./rationalDrugUse/recipe/nh_mmp.engine.js.vm")
+    #parse("./rationalDrugUse/recipe/inpatientRecipeAudit.js.vm")
+<script type="text/javascript">
+    var xml = '${result}'
+    var engineHOST = "http://139.159.183.129:51203/web/engine"; // 服务器审核地址
+    // 审核XML组织由HIS自身组织
+    var xml2 = "<root><patient><presDatetime>2019-07-25 17:52:04</presDatetime><presSource>门诊</presSource><department></department><name>张三</name><patientNo>888888</patientNo><presNo>1563270724382</presNo><sex>男</sex><address>北京市朝阳区</address><age>20</age><height>170cm</height><weight>60kg</weight><birthWeight>3000g</birthWeight><pregnancy>否</pregnancy><breastFeeding>否</breastFeeding><dialysis>否</dialysis><diagnose></diagnose><mainDiagnose></mainDiagnose><scr>80</scr><allergyList></allergyList><docName>蒙医生</docName><docTitle></docTitle><totalAmount></totalAmount><payType>自费</payType></patient><operations><operation><operationName></operationName><incisionType></incisionType><operationStartTime>2019-07-16</operationStartTime><operationEndTime>2019-07-16</operationEndTime></operation></operations><prescriptions><prescription><groupNo>1</groupNo><type></type><startTime>2019-07-16</startTime><drug>头孢拉定胶囊</drug><drugName>头孢拉定胶囊</drugName><saltName></saltName><manufacturer>杏辉天力(杭州)药业有限公司</manufacturer><prepForm></prepForm><specification>0.25g</specification><quantity>1</quantity><adminDose>1g</adminDose><adminRoute>静脉注射</adminRoute><adminFrequency>1次/天</adminFrequency><adminGoal></adminGoal><adminMethod></adminMethod><continueDays></continueDays><docTitle></docTitle><comment></comment></prescription></prescriptions></root>";
+
+
+    function postXML(){
+        runxxxxx(engineHOST, xml2, callback);
+    }
+
+    // 接收返回消息后续由his来处理
+    // saveOrEdit节点下：0表示返回修改，1表示继续保存
+    function callback(data){
+
+        var saveOrEdit = $(data).children('saveOrEdit').text();
+
+         if (saveOrEdit == 0) {
+             parent.window.location.reload();
+             var index = parent.layer.getFrameIndex(window.name);
+             parent.layer.close(index);
+         } else {
+              parent.common.requestServer('$contextPath/rationalDrugUse/inpatientRecipeApproved.jo', {orderGroupNos: '$!orderGroupNos'}, function (result) {
+                  if (result.code == "0") {
+                      parent.common.alertCall("保存成功。", 1, function () {
+                          parent.window.location.reload();
+                          var index = parent.layer.getFrameIndex(window.name);
+                          parent.layer.close(index);
+                      });
+                  } else {
+                      parent.common.alert(result.msg, 0);
+                  }
+              });
+         }
+    }
+
+    postXML();
+</script>
+</html>

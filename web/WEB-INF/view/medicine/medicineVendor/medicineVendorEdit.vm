@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+
+        .label-red {
+            color: #ff4500 !important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" lay-filter="" id="medicineVendorForm" style="padding: 20px 30px 0 0;">
+    #formHiddenInput("medicineVendorId" "$!{medicineVendor.medicineVendorId}" " id='medicineVendorId' ")
+    <div class="layui-form-item">
+        <label class="layui-form-label">#requiredTag()供应商名称</label>
+        <div class="layui-input-block">
+            #formTextInput("medicineVendorName" "#htmlEscape($!{medicineVendor.medicineVendorName})" "
+            id='medicineVendorName' lay-verify='required' maxlength='200' autocomplete='off'  class='layui-input'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">名称缩写</label>
+            <div class="layui-input-inline">#formTextInput("medicineVendorAbb"
+                "#htmlEscape($!{medicineVendor.medicineVendorAbb})" " id='medicineVendorAbb' maxlength='60'
+                autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        #if($!{vendorFlag})
+        #formHiddenInput("vendorFlag" "$!{vendorFlag}" " id='vendorFlag' ")
+        #else
+        <div class="layui-inline">
+            <label class="layui-form-label">厂家类型</label>
+            <div class="layui-input-inline">#formRadioGroup("vendorFlag" "$!{medicineVendor.vendorFlag}"
+                ${dicData.dicVendorFlag} "")
+            </div>
+        </div>
+        #end
+        <div class="layui-inline">
+            <label class="layui-form-label">开户银行</label>
+            <div class="layui-input-inline">#formTextInput("depositBank" "#htmlEscape($!{medicineVendor.depositBank})" "
+                 id='depositBank' maxlength='64' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">银行账号</label>
+            <div class="layui-input-inline">#formTextInput("bankAccount" "#htmlEscape($!{medicineVendor.bankAccount})" "
+                 id='bankAccount' maxlength='32' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">联系人</label>
+            <div class="layui-input-inline">#formTextInput("linkman" "#htmlEscape($!{medicineVendor.linkman})" "
+                id='linkman' maxlength='16' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">联系电话</label>
+            <div class="layui-input-inline">#formTextInput("linkmanPhone" "#htmlEscape($!{medicineVendor.linkmanPhone})"
+                " id='linkmanPhone' maxlength='16' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">Email</label>
+            <div class="layui-input-inline">#formTextInput("email" "#htmlEscape($!{medicineVendor.email})" " id='email'
+                maxlength='32' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label label-red">#requiredTag()使用限制</label>
+            <div class="layui-input-inline">
+                <!--默认为公用-->
+                #if(!$!{medicineVendor.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} == $!{medicineVendor.hospitalId})
+                #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                #else
+                #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                #end
+                #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary' class='layui-input' check-msg='请选择使用限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">地址</label>
+        <div class="layui-input-block">
+            #formTextInput("vendorAddr" "#htmlEscape($!{medicineVendor.vendorAddr})" " id='vendorAddr' maxlength='128'
+            autocomplete='off' class='layui-input'")
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-block">
+            #formTextInput("remark" "#htmlEscape($!{medicineVendor.remark})" " id='remark' maxlength='64'
+            autocomplete='off' class='layui-input'")
+        </div>
+    </div>
+    #if(${medicineVendor})
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-block">#formRadioGroup("validFlag" "$!{medicineVendor.validFlag}"
+                ${dicData.dicYesNo} "")
+            </div>
+        </div>
+    </div>
+    #end
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+</form>
+#parse("./medicine/medicineVendor/medicineVendorEdit.js.vm")
+
+</body>
+</html>

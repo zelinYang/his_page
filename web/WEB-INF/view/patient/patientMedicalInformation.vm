@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .iframeTab {
+            width: 100%;
+            height: calc(100% - 5px);
+        }
+
+        /*.divTab {*/
+        /*    height: calc(100% - 40px);*/
+        /*}*/
+
+        .layui-tab-content {
+            padding: 0;
+        }
+    </style>
+</head>
+<body class="white-bg">
+<div class="layui-tab layui-tab-card full-height">
+    <ul id="tab_header" class="layui-tab-title">
+
+        <li class="layui-this" target-id="personalDiagnose">诊断</li>
+        <li target-id="order">医嘱查看</li>
+        <li target-id="pacse">检 查</li>
+        <li target-id="lis">检 验</li>
+        <li target-id="courseOfDisease">病程记录</li>
+        <li target-id="conversation" >知情告知</li>
+        <li target-id="surgery" >治疗手术资料</li>
+        <li target-id="operate" >操作记录</li>
+        <li target-id="consultation">会诊记录</li>
+        <li target-id="leaveHospital">出院小结</li>
+        <li target-id="outpatient">门(急)诊病历</li>
+    </ul>
+    <div class="layui-tab-content full-height">
+        <div id="personalDiagnose" class="layui-tab-item layui-show full-height-scroll divTab">
+            <iframe src="$!contextPath/inpatient/diagnosisEnter.do?saveBtn=1&inhospitalId=$!inhospitalId" scrolling="no"
+                    frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="order" class="layui-tab-item full-height-scroll divTab">
+            <!--<iframe src="../inpatient/inpatientOrder.do?inhospitalId=$!inhospitalId&patientId=$!patientId"
+                    scrolling="no" frameborder="0" class="full-height iframeTab"></iframe>-->
+            <iframe src="../inpatient/inpatientOrderList.do?inhospitalId=$!inhospitalId&patientId=$!patientId"
+                    scrolling="no" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="pacse" class="layui-tab-item  full-height-scroll divTab">
+            <iframe src="../tech/inpatientOrderPacsApplyList.do?inhospitalId=$!inhospitalId&patientId=$!patientId&doctorOrderType=02"
+                    scrolling="no" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="lis" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../tech/inpatientOrderLisApplyList.do?inhospitalId=$!inhospitalId&patientId=$!patientId&doctorOrderType=03"
+                    scrolling="no" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="courseOfDisease" class="layui-tab-item full-height-scroll divTab">
+            <!-- <iframe src="../emr/1012/getPatientEmrByDateGroup.do?emrTlpClassifyId=9&inhospitalId=$!inhospitalId&patientId=$!patientId&view=patient/emr/commonEmrShowList&emrProperty=2" scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe> -->
+            <!--<iframe src="../emr/getPatientEmrByDateGroupPage.do?patientId=$!patientId&inhospitalId=$!inhospitalId"
+                    scrolling="yes" frameborder="0" class="full-height iframeTab"></iframe>-->
+            <!--<iframe src="../emr/1003/getPatientEmrByDateGroup.do?emrTlpClassifyId=87&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrProperty=$!{CONST.AppConstants.EMR_PROPERTY_INPATIENT}&view=patient/emr/commonEmrShowList"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>-->
+            <iframe src="../emr/commonEmrShowMain.do?patientId=$!{patientId}&inhospitalId=$!{inhospitalId}"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="conversation" class="layui-tab-item full-height-scroll divTab">
+            <!--<iframe src="../emr/3712/getPatientEmrByDateGroup.do?emrTlpClassifyId=13&inhospitalId=$!inhospitalId&patientId=$!patientId&view=patient/emr/commonEmrShowList"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>-->
+            <iframe src="../emr/commonEmrShowMain.do?patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrTlpClassifyId=66"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="surgery" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../surgery/surgeryApplyInfoList.do?inhospitalId=$!inhospitalId&patientId=$!patientId&showBtn=0"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="operate" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../emr/commonEmrShowMain.do?patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrTlpClassifyId=67"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="consultation" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../emr/commonEmrShowMain.do?patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrTlpClassifyId=16"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="leaveHospital" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&i&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrTlpId=139"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+        <div id="outpatient" class="layui-tab-item full-height-scroll divTab">
+            <iframe src="../outpatient/outpatientRecord.do?inhospitalId=$!inhospitalId&patientId=$!patientId"
+                    scrolling="no" frameborder="0" frameborder="0" class="full-height iframeTab"></iframe>
+        </div>
+    </div>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+    layui.use(['element'], function () {
+        var element = layui.element;
+    });
+</script>
+</html>

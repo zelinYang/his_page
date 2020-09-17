@@ -1,0 +1,125 @@
+<script type="text/javascript">
+    var initLayout;
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        dtree: 'modules/dtree/dtree'
+    }).use(['element', 'dtree'], function(){
+        var element = layui.element;
+        
+        
+        //加载左侧检验分类
+        loadTree = function () {
+           var zNodesJson = '$!outpatientOfficeTreeList';
+           if (!zNodesJson) {
+               return false;
+           }
+           var zNodes = JSON.parse('$!outpatientOfficeTreeList');
+           zTree_Menu = $.fn.zTree.init($("#treeDemo"), setting, zNodes);
+        }
+        
+        function showIconForTree(treeId, treeNode) {
+            return !treeNode.isParent;
+        }
+
+        
+        /**zTree 配置**/
+        var setting = {
+                data: {key: {title: "t"},simpleData: {enable: true}},
+            view: {fontCss: getFontCss,showLine: false,showTitle: false,showIcon: showIconForTree},
+            callback: {
+                onClick: function(event, treeId, treeNode) { 
+                       //树节点点击事件-渲染右侧检验明细列表
+                       var emrIframe = $('#emrIframe');
+                       var src = emrIframe.attr('src'); 
+                       var param = {emrTlpId:222,registerId: treeNode.registerId, patientId: treeNode.patientId }
+                       var targetSrc = emrIframe.attr('targetSrc') + common.objToParamStr(param);
+                       $('.emr-title').html(treeNode.desc);
+                       if (!src) {
+                           emrIframe.attr('src',targetSrc);
+                       } else {
+                           if (src != targetSrc) {
+                               emrIframe.attr('src',targetSrc);
+                           }
+                       }
+                   }
+            }
+        };
+
+        function getFontCss(treeId, treeNode) {
+            return (!!treeNode.highlight) ? {color:"#A60000", "font-weight":"bold"} : {color:"#333", "font-weight":"normal"};
+        }
+        /**zTree 配置**/
+        
+        var myLayout ;
+        initLayout = function() {
+            var interval =  setInterval(function() {
+                if ($('#container').height()>0) {
+                    myLayout=  $('#container').layout({
+                        west__size: 220//pane的大小 
+                       ,spacing_closed:1//关闭时边框的间隙  
+                       ,spacing_open:5//边框的间隙  
+                       ,maskIframesOnResize:".resizeiframe"
+                    });
+                    clearInterval(interval );//停止
+                }
+            }, 10);
+        }
+       
+        //切换收缩、伸展 图标
+       function toggleIcon(elem) {
+           if ($(elem).hasClass('layui-icon-prev')) {
+               $(elem).removeClass('layui-icon-prev');
+               $(elem).addClass('layui-icon-next');
+           } else {
+               $(elem).removeClass('layui-icon-next');
+               $(elem).addClass('layui-icon-prev');
+           }
+       }
+       // 调用布局函数 
+       //myLayout.sizePane("west", 300); 
+       $('.expend').click(function() {
+           myLayout.toggle("west"); 
+           toggleIcon(this);
+       });  
+        
+        
+       function loadIframe(elem) {
+           var emrIframe = $(elem).find('iframe');
+           var src = emrIframe.attr('src');
+           if (!src) {
+              var src = emrIframe.attr('targetSrc');
+              emrIframe.attr('src', src);
+           }
+       }
+       
+       
+       
+        
+       
+       
+       function patientEmrShow(pEmrRow) {
+           var param ={
+                view: 'patient/emr/commonEmrShow'
+               ,showBtn: '0'
+               ,registerId: pEmrRow.registerId
+               ,emrTlpId: pEmrRow.emrTlpId
+               ,patientHospitalEmrId: pEmrRow.patientHospitalEmrId
+               ,patientId: pEmrRow.patientId
+           }
+           var url = '$contextPath/emr/commonEmrTemplate.do'+common.objToParamStr(param);
+           parent.tabAddOutNav('medicalDocEmrEdit'+ pEmrRow.emrTlpId,pEmrRow.emrTlpName+'(文书)',url);
+       }
+       
+    
+       //页面初始化
+       $(document).ready(function() {
+           initLayout();
+           loadTree();
+           $('.layui-colla-item').click(function() {
+               loadIframe(this);
+           });
+       });
+   
+   });//layui.use
+</script>

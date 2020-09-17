@@ -1,0 +1,85 @@
+<script>
+var tabAdd;
+var outMainWin = parent; //门诊医生主窗口页面对象
+var outMaintenanceTab = {
+        layFilter:'outMaintenanceNav'
+}
+
+layui.use(['element', 'layer'], function(){
+    var element = layui.element; 
+    var layer = layui.layer;
+    element.render();
+     
+    
+    /* 切换到指定Tab项 */
+    tabChange = function (filter, layid) {
+        element.tabChange(filter, layid);
+    }
+    
+    //监听导航菜单点击事件
+    element.on('tab(outMaintenanceNav)', function(data){ 
+        var layId = $(this).attr('lay-id');
+        //如果layui-tab-item 已有url( 动态的url)
+        var layTabHref = $('.layui-tab-title li[lay-id='+layId+']').attr('lay-tab-href');
+        var url =  (layTabHref ? layTabHref : outMaintenanceTab.menu[layId].url )   + common.objToParamStr(outMainWin.grobalModel);
+        var force = false;
+        reqIframePage(layId,url);
+    });
+    
+    //iframe请求页
+    function reqIframePage(layId,url,force) {
+      var destIframe = $('div[lay-id="'+layId+'"] iframe');
+      if(!destIframe.attr('src') || force) {
+          destIframe.attr('src',url);
+      }
+    }
+    
+    //动态添加tab
+    tabAdd = function(layId,tabTitle,url,force){
+        var layFilter = outMaintenanceTab.layFilter;
+        if (!layId) { //layId必填
+            console.log('layId必填');
+            return false;
+        } 
+        if (!tabTitle) { //tab的标题必填
+            console.log('tab的url必填');
+            return false;
+        } 
+        if (!url) { //tab的url必填
+            console.log('tab的url必填');
+            return false;
+        } 
+         
+        //去UL > LI 的对应 href 
+        var layTabHref = $('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href');
+        if (layTabHref) {
+            if (layTabHref != url) { //url不相同，删除后新建
+                element.tabDelete(layFilter, layId);
+            } else {
+                if (force) {//强制新建
+                    element.tabDelete(layFilter, layId);
+                }else {
+                    element.tabChange(layFilter,layId);  
+                    return; //返回
+                }
+            }
+        } 
+       
+        element.tabAdd(layFilter, {
+            title: tabTitle //用于演示
+           ,content: '<iframe src="' + url +'" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>'
+           ,id: layId 
+        })
+       
+        var outMaintenanceNav = $('.outMaintenanceNav');
+        outMaintenanceNav.find('.layui-tab-item').addClass('full-height');//添加100%高度
+        outMaintenanceNav.find('.layui-tab-title>li[lay-id='+layId+']').attr('lay-tab-href',url);
+        outMaintenanceNav.find('.layui-tab-title>li:last').trigger('click');
+        outMaintenanceNav.find('.layui-tab-content>div:last').attr('lay-id',layId);
+       //element.tabChange(mainTab.layFilter,layId);  
+    }
+});
+
+</script>
+
+ 

@@ -1,0 +1,138 @@
+<script>
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+  index: 'lib/index', //主入口模块
+}).use(['index','table', 'form','layer'], function(){
+      var form = layui.form, layer=layui.layer, table = layui.table, $ = layui.$;
+
+      //表列表
+      table.render({
+    	  limit:20,
+    	  page: true,
+    	  height: getTableHgt(),
+          request: {
+              pageName: 'pageNumber', //页码的参数名称，默认：page
+              limitName: 'pageSize' //每页数据量的参数名，默认：limit
+           },
+        elem: '#pharmacyFreqListGrid',
+        url: '../bas/basPharmacyFreqListData.jo',
+        cols: [[
+        	{type : 'numbers'}
+        	,{ field: 'pharmacyFreqName',title: '用药频次',align: 'center'}
+        	,{field: 'pharmacyFreqId',title: '用药频次代码', width: 110,align: 'center'}
+        	,{field: 'dayFreq', title: '每日次数', align: 'center'}
+        	,{field: 'weekFreq', title: '每周次数', align: 'center' }
+        	,{field: 'sort', title: '排序序号', align: 'center' }
+        	,{field: 'remark',title: '备注',align: 'center'}
+        	,{field: 'validFlag', title: '是否有效', unresize: true, templet: function(d){
+                     return '<input type="checkbox" name="validFlag" value="'+d.pharmacyFreqId+'" lay-skin="switch" lay-text="是|否" lay-filter="validFlag" '+ (d.validFlag == 1 ? 'checked' : '' )+'>';
+             		}
+                }
+        	,{title: '操作', width: 100, align:'center', fixed: 'right', toolbar: '#colstoolbar'}
+        ]]
+      });
+
+
+      //重置查询表单并刷新表格
+      $("#btn_refresh").click(function(){
+          setTimeout(function(){
+              $('#btn_query').click();
+              }, 50);
+      })
+
+      //监听数据搜索
+      form.on('submit(btn_query)', function(data){
+          var field = data.field;
+          //执行重载
+          table.reload('pharmacyFreqListGrid', {
+            where: field
+          });
+          return false;
+      });
+
+      //监听有无效操作
+      form.on('switch(validFlag)', function(obj){
+          var validFlag = (obj.elem.checked ? "1" : "0");
+          common.requestServer('../bas/basPharmacyFreqUpdateValidFlag.jo', {ids:  this.value, validFlag: validFlag}, function(result){
+               if (result.code == "0") {
+                   layer.msg('设置 '+dicYesNo[validFlag]+ ' 成功', {icon: 1});
+               }else{
+                   layer.msg('设置 '+dicYesNo[validFlag]+ ' 失败', {icon: 2});
+                   obj.elem.checked=!obj.elem.checked;
+                   form.render('checkbox');
+               }
+           });
+      });
+
+      	//监听工具条 编辑操作
+        table.on('tool(pharmacyFreqListGrid)', function(obj){
+          var data = obj.data;
+          switch(obj.event){
+          case 'edit':
+                var content='$contextPath' + '/bas/basPharmacyFreqEdit.do?pharmacyFreqId=' + data.pharmacyFreqId
+                var title='用药频次表'
+                 common.open(content, title, {area: ['700px', '80%'], btn:['保存']
+                 ,yes: function(index, layero){
+                     save(index, layero);
+                 }
+                 });
+            break;
+
+              case 'btn_show':
+                  var title='详情'
+                  var content='$contextPath' + '/bas/basPharmacyFreqShow.do?pharmacyFreqId=' + obj.data.pharmacyFreqId
+                  common.open(content, title, {area: ['700px', '80%']});
+                  break;
+          }
+        });
+
+
+        function save(index, layero){
+            var iframeWindow = window['layui-layer-iframe'+ index]
+            ,submitId = 'btn_save'
+            ,submit = layero.find('iframe').contents().find('#'+ submitId);
+            //监听提交
+            iframeWindow.layui.form.on('submit('+ submitId +')', function(data){
+
+                var url = contextPath +'/bas/saveBasPharmacyFreq.jo' , params = data.field, msg = "保存成功";
+                common.requestServerHandler(url, params, msg, function(result) {
+                    $('#btn_query').click();
+                    layer.close(index); //关闭弹层
+                })
+            });
+            submit.trigger('click');
+         }
+
+      //工具栏事件
+        $('*[lay-event]').click( function(e){
+              var othis = $(this)
+            events = othis.attr('lay-event');
+           switch(events){
+            case 'add':
+               var title='用药频次表'
+               var content='$contextPath/bas/basPharmacyFreqEdit.do'
+          	 common.open(content, title, {area: ['700px', '80%'],btn: ['保存']
+               ,yes: function(index, layero){
+                   save(index, layero);
+               }
+               });
+            break;
+          };
+        });
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 64);
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+        var height = getTableHgt();
+        table.reload('pharmacyFreqListGrid', {
+            height: height
+            });
+        })
+    });
+</script>

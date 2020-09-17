@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-col-xs12 full-height p-t-xs">
+        <form class="layui-form" action="">
+            #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+            #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+            #formHiddenInput("patientHospitalEmrId" "$!patientHospitalEmrId" "id='patientHospitalEmrId'")
+            <div class="layui-form-item search-term white-bg">
+                <div class="layui-inline m-l-lg">
+                    <label class="layui-form-label">记录模板</label>
+                    <div class="layui-input-inline">
+                        #formSelectEmrForList("emrTlpId" "$!emrTlpId" $!emrTlpList "class='layui-input' id='emrTlpId' lay-filter='emrTlpId'" "请选择病历模板")
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <!-- 电子病历容器 -->
+        <div class="layui-row white-bg full-height m-t-xs" style="height: calc(100% - 50px)">
+            <iframe src="" id="materialIframe" scrolling="no" frameborder="0" class="full-height" style="width: 100%;"></iframe>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form', 'element'], function(){
+    var form = layui.form;
+
+    form.on('select(emrTlpId)', function (data){
+        if (data.value) {loadEmr(data.value);}
+    });
+
+    // 加载病历
+    function loadEmr(emrTlpId) {
+        if (!$('#inhospitalId').val()) {
+            common.msg('住院流水号无效', 2, function (){});   
+            return ;
+        }
+        var params = "inhospitalId=" + $('#inhospitalId').val() + "&emrTlpId=" + emrTlpId + "&patientHospitalEmrId=" + $('#patientHospitalEmrId').val() + "&patientId=" + $('#patientId').val();
+        $('#materialIframe').attr('src', contextPath + '/patient/commonEmrTemplate.do?' + params);
+    }
+
+    // 默认加载已选择的病历，未选中取第一份电子病历
+    var firstEmrId = $('#emrTlpId').val() ? $('#emrTlpId').val() : $('#emrTlpId > option:first').next().val();
+    if (firstEmrId) {
+        $('#emrTlpId').val(firstEmrId);
+        form.render('select');
+        loadEmr(firstEmrId);
+    }
+});
+//初始化保存，一般用在病历数据对象新增时（修改不用调用），需要调用该方法
+function initBaseParams(minieditorDesign) {
+    var data = minieditorDesign.getBaseParams();
+    if (!data['InpatientTalkRecord'] || !data['InpatientTalkRecord'].id) {
+        minieditorDesign.addParams({InpatientTalkRecord:{inhospitalId: $('#inhospitalId').val(), patientId: $('#patientId').val(), emrTlpName: $('#emrTlpId > option:selected').attr('tlp-name')}});
+    }
+}
+</script>
+</html>

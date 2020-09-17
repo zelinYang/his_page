@@ -1,0 +1,274 @@
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'element', 'element', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, element = layui.element,
+            tableSelect = layui.tableSelect;
+        common.verify(form);
+
+        //根据医生获取医生诊查费列表
+        function getBasPostDoctorByUserId(userId) {
+            var basPostDoctor;
+            $.ajax({
+                type: "GET",
+                url: "../basPostDoctor/basPostDoctorList.jo?doctorId=" + userId,
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    basPostDoctors = result.data;
+                    if (basPostDoctors && basPostDoctors.length > 0) {
+                        basPostDoctor = basPostDoctors[0]
+                    }
+                }
+            });
+            return basPostDoctor;
+        }
+
+        $('#doctorName').webuiPopover({
+            width: 900,//医嘱名称内容propover 弹框参数
+            height: 350,
+            closeable: false,
+            padding: false,
+            type: 'iframe',
+            url: contextPath + '/bas/selectSingleOutpatientDoctor.do',
+            onShow: function (elem) {
+                var iframeWindow = elem.find('iframe').prop('contentWindow');
+                //重点2 jsonpCallback 公用子页面回调方法；如果在这里定义了这个方法，那么子页面就会调用这个方法
+                iframeWindow.jsonpCallback = function (data) {
+                    var basPostDoctor = getBasPostDoctorByUserId(data.userId) || {
+                        doctorName: data.name,
+                        doctorId: data.userId
+                    }
+                    //表单赋值
+                    form.val('basPostDoctorForm', basPostDoctor);
+                    reloadBasPostFee();
+                    reloadConsultingRoomDoctor();
+                    WebuiPopovers.hide('#doctorName');
+                };
+            }
+        });
+
+        //职称费选择
+        form.on('select(doctorPost)', function (data) {
+            reloadBasPostEmrSign();
+            reloadBasPostFee();
+        });
+
+        //加载病历签名
+        function reloadBasPostEmrSign() {
+            var doctorPost = $("#doctorPost").val();
+            common.requestServer(contextPath + '/bas/findBasPostEmrSign.jo?doctorPost= ' + doctorPost, function (result) {
+                var data = result.data;
+                if (result.code == '0') {
+                    $("#doctorSign").val(data.doctorSign);
+                    $("#doctorSignName").val(dicDoctorSignType[data.doctorSign] || '');
+                } else {
+                    $("#doctorSign").val('');
+                    $("#doctorSignName").val('');
+                }
+            })
+        }
+
+        //职称诊查费设置表列表
+        table.render({
+            elem: '#basPostFeeListGrid',
+            where: {'validFlag': YES_FLAG},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 250,
+            totalRow: true,
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'chargeName',
+                    title: '诊查费用名称'
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    totalRow: true,
+                    width: 60,
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    field: 'emergencyFeeFlag',
+                    title: '急诊收费',
+                    width: 80,
+                    templet: function (d) {
+                        return dicYesNo[d.emergencyFeeFlag] || '';
+                    }
+                }, {
+                    field: 'ageFeeFlag',
+                    title: '收费年龄段',
+                    width: 80,
+                    templet: function (d) {
+                        return dicAgeFeeFlag[d.ageFeeFlag] || '';
+                    }
+                }
+                ]], done: function (res) {
+            }
+        });
+
+
+        //加载职称费
+        function reloadBasPostFee() {
+            var doctorPost = $("#doctorPost").val();
+            table.reload('basPostFeeListGrid', {
+                url: doctorPost ? contextPath + '/bas/basPostFeeListData.jo?doctorPostCode=' + doctorPost : '', //接口
+            });
+        }
+
+        reloadBasPostFee();
+
+        //添加诊室按钮
+        function renderAdd() {
+            tableSelect.render({
+                elem: '#btn_add_consultingRoom',	//定义输入框input对象 必填
+                checkedKey: 'consultingRoomId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'roomName',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '诊室名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: $('#doctorId').val() ? contextPath + '/outpatient/consultingRoomListData.jo?doctorId=' + $('#doctorId').val() : '',
+                    data: [],
+                    cols: [[
+                        {type: 'checkbox'},
+                        {
+                            field: 'depId', title: '科室',
+                            templet: function (d) {
+                                return dicSysOrgName[d.depId] || d.depId
+                            }
+                        },
+                        {
+                            field: 'roomName',
+                            title: '诊室名称'
+                        }]]
+                }),
+                done: function (elem, result) {
+                    saveConsultingRoomDoctor(result.data);
+                }
+            })
+        }
+
+        //表格设置
+        table.render({
+            elem: '#consultingRoomDoctorListGrid',
+            data: [],
+            height: 'full-100',
+            cols: [[{
+                type: 'numbers',
+                title: '<button type="button" id="btn_add_consultingRoom" class="layui-btn layui-btn-xs layui-btn-normal layui-btn-disabled" lay-tips="选择诊室"><i class="layui-icon layui-icon-more"></i></button>'
+            }, {
+                field: 'officeOrgName',
+                title: '科室'
+            }, {
+                field: 'roomName',
+                title: '关联诊室'
+            }, {
+                title: '操作',
+                width: 60,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#delTpl'
+            }]], done: function () {
+                if ($('#doctorId').val()) {
+                    renderAdd();
+                    $("#btn_add_consultingRoom").removeClass('layui-btn-disabled');
+                } else {
+                    $("#btn_add_consultingRoom").click(function () {
+                        common.msg('请先选择医生', 0);
+                        return;
+                    }).addClass('layui-btn-disabled');
+                }
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(consultingRoomDoctorListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_delete':
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    common.requestServerHandler('$contextPath' + '/outpatient/delConsultingRoomDoctor.jo', {consultingRoomDoctorId: row.consultingRoomDoctorId}, "取消诊室关联成功")
+                    obj.del();
+                    break;
+            }
+        });
+        // 新增诊室按钮
+        $('#btn_add').click(function () {
+            var doctorId = $('#doctorId').val();
+            common.open('$contextPath' + '/outpatient/consultingRoomSimpleEdit.do?doctorId=' + doctorId, '新增诊室', {
+                area: ['80%', '80%']
+            })
+        })
+
+        //加载关联科室
+        function reloadConsultingRoomDoctor() {
+            var doctorId = $("#doctorId").val();
+            table.reload('consultingRoomDoctorListGrid', {url: doctorId ? contextPath + '/outpatient/consultingRoomDoctorPageData.jo?doctorId=' + doctorId : ''});
+        }
+
+        reloadConsultingRoomDoctor()
+
+        //保存医生关联诊室
+        function saveConsultingRoomDoctor(data) {
+            var doctorId = $("#doctorId").val();
+            var consultingRoomIds = $.map(data, function (item) {
+                return item.consultingRoomId
+            })
+            if (!doctorId || !consultingRoomIds.length) return;
+            var params = {
+                doctorId: doctorId,
+                consultingRoomIds: consultingRoomIds.join()
+            }
+            common.requestServer(contextPath + '/outpatient/saveConsultingRoomDoctor.jo', params, function (result) {
+                if (result.code == '0') {
+                    reloadConsultingRoomDoctor();
+                    common.msg("诊室关联成功", 1);
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        //提交表单
+        function saveBasPostDoctor() {
+            var basPostDoctorParams = common.serializeObject($('#basPostDoctorForm'))
+            common.requestServer(contextPath + '/bas/saveBasPostDoctor.jo', basPostDoctorParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasPostDoctor()
+            return false
+        })
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            reloadBasPostFee();
+        })
+    })
+</script>

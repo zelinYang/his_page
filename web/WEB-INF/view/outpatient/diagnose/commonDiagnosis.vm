@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>常用诊断</title> 
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+</head>  
+
+<body class="full-height white-bg table-width-full">
+    #formHiddenInput("doctorId" "$!{session.getAttribute('currentUser').userId}" "id='doctorId'")
+    #formHiddenInput("officeId" "$!{register.visitOfficeId}" "id='officeId'")
+    #formHiddenInput("hospitalId" "$!{session.getAttribute('currentUser').unitOrgId}" "id='hospitalId'")
+  <!-- 查询表单 -->
+  <form id="commonDiagnosis_queryForm" class="layui-form"> 
+    <div class="layui-form-item p-t-xs"> 
+         <div class="layui-inline m-l-lg">
+           <div class="layui-input-inline">
+             #formTextInput("keyWord" "" "class='layui-input' placeholder='诊断检索' ")
+           </div>
+         </div>
+         
+         <div class="layui-inline">
+           <div class="layui-input-inline m-l-lg wd-220" >
+             #formRadioGroup("diagnosisClassify" "1" ${dicData.dicBelongSysType} " lay-filter='diagnosisClassify' ")
+           </div>
+         </div>
+         
+         <button id="btn_query" class="layui-btn layui-btn-sm" type="button"><i class="layui-icon layui-icon-search"></i></button>
+         <button id="btn_import_outItem"   class="layui-btn layui-btn-sm" type="button">导入</button>
+    </div>
+  </form>
+ 
+  <!-- 数据表格 -->
+  <table id="commonDiagnosisTable" lay-filter="commonDiagnosisTable"></table>
+
+  #parse("./outpatient/diagnose/commonDiagnosis.js.vm")<!-- 页面js -->
+</body>
+</html>

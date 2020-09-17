@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./datacenter/datacenter.css.vm")
+    <style type="text/css">
+        .item-peolpe {
+            height: 60px;
+            font-size: 20px;
+            line-height: 60px;
+            text-align: center;
+        }
+
+        .exponent button {
+            width: 412px;
+            height: 180px;
+            padding-right: 30px;
+            border: 1px solid #d2d2d2
+        }
+
+        .module-area {
+            background-color: #ffffff;
+            border: 1px solid #d2d2d2;
+        }
+
+        .exponent button i {
+            line-height: 60px;
+            font-size: 40px;
+            position: relative;
+            float: left;
+            left: 20px;
+        }
+
+        .exponent-title {
+            position: relative;
+            right: 46px;
+            top: -85px;
+            font-weight: 700;
+            width: 50px;
+            font-size: 22px;
+            line-height: 20px;
+            color: #0e90d2;
+        }
+
+        .title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0e90d2;
+            margin-top: 10px;
+            margin-left: 21px;
+        }
+
+        .exponent .number {
+            font-size: 40px;
+            line-height: 40px;
+            text-align: left;
+            padding-left: 90px;
+            font-weight: 700;
+            color: #000;
+            padding-top: 10px;
+        }
+
+        .icon-size {
+            width: 60px;
+            height: 60px;
+            border-radius: 30px;
+        }
+
+        .bg-white {
+            background: #0089F9;
+        }
+
+        .bg-green {
+            background: #00C986;
+        }
+
+        .bg-orange {
+            background: #FF841F;
+        }
+
+        .bg-purple {
+            background: #D856CF;
+        }
+
+        .bg-blue {
+            background: blue;
+        }
+
+        .bg-yellow {
+            background: yellowgreen;
+        }
+
+        .bg-red {
+            background: red;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-fluid" style="height:calc(100% - 40px);">
+
+    <!-- 指标 -->
+    <div class="layui-row m-sm">
+        <div class="layui-col-xs3 exponent">
+            <button class="layui-btn layui-bg-white ">
+                <i class="icon iconfont icon-icon9001 bg-orange icon-size"></i>
+                <div class="">
+                    <p class="number">$!registerNum<!--$!outpatientNum--></p>
+                    <p class="exponent-title">| 门急诊人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 exponent">
+            <button class="layui-btn layui-bg-white">
+                <i class="icon iconfont icon-wenjian bg-purple icon-size"></i>
+                <div class="">
+                    <p class="number">$!averageOutpatientFee</p>
+                    <p class="exponent-title">| 门诊预约人次</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 exponent">
+            <button class="layui-btn layui-bg-white">
+                <i class="icon iconfont icon-24x24shoufeisvg bg-green icon-size"></i>
+                <div class="">
+                    <p class="number">$!averageOutpatientFee</p>
+                    <p class="exponent-title">| 门急诊均次费用</p>
+                </div>
+            </button>
+        </div>
+        <div class="layui-col-xs3 exponent">
+            <button class="layui-btn layui-bg-white">
+                <i class="icon iconfont icon-zhuyuanxinxi bg-blue icon-size"></i>
+                <div class="">
+                    <p class="number">$!medicineProportionStr</p>
+                    <p class="exponent-title">| 门急诊药占比</p>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <div class="layui-col-xs3">
+        <div class="layui-row module-area" style="height: 656px; margin: 0px 5px 0px 9px;">
+            <p class="title">| 门急诊患者信息</p>
+            <p class="item-peolpe">门诊人次：<span>$!regOutpatientNum<!--$!outpatientPeople--></span>人</p>
+            <hr/>
+            <p class="item-peolpe">急诊人次：<span>$!regEmergencyNum <!--$!outpatientUrgentPeople--></span>人</p>
+            <hr/>
+            <p class="item-peolpe">健康体检人次：0人</p>
+            <hr/>
+            <p class="item-peolpe">B超使用人次：0人</p>
+            <hr/>
+            <p class="item-peolpe">CT使用人次：0人</p>
+            <hr/>
+        </div>
+    </div>
+    <div class="layui-col-xs9">
+        <div class="layui-row module-area" style="height: 656px; margin: 0px 17px 0px 4px;">
+            <div class="title" style="height: 30px">| 门急诊人次趋势分析</div>
+            <iframe id="emergencyDepartmentTrend" width="100%" height="626px" src="" frameborder="0"></iframe>
+        </div>
+    </div>
+
+
+</div>
+
+<script>
+    var smartBiRoot = "http://bofan.eicp.net:9008/databi";
+    var smartBiResource = smartBiRoot + "/vision/openresource.jsp?user=admin&password=7ujm8ik,9ol.&resid=";
+    var emergencyDepartmentTrendResid = '000575197cb81f7994e70fab9630215c';//门急诊趋势分析
+
+    layui.use(['element'], function () {
+
+        $('#emergencyDepartmentTrend').attr('src', smartBiResource + emergencyDepartmentTrendResid);
+
+    });
+
+</script>
+</body>
+
+</html>

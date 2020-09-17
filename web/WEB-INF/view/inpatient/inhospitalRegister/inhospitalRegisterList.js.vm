@@ -1,0 +1,158 @@
+<script type="text/javascript">
+var dicPatientCondition=JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+var dicInhospitalState=JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+var dicSysOrgName=JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+var users=JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+
+layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index : 'lib/index', //主入口模块
+}).use([ 'index', 'table','form'], function(){
+    var form = layui.form;
+
+    //回车触发查询
+    $("#q_keyWord").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query').click();
+            return false;
+        }
+    });
+
+    //监听搜索
+    $('#btn_query').on('click', function () {
+        inpatientApplyTable.reload({where: getQueryParams()});
+    });
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('queryForm');
+    })
+    var table = layui.table;
+
+    var inpatientApplyTable = table.render($.extend({}, basePageTable, {
+      elem: '#informTable'
+      ,url: '../inpatient/inhospitalRegisterPage.jo' //查询门诊入院申请，未入院患者
+      ,where: getQueryParams()
+      ,limit:20
+      ,height:getTableHgt()
+      ,cols: [[ //表头
+            {type: 'numbers'},
+        {field: 'patientName', title: '姓名', width:80}
+        ,{field: 'recvDoctorName', title: '收治医生',minWidth: 80}
+        ,{field: 'informTime', title: '通知日期',minWidth: 100,
+                templet :function (row) {
+                    return layui.util.toDateString(row.informTime, 'yyyy-MM-dd HH:mm');
+                }}
+      ]]
+    }));
+
+    function getTableHgt(){
+        return ($('body').height() - $('#queryForm').height() - 10);
+    }
+    $(window).resize(function(){
+        table.reload('informTable',{
+            height: getTableHgt()
+        })
+    })
+
+  //监听行单击事件
+    table.on('row(informTable)', function(obj){
+      var data = obj.data;
+      $(".J_iframe").attr("src","../inpatient/inhospitalRegisterEdit.do?inpatientApplyId=" + data.inpatientApplyId + '&inpatientState=' + data.inpatientState);
+      //标注选中样式
+      obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+    });
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            keyWord: ''
+        }, common.serializeObject($('#queryForm')));
+    }
+});
+
+
+//提交表单
+function submitForm() {
+    var params = common.serializeObject($(".J_iframe").contents().find("#register_form"))
+    if(validateForm(params) != 1){return;}
+    params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+    params['managerDoctorName'] = users[params['managerDoctorId']];
+    params['bedDoctorName'] = users[params['bedDoctorId']];
+    params['headNurserName'] = users[params['headNurserId']];
+    params['dutyNurserName'] = users[params['dutyNurserId']];
+    common.requestServer('../inpatient/saveInhospitalRegister.jo', params, function(result){
+        if (result.code == "0") {
+            common.alertCall("保存成功。", 1, function (){
+                $('#btn_query').click();
+                clearForm();
+                //var index = parent.layer.getFrameIndex(window.name);
+                //parent.layer.close(index);
+            });
+        } else {
+            parent.common.alert(result.msg, 0);
+        }
+    });
+}
+
+//验证表单数据
+function validateForm(obj){
+    if(obj.inhospitalDate==null || obj.inhospitalDate==""){
+        common.alert("请选择住院时间",0);
+        return -1;
+    }
+    if(obj.outpatientDoctorId==null || obj.outpatientDoctorId==""){
+        common.alert("请选择门诊医生",0);
+        return -1;
+    }
+    if(obj.archiaterDoctorId==null || obj.archiaterDoctorId==""){
+        common.alert("请选择主任医生",0);
+        return -1;
+    }
+    if(obj.managerDoctorId==null || obj.managerDoctorId==""){
+        common.alert("请选择主管医生",0);
+        return -1;
+    }
+    if(obj.diagnosisDoctorId==null || obj.diagnosisDoctorId==""){
+        common.alert("请选择主治医生",0);
+        return -1;
+    }
+    if(obj.bedDoctorId==null || obj.bedDoctorId==""){
+        common.alert("请选择管床医生",0);
+        return -1;
+    }
+    if(obj.headNurserId==null || obj.headNurserId==""){
+        common.alert("请选择病区护士长",0);
+        return -1;
+    }
+    if(obj.dutyNurserId==null || obj.dutyNurserId==""){
+        common.alert("请选择责任护士",0);
+        return -1;
+    }
+    if(obj.prepayInAmount==null || obj.prepayInAmount==""){
+        common.alert("请输入预付款",0);
+        return -1;
+    }
+    if(obj.payInWay==null || obj.payInWay==""){
+        common.alert("请选择缴费方式",0);
+        return -1;
+    }
+    if(obj.receiptNo==null || obj.receiptNo==""){
+        common.alert("请输入收据号码",0);
+        return -1;
+    }
+
+    return 1;
+}
+//清空表单信息
+function clearForm(){
+    var form=$(".J_iframe").contents().find("#register_form");
+    var inputs=form.find('input');
+    var textareas=form.find('textarea');
+    var selects=form.find('select');
+    inputs.val(null);
+    textareas.val(null);
+    selects.val(null);
+}
+
+</script>

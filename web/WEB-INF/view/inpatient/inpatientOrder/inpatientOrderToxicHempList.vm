@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>挂号就诊明细表</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!-- 列表表格 工具栏-->
+            <!--搜索条件 开始-->
+            <form id="patient_queryForm" class="layui-form autoWidth">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱项目</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("orderName" "" "id='orderName' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">医嘱状态</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("orderState" "" $!dicData.dicOrderState "id='orderState' lay-filter='orderState'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline" >
+                            <label class="layui-form-label">特殊药品类型</label>
+                            <div class="layui-input-inline" style="width: max-content;">
+                            #formCheckboxeGroup("antibioticType" "" $!dicData.dicAntibioticType "id='antibioticType' lay-filter='antibioticType' checked" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">发药时间</label>
+                            <div class="layui-input-inline auto-width" style="width: auto;">
+                                #formTextInput( "chargeDate" "" "id='chargeDate' class='layui-input' placeholder='请选择时间' ")
+                            </div>
+                        </div>
+
+                        <div class="layui-inline m-r-n">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                    <i class="layui-icon layui-icon-search "></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--列表 begin-->
+            <table id="basDiseaseListGrid" class="layui-table-tabs" lay-filter="basDiseaseListGrid"></table>
+        </div>
+    </div>
+</div>
+
+<!-- 本页面js -->
+    #parse("./inpatient/inpatientOrder/inpatientOrderToxicHempList.js.vm")
+</body>
+</html>

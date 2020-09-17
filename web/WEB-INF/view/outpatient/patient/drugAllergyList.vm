@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style>
+    .layui-tab-content #tabContent{
+        padding-bottom: 5px;
+    }
+    .table-input{
+        height:32px;
+        padding:4px;
+    }
+    #alTbody tr td{
+        padding-top:6px;
+        padding-bottom:6px;
+    }
+    .input-long{
+        min-width:250px;
+        max-width:270px;
+    }
+    table.layui-table tr th{
+        text-align: center;
+    }
+    .layui-icon-add-1{
+      color: #5fb878 !important;
+      font-weight: normal;
+    }
+    #tbodyDiv .custom-table{min-width: 1083px;}
+</style>
+</head>
+<body class="full-height layui-bg-white" style="height:calc(100% - 10px);">
+    #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+    #formHiddenInput("inhospitalId" "" "id='inhospitalId'")
+    <div class="" style="height:calc(100% - 10px);">
+        <div class=" p-n b-b-n" id="theadDiv" style="overflow:hidden;background:#f2f2f2">
+            <table class="layui-table " id="alleThead" table-eidt >
+                <colgroup>
+                    <col width="63px">
+                    <col width="203px">
+                    <col width="294px">
+                    <col width="129px">
+                    <col width="158px">
+                    <col width="100px">
+                    <col width="">
+                </colgroup>
+                <thead>
+                    <tr style="height:37px;">
+                        <th>
+                           <i class="layui-icon layui-icon-add-1 " title="新增行"  onclick="addAllergyTr();"
+                              style="font-size: 24px;color:#009587;position:relative; top:20%;" ></i>
+                        </th>
+                        <th>过敏原</th>
+                        <th>症状</th>
+                        <th>程度</th>
+                        <th>首发时间</th>
+                        <th>记录人</th>
+                        <th>记录时间</th>
+                    </tr>
+                </thead>
+                <tbody class="rowTpl layui-hide">
+                    <tr class="trRow">
+                        <td class="text-center">
+                            <i class="layui-icon layui-icon-delete icon-btn red btn_del_tr" title="删除" onclick="delAllergyTr(this)" style="font-size: 24px;color:red;"></i>
+                             #formHiddenInput("drugAllergyId" "" "id='drugAllergyId'")
+                        </td>
+                        <td>
+                             #formSelectInput("allergyDrugName" "" $!dicData.dicAllergyMedicine "class='layui-input table-input selInp_select'"
+                             "class='layui-input table-input selInp_input'  style='width:231.6px;" "" "")
+
+                            <input type="text" value="" id="text" class="layui-input table-input" style="display: none;"/>
+
+                        </td>
+                        <td>
+                             #formTextInput("allergySymptom" "" " class='layui-input table-input'")
+                        </td>
+                        <td>
+                            #formTextInput("severity" "$!item.severity" " class='layui-input table-input' autocomplete='off'")
+                        </td>
+                        <td>
+                             #formTextInput("firstOccurTime" "" " class='layui-input table-input layer-date' id='firstOccurTime' readOnly")
+                        </td>
+                        <td>
+                            #formTextInput("createUserName" "$currentUser.name" " class='layui-input table-input' readOnly")
+                            #formHiddenInput("createUserId" "$currentUser.userId" "")
+                       </td>
+                       <td>
+                            #formTextInput("createTime" "" "id='createTime' class='layui-input table-input newCreateTime' readOnly")
+                       </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="layui-card-body p-n"  id="tbodyDiv" style="height:calc(100% - 57px); overflow-y:scroll; ">
+            <table class="layui-table custom-table m-n"  data-mobile-responsive="true" style="width:100%;" >
+                <colgroup>
+                    <col width="63px">
+                    <col width="203px">
+                    <col width="294px">
+                    <col width="129px">
+                    <col width="158ppx">
+                    <col width="100px">
+                    <col width="">
+                </colgroup>
+                <tbody id="alTbody" class="">
+                   #foreach($item in $!patientDrugAllergyList)
+                   <tr>
+                       <td class="text-center">
+                           <i class="layui-icon layui-icon-delete icon-btn red btn_del_tr" title="删除" onclick="delAllergyTr(this)" style="font-size: 24px;color:red;"></i>
+                            #formHiddenInput("drugAllergyId" "$!item.drugAllergyId" "id='drugAllergyId'")
+                       </td>
+                       <td>
+                            #formSelectInput("allergyDrugName" "$!item.allergyDrugName" $!dicData.dicAllergyMedicine "class='layui-input  selInp_select'"
+                            "class='layui-input selInp_input' placeholder='请输入'" "" "请选择")
+                       </td>
+                       <td>
+                            #formTextInput("allergySymptom" "$!item.allergySymptom" " class='layui-input table-input'")
+                       </td>
+                       <td>
+                           #formTextInput("severity" "$!item.severity" " class='layui-input table-input' autocomplete='off'")
+                       </td>
+                       <td>
+                            #formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.firstOccurTime)" " class='layui-input table-input' id='firstOccurTime' readOnly")
+                            ##formTextInput("firstOccurTime" "$!date.format('yyyy-MM-dd HH:mm',$!item.firstOccurTime)" " class='layui-input table-input'")
+                       </td>
+                       <td>
+                            #formTextInput("createUserName" "$!item.createUserName" " class='layui-input table-input' readOnly")
+                            #formHiddenInput("createUserId" "$!item.createUserId" "")
+                       </td>
+                       <td>
+                            #formTextInput("createTime" "$!date.format('yyyy-MM-dd HH:mm:ss',$!item.createTime)" "id='createTime' class='layui-input table-input' readOnly")
+                       </td>
+                   </tr>
+                   #end
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="tool-bottom-fixed " style="background-color:#ffffff;">
+        <button id="btn_save" class="layui-btn layui-btn-sm layui-btn-danger" type="button">&nbsp;&nbsp;保&nbsp;存&nbsp;&nbsp;</button>
+    </div>
+#parse("./common/pageJs.vm")
+#parse("./outpatient/patient/drugAllergyList.js.vm")
+</body>
+</html>

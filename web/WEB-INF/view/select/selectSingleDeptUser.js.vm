@@ -1,0 +1,77 @@
+<script>
+$(document).ready(function () {
+	// 初始化部門树形
+	$("#deptTree").jstree({
+		"core": {"themes" : { "responsive" : false },
+			'data': function(obj, callback) {
+				var jsonstr = "[]";
+				var jsonarray = eval('(' + jsonstr + ')');
+				$.ajax({
+					type : "GET",
+					url : "../sys/getDepTree.do",
+					dataType : "json",
+					async : false,
+					success : function(result) {
+						var root = { "id":result[0].id, "parent":result[0].pid == "" ? "#" : result[0].pid, "text":result[0].name, "type":result[0].iconSkin, "state": {"opened" : true}, children:result[0].children}
+                        jsonarray.push(root);
+					}
+				});
+				callback.call(this, jsonarray);
+			}
+		}, "plugins" : ["dnd", "types"]
+	}).bind("loaded.jstree", function(event, data) {
+	}).bind("activate_node.jstree", function(event, data) {
+		$('#orgId').val(data.node.original.orgId);
+		$('#btn_query').click();
+	});
+
+    // 查询按钮
+    $('#btn_query').click(function (){
+    	if ($('#orgId').val() == "" || $('#orgId').val() == undefined) {return ;}
+    	var queryParams = common.serializeObject($('#queryForm'));
+		var options = {url: '../sys/queryUser.do', silent: false, query: queryParams};
+		$('#tableDataList').bootstrapTable('refresh', options); 
+    });
+    
+ 	// 清空按钮
+    $('#btn_clean').click(function (){
+    	common.cleanForm('queryForm');
+    });
+ 	
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)'); 
+ 	// 初始化用户表格列表
+    $('#tableDataList').bootstrapTable(
+        $.extend(baseTable, {
+    		queryParams: function (params){
+    			var requestParams = common.serializeObject($('#queryForm'));
+                requestParams.pageSize = params.pageSize;
+                requestParams.pageNumber = params.pageNumber;
+                return requestParams;
+    		},
+            columns : [
+			{checkbox : true},
+            {
+            	field: 'name',
+                title: '用户姓名'
+            }, {
+                
+                field: 'sex',
+                title: '性別',
+                formatter: function (value, row, index) {return dicSex[value]}
+            }, {
+            	field: 'phone',
+                title: '联系电话'
+            }],
+            onClickRow : function (row, element){
+            	if (parent.selectSigleDeptUserBack && typeof(parent.selectSigleDeptUserBack) == "function") {
+        			parent.selectSigleDeptUserBack(row);
+        			// 关闭窗口
+        			var index = parent.layer.getFrameIndex(window.name);
+        	        parent.layer.close(index); 
+        		}
+            }
+		})
+	);
+
+});
+</script>

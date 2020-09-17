@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle} - 整改通知</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+  <style>
+    .emrList-left { width: 50%; float: left; background-color: #fff;}
+    .emrList-right { width: calc(50% - 10px); margin-left: 10px; float: right; background-color: #fff;}
+    #container .ui-layout-resizer-closed {display: block !important;}
+  </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid full-scroll">
+            <form id="patientForm" class="layui-form">
+                <!-- 表单 开始 -->
+                <input type="hidden" name="submitFlag" value="$!{CONST.AppConstants.NO_FLAG}">
+                ##<input type="hidden" name="reformStatus" value="$!{CONST.AppConstants.REFORM_STATUS_NOTDO}"/>
+                <input type="hidden" name="patientEmrReformId" value="$!{patientEmrReform.patientEmrReformId}"/>
+                <input type="hidden" name="receiverId" value="$!{patientEmrReform.receiverId}"/>
+                <input type="hidden" name="receiverOfficeId" value="$!{patientEmrReform.receiverOfficeId}"/>
+                <input type="hidden" name="patientEmrDefectId" value="$!{patientEmrReform.patientEmrDefectId}"/>
+                <input type="hidden" name="patientId" value="$!{patientEmrReform.patientId}"/>
+                <input type="hidden" name="inhospitalId" value="$!{patientEmrReform.inhospitalId}"/>
+                <input type="hidden" name="hospitalId" value="$!{patientEmrReform.hospitalId}"/>
+                <div class="layui-form-item layui-form-text width-auto">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">接收人</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("receiverName" "$!{patientEmrReform.receiverName}" " maxlength='10'
+                            lay-verify='required' class='layui-input' readonly='readonly'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">接收科室</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("receiverOfficeName" "#lookUpDict($dicData.dicSysOrgName $!{patientEmrReform.receiverOfficeId})" " maxlength=''
+                            lay-verify='required' class='layui-input' readonly='readonly'")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item layui-form-text ">
+                        <label class="layui-form-label">整改内容</label>
+                        <div class="layui-input-inline width-full m-b-sm" >
+                            #formTextarea("reformContent" "#htmlEscape($!{patientEmrReform.reformContent})"  " id='reformContent' class='layui-textarea'
+                            maxlength='400' placeholder='请输入内容，字数最多400字' style='height:200px' readonly='readonly'")
+                        </div>
+                </div>
+                <div class="layui-form-item layui-form-text ">
+                        <label class="layui-form-label">整改情况</label>
+                        <div class="layui-input-inline width-full m-b-sm" >
+                            #formTextarea("reformMeasure" "#htmlEscape($!{patientEmrReform.reformMeasure})"  " id='reformContent' class='layui-textarea'
+                            maxlength='400' placeholder='请输入内容，字数最多400字' style='height:200px' ")
+                        </div>
+                </div>
+#if("$!{CONST.AppConstants.REFORM_STATUS_BACK}" == "$!{patientEmrReform.reformStatus}")
+                <div class="layui-form-item layui-form-text ">
+                        <label class="layui-form-label">整改情况</label>
+                        <div class="layui-input-inline width-full m-b-sm" >
+                            #formTextarea("resultEvaluation" "#htmlEscape($!{patientEmrReform.resultEvaluation})"  " id='resultEvaluation' class='layui-textarea'
+                            maxlength='400' placeholder='' style='height:200px' readonly='readonly'")
+                        </div>
+                </div>
+#end
+                <div class="layui-form-item layui-hide">
+                    <input type="button" lay-submit lay-filter="btn_report_reform" id="btn_report_reform" value="提交整改报告">
+                </div>
+            </form>
+
+    </div>
+</div>
+#parse("./emrDefect/patientEmrReformEdit.js.vm")
+</body>
+</html>

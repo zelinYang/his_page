@@ -1,0 +1,426 @@
+<script type="text/javascript">
+/**
+* 宁昊事前审方js
+* version 1.0
+* 2019-07-25
+*/
+var runxxxxxXHR = new XMLHttpRequest();
+var nhEnginehost, nhEngineCallback, nhEnginePresInfos, nhPresShadowDiv1, nhEnginePresNo;
+var nhModalWindow,nhModalInnerDiv0,nhModalInnerDiv1,nhModalIframe,nhModalInnerDiv2,nhPresBtnSave,nhPresBtnModify, nhPresBtnSend;
+var nhAuditTime, nhAuditTask;
+
+/**
+* 发送审方事件
+*/
+function clickNhSendBtn(){
+	var url = nhEnginehost.replace("engine", "toAudit") + "?presNo=" + nhEnginePresNo + "&" + (new Date()).valueOf();
+	var retryTimes = 3;
+	while(retryTimes > 0){
+		var ret = nhAjaxGet(url);
+		if(ret == '1'){
+			break;
+		}
+		retryTimes --;
+	}
+	// 设置发送审方按钮不可见
+	nhPresBtnSend.style.display="none";
+	
+	// 开启轮询查看是否审核通过
+	nhAuditTask = setInterval("nhGetPharAuditResult()", 1000);
+}
+
+function nhGetPharAuditResult(){
+	var url = nhEnginehost.replace("engine", "auditResult") + "?presNo=" + nhEnginePresNo + "&" + (new Date()).valueOf();
+	var ret = nhAjaxGet(url, nhPharAuditReultCallBack);
+}
+
+function nhPharAuditReultCallBack(ret){
+	switch(ret) {
+		case '9': // 超时
+		case '1': // 通过
+			nhPresBtnSave.style.display="block";
+			window.clearInterval(nhAuditTask);
+			nhAuditTask = undefined;
+			break;
+		case '-1': // 不通过
+			window.clearInterval(nhAuditTask);
+			nhAuditTask = undefined;
+			break;
+	}
+}
+
+/**
+* 发送医生操作事件
+*/
+function clickNhSendDocOper(flag){
+	var url = nhEnginehost.replace("engine", "toSaveOrModify") + "?presNo=" + nhEnginePresNo + "&status=" + flag + "&" + (new Date()).valueOf();
+	var retryTimes = 3;
+	while(retryTimes > 0){
+		var ret = nhAjaxGet(url);
+		if(ret == '1'){
+			break;
+		}
+		retryTimes --;
+	}
+}
+
+function nhAjaxGet(url, callback){
+	if(runxxxxxXHR == undefined){
+		alert('本地浏览器无法建立连接请求');
+		return -999;
+	}
+	
+	runxxxxxXHR.open("GET", url, false);
+    runxxxxxXHR.onreadystatechange = function(){
+        var XMLHttpReq = runxxxxxXHR;
+        /**
+            XMLHttpReq.readyState
+         0: 请求未初始化
+         1: 服务器连接已建立
+         2: 请求已接收
+         3: 请求处理中
+         4: 请求已完成，且响应已就绪
+        **/
+        if (XMLHttpReq.readyState == 4) {
+            if (XMLHttpReq.status == 200) {                
+                var data = XMLHttpReq.responseText;
+                // alert(data);
+                // console.log(data);
+				if(callback && typeof(eval(callback)) == "function"){
+					callback(data);
+				}
+				return data;
+            }else {
+                // 非200时返回默认xml
+				// console.log('请求失败,' + XMLHttpReq.status);
+				if(callback && typeof(eval(callback)) == "function"){
+					callback('-1');
+				}
+				return "-1";
+            }
+        }
+    };
+	try{
+		runxxxxxXHR.send();
+	}catch(e){
+		if(callback && typeof(eval(callback)) == "function"){
+			callback('-1');
+		}
+	}
+}
+
+function clickNhPresBtn(flag){
+	// 1继续保存0返回修改
+	var retInfo = "<root><message><infos></infos></message><isSuccess>1</isSuccess><auditTime>0</auditTime><saveOrEdit>1</saveOrEdit></root>";
+	if(nhEnginePresInfos.indexOf("saveOrEdit") >= 0){
+		var beforNode = nhEnginePresInfos.substr(1, nhEnginePresInfos.indexOf("<saveOrEdit>") + 12);
+		var afterNode = nhEnginePresInfos.substr(nhEnginePresInfos.indexOf("</saveOrEdit>") - 13);
+		retInfo = beforNode + flag + afterNode;
+	}else{
+		retInfo = nhEnginePresInfos.replace("</root>", "<saveOrEdit>" + flag + "</saveOrEdit></root>");
+	}
+	// 发送医生点击事件
+	clickNhSendDocOper(flag);
+	if(nhEngineCallback && typeof(eval(callback)) == "function"){
+		nhEngineCallback(retInfo);
+	}
+	 ## //移除添加的所有元素
+	 ## nhPresClearAllDynamicElements();
+	// 移除阴影层
+	## if(nhPresShadowDiv1){
+	## 	nhPresShadowDiv1.parentNode.removeChild(nhPresShadowDiv1);
+	## 	nhPresShadowDiv1 = undefined;
+	## }
+}
+
+function nhPresClearAllDynamicElements(){
+	if(nhModalWindow){
+		nhModalWindow.parentNode.removeChild(nhModalWindow);
+		nhModalWindow = undefined;
+	}
+	if(nhModalInnerDiv0){
+		nhModalInnerDiv0.parentNode.removeChild(nhModalInnerDiv0);
+		nhModalInnerDiv0 = undefined;
+	}
+	if(nhModalInnerDiv1){
+		nhModalInnerDiv1.parentNode.removeChild(nhModalInnerDiv1);
+		nhModalInnerDiv1 = undefined;
+	}
+	if(nhModalIframe){
+		nhModalIframe.parentNode.removeChild(nhModalIframe);
+		nhModalIframe = undefined;
+	}
+	if(nhModalInnerDiv2){
+		nhModalInnerDiv2.parentNode.removeChild(nhModalInnerDiv2);
+		nhModalInnerDiv2 = undefined;
+	}
+	if(nhPresBtnSave){
+		nhPresBtnSave.parentNode.removeChild(nhPresBtnSave);
+		nhPresBtnSave = undefined;
+	}
+	if(nhPresBtnModify){
+		nhPresBtnModify.parentNode.removeChild(nhPresBtnModify);
+		nhPresBtnModify = undefined;
+	}
+	if(nhPresBtnSend){
+		nhPresBtnSend.parentNode.removeChild(nhPresBtnSend);
+		nhPresBtnSend = undefined;
+	}
+	if(nhAuditTime){
+		nhAuditTime = undefined;
+	}
+	if(nhAuditTask){
+		window.clearInterval(nhAuditTask);
+		nhAuditTask = undefined;
+	}
+	if(nhEnginePresNo){
+		nhEnginePresNo = undefined;
+	}
+}
+
+function nhGetPresNo(xml){
+	var presNo = xml.substr(xml.toLowerCase().indexOf("<presno>") + 8, xml.toLowerCase().indexOf("</presno>") - xml.toLowerCase().indexOf("<presno>") - 8);
+	if(!presNo.startsWith("Z")){
+		return presNo;
+	}else{
+		var patientNo = xml.substr(xml.toLowerCase().indexOf("<patientno>") + 11, xml.toLowerCase().indexOf("</patientno>") - xml.toLowerCase().indexOf("<patientno>") - 11);
+		var presDateTime = xml.substr(xml.toLowerCase().indexOf("<presdatetime>") + 14, xml.toLowerCase().indexOf("</presdatetime>") - xml.toLowerCase().indexOf("<presdatetime>") - 14);
+		presNo = "Z" + patientNo + presDateTime.substr(0, 10);
+	}
+	return presNo;
+}
+
+function nhHasInfo(infos){
+	var mes = infos.replace("<infos>", "");
+	if(mes.indexOf("info") >= 0){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function nhNeedAudit(infos){
+	var mes = infos.replace("<infos>", "");
+	if(mes.indexOf("<audit>1</audit>") >= 0){
+		return true;
+	}else{
+		return false;
+	}
+}
+
+function runxxxxx(engineHost, xml, callback){
+	// console.log(engineHost);
+	// console.log(xml);
+	nhEnginehost = engineHost;
+	
+	if(runxxxxxXHR == undefined){
+		alert('本地浏览器无法建立连接请求');
+		return;
+	}
+	
+	runxxxxxXHR.open("POST", engineHost, false);
+    runxxxxxXHR.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+    runxxxxxXHR.onreadystatechange = function(){
+        
+        var XMLHttpReq = runxxxxxXHR;
+        /**
+            XMLHttpReq.readyState
+         0: 请求未初始化
+         1: 服务器连接已建立
+         2: 请求已接收
+         3: 请求处理中
+         4: 请求已完成，且响应已就绪
+        **/
+        if (XMLHttpReq.readyState == 4) {
+            if (XMLHttpReq.status == 200) {                
+                var data = XMLHttpReq.responseText;
+                // alert(data);
+                // console.log(data);
+				nhEnginePresInfos = data;
+                if(nhHasInfo(data)){
+					nhEnginePresNo = nhGetPresNo(xml);
+					// console.log(nhEnginePresNo);
+					// 渲染阴影层
+					showNHShadowLayer();
+					
+					var auditFlag = nhNeedAudit(data);
+					var forbiddenFlag = false;
+					if(data.indexOf('<severity>8</severity>') > 0){
+						forbiddenFlag = true;
+					}
+					// 弹出模态框
+					showNHPresInfo(nhEnginePresNo, auditFlag, forbiddenFlag);
+					
+					if(callback && typeof(eval(callback)) == "function"){
+						nhEngineCallback = callback;
+					}
+				}else{
+					return data;
+				}
+            }else {
+                // 非200时返回默认xml
+				// console.log('审核请求失败,' + XMLHttpReq.status);
+				if(callback && typeof(eval(callback)) == "function"){
+					callback("<root><message><infos></infos></message><isSuccess>1</isSuccess><auditTime>0</auditTime><saveOrEdit>1</saveOrEdit></root>");
+				}
+				return "<root><message><infos></infos></message><isSuccess>1</isSuccess><auditTime>0</auditTime><saveOrEdit>1</saveOrEdit></root>";
+            }
+        }
+    };
+	try{
+		runxxxxxXHR.send(xml);
+	}catch(e){
+		if(callback && typeof(eval(callback)) == "function"){
+			callback("<root><message><infos></infos></message><isSuccess>1</isSuccess><auditTime>0</auditTime><saveOrEdit>1</saveOrEdit></root>");
+		}
+	}
+}
+
+function showNHShadowLayer(){
+	if(nhPresShadowDiv1){
+		nhPresShadowDiv1.parentNode.removeChild(nhPresShadowDiv1);
+	}
+	nhPresShadowDiv1=document.createElement("div");
+	nhPresShadowDiv1.id="nhPresShadow";
+    nhPresShadowDiv1.style.zIndex="9000";
+    nhPresShadowDiv1.style.position="absolute";
+	nhPresShadowDiv1.style.top="0px";
+	nhPresShadowDiv1.style.left="0px";
+	nhPresShadowDiv1.style.width="100%";
+	nhPresShadowDiv1.style.height="100%";
+	document.body.appendChild(nhPresShadowDiv1);
+}
+
+function showNHPresInfo(presNo, auditFlag, forbiddenFlag){
+	if(!nhEnginehost || !presNo){
+		alert('审核异常,请联系管理员!');
+		if(document.getElementById("nhPresShadow")){
+			document.remove(document.getElementById("nhPresShadow"));
+		}
+		return;
+	}
+	
+	// 创建弹出模态窗并设置iframe
+	// 最外层
+	if(nhModalWindow){
+		nhModalWindow.parentNode.removeChild(nhModalWindow);
+	}
+	nhModalWindow=document.createElement("div");
+	nhModalWindow.id="nhPresInfoDiv";
+	nhModalWindow.style.zIndex="9001";
+	nhModalWindow.style.position="absolute";
+	nhModalWindow.style.width="100%";
+	nhModalWindow.style.height="100%";
+	document.body.appendChild(nhModalWindow);
+	
+	// 内层3div
+	if(nhModalInnerDiv0){
+		nhModalInnerDiv0.parentNode.removeChild(nhModalInnerDiv0);
+	}
+	nhModalInnerDiv0=document.createElement("div");
+	document.getElementById("nhPresInfoDiv").appendChild(nhModalInnerDiv0);
+
+	if(nhModalInnerDiv1){
+		nhModalInnerDiv1.parentNode.removeChild(nhModalInnerDiv1);
+	}
+
+	nhModalInnerDiv1=document.createElement("div");
+	nhModalInnerDiv1.id="nhModalInnerDiv1";
+	nhModalInnerDiv1.style.width="100%";
+	nhModalInnerDiv1.style.height="calc(100% - 80px)";
+	nhModalInnerDiv1.style.backgroundColor="#FFF";
+	nhModalInnerDiv1.style.border="0px #fff";
+	document.getElementById("nhPresInfoDiv").appendChild(nhModalInnerDiv1);
+
+	// 警示信息
+	if(nhModalIframe){
+		nhModalIframe.parentNode.removeChild(nhModalIframe);
+	}
+	
+	nhModalIframe=document.createElement("iFrame");
+	nhModalIframe.id="nhPresInfoIframe";
+	nhModalIframe.style.width="100%";
+	nhModalIframe.style.height="100%"
+	nhModalIframe.style.border="0px #fff";
+	nhModalIframe.src = nhEnginehost.replace("engine", "returnInfo") + "?presNo=" + presNo + "&" + (new Date()).valueOf();
+	document.getElementById("nhModalInnerDiv1").appendChild(nhModalIframe);
+	
+	if(nhModalInnerDiv2){
+		nhModalInnerDiv2.parentNode.removeChild(nhModalInnerDiv2);
+	}
+	
+	nhModalInnerDiv2=document.createElement("div");
+	nhModalInnerDiv2.id="nhModalInnerDiv2";
+	nhModalInnerDiv2.style.width="calc(50% + 80px)";
+	nhModalInnerDiv2.style.backgroundColor="#FFF";
+	nhModalInnerDiv2.style.border="0px #fff";
+	document.getElementById("nhPresInfoDiv").appendChild(nhModalInnerDiv2);
+	
+	// 按钮区
+	// 返回修改
+	if(nhPresBtnModify){
+		nhPresBtnModify.parentNode.removeChild(nhPresBtnModify);
+	}
+	
+	nhPresBtnModify=document.createElement("button");
+	nhPresBtnModify.id="nhPresBtnModify";
+	nhPresBtnModify.style.width="75px";
+	nhPresBtnModify.style.height="30px";
+	nhPresBtnModify.style.backgroundColor="#41B297";
+	nhPresBtnModify.style.border="0px #fff";
+	nhPresBtnModify.style.float="right";
+	nhPresBtnModify.style.marginRight="5px";
+	document.getElementById("nhModalInnerDiv2").appendChild(nhPresBtnModify);
+	document.getElementById("nhPresBtnModify").innerHTML="<font color='#FFF' style='margin-left: 5px;'>返回修改</font>";
+	document.getElementById("nhPresBtnModify").onclick=function(){
+		clickNhPresBtn(0);
+	};
+	
+	// 继续保存
+	if(nhPresBtnSave){
+		nhPresBtnSave.parentNode.removeChild(nhPresBtnSave);
+	}
+	
+	nhPresBtnSave=document.createElement("button");
+	nhPresBtnSave.id="nhPresBtnSave";
+	nhPresBtnSave.style.width="75px";
+	nhPresBtnSave.style.height="30px";
+	nhPresBtnSave.style.backgroundColor="#41B297";
+	nhPresBtnSave.style.border="0px #fff";
+	nhPresBtnSave.style.float="right";
+	nhPresBtnSave.style.marginRight="20px";
+	// if(auditFlag || forbiddenFlag){
+	// 	nhPresBtnSave.style.display="none";
+	// }
+	document.getElementById("nhModalInnerDiv2").appendChild(nhPresBtnSave);
+	document.getElementById("nhPresBtnSave").innerHTML="<font color='#FFF' style='margin-left: 5px;'>继续保存</font>";
+	document.getElementById("nhPresBtnSave").onclick=function(){
+		clickNhPresBtn(1);
+	};
+	
+	// 发送审方
+	if(nhPresBtnSend){
+		nhPresBtnSend.parentNode.removeChild(nhPresBtnSend);
+	}
+	
+	nhPresBtnSend=document.createElement("button");
+	nhPresBtnSend.id="nhPresBtnSend";
+	nhPresBtnSend.style.width="75px";
+	nhPresBtnSend.style.height="30px";
+	nhPresBtnSend.style.backgroundColor="#41B297";
+	nhPresBtnSend.style.border="0px #fff";
+	nhPresBtnSend.style.float="right";
+	nhPresBtnSend.style.marginRight="20px";
+	if(auditFlag && !forbiddenFlag){
+		nhPresBtnSend.style.display="block";
+	}else{
+		nhPresBtnSend.style.display="none";
+	}
+	document.getElementById("nhModalInnerDiv2").appendChild(nhPresBtnSend);
+	document.getElementById("nhPresBtnSend").innerHTML="<font color='#FFF' style='margin-left: 5px;'>发送审方</font>";
+	document.getElementById("nhPresBtnSend").onclick=function(){
+		clickNhSendBtn();
+	};
+	
+}
+</script>

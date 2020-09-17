@@ -1,0 +1,181 @@
+<!-- 是否有效开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 列表表格 工具栏 结束-->
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="查看" lay-event="btn_show"><i
+            class="layui-icon layui-icon-about"></i></a>
+    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+            class="layui-icon"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                doctorPostCodes: '',
+                ageFeeFlags: '',
+                chargeItemId: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#basPostFee_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basPostFeeListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basPostFee_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open(contextPath + '/bas/basPostFeeAdd.do', '编辑职称诊查费', {
+                area: ['99%', '99%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basPostFeeListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/bas/basPostFeeListData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'doctorPostName',
+                    title: '职称名称',
+                    minWidth: 200
+                }, {
+                    field: 'chargeName',
+                    title: '诊查费用'
+                }, {
+                    field: 'unitPrice',
+                    title: '单价',
+                    sort: true,
+                    width: 60,
+                    style: 'text-align: right;'//金额居右显示
+                }, {
+                    field: 'emergencyFeeFlag',
+                    title: '急诊收费',
+                    width: 80,
+                    templet: function (d) {
+                        return dicYesNo[d.emergencyFeeFlag] || '';
+                    }
+                }, {
+                    field: 'ageFeeFlag',
+                    title: '收费年龄段',
+                    width: 99,
+                    templet: function (d) {
+                        return dicAgeFeeFlag[d.ageFeeFlag] || '';
+                    }
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 120,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#basPostFee_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../bas/updateBasPostFeeValidFlag.jo', {
+                postFeeId: data.postFeeId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basPostFeeListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/bas/basPostFeeShow.do?postFeeId=' + row.postFeeId, '职称诊查费详情', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    });
+                    break;
+                case 'btn_edit':
+                    common.open(contextPath + '/bas/basPostFeeEdit.do?postFeeId=' + row.postFeeId, '编辑职称诊查费', {
+                        area: ['80%', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../bas/delBasPostFee.jo', {
+                            ids: row.postFeeId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+    })
+</script>

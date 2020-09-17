@@ -1,0 +1,320 @@
+
+<!-- 复选框列表 -->
+<script type="text/html" id="checkboxTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="checkbox" name="{{d.name || ''}}" lay-filter="{{d.filter || ''}}" value="{{val || ''}}" {{val== d.value
+           ? 'checked' : ''}}  title="{{key || ''}}" {{d.attr || ''}} lay-skin="primary">
+    {{# }) }}
+</script>
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+
+<script>
+    // 初始化树形分类
+    var zTreeObj, setting = {
+        view: {
+            selectedMulti: false,
+            showIcon: false
+        },
+        async: {
+            enable: true,
+            url: "../sys/getDepTree.jo"
+        },
+        callback: {
+            onAsyncSuccess: function (event, treeId, treeNode, msg) {
+                if (treeNode == undefined) {
+                    treeNode = zTreeObj.getNodeByTId("tree_1");
+                }
+                zTreeObj.selectNode(treeNode, false, true);
+                if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+            },
+            onCheck: function (event, treeId, treeNode) {
+                var nodes = zTreeObj.getCheckedNodes(true);
+                var data = $.map(nodes, function (item) {
+                    return item.object;
+                });
+                addRow(data);
+            },
+            onClick: function (event, treeId, treeNode) {
+                if (treeNode) {
+                    //执行重载
+                    layui.table.reload('sysUserListGrid', {
+                        where: {orgId: treeNode.id},
+                    });
+                }
+            },
+        }
+    }
+
+    //根节点
+    zTreeObj = $.fn.zTree.init($('#officeTree'), setting, []);
+    //刷新树
+    $('#btn_refresh').click(function(){
+        zTreeObj = $.fn.zTree.init($('#officeTree'), setting, []);
+        $('#btn_clean').click();
+        $('#btn_query').click();
+    });
+</script>
+
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl,
+            tableSelect = layui.tableSelect;
+
+        common.verify(form);
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                orgId: '',
+                keyWord: '',
+            }, common.serializeObject($('#arrangeDutyOffice_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('sysUserListGrid', {
+                where: queryParams
+            });
+            zTreeObj.cancelSelectedNode(); //取消所有选中
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('arrangeDutyOffice_queryForm');
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#sysUserListGrid',
+            url: contextPath + '/sys/selectSysUserPageData.jo',
+            height: 'full-60',
+            cols: [[
+                {type: 'checkbox'},
+                {field: 'account', title: '账号'},
+                {field: 'name', title: '医生'},
+                {
+                    field: 'name', title: '科室', minWidth: 80, templet: function (row) {
+                        return $.map(row.sysOrgList || [], function (sysOrg) {
+                            return sysOrg.name || ''
+                        }).toString();
+                    }
+                }]], done: function () {
+            }
+        }));
+
+        //复选框
+        table.on('checkbox(sysUserListGrid)', function (obj) {
+            if (obj.type == 'all') {
+                var data = table.checkStatus('sysUserListGrid').data; //idTest 即为基础参数 id 对应的值
+                var basPostDoctors = [];
+                if (obj.checked) {
+                    basPostDoctors = $.grep($.map(data, function (item) {
+                        var basPostDoctor = table.cache['basDoctorEmrRoleListGrid'].find(function (x) {
+                            return x.doctorId == data.userId;
+                        });
+                        if (!basPostDoctor) {
+                            var orgMap = {};
+                            $.each(item.sysOrgList || [], function (i, sysOrg) {
+                                orgMap[sysOrg.orgId] = sysOrg.name
+                            });
+                            return {
+                                doctorId: item.userId,
+                                doctorName: item.name,
+                                orgMap: orgMap,
+                                emrRoleFalg: YES_FLAG
+                            };
+                        }
+
+                    }).concat(table.cache['basDoctorEmrRoleListGrid']), function (n) {
+                        return $.trim(n).length > 0;
+                    });
+                } else {
+                    //删除
+                    basPostDoctors = $.map(table.cache['basDoctorEmrRoleListGrid'], function (item) {
+                        var basPostDoctor = table.cache['sysUserListGrid'].find(function (x) {
+                            return x.userId == item.doctorId;
+                        });
+                        if (!basPostDoctor) {
+                            return item;
+                        }
+                    })
+                }
+                table.reload('basDoctorEmrRoleListGrid', {
+                    data: basPostDoctors
+                });
+            }
+        });
+
+        //单击行
+        table.on('row(sysUserListGrid)', function (obj) {
+            var data = obj.data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            var checked = obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked');
+            obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked', !checked);
+            form.render();
+
+            var basPostDoctors = $.map(table.cache['basDoctorEmrRoleListGrid'], function (item) {
+                if (!$.isArray(item)) return item;
+            })
+            //判断是否存在
+            var basPostDoctor = basPostDoctors.find(function (x) {
+                return x.doctorId == data.userId;
+            });
+
+            if (!basPostDoctor) {
+                var orgMap = {};
+                $.each(data.sysOrgList || [], function (i, sysOrg) {
+                    orgMap[sysOrg.orgId] = sysOrg.name
+                });
+                //新增
+                basPostDoctors.push({
+                    doctorId: data.userId,
+                    doctorName: data.name,
+                    orgMap: orgMap,
+                    emrRoleFalg: YES_FLAG
+                });
+            } else if (checked) {
+                //删除
+                basPostDoctors = basPostDoctors.filter(function (x) {
+                    return x.doctorId != data.userId;
+                });
+            }
+            table.reload('basDoctorEmrRoleListGrid', {
+                data: basPostDoctors
+            });
+            var tbView = $('#basDoctorEmrRoleListGrid').next('.layui-table-view');
+            //表格滚动到底部
+            tbView.find('.layui-table-body').scrollTop(tbView.find('.layui-table-body .layui-table').height());
+        });
+
+        table.render({
+            elem: '#basDoctorEmrRoleListGrid',
+            limit: 10000,
+            height: 'full-90',
+            data: [],
+            cols: [[
+                {
+                    type: 'numbers',
+                }, {
+                    title: '科室',
+                    minWidth: 200,
+                    templet: function (d) {
+                        return $.map(d.orgMap, function (name) {
+                            return name;
+                        }).join();
+                    }
+                }, {
+                    field: 'doctorName',
+                    title: '医生'
+                }, {
+                    event: 'checkbox',
+                    width: 100,
+                    title: '#requiredTag()科室模板权限',
+                    align: 'center',
+                    templet: function (d) {
+                        return laytpl($('#checkboxTpl').html()).render({
+                            filter: 'emrRoleFalg',
+                            value: d.emrRoleFalg,
+                            data: {[YES_FLAG]: ''},
+                        });
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#delTpl'
+                }]]
+            , done: function (res) {
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(basDoctorEmrRoleListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            var that = this;
+            switch (obj.event) {
+                case 'checkbox':
+                    $(that).find(':checkbox[lay-filter]').each(function () {
+                        var field = $(this).attr('lay-filter');
+                        obj.update({
+                            [field]: Number(+$(this).is(':checked'))
+                        });
+                    });
+                    break;
+                case 'btn_delete':
+                    obj.del();
+                    break;
+            }
+        });
+
+        //提交表单
+        function saveBasDoctorEmrRole() {
+            var params = {
+                basDoctorEmrRoleEditInfoList: $.map(table.cache['basDoctorEmrRoleListGrid'], function (item) {
+                    if (!$.isArray(item)) {
+                        item.validFlag = YES_FLAG;
+                        return item;
+                    }
+                })
+            }
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/bas/saveBasDoctorEmrRoleList.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                var tbView = $('#sysUserListGrid').next('.layui-table-view');
+                //表格移除选择
+                tbView.find('.layui-table-main :checkbox[name="layTableCheckbox"]:checked').prop('checked', false);
+                tbView.find('.layui-table-main tr.layui-table-click').removeClass('layui-table-click');
+                form.render();
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('basDoctorEmrRoleListGrid', {
+                            data: []
+                        });
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasDoctorEmrRole()
+            return false
+        })
+        $("#btn_close").click(function () {
+            $('#btn_query', window.parent.document).click();
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>

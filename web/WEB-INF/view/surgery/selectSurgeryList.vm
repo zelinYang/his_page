@@ -1,0 +1,89 @@
+#parse("./common/pageCss.vm") 
+<style>
+    .layui-table > thead > tr > th,td{
+        text-align: center;
+    }
+    .btn-add { font-size: 24px;color:#009587;position:relative; top:10%; left:0; cursor: pointer; }
+    
+</style>
+<div class="layui-bg-white "  style="height:calc(100% - 10px);">
+    #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+    <table class="layui-table " id="surgeryTable" lay-filter="surgeryTable"></table>
+    <div class="tool-bottom-fixed">
+        <button class="layui-btn layui-btn-sm layui-hide" id="btn_import" type="button" operate-type="0"> 导入手术  </button>
+        <button type="button" class="layui-btn layui-btn-sm" id="btn_close"> 关 闭 </button>
+    </div>
+</div>
+#parse("./common/pageJs.vm")
+<script>
+var dicSurgeryPosition = JSON.parse('$dicTools.changeMapToJson($dicData.dicSurgeryPosition)');
+var dicBodyPartClassifySurgery = JSON.parse('$dicTools.changeMapToJson($dicData.dicBodyPartClassifySurgery)');
+layui.use(['table','element'],function(){
+    table = layui.table;
+    
+    var surgeryList = [];
+    var surgeryTable = table.render({
+       elem: '#surgeryTable'
+       ,url: '../surgery/surgeryApplyJsonList.jo'
+       ,where: {inhospitalId: $("#inhospitalId").val()}
+       ,page: false
+       ,height:'full-60'
+       ,cols: [[
+           {field: 'surgeryName', title: '手术名称', width:200 }
+           ,{field: 'surgeryCodeId', title: '手术ICD', width:120 }
+           ,{field: 'surgeryPart', title: '手术部位', width:220
+               ,templet:function(row){
+                   if(row.surgeryPart){
+                       var part = row.surgeryPart.split(',');
+                       var surgeryPart = '';
+                       $(part).each(function (i, v) {
+                           surgeryPart += dicBodyPartClassifySurgery[v] + '，';
+                       })
+                       surgeryPart = common.clearLastChar(surgeryPart,'，');
+                       return surgeryPart;
+                   } else return "";
+               }
+           }
+           ,{field: 'surgeryPosition', title: '手术体位', width:100
+               ,templet:function(row){ 
+                   if(row.surgeryPosition)
+                       return dicSurgeryPosition[row.surgeryPosition]
+                   else return""
+           }}
+           ,{field: 'surgeryDate', title: '手术时间', width:150, templet:function(row) {
+               if(row.surgeryDate) {
+                   return getSmpFormatDateByLong(row.surgeryDate,true);
+               } else {
+                   return "";
+               }}
+           } 
+           ,{field: 'surgeryDoctorName', title: '手术医生', width:200 }
+       ]]
+       ,done: function(res,curr,count){
+           //表格加载完成将列表数据保留 用于导入诊断
+            surgeryList = res.data;
+           console.log(surgeryList);
+       }
+    });
+
+    $('#btn_close').click(function () {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+    
+
+    //判断父页面是否是电子病历
+    if(parent.minieditorDesign){
+        //显示导入诊断按钮
+        $("#btn_import").removeClass("layui-hide");
+	    //单击选择一条诊断，回写到电子病历控件
+	    table.on('row(surgeryTable)',function(obj){
+	        var flag = parent.selectSingleAfterDiseaseCall(obj.data);
+	        var index = parent.layer.getFrameIndex(window.name);
+	        parent.layer.close(index); 
+	    });
+
+    }    
+});
+</script>
+            

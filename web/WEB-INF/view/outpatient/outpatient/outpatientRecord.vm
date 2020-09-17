@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊诊断</title>
+    #parse("./common/pageCss.vm")
+</head>
+<body class="white-bg">
+<div class="layui-collapse full-height-scroll" lay-filter="diagnosisList">
+    #foreach($item in $!outpatientList)
+        <div class="layui-colla-item">
+            <h2 class="layui-colla-title">
+                <span class="p-l-sm font-weight">$!date.format('yyyy-MM-dd', $!item.outpatientDate)</span>
+                <span class="p-l-sm font-weight">#htmlEscape($!item.patientName)</span>
+                <span class="p-l-sm font-weight">$!appDateUtils.getAgeByDate($!item.outpatientDate, $!patient.patientBirth)</span>
+                <span class="p-l-sm font-weight">#lookUpDict($!dicData.dicSex $!patient.patientSex)</span>
+                <span class="p-l-sm font-weight">科室：#htmlEscape($!item.outpatientOfficeName)</span>
+                <span class="p-l-sm font-weight">医生：#htmlEscape($!item.diagnosisDoctorName)</span>
+                #if("$!item.emergencyFlag" == "1")<span class="layui-badge m-l-sm">急</span>#end
+            </h2>
+            <div class="layui-colla-content">
+                <p class=" font-weight">病历：</p>
+                <p style="min-height: 50px">#htmlEscape($!item.presentDisease)</p>
+                <p class=" font-weight">诊断：</p>
+                <p>#htmlEscape($!item.firstDiagnosis)</p>
+            </div>
+        </div>
+    #end
+</div>
+</body>
+#parse("./common/pageJs.vm")
+<script>
+layui.use(['element'], function(){
+    var element = layui.element;
+
+    //element.on('collapse(test)', function(data){layer.msg('展开状态：'+ data.show);});
+
+    // 打开第一个面板
+    $('h2.layui-colla-title:first').click();
+});
+</script>
+</html>

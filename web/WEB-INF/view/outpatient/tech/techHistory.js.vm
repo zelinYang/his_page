@@ -1,0 +1,83 @@
+<script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicOffice  = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+  var dicOutTechExamState  = JSON.parse('$dicTools.changeMapToJson($dicData.dicOutTechExamState)');
+  var query;
+  layui.use(['jquery','table','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var $ = layui.$;
+
+    element.render();
+
+
+    //第一个实例
+    var tableIns = table.render({
+       elem: '#oupatientTechTable'
+      ,id: 'oupatientTechTable'
+      ,defaultToolbar: []
+      ,height: 'full-48'//高度
+      ,url: '../outpatient/medicalTechListData.jo' //数据接口
+      ,where:common.serializeObject($('#oupatientTech_queryForm'))
+      ,limit:200
+      //,page:true
+      ,request: {pageName: 'pageNumber' ,limitName: 'pageSize' }
+      ,cols: [[ //表头
+        //{type:'checkbox'}
+        {field : 'techExamApply.examApplyName',title : '申请单名',
+           templet :function (row) {
+               if(row.validFlag == '0'){
+                   return '<s>'+ row.techExamApply.examApplyName +'</s>'
+               } else {
+                   if(row.techExamApply) return row.techExamApply.examApplyName ? row.techExamApply.examApplyName : '';
+                    return '';
+               }
+           }
+       }
+       ,{field : 'proName',title : '项目名'}
+       ,{field : 'makeExamTime', title : '申请时间'}
+       ,{field : 'exeOfficeId',title:'执行科室',
+           templet :function (row) { return dicOffice[row.exeOfficeId];  }
+        }
+       ,{field : 'lisSampleName', title : '样本',
+           templet :function (row) { if(row.lisSampleName == 'null' ){ return ''; }   return row.lisSampleName; }
+       }
+       ,{field : 'techExamApply.remark', title : '备注',
+           templet :function (row) {
+               if(row.techExamApply) {
+                   return row.techExamApply.remark ? row.techExamApply.remark : '';
+               }
+               return '';
+           }
+       }
+      ]]
+      //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+      ,done: function(res, curr, count){
+          var tableDiv = $('#oupatientTechTable').next('div');
+          resizeTableDiv = function() {
+            tableDiv.css('height',(tableDiv.height()+4) + 'px');
+          }
+          resizeTableDiv();
+      }
+    });
+
+
+    //查询列表
+    query = function() {
+        var queryParams = common.serializeObject($('#oupatientTech_queryForm'));
+        tableIns.reload({ where: queryParams });
+    }
+
+    //页面初始化
+    $(document).ready(function() {
+	    // 查询按钮
+	    $('#btn_query').click(function (){
+	        query();
+	    });
+    });
+
+  });//layui.use
+</script>

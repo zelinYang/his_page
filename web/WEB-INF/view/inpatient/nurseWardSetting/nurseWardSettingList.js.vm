@@ -1,0 +1,185 @@
+
+<script type="text/html" id="manageNurseFlagTpl">
+    <input type="checkbox" lay-filter="manageNurseFlag" value="{{d.nurseWardSettingId}}"
+           lay-skin="switch" lay-text="是|否" {{Boolean(+d.manageNurseFlag) && 'checked' }} >
+</script>
+
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                patientSex: '',
+                patientBirthBegin: '',
+                patientBirthEnd: '',
+                patientClassifys: '',
+                keyWord: '',
+            }, common.serializeObject($('#nurseWardSetting_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('nurseWardSettingListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('nurseWardSetting_queryForm');
+        })
+        // 新增按钮
+        $('#btn_add').click(function () {
+            editWard();
+        })
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#nurseWardSettingListGrid',
+            url: contextPath + '/inpatient/nurseWardSettingListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field : 'wardId',
+                title : '病区',
+                templet: function (d) {
+                    return d.inpatientWard.wardName;
+                }
+            }, {
+                field : 'officeId',
+                title : '科室',
+                templet:function (d) {
+                    return d.sysOrg.name;
+                }
+            }, {
+                field : 'nurseUserId',
+                title : '护士',
+                templet:function (d) {
+                    return d.sysUser.name;
+                }
+            }, {
+                field: 'manageNurseFlag',
+                title: '是否护士长',
+                unresize: true,
+                width: 80,
+                fixed: 'right',
+                templet: '#manageNurseFlagTpl'
+            },{
+                title: '操作',
+                width: 80,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]], done:function () {
+                tableReHeight(this, getTableHgt);autoSetHeigt()
+            }
+        }));
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#nurseWardSetting_queryForm').height();
+        }
+
+        //监听护士长事件
+        form.on('switch(manageNurseFlag)', function (obj) {
+            common.requestServer('../inpatient/nurseWardSettingManageNurseFlag.jo', {
+                nurseWardSettingIds: obj.value,
+                manageNurseFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result);
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(nurseWardSettingListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/basDic/basDicShow.do?dicId=' + row.dicId, '<b>' + row.dicTypeName + '</b>：' + row.dicName + '详情', {
+                        area: ['600px', '80%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    editWard(row);
+            }
+        });
+        //保存
+        function save(index, layero) {
+
+            var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save', submit = layero.find('iframe').contents().find('#' + submitID);
+            //监听提交
+            iframeWindow.layui.form.on('submit(' + submitID + ')', function(data) {
+                var wardParams = common.serializeObject(layero.find('iframe').contents().find('#wardForm'))
+
+                //提交 Ajax 成功后，静态更新表格中的数据
+                common.requestServer(contextPath + '/inpatient/saveNurseWardSetting.jo', wardParams, function(result) {
+
+                    if (result.code == "0") {
+                        layer.msg('保存成功', {
+                            icon : 1
+                        });
+                        layer.close(index); //关闭弹层
+                        $('#btn_query').click();
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+            submit.trigger('click');
+        }
+        //编辑
+        function editWard(data) {
+            var title = '新增护士权限'
+            var content = '$contextPath/inpatient/nurseWardSettingEdit.do'
+            //true 执行
+            if (data) {
+                title = data.name;
+                content += '?nurseWardSettingId=' + data.nurseWardSettingId;
+
+            }
+
+            common.open(content, title, {
+                area : [ '750px', '500px' ],
+                btn : [ '保存' ],
+                yes : function(index, layero) {
+                    save(index, layero);
+                }
+            });
+        }
+    })
+</script>

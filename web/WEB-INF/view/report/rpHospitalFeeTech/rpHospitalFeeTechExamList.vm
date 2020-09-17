@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-报表分析-医生站-检查科室医生汇总</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="syncInpatientSettlement_queryForm" class="layui-form">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">结账日期</label>
+                        <div class="layui-input-inline input-inline-long">
+                            #formTextInput("" "" "class='layui-input layer-date '
+                            tag='chargeTimeBegin,chargeTimeEnd' id='q_chargeTime' autocomplete='off' ")
+                        </div>
+                    </div>
+
+                    <div class="layui-inline ">
+                        <label class="layui-form-label">医技执行科室</label>
+                        <div class="layui-input-inline  ">#formSingleSelectSearch(
+                            "exeOfficeId" " " $!{sysOrgMap} "lay-search")
+                        </div>
+                    </div>
+                    <div class="layui-inline ">
+                        <div class="layui-input-inline" style="width: auto;">
+                            #formCheckboxeGroup("patientTypes" "" $dicData.dicRpPatientType "
+                            lay-filter='patientTypes' lay-skin='primary'")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i
+                                class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i
+                                class="iconfont icon-qingchu"></i></button>
+                    </div>
+                    <div class="layui-inline ">
+                        <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" lay-tips="导出"
+                                id="btn_import">
+                            <i class="layui-icon layui-icon-export" style="margin-top: 7px"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 列表表格 begin -->
+        <table id="rpHospitalFeeTechListGrid" lay-filter="rpHospitalFeeTechListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<script src="../resource/common/bicommon.js"></script>
+<!-- 本页面js -->
+#parse("./report/rpHospitalFeeTech/rpHospitalFeeTechExamList.js.vm")
+</body>
+</html>

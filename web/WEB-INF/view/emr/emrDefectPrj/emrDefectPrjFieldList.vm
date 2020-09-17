@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>选择质控字段</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-table td, .layui-table th {
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+<div class="layui-form" lay-filter="dataTable">
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label wd-100">#requiredTag()当前缺陷内容</label>
+        <span style="color: red;font-size:20px">$!{ermDefectPrjItem.emrDefectPrjName}：$!{ermDefectPrjItem.defectName}</span>
+        ##不允许在js中引用velocity变量defectName,因为有可能被defectName中的引号等特殊字符破坏js代码结构。改用DOM来存放
+        #formHiddenInput("defectName" "$!{ermDefectPrjItem.emrDefectPrjName}：$!{ermDefectPrjItem.defectName}" "id='curDefectName'")
+    </div>
+
+    <table class="layui-table">
+        <colgroup>
+            <col width="10%">
+            <col width="10%">
+            <col width="20%">
+            <col width="10%">
+            <col width="10%">
+            <col width="10%">
+            <col width="20%">
+            <col width="10%">
+        </colgroup>
+        <thead>
+        <tr>
+            <th>类名</th>
+            <th>字段名</th>
+            <th>描述</th>
+            <th>控件模式</th>
+            <th>控件类型</th>
+            <th>是否必填</th>
+            <th>已关联缺陷内容</th>
+            <th>质控必填</th>
+        </tr>
+        </thead>
+        <tbody id="field">
+        <tr>
+            <td>className</td>
+            <td>fieldName</td>
+            <td>desc</td>
+            <td>required</td>
+            <td>type</td>
+            <td>mode</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+
+layui.config({
+  base: '../resource/layuiadmin/' //静态资源所在路径
+}).use(['form','layer'], function(){
+    var form = layui.form;
+
+    var fieldHtml = $('#field').first().html();
+    $('#field').html('');
+    var miniEditor = parent.miniEditor;
+    var controls = miniEditor.getControlById();
+    var controlObj = {};
+    var storeObjArray = [];//记录已放入的控件,避免控件重复
+    for (var i = 0, len = controls.length; i < len; i++) {
+        var controlId = controls[i].getCtrlId();
+        if (null != storeObjArray[controlId] && typeof(storeObjArray[controlId]) != "undefined") {
+            continue;
+        }
+        storeObjArray[controlId] = controlId;
+        var opt = controls[i].getOpt();
+        var ids = controlId.split('_');
+        var className = ids[0];
+        var fieldName = ids[1] ? ids[1] : ids[0];
+        if (!controlObj[className]) {
+            controlObj[className] = [];
+        }
+        controlObj[className].push({
+            fieldName: fieldName,
+            desc: opt.desc,
+            mode: opt.mode,
+            required: opt.required,
+            otherFieldName: opt.otherFieldName,
+            type: opt.type
+        });
+    }
+    var html = [];
+    for (var name in controlObj) {
+        var fields = controlObj[name];
+        for (var i = 0, len = fields.length; i < len; i++) {
+            var trDom = [];
+            trDom.push('<tr>');
+            if (i === 0) {
+                trDom.push('<td rowspan="' + len + '">' + name + '</td>');
+            }
+            trDom.push('<td>' + fields[i].fieldName + '</td>');
+            trDom.push('<td>' + fields[i].desc + '</td>');
+            trDom.push('<td>' + getMode(fields[i].mode) + '</td>');
+            trDom.push('<td>' + getType(fields[i].type) + '</td>');
+            trDom.push('<td>' + getRequired(fields[i].required) + '</td>');
+            //在td中放入自定义属性rowuuid,并保证与checkbox的一致且唯一
+            trDom.push('<td rowuuid="' + name + '_' + i + '"></td>');
+            trDom.push('<td><input rowuuid="' + name + '_' + i + '" type="checkbox" name="validFlag" qualityClassName="' + name + '" qualityFieldName="' + fields[i].fieldName
+                    + '" qualityFieldDesc="' + fields[i].desc + '" emrDefectPrjItemId="$!{ermDefectPrjItem.emrDefectPrjItemId}"'
+                    + ' emrDefectPrjClassifyId="$!{ermDefectPrjItem.emrDefectPrjClassifyId}" value="" lay-skin="switch" lay-text="是|否" lay-filter="validFlag"></td>');
+            trDom.push('</tr>');
+            html.push(trDom.join(''));
+        }
+    }
+    $('#field').html(html.join(''));
+    form.render("checkbox");
+
+    var parentTplId = parent.$("#emrTlpId").val();
+    //初始化质控字段
+    common.requestServer('../emr/emrDefectPrjFieldListDataAndItem.jo', {
+        emrTlpId : parentTplId,
+        emrDefectPrjClassifyId : "$!{ermDefectPrjItem.emrDefectPrjClassifyId}",
+        hospitalId : "$!{currentUser.getUnitOrgId()}"
+    }, function(result) {
+        if (null == result.emrDefectPrjFieldList || typeof(result.emrDefectPrjFieldList) == "undefined") {
+            return;
+        }
+        //遍历质控字段表列表数据,设置checkbox值、缺陷内容列信息等
+        var dataindex = null;
+        for (dataindex in result.emrDefectPrjFieldList) {
+            var emrDefectPrjField = result.emrDefectPrjFieldList[dataindex];
+            var checkvalue = false;
+            if ("$!{CONST.AppConstants.YES_FLAG}" == emrDefectPrjField.validFlag && "$!{ermDefectPrjItem.emrDefectPrjItemId}" == emrDefectPrjField.emrDefectPrjItemId) {
+                checkvalue = true;
+            }
+            //用"质控字段checkbox"的自定义属性存放质控字段表的信息
+            var inputObj = $("input[qualityClassName='" + emrDefectPrjField.qualityClassName + "'][qualityFieldName='" + emrDefectPrjField.qualityFieldName + "']")
+            .prop("checked", checkvalue).attr("emrDefectPrjFieldId", emrDefectPrjField.emrDefectPrjFieldId)
+            .attr("originEmrDefectPrjItemId", emrDefectPrjField.emrDefectPrjItemId)
+            .attr("originValidFlag", emrDefectPrjField.validFlag);
+            //根据缺陷内容字典显示缺陷内容列信息
+            if ("$!{CONST.AppConstants.YES_FLAG}" == emrDefectPrjField.validFlag
+                    && null != result.emrDefectPrjItemMap && typeof(result.emrDefectPrjItemMap) != "undefined") {
+                var emrDefectPrjItemMap = result.emrDefectPrjItemMap;
+                var defectName = emrDefectPrjItemMap[emrDefectPrjField.emrDefectPrjItemId];
+                defectName = (null == defectName || typeof(defectName) == "undefined") ? "" : defectName;
+                var rowuuid = inputObj.attr("rowuuid");
+                $("td[rowuuid='" + rowuuid + "']").html(defectName);
+            }
+        }
+        form.render("checkbox");
+    });
+
+    //监听有无效操作
+    form.on('switch(validFlag)', function(obj) {
+        //从checkbox中获取自定义属性——原始缺陷内容ID和原始有效标识,用于判断在更改质控字段数据时是否出现提示信息
+        var originEmrDefectPrjItemId = obj.elem.getAttribute("originEmrDefectPrjItemId");
+        var originValidFlag = obj.elem.getAttribute("originValidFlag");
+        //如果要设置已关联其他缺陷内容的字段，需要进行用户确认
+        if (obj.elem.checked && originEmrDefectPrjItemId != null
+                && originEmrDefectPrjItemId != obj.elem.getAttribute("emrDefectPrjItemId")
+                && originValidFlag != null && originValidFlag == "$!{CONST.AppConstants.YES_FLAG}") {
+            //恢复为为转换前的状态,待用户确定更改再改变状态
+            obj.elem.checked = !obj.elem.checked;
+            form.render('checkbox');
+            common.confirm("该字段已关联其他缺陷内容，确定要改为关联当前缺陷内容吗？", function() {
+                //用户确认要更改后重新设置状态
+                obj.elem.checked = !obj.elem.checked;
+                form.render('checkbox');
+                updateValidFlag(obj);
+            }, function() {
+
+            });
+        } else {
+            updateValidFlag(obj);
+        }
+    });
+
+    // 更新有效标志状态
+    function updateValidFlag(obj) {
+        var emrDefectPrjFieldId = obj.elem.getAttribute("emrDefectPrjFieldId");
+        if (null == emrDefectPrjFieldId || typeof(emrDefectPrjFieldId) == "undefined") {
+            emrDefectPrjFieldId = "";
+        }
+        var emrDefectPrjItemId = obj.elem.getAttribute("emrDefectPrjItemId");
+        var emrDefectPrjClassifyId = obj.elem.getAttribute("emrDefectPrjClassifyId");
+        var qualityClassName = obj.elem.getAttribute("qualityClassName");
+        var qualityFieldName = obj.elem.getAttribute("qualityFieldName");
+        var qualityFieldDesc = obj.elem.getAttribute("qualityFieldDesc");
+        var validFlag = Number(obj.elem.checked);
+        var emrTlpId = parent.$("#emrTlpId").val();
+        var emrTlpClassifyId = parent.$("#emrTlpClassifyId").val();
+        var emrTlpName = parent.$("#emrTlpName").val();
+        common.requestServer('../emr/saveEmrDefectPrjField.jo', {
+            emrDefectPrjFieldId : emrDefectPrjFieldId,
+            qualityClassName : qualityClassName,
+            qualityFieldName : qualityFieldName,
+            qualityFieldDesc : qualityFieldDesc,
+            emrTlpId : emrTlpId,
+            emrTlpClassifyId : emrTlpClassifyId,
+            emrTlpName : emrTlpName,
+            emrDefectPrjItemId : emrDefectPrjItemId,
+            emrDefectPrjClassifyId : emrDefectPrjClassifyId,
+            validFlag : validFlag
+        }, function(result) {
+            if (result.code == "0") {
+                layer.msg('设置 ' + dicIsValid[validFlag] + ' 成功', {
+                    icon : 1
+                });
+                //若是设置为“质控字段”则设置列表缺陷内容为当前的缺陷内容,否则清空缺陷内容
+                if (result.data.validFlag == "$!{CONST.AppConstants.YES_FLAG}") {
+                    var rowuuid = obj.elem.getAttribute("rowuuid");
+                    $("td[rowuuid='" + rowuuid + "']").html($("#curDefectName").val());
+                } else {
+                    var rowuuid = obj.elem.getAttribute("rowuuid");
+                    $("td[rowuuid='" + rowuuid + "']").html("");
+                }
+            } else {
+                layer.msg('设置 ' + dicIsValid[validFlag] + ' 失败', {
+                    icon : 2
+                });
+                obj.elem.checked = !obj.elem.checked;
+                form.render('checkbox');
+            }
+            //用checkbox标签的自定义属性记录当前质控字段的主键,避免下次提交时缺少主键信息
+            obj.elem.setAttribute("emrDefectPrjFieldId", result.data.emrDefectPrjFieldId);
+            //用checkbox标签的自定义属性记录原始质控内容ID与当前字段有效标识,避免下次提交时弹出是否需要更改的提示
+            obj.elem.setAttribute("originEmrDefectPrjItemId", result.data.emrDefectPrjItemId);
+            obj.elem.setAttribute("originValidFlag", result.data.validFlag);
+        });
+    }
+
+});
+
+    function getMode(mode) {
+        var value = '';
+        switch (mode) {
+            case '0': value = '只读模式'; break;
+            case '1': value = '编辑模式'; break;
+            case '2': value = '隐藏模式'; break;
+        }
+        return value;
+    }
+
+    function getRequired(required) {
+        return required === '1'? '是': '否';
+    }
+
+    function getType(type) {
+        return type;
+    }
+
+
+</script>
+</body>
+
+</html>

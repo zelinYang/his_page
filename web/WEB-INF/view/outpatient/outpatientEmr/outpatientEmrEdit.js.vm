@@ -1,0 +1,537 @@
+<script type="text/javascript">
+layui.use(['layer'], function(){
+    var layer = layui.layer;
+    layer.load();
+});
+var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+var DICDISEASETYPEFLAG_CHINESE = "$!{CONST.AppConstants.DICDISEASETYPEFLAG_CHINESE}";
+var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)'); //用药频率
+var dicPharmacyFreqId = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreqId)'); //用药频率
+var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)'); //给药途径
+var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)'); //药品数量单位
+var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)'); //药品数量单位
+var dicHerbUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicHerbUsage)');//草药用法
+var refreshFrame; //刷新当前iframe
+var setDrugAllergy; //设置过敏信息到门诊病历
+var setFirstDiagnosis; //设置初步诊断到门诊病历
+var getEmrRecipeItem; //获取医嘱详情
+var setEmrRecipeItem; //保存医嘱时设置到门诊
+var getEmrRecipeTcmItem; //获取草药信息
+var setEmrRecipeTcmItem; //设置草药信息到门诊
+var getEmrOutTechExamine; //获取检查信息
+var getEmrOutTechInspect; //获取检验信息
+var getPatientCureTreatment //获取治疗信息
+var filter = 'outNav';
+var initLayout;
+var initLayIfamePage;//初始化iframe页面
+var leadingIn;//导入内容
+
+var minieditorDesign = new window.minieditorDesign('designContainer', {
+    initData: #if("$!emrData" != "") $!emrData #else '' #end,
+    modelType: 'strict',
+    printType: '$!{emrTlp.printType}',
+    fontSize: '$!{emrTlp.fontSize}',
+    emrTlpClassifyId: '$!{emrTlp.emrTlpClassifyId}',
+    outhtmlWidth: '800px',
+    rootUrl: '$!contextPath',
+    hospitalName: '$session.getAttribute("currentUser").unitOrgName',
+    dicEmrClassNameKeyField: JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrClassNameKeyField)'),
+    baseFormParams: {PatientHospitalEmr: {patientHospitalEmrId: $('#patientHospitalEmrId').val(), patientId: $('#patientId').val(), registerId: $('#registerId').val(), emrTlpId: $('#emrTlpId').val()}}
+
+});
+
+$(function () {
+    $("#trace").change(function() {
+        console.log(this.checked);//判断当前状态
+        if (this.checked) {
+            minieditorDesign.miniEditor.setTrace();
+        } else {
+            minieditorDesign.miniEditor.restoreCacheContent();
+        }
+    });
+
+    $('#btn_preview').click(function () {
+        layer.open({
+            type: 2,
+            area: ['100%', '100%'],
+            maxmin: true,
+            title :'打印预览',
+            content: '$!contextPath/resource/editor/mini-editor/dialogs/preview/preview.html' //这里content是一个URL，如果你不想让iframe出现滚动条，你还可以content: ['http://sentsin.com', 'no']
+        });
+    })
+})
+
+function selectTemplate() {
+    var haveName = minieditorDesign.miniEditor.getControlByCursor().getOpt().labelName;
+    var name = common.clearLastChar(haveName, '：')
+	var template = $('.outRightNav', parent.parent.document).contents().find('iframe').contents().find('iframe')[0];
+    var icon = $(template).contents().find('#kbTypeTreeDiv').find('div[data-id="001"]').find('.dtreefont.dtree-icon-jia.dtree-theme-dtreefont.dtree-theme-ficon');
+    var status = $(icon).attr('data-spread');
+    if(status == 'close') {
+        $(icon).click();
+    }
+	var templateWindow = template.contentWindow;
+    templateWindow.selectTemplateItem(name);
+}
+
+
+
+layui.use(['element','table','layer'],function(){
+    var table = layui.table;
+    var element = layui.element,
+    layer = layui.layer;
+
+
+    //点击过敏史跳转到过敏信息tab
+    window.drugAllergy = function(){
+        parent.parent.editDrugAllergy();
+    }
+
+    //点击诊断跳转到诊断tab
+    window.outpatientFirstDiagnosis = function(){
+    	var layId = 'outpatientDiagnose';
+    	parent.parent.tabChange(filter, layId);
+    }
+
+    //点击处方跳转到门诊处方tab
+    window.outpatientRecipeTab = function(){
+    	var layId = 'medicineRecipe';
+    	parent.parent.tabChange(filter, layId);
+    }
+
+    //点击检查或检验跳转到检查检验tab
+    window.outpatientTechTab = function(){
+    	var layId = 'tech';
+    	parent.parent.tabChange(filter, layId);
+    }
+
+    //点击草药跳转到草药tab
+    window.outpatientTcmRecipeTab = function(){
+    	var layId = 'tcmRecipe';
+    	parent.parent.tabChange(filter, layId);
+    }
+
+    //点击治疗跳转到治疗tab
+    window.outpatientTreatTab = function(){
+        var layId = 'treatApply';
+        parent.parent.treatApply();
+    }
+
+    var patientId  = $("#patientId").val();
+    var registerId  = $("#registerId").val();
+    var allergyDisease = $("#allergyDisease").val();
+    var firstDiagnosis = $("#firstDiagnosis").val();
+
+    var outTechExamineId = 'EmrPatientOtherData_outpatientTechExamin';//检查控件Id
+    var outTechInspectId = 'EmrPatientOtherData_outpatientTechInspec';//检验控件Id
+    var emergencyFlag = 'Outpatient_emergencyFlag';//急诊标识
+
+    if($('#registerType').val() == '2'){
+        setOutpatientData('1', emergencyFlag);
+    } else {
+        setOutpatientData('0', emergencyFlag);
+    }
+
+    //导入内容
+    leadingIn = function(content){
+       minieditorDesign.miniEditor.inserthtml(content);
+    }
+
+    //设置数据
+    function setOutpatientData(param, paramId){
+    	var elem =  minieditorDesign.miniEditor.getControlById(paramId);
+    	if (elem.length == 0) return false;
+    	if(param){
+    		elem[0].setValue(param);
+    	}
+    }
+
+
+
+    setDrugAllergy = function(allergyDrugName) {
+        var elem =  minieditorDesign.miniEditor.getControlById('Outpatient_allergyDisease');
+        if (elem.length == 0) return false;
+        if(allergyDrugName){
+        	elem[0].setValue(allergyDrugName);
+        } else {
+        	elem[0].setValue('无过敏');
+        }
+    }
+
+    setFirstDiagnosis = function(firstDiagnosis) {
+    	var elem =  minieditorDesign.miniEditor.getControlById('Outpatient_outpatientDiagnosis');
+    	if (elem.length == 0) return false;
+    	if(firstDiagnosis){
+    		elem[0].setValue(firstDiagnosis);
+    	} else {
+    		elem[0].setValue('未诊断');
+    	}
+
+    }
+    function getDrugAllergy(patientId){
+    	$.ajax({
+            type: "POST",
+            url: '$contextPath/patient/patientDrugAllergyJsonList.jo',
+            data: {patientId: patientId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	var drugAllergyData = result.data;
+            	var allergyDrugName = '';
+            	if(drugAllergyData.length > 0){
+            		$(drugAllergyData).each(function(index, data){
+            			allergyDrugName += data.allergyDrugName + '、';
+                	});
+            		allergyDrugName = common.clearLastChar(allergyDrugName, '、');
+            	} else {
+            		allergyDrugName = '无过敏';
+             	}
+            	setDrugAllergy(allergyDrugName);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+    window.getPatientFirstDiagnosis = function(registerId){
+    	$.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/diagnosisListData.jo',
+            data: {registerId: registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	var diagnosisData = result.data;
+            	var diagnosis = '';
+            	if(diagnosisData.length == 1){
+            	    diagnosis = diagnosisData[0].diseaseDiagnosisName || diagnosisData[0].diseaseDiagnosisDesc;
+                } else if(diagnosisData.length > 1){
+                    //门诊初步诊断，CBZD 对应门诊明细表中疾病诊断名称，如果多条，用中文逗号分隔 例如：西医：1、诊断性名称或者描述性诊断【传染病、慢性病】，中医：2、诊断性名称或者描述性诊断（中医治法）【传染病、慢性病】， */
+                    diagnosis = $.map(diagnosisData, function (outpatientDiagnosis, index) {
+                        var dicDiagAttr = {"infectiousFlag":"传染病", "chronicFlag":"慢性病", "tumourFlag":"肿瘤"}
+                        var endLine = $.map(dicDiagAttr, function (val, key) {
+                            if (YES_FLAG ==  outpatientDiagnosis[key]) return  val;
+                        })
+                        console.log(outpatientDiagnosis);
+                        return (outpatientDiagnosis.diseaseTypeFlag ? ((dicDiseaseTypeFlag[outpatientDiagnosis.diseaseTypeFlag] || '') + "：") : "") + (++index) +"、"+ (outpatientDiagnosis.diseaseDiagnosisName || outpatientDiagnosis.diseaseDiagnosisDesc) + (DICDISEASETYPEFLAG_CHINESE == outpatientDiagnosis.diseaseTypeFlag && outpatientDiagnosis.tcmTreatment ? "（" + outpatientDiagnosis.tcmTreatment + "）":"") + (endLine.length ? "【" + endLine.join("、") + "】" : "");
+                    }).join(",<br>")
+
+            	} else {
+            		diagnosis = '未诊断';
+             	}
+            	setFirstDiagnosis(diagnosis);
+
+            	//设置门诊诊断明细ID，对应outpatient_diagnosis.diagnosis_id，多条用英文逗号分隔
+                var outpatientDiagnosisIdStr = $.map(diagnosisData, function (outpatientDiagnosis) {
+                    return outpatientDiagnosis.diagnosisId;
+                }).join(",")
+                var elem =  minieditorDesign.miniEditor.getControlById('Outpatient_outpatientDiagnosisIdStr');
+                if (elem.length == 0) return false;
+                elem[0].setValue(outpatientDiagnosisIdStr);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+
+    function showEmrRecipeItem(recipeResult){
+    	var elem =  minieditorDesign.miniEditor.getControlById('EmrPatientOtherData_outpatientRecipeItem');
+    	if (elem.length == 0) return false;
+    	var emrRecipeItem = '';
+    	var recipeItem = recipeResult.data
+    	if(recipeResult.count == 0){
+            elem[0].setValue('');
+    		return false;
+    	} else if(recipeItem) {
+    		$(recipeItem).each(function(index, data) {
+    			emrRecipeItem += (index+1) + '、' + data.orderName + '&nbsp&nbsp' + data.dosage;
+    			if(data.dosageUnit){
+    				emrRecipeItem += dicDrugNumUnitDosageUnit[data.dosageUnit];
+    			}
+    			emrRecipeItem += '&nbsp&nbsp' + (dicPharmacyFreqId[data.pharmacyFreqId] || '') + '&nbsp'
+				    + '&nbsp用法：' + (dicDoseWay[data.doseWayCode] || '') + '&nbsp&nbsp'+ (data.giveTotalQuantity || "") ;
+    			if(data.dosageUnit) {
+    				emrRecipeItem += dicDrugNumUnitDosageUnit[data.dosageUnit];
+    			}
+    			emrRecipeItem += '<br/>';
+            });
+    		emrRecipeItem = common.clearLastChar(emrRecipeItem,'<br/>');
+			elem[0].setValue(emrRecipeItem);
+    	}
+    }
+
+    getEmrRecipeItem = function(registerId, patientId){
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/recipeItemEmrData.jo',
+            data: {registerId: registerId, patientId: patientId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	showEmrRecipeItem(result);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+    setEmrRecipeTcmItem = function(recipeTcmResult){
+    	var elem =  minieditorDesign.miniEditor.getControlById('EmrPatientOtherData_outpatientRecipeTcm');
+    	if (elem.length == 0) return false;
+    	var emrRecipeTcmItem = '';
+    	var recipeTcm = recipeTcmResult.data[0];
+    	if(recipeTcmResult.count == 0){
+            elem[0].setValue('');
+    		return false;
+    	}
+    	$.each(recipeTcmResult.data, function (index, recipeTcm) {
+    		console.log(emrRecipeTcmItem);
+			if (emrRecipeTcmItem) {
+				emrRecipeTcmItem += '<br/>';
+			}
+			var recipeTcmArr = recipeTcm.recipeItemList;
+			emrRecipeTcmItem += recipeTcm.orderDay + '剂&nbsp' + dicHerbUsage[recipeTcm.herbUsageWay] + '<br/>';
+			if(recipeTcmArr){
+				$(recipeTcmArr).each(function(index, data){
+					if(data != null){
+						emrRecipeTcmItem += (index+1) + '、' + data.orderName + '&nbsp&nbsp' + data.medicineSpec + '&nbsp&nbsp'
+								+ data.dosage;
+						if(data.dosageUnit){
+							emrRecipeTcmItem += dicDrugNumUnitDosageUnit[data.dosageUnit] + '<br/>';
+						} else {
+							emrRecipeTcmItem += '<br/>';
+						}
+					}
+				});
+				emrRecipeTcmItem = common.clearLastChar(emrRecipeTcmItem, '<br/>');
+			}
+		})
+		elem[0].setValue(emrRecipeTcmItem);
+    }
+
+
+    getEmrRecipeTcmItem = function(registerId){
+    	$.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/recipeTcmEmrListData.jo',
+            data: {registerId: registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	setEmrRecipeTcmItem(result);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+
+    getEmrOutTechExamine = function(registerId){
+    	var params = {
+                registerId : registerId
+               ,validFlag:'${CONST.AppConstants.YES_FLAG}'
+               ,medicalTechFlag : '${CONST.AppConstants.MEDICAL_TECH_EXAMINE}'//检查MEDICAL_TECH_EXAMINE
+              }
+    	$.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/medicalTechEmrData.jo',
+            data: params,
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	setOutpatientData(result.data, outTechExamineId);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+    getEmrOutTechInspect = function(registerId){
+    	var params = {
+                registerId : registerId
+               ,validFlag:'${CONST.AppConstants.YES_FLAG}'
+               ,medicalTechFlag : '${CONST.AppConstants.MEDICAL_TECH_INSPECT}'
+              }
+    	$.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/medicalTechEmrData.jo',
+            data: params,
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+            	setOutpatientData(result.data, outTechInspectId);
+            },
+            error: function(res){
+                jqueryPostError(res);
+           }
+        });//ajax end
+    }
+
+    getPatientCureTreatment = function(registerId, patientId){
+        var treat = '';
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/surgery/treatApplyPageData.jo',
+            data: {
+                registerId: registerId,
+                patientId: patientId
+            },
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                if(result.count > 0){
+                    var treatList = result.data;
+                    $(treatList).each(function(i, v){
+                        treat += v.surgeryName + '，';
+                    });
+                    treat = common.clearLastChar(treat,'，');
+                }
+                setOutpatientData(treat, 'Outpatient_cureTreatment');
+            },
+            error: function(res){
+                jqueryPostError(res);
+            }
+        });
+    }
+
+
+    //获取门诊日志Id
+    function getOutpatientId(registerId){
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/findOutpatient.jo',
+            data: {registerId: registerId},
+            dataType:"json",
+            async:false,//同步 请求
+            success: function(result){
+                if(result.data){
+                    var params = {outpatientId: result.data.outpatientId};
+                    minieditorDesign.addParams({Outpatient: params});
+                }
+            }
+
+        });
+    }
+
+
+    //设置门诊病历的数据
+    window.setAllData = function (){
+        getDrugAllergy(patientId);
+        getPatientFirstDiagnosis(registerId);
+        getEmrRecipeItem(registerId, patientId);
+        getEmrRecipeTcmItem(registerId);
+        getPatientCureTreatment(registerId, patientId);
+        getEmrOutTechExamine(registerId);
+        getEmrOutTechInspect(registerId);
+
+    }
+    // setAllData();
+    //延迟查询门诊病历数据
+    setTimeout(setAllData, 500);
+
+    setEmrRecipeItem = function(emrRecipeItem){
+    	var elem =  minieditorDesign.miniEditor.getControlById('EmrPatientOtherData_outpatientRecipeItem');
+    	elem[0].setValue(emrRecipeItem);
+    }
+
+    refreshFrame = function(){
+    	window.location.reload();
+    }
+
+
+    //ctrl + S 保存
+    document.onkeydown = function(e){
+        var keyCode = e.keyCode || e.which || e.charCode;
+        var altKey = e.altKey
+        if(altKey && e.keyCode == 83){
+            e.preventDefault()
+            $('#btn_save, #btn_submit').click();
+        }
+    };
+
+    // 保存按钮
+    $('#btn_save, #btn_submit').click(function (){
+        var patientHospitalEmrId;
+        saveBeforeCall(minieditorDesign, "0");
+
+    });
+
+
+    //初始化保存，一般用在病历数据对象新增时（修改不用调用），需要调用该方法, 如果保存过获取Id
+    function saveBeforeCall(minieditorDesign, operateType) {
+        getOutpatientId(registerId)
+        var flag = $(this).attr('id') == 'btn_submit' ? '1' : '0';
+        var params = minieditorDesign.getBaseParams();
+        params.PatientHospitalEmr.submitFlag = flag;
+
+        minieditorDesign.save(contextPath + '/emr/saveCommonPatientEmr.jo?serviceId=$!serviceId');
+    }
+
+
+    function hideSouthLayout() {
+        $(".ui-layout-resizer-south .content-open").trigger('click');
+    }
+
+    initLayout = function() {
+        var interval =  setInterval(function() {
+            if ($('#container').height()>0) {
+                $('#container').layout({
+                    south__size: 350//pane的大小
+                   ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▼</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                   ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▲</div>"//pane关闭时，同上。
+                   ,spacing_open:8//边框的间隙
+                   ,maskIframesOnResize: ".resizeiframe"
+                });
+                clearInterval(interval );//停止
+                hideSouthLayout();
+            }
+        }, 10);
+    }
+
+  	//延迟加载Ifame页面
+    initLayIfamePage = function() {
+        function loadIfamePage() {
+           $('iframe[targetSrc]').each(function(index) {
+                var elem = $(this);
+                var src = elem.attr('targetSrc') + common.objToParamStr(parent.parent.grobalModel);
+                elem.attr('src',src);
+            });
+        }
+        //延迟加载
+        setTimeout(function() {
+            loadIfamePage();
+        }, 500);
+    }
+
+  	//显示隐藏底部窗口
+    function showSouthLayout() {
+        var southDisplay = $(".ui-layout-resizer-south .content-open").css("display");
+        if (southDisplay == 'none'){
+            $('.ui-layout-south').removeClass('layui-hide');
+            $(".ui-layout-resizer-south .content-open").trigger('click');
+        }
+    }
+
+    /**************************底部弹框操作 start ******************************/
+    $(document).ready(function() {
+        initLayout();
+        $('#btn_import_examine, #btn_import_inspect').click(function() {
+           //切换到指定的tab
+           var targetTab = $(this).attr('target');
+           element.tabChange('outReportTabs', targetTab);
+           showSouthLayout();
+           initLayIfamePage();
+        });
+    });
+    /**************************底部弹框操作 end******************************/
+
+});
+
+</script>

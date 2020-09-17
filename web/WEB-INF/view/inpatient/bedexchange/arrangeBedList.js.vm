@@ -1,0 +1,119 @@
+<script>
+
+    function saveBedexchange(params) {
+        common.requestServer('../inpatient/saveArrangeBed.jo', params, function (result) {
+            if (result.code == "0") {
+                parent.common.alertCall("保存成功。", 1, function () {
+                    $('#btn_query', window.parent.document).click()
+                    var index = parent.layer.getFrameIndex(window.name);
+                    parent.layer.close(index);
+                });
+            } else {
+                parent.common.alert(result.msg, 0);
+            }
+        });
+    }
+
+    var wardBedNo = '$!inpatientWardBed.wardBedNo';
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+    var dicExchangeType = JSON.parse('$dicTools.changeMapToJson($dicData.dicExchangeType)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    layui.use(['table', 'form', 'util'], function () {
+        var table = layui.table, util = layui.util, form = layui.form;
+
+        //刷新按钮
+        $("#btn_refresh").click(function () {
+            var params = common.serializeObject($('#queryForm'));
+            patientTable.reload({url: '../inpatient/arrangeBedInpatientPage.jo', where: params});
+        });
+
+        function getTableHgt(){
+            return ($('body').height() - $('#editForm').height() - 41)
+        }
+        $(window).resize(function(){
+            table.reload('patientTable',{
+                height:getTableHgt()
+            })
+        })
+
+        //患者列表表格
+        var patientTable = table.render({
+            elem: '#patientTable'
+            , url: '../inpatient/arrangeBedInpatientPage.jo?wardBedNo=' + wardBedNo //数据接口
+            , height: getTableHgt()
+            , page: true //开启分页
+            , cols: [[ //表头
+                {field: 'visitCardNo', title: '就诊卡号', width: 150}
+
+                , {field: 'patientName', title: '姓名', width: 75}
+                , {
+                    field: 'patientSex', title: '性别', width: 60, templet: function (row) {
+                        return dicSex[row.patientSex] || '';
+                    }
+                }, {
+                    field: 'patientKind', title: '性质', width: 60, templet: function (row) {
+                        return dicPatientKind[row.patientKind] || '';
+                    }
+                }
+                , {
+                    field: 'inhospitalState', title: '状态', templet: function (row) {
+                        return dicInhospitalState[row.inhospitalState]
+                    }
+                }
+                , {
+                    field: 'inhospitalDate', title: '入院日期', width: 140, templet: function (row) {
+                        return util.toDateString(row.inhospitalDate)
+                    }
+                }
+                , {field: 'wardName', title: '入院病区', minWidth: 80}
+                , {field: 'inhospitalOfficeName', title: '入院科室', minWidth: 80}
+                , {field: 'managerDoctorName', title: '主管医生', minWidth: 80}
+            ]]
+        });
+
+        //监听行单击事件（单击事件为：row）
+        table.on('row(patientTable)', function (obj) {
+            var data = obj.data;
+            $("#inhospitalId").val(data.inhospitalId);
+            $("#patientName").val(data.patientName);
+            $("#patientId").val(data.patientId);
+            data.managerDoctorId && $("#managerDoctorId").val(data.managerDoctorId);
+            form.render();
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+        });
+
+        //监听行单击事件
+        /*table.on('row(patientTable)', function(obj){
+            var params = common.serializeObject($("#editForm"));
+            params['inhospitalId'] = obj.data.inhospitalId;
+            params['currentWardId'] = currentWardId;
+            params['bedDoctorName'] = dicSysUser[params['bedDoctorId']];
+            submit(params);
+        });*/
+
+        //自定义验证规则
+        form.verify({
+            requiredPatient: function (value) {
+                if (!value) {
+                    return '请选中患者！'
+                }
+            }
+        });
+        // 保存按钮
+        form.on('submit(btn_save)', function () {
+            var bedexchangeParams = common.serializeObject($('#editForm'))
+            saveBedexchange(bedexchangeParams);
+            return false;
+        })
+    });
+
+    function checkPatient(row) {
+        $("#inhospitalId").val(row.inhospitalId);
+    }
+
+</script>

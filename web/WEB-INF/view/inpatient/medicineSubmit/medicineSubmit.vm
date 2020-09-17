@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+<style>
+</style>
+</head>
+
+<body class="white-bg" style="height: calc(100% - 10px);">
+        <form class="layui-form gray-bg p-t-md" id="queryForm" style="height:100px;">
+            <input type="hidden" name="dispensingTime" id="hide_dispensingDate" value="$!date.format('yyyy-MM-dd','')">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">医嘱类别</label>
+	                <div class="layui-input-inline">
+	                    #formSingleSelectFirstNone("orderClassify" "" $!dicData.dicOrderClassify
+                        "adapter='required' required-msg='请选择医嘱类别'  class='layui-input'" "")
+	                </div>
+                </div>
+                <div class="layui-inline">
+	                <label class="layui-form-label">发药方式</label>
+	                <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("dispensingWay" "" $!dicData.dicDispensingWay
+                        "adapter='required' required-msg='请选择'  class='layui-input'" "")	
+                    </div>
+                </div>
+                <div class="layui-inline">
+	                <label class="layui-form-label">发药药房</label>
+	                <div class="layui-input-inline">
+	                    #formSingleSelect("pharmacyId" "" $!dicData.dicPharmacy
+                        "adapter='required' required-msg='请选择医嘱类别' id='pharmacyId'  class='layui-input'")
+	                </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">药品类别</label>
+                    <div class="layui-input-inline">
+                        #formSingleSelectFirstNone("medicineType" "" $!dicData.dicMedicineType
+                        "adapter='required' required-msg='请选择医嘱类别' id='medicineType'  class='layui-input'" "")
+                    </div>
+                </div>
+            </div>    
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">住院号码</label>
+                    <div class="layui-input-inline">
+                       <input type="text" name="inhospitalNo"  class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">患者姓名</label>
+                    <div class="layui-input-inline ">
+                        <input type="text" name="patientName" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">床号</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="currentBedNo" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline p-l-lg">
+	                <button type="button" class="layui-btn layui-btn-sm m-l-md" id="btn_query">查询</button>
+	                <button type="button" class="layui-btn layui-btn-sm" id="btn_refresh">刷新</button>
+                </div>
+            </div>
+        </form>
+        <div class="table-responsive gray-bg " style="height:calc(100% - 170px);">
+            <table class="layui-table" id="medicineTable"  data-mobile-responsive="true">
+            </table>
+        </div>
+        <div class="layui-row text-center p-t-md " id="layui-btn-box">
+            <button type="button" class="layui-btn layui-btn-sm" id="btn_submit">提交</button>
+            <button type="button" class="layui-btn layui-btn-sm layui-hide" id="btn_submit_cabinet">提交药柜</button>
+            <button type="button" class="layui-hide" id="hide_submit">提交</button>
+        </div>
+    <!-- 全局js -->
+#parse("./common/pageJs.vm") 
+#parse("./inpatient/medicineSubmit/medicineSubmit.js.vm") 
+
+</body>
+</html>

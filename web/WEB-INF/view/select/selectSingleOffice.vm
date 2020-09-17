@@ -1,0 +1,72 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}-选择科室</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+</head>
+
+<body class="white-bg">
+	<div class="col-sm-12 p-l-none full-height">
+		<div class="ibox float-e-margins m-b-none full-height">
+			<div class="ibox-content full-height-scroll" style="height: calc(100% - 50px)">
+				<div>
+					<ul id="commonTree" class="ztree"></ul>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+	    zTreeObj = $.fn.zTree.init($("#commonTree"), setting, []);
+	});
+        
+	var zTreeObj, setting = {
+            view : {
+                selectedMulti : false
+            },
+          
+            async : {
+                enable : true,
+                url : "../ward/getDepTree.do",
+                dataType : "json",
+                autoParam : [ "id" ],
+                type : "POST"
+            },
+            callback : {
+                onAsyncSuccess: function(event, treeId, treeNode, msg){
+                    if(treeNode == undefined){
+                        treeNode = zTreeObj.getNodeByTId("tree_1");
+                    }
+                    zTreeObj.selectNode(treeNode, false, true);
+                    if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                        zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                    }
+
+                    //only first time load tree includeRoot = true ,after set false
+                    zTreeObj.setting.async.otherParam["includeRoot"] = false;
+                },
+                onClick: function(event, treeId, treeNode) {
+                    if (treeNode) {
+                        var treeObj = $.fn.zTree.getZTreeObj("commonTree");
+                        treeObj.selectNode(treeNode, false, true);
+                        if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                            treeObj.expandNode(treeNode, true, false, true, true);
+                        }
+                        //获取回调函数 
+                        parent.$!{callBackFun}(treeNode.id,treeNode.name);
+                        //关闭窗口
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    }
+                }
+            }
+        };
+        
+    </script>
+</html>

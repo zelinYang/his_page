@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>患者费用结算主界面</title>
+    #parse("./common/pageCss.vm")
+    #parse("./settlement/inpatient/feeSett/feeSett.css.vm")
+    #set($path = $!contextPath)
+    <style type="text/css">
+    .patSettNav{ height: calc(100% - 3px);margin-top: 0;}
+    </style>
+    
+</head>
+
+<body>
+    <div class="main full-height">
+         <!-- 中间导航nav -->
+         <div class="outTab full-height" id="component-tabs">
+             <div class="layui-tab layui-tab-card blod white-bg patSettNav" lay-filter="patSettNav" lay-allowclose="">
+                 <!-- 主页导航名称 -->
+                 <ul class="layui-tab-title highlight">
+                     <li lay-id="feeOverview" href="$path/inpatient/feeOverview.do?inhospitalId=$!inhospitalId" class="layui-this">费用结算</li>
+                     <li lay-id="feeItemList"  href="$path/inpatient/feeItemList.do?inhospitalId=$!inhospital.inhospitalId">清单</li>
+                     <li lay-id="payedRecord"  href="$path/inpatient/payedRecord.do?inhospitalId=$!inhospital.inhospitalId">缴款记录</li>
+##                     <li lay-id="inPayIn" href="$path/inpatient/payInMaster.do" >发票</li>
+                 </ul>
+
+                 <!-- 导航内容 根据index对应li -->
+                 #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="auto"')
+                 #set($layclass = 'class="layui-tab-item full-height"')
+                 <div class="layui-tab-content" style="height: calc(100% - 38px);">
+                     <div lay-id="feeOverview" class="layui-tab-item layui-show full-height">
+                        #parse("./settlement/inpatient/feeSett/feeOverview.vm")
+                     </div>
+                     <div lay-id="feeItemList" $layclass><iframe $attr></iframe></div>
+                     <div lay-id="payedRecord" $layclass><iframe $attr></iframe></div>
+##                     <div lay-id="inPayIn" $layclass><iframe $attr></iframe></div>
+                 </div>
+             </div>
+         </div>
+         <!-- 中间导航nav end -->
+                    
+     </div> <!-- main  -->
+    #parse("./common/pageJs.vm")
+    #parse("./settlement/inpatient/feeSett/patientSettMaster.js.vm")
+</body>
+</html>

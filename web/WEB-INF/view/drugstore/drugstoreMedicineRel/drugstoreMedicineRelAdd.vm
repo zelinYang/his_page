@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-药库管理-基础设置-药库列表-新增</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style type="text/css">
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+
+        .input2 {
+            width: calc(2px * 2 + (30px + 120px) * 2 - 120px) !important;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4 layui-col-xs3">
+                <!--搜索条件 开始-->
+                <form id="drugstoreMedicineRel_queryForm" class="layui-form ">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药库</label>
+                                <div class="layui-input-inline ">
+                                    #formSingleSelectSearchFirstNone("drugstoreId" "" "" "id='q_drugstoreId'
+                                    lay-filter='drugstoreId' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">库位</label>
+                                <div class="layui-input-inline ">
+                                    #formSingleSelectSearchFirstNone("drugstoreStorageId" "" ""
+                                    "id='q_drugstoreStorageId'
+                                    lay-filter='drugstoreStorageId' lay-search" "")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品名称</label>
+                                <div class="layui-input-inline input2">
+                                    #formTextInput("keyWord" "" "id='q_keyWord' class='layui-input'
+                                    maxlength='100' autocomplete='off' required")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-btn-group">
+                                    <button id="btn_query" class="layui-btn layui-btn-sm" type="button"
+                                            lay-tips="查询"><i
+                                            class="layui-icon layui-icon-search "></i></button>
+                                    <button id="btn_clean" class="layui-btn layui-btn-sm " type="button"
+                                            lay-tips="清 空">
+                                        <i class="iconfont icon-qingchu"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <table id="drugstoreMedicineRelListGrid" lay-filter="drugstoreMedicineRelListGrid"></table>
+                <!--  列表表格 end -->
+            </div>
+            <div class="layui-col-md8 layui-col-xs9 ">
+                <!--搜索条件 开始-->
+                <form id="drugstoreMedicineRelForm" class="layui-form ">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()药库</label>
+                                <div class="layui-input-inline">
+                                    #formHiddenInput("drugstoreId" "$!{drugstoreMedicineRel.drugstoreId}" "
+                                    id='drugstoreId' ")
+                                    #formTextInput("drugstoreName" "$!{drugstoreMedicineRel.drugstoreName}"
+                                    "id='drugstoreName' lay-verify='required' class='layui-input' readonly")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">库位</label>
+                                <div class="layui-input-inline">
+                                    #formHiddenInput("drugstoreStorageId"
+                                    "$!{drugstoreMedicineRel.drugstoreStorageId}" " id='drugstoreStorageId' ")
+                                    #formTextInput("drugstoreStorageName"
+                                    "$!{drugstoreStorage.drugstoreStorageName}"
+                                    "id='drugstoreStorageName' class='layui-input' readonly")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-btn-group">
+                                    <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                            class="layui-btn layui-btn-sm">保 存
+                                    </button>
+                                    <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关 闭
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <div class="layui-input-inline" style="width: auto;top: -2px;">
+                                    #formCheckboxeGroup("" ""
+                                    $dicData.dicDoctorOrderTypeMedicine " lay-filter='doctorOrderTypes' ")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <label class="layui-form-label">药品名称</label>
+                                <div class="layui-input-inline input2">
+                                    #formTextInput("" "" "id='q_keyWord_medicine' class='layui-input'
+                                    maxlength='100' autocomplete='off' required")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-btn-group">
+                                    <button id="btn_query_medicine" class="layui-btn layui-btn-sm" type="button"
+                                            lay-tips="查询"><i
+                                            class="layui-icon layui-icon-search "></i></button>
+                                    <button id="btn_clean_medicine" class="layui-btn layui-btn-sm " type="button"
+                                            lay-tips="清 空">
+                                        <i class="iconfont icon-qingchu"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <table id="medicineListGrid" lay-filter="medicineListGrid"></table>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./drugstore/drugstoreMedicineRel/drugstoreMedicineRelAdd.js.vm")
+</body>
+</html>

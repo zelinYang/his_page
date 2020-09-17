@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        #editForm .layui-input-inline{width: 150px}
+    </style>
+
+</head>
+
+<body class="white-bg">
+<div class="tabs-container full-height">
+    <form id="editForm" class="layui-form">
+        #formHiddenInput("sexFlag" "$!{inpatientWardBed.sexFlag}" "")
+        #formHiddenInput("" "" "id='patientId' lay-verify='requiredPatient'")
+        #formHiddenInput("wardId" "$!{inpatientWardBed.wardId}" "id='currentWardId' ")
+        #formHiddenInput("inhospitalRoomNo" "$!{inpatientWardBed.wardRoomNo}" "id='inhospitalRoomNo' ")
+
+        #formHiddenInput("inhospitalFlag" "0" "id='inhospitalFlag' ")
+        <div class="layui-row-query">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">选中床位</label>
+                    <div class="layui-input-inline ">
+                        #formTextInput("currentBedNo" "$!{inpatientWardBed.wardBedNo}" "id='wardBedNo'
+                        class='layui-input' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">房间号</label>
+                    <div class="layui-input-inline ">
+                        #formTextInput("currentRoomNo" "$!{inpatientWardBed.wardRoomNo}" "id='wardBedNo'
+                        class='layui-input' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">性别限制</label>
+                    <div class="layui-input-inline ">
+                        #formTextInput("" "#lookUpDict(${dicData.dicSexLimit} $!{inpatientWardBed.sexFlag})"
+                            "class='layui-input' readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">住院号码</label>
+                    <div class="layui-input-inline " id="paientSelectDiv">
+                        #formTextInput("inhospitalId" "" "id='inhospitalId' class='layui-input'  readOnly")
+                    </div>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">患者姓名</label>
+                    <div class="layui-input-inline ">
+                        #formTextInput("patientName" "" "id='patientName' class='layui-input'  readOnly")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">#requiredTag()主管医生</label>
+                    <div class="layui-input-inline ">
+                        #formSingleSelectSearch("managerDoctorId" "" $!doctorMap" class='layui-input' id='managerDoctorId'
+                        lay-verify='required' lay-search")
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="tool-bottom-fixed ">
+            <button type="button" class="layui-btn layui-btn-sm" id="btn_save" lay-submit="" lay-filter="btn_save">保
+                存
+            </button>
+        </div>
+    </form>
+    <table id="patientTable" class="layui-table lay-even m-n" data-mobile-responsive="true"
+           lay-filter="patientTable">
+    </table>
+
+</div>
+</body>
+<!-- 全局js -->
+#parse("./common/pageJs.vm")
+#parse("./inpatient/bedexchange/arrangeBedList.js.vm")
+</html>

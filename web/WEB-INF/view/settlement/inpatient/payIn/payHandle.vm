@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>缴款处理页面</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style type="text/css">
+
+        .payInFeeTab tr td {
+            height: 40px;
+            line-height: 40px;
+            padding: 0px;
+        }
+
+        .payInFeeTab tr td input {
+            height: 100%;
+            border: none;
+        }
+
+        .payInFeeTab tr td input:hover, .payInFeeTab tr td input:focus {
+            border: 1px solid medium;
+            background-color: #f5f6f7;
+        }
+        #container .ui-layout-resizer-closed{display: block !important;
+            width: 8px !important;}
+        #container .ui-layout-resizer-closed > div{
+            width: 8px !important;}
+    </style>
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+
+<body>
+<div class="layui-content-wrapper">
+    <div id="container">
+        <div class="layui-form ui-layout-center">
+            <!-- 查询表单 -->
+            <form id="reg_patient_queryForm" class="layui-form">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">缴款日期</label>
+                            <div class="layui-input-inline wd-100">
+                                #formLayDateInput("prepayDateBegin" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                            </div>
+                            <div class="layui-form-mid">至</div>
+                            <div class="layui-input-inline wd-100">
+                                #formLayDateInput("prepayDateEnd" "" " maxlength='17' autocomplete='off' class='layui-input' ")
+                            </div>
+                        </div>
+
+                        <div class="layui-inline">
+                            <label class="layui-form-label">缴款方式</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectSearch("selfPrepayInWay" "" $!{dicData.dicPaymentMethod} "lay-search")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <div class="layui-input-inline wd-220">
+                                #formTextInput("keyWord" "" "class='layui-input' id='q_keyWord' autocomplete='off' maxlength='40' placeholder='收据号/姓名/住院流水号' lay-tips='支持收据号/姓名/住院流水号查询'")
+                            </div>
+                        </div>
+                        <div class="layui-inline layui-btn-group">
+                            <button class="layui-btn layui-btn-sm" type="button" id="btn_query" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                            <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清空"><i class="iconfont icon-qingchu"></i></button>
+                            <button class="layui-btn layui-btn-sm" type="button" id="btn_regPass" lay-tips="重打收据"><i class="layui-icon layui-icon-print"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+            </form>
+            <!-- 数据表格 -->
+            <table id="regPatientTable" lay-filter="regPatientTable"></table>
+        </div>
+
+        <!-- 添加预交收费 -->
+        <div class="ui-layout-east full-height">
+            <div class="layui-card bill">
+                <div class="layui-card-header">
+                    <h3>预交金收费</h3>
+                </div>
+                <div class="layui-card-body p-b-n text-right">
+                  <h5>发票号：<span id="billNumber"></span></h5>
+                </div>
+                <form id="reg_patient_EditForm" class="layui-form">
+                    <input type="hidden" name="inhospitalId" id="inhospitalId">
+                    <div class="layui-card-body text-center">
+                      <!-- 数据表格 -->
+                      <table class="layui-table payInFeeTab">
+                        <colgroup>
+                          <col data-index="1" width="16%">
+                          <col data-index="2" width="16%">
+                          <col data-index="3" width="16%">
+                          <col data-index="4" width="16%">
+                          <col data-index="5" width="16%">
+                          <col data-index="6" width="16%">
+                          <col>
+                        </colgroup>
+
+                        <tbody class="tbody-data">
+                        <tr>
+                          <td colspan="3">身份证/就诊卡号/医保卡/电子健康卡/住院号码</td>
+                          <td colspan="3">
+                              #formIntInput( "inhospitalNo" ""
+                                  " lay-verify='required' autocomplete='off' maxlength='20' id='getinhospitalNo' class='layui-input' ")
+                          </td>
+                        </tr>
+						<tr>
+							<td>床号</td>
+							<td colspan="2" name="inhospitalBedNo" id="inhospitalBedNo"></td>
+							<td>姓名</td>
+							<td colspan="2" name="patientName" id="patientName"></td>
+						</tr>
+                        <tr>
+                          <td>预交款金额</td>
+                          <td colspan="3"><input name="prepaySum" value="" class="layui-input" id="prepaySum"
+                                                 maxlength='20' lay-verify="required"
+                                                 onkeyup="value=value.replace(/[^\d]+\./g,'');if(!this.value) return;this.value=/^\d+\.?\d{0,2}$/.test(this.value) ? this.value : this.value.indexOf('.') > -1 && this.value.split('.')[1].length==2?this.value:this.value=this.value.split('.')[0]+'.'+this.value.split('.')[1].substr(0,1)+this.value.split('.')[1].substr(1,1);"/>
+                          </td>
+                          <td>缴款方式</td>
+                          <td>
+                            <div class="layui-form-item">
+                              <div class="layui-inline">
+                                <div class="layui-input-inline">#formSingleSelectSearchFirstNone("selfPrepayInWay" "1" $dicData.dicOutPayInWay " id='selfPrepayInWay' lay-filter='selfPrepayInWay' lay-search='' " "")
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>人民币大写</td>
+                          <td colspan="5">
+                            <div id="rmblarge" align="left" style="margin-left:10px;"></div>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>票(卡)号码</td>
+                          <td colspan="5">#formIntInput("checkNo" "" " maxlength='20' class='layui-input'")</td>
+                        </tr>
+                        </tbody>
+                      </table>
+                      <div class="bill-summary">
+                        <table class="layui-table">
+                          <tbody>
+                          <tr>
+                            <th>付款码：</th>
+                            <td colspan="5">#formTextInput("authCode" "" "class='layui-input' id='authCode' autocomplete='off'")</td>
+                          </tr>
+                          <tr>
+                            <th>经手人：</th>
+                            <td><span id="latestUserName" name="latestUserName"></span></td>
+                            <th>缴费日期：</th>
+                            <td colspan="3"><span id="date"></span></td>
+                          </tr>
+                          <tr>
+                            <th>费用总额：</th>
+                            <td><span id="feeAmount"></span></td>
+                            <th>交费总额：</th>
+                            <td><span id="addprepayInAmount"></span></td>
+                            <th>余额：</th>
+                            <td><span id="arrearsAmount"></span></td>
+                          </tr>
+                          <tr>
+                            <td colspan="6"><button id="btn_settlement" type="button" class="layui-btn layui-btn-sm" onkeydown="if(event.keyCode==13){return false}"> 收 费 </button></td>
+                          </tr>
+                          </tbody>
+                        </table>
+                        #formHiddenInput("latestUserId" "" " id='latestUserId' maxlength='20' class='layui-input'")
+                      </div>
+                    </div>
+                </form>
+            </div>
+        </div><!--east  -->
+    </div>
+    <script type="text/html" id="toolbarDemo">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm" lay-event="toolbarvalid">退费</button>
+        </div>
+    </script>
+</div>
+    #parse("./settlement/inpatient/payIn/payHandle.js.vm") <!-- 页面js -->
+</body>
+</html>

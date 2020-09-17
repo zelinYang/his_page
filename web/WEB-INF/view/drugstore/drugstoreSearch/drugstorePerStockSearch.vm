@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>盘点查询</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+</head>
+
+<body class="outRecipeGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<form class="layui-form" action="" id="drugstorePerStock">
+					<div class="layui-row-query">
+                        #formHiddenInput("drugstorePerStockId" "" "id='drugstorePerStockId'")
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">药库/耗材库</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("drugstoreName" "" "class='layui-input' readonly ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">盘点日期</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("perStockTime" "" "class='layui-input' readonly autocomplete='off' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">执行日期</label>
+								<div class="layui-input-inline">
+									#formTextInput("perStockFinishTime" "" "class='layui-input' readonly autocomplete='off' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">备注</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("remark" "" "class='layui-input' readonly ")
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="itemTable" lay-filter="itemTable"></table>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="queryForm" class="layui-form">
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">药库名称</label>
+										<div class="layui-input-inline">
+											<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" lay-verify="required" class="layui-input">
+												<option value="">请选择</option>
+												#foreach($drugstore in $drugstoreList)
+													<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+												#end
+											</select>
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">盘点状态</label>
+										<div class="layui-input-inline" style="width: 155px;">
+											<input type="checkbox" name="perStockFlags" value="1" lay-skin="primary" title="完成" >
+											<input type="checkbox" name="perStockFlags" value="0" lay-skin="primary" title="未完成">
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">盘点日期</label>
+										<div class="layui-input-inline" style="width: 170px;">
+											#formTextInput("perStockTimeSearch" "" "class='layui-input layer-date' tag='perStockTimeBegin,perStockTimeEnd' id='perStockTimeSearch' placeholder='出库日期范围' readOnly")
+										</div>
+									</div>
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+					</div>
+				</div>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+    #parse("./drugstore/drugstoreSearch/drugstorePerStockSearch.js.vm")
+</body>
+</html>

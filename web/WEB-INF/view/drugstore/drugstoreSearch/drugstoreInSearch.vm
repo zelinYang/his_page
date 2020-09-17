@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药库暂存未入库列表</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+</head>
+
+<body class="outRecipeGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<form class="layui-form" action="" id="drugstoreIn">
+					<div class="layui-row-query">
+                        #formHiddenInput("drugstoreInId" "" "id='drugstoreInId'")
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">入库方式</label>
+								<div class="layui-input-inline">
+                                    #formHiddenInput("drugstoreInFlag" "0" "")
+                                        #formSingleSelectFirstNone("drugstoreInWay" "1" $!dicData.dicDrugstoreInWay " id='drugstoreInWay' class='layui-input' autocomplete='off' disabled"  "购入方式")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">供货单位</label>
+								<div class="layui-input-inline">
+                                    #formHiddenInput("medicineVendorId" "$!storeIn.medicineVendorId" "id='medicineVendorId'")
+                                      #formTextInput("medicineVendorName" "#htmlEscape($!storeIn.medicineVendorName)" " lay-verify='required' id='medicineVendorName' autocomplete='off' class='layui-input' placeholder='供货单位' readonly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">购入方式</label>
+								<div class="layui-input-inline">
+                                    #formSingleSelectFirstNone("billFlag" "${CONST.AppConstants.NO_FLAG}" $!dicData.dicBillFlag " id='billFlag' class='layui-input' autocomplete='off' disabled"  "购入方式")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">药库</label>
+								<div class="layui-input-inline">
+                                    #formHiddenInput("drugstoreName" "$!storeIn.drugstoreName" "id='drugstoreName'")
+                                      #formSingleSelectFirstNone("drugstoreId" "$!storeIn.drugstoreId" $!dicData.dicDrugstoreId " id='drugstoreId' lay-verify='required' class='layui-input' autocomplete='off' disabled" "")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">单据号</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("drugstoreInId" "" " lay-verify='required' id='drugstoreInId' autocomplete='off' class='layui-input' placeholder='入库单号' readonly" )
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">主管姓名</label>
+								<div class="layui-input-inline">
+                                    #formHiddenInput("manageUserName" "$!storeIn.manageUserName" "id='manageUserName'")
+                                      #formSingleSelectFirstNone("manageUserId" "$!storeIn.manageUserId" $!dicData.dicSysUser " id='manageUserId' lay-verify='required' class='layui-input' autocomplete='off' disabled" "")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">采购日期</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("buyDate" "$!date.format('yyyy-MM-dd', $!item.buyDate)" " lay-verify='required' id='buyDate' class='layui-input' readOnly autocomplete='off'") ##有效期
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">发票号</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("invoiceNo" "" " lay-verify='required' id='invoiceNo' autocomplete='off' class='layui-input' placeholder='发票号' readonly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">发票日期</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("makeInvoiceDate" "" " lay-verify='required' id='makeInvoiceDate' class='layui-input' readOnly autocomplete='off'") ##有效期
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">附单据数</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("receiptSheetCount" "" "id='receiptSheetCount' autocomplete='off' class='layui-input' readonly")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">总金额(元)</label>
+								<div class="layui-input-inline">
+                                    #formTextInput("recipeTotalPriceValue" "" "id='recipeTotalPriceValue' autocomplete='off' class='layui-input' readonly")
+								</div>
+							</div>
+						</div>
+					</div>
+				</form>
+				<table id="itemTable" lay-filter="itemTable"></table>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="queryForm" class="layui-form">
+                            #formHiddenInput("drugstoreInFlag" "${CONST.AppConstants.YES_FLAG}" "")
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<label class="layui-form-label">入库方式</label>
+										<div class="layui-input-inline">
+                                        #formSingleSelectFirstNone("drugstoreInWay" "" $!dicData.dicDrugstoreInWay " class='layui-input' autocomplete='off' "  "购入方式")
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">药库名称</label>
+										<div class="layui-input-inline">
+											<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" lay-verify="required" class="layui-input">
+												<option value="">请选择</option>
+												#foreach($drugstore in $drugstoreList)
+													<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+												#end
+											</select>
+										</div>
+									</div>
+									<div class="layui-inline">
+										<label class="layui-form-label">录入日期</label>
+										<div class="layui-input-inline" style="width: 170px;">
+											#formTextInput("drugstoreInDate" "" "class='layui-input layer-date' tag='drugstoreInDateBegin,drugstoreInDateEnd' id='drugstoreInDate' placeholder='录入日期范围' readOnly")
+										</div>
+									</div>
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="mainTable" lay-filter="mainTable"></table> <!-- 数据表格 -->
+					</div>
+				</div>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+    #parse("./drugstore/drugstoreSearch/drugstoreInSearch.js.vm")
+</body>
+</html>

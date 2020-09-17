@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid ">
+		<table id="mainTable" lay-filter="mainTable"></table>
+    </div>
+</div>
+</body>
+<script type="text/javascript">
+	var dicDiagnosisClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiagnosisClassify)');
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicPrognosis = JSON.parse('$dicTools.changeMapToJson($dicData.dicPrognosis)');
+	var dicPrognosis = JSON.parse('$dicTools.changeMapToJson($dicData.dicPrognosis)');
+	var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+	var getParams;
+	layui.use(['table', 'form', 'layer'], function () {
+		layer = layui.layer;
+		var table = layui.table, form = layui.form;
+
+		// 路径分页列表
+		var tableUrl = contextPath + '/inpatient/diagnosisJsonList.jo';
+		var tablePathList = table.render($.extend(singlePageTable, {
+					url: tableUrl,
+					id: 'mainTable',
+					elem: '#mainTable',
+					height: 'full-10',
+					where: {inhospitalId: $!{queryInfo.inhospitalId}},
+					cols: [[
+						{type: 'numbers'}
+						, {field: 'diagnosisClassify', title: '诊断类别', templet: function (res) {
+								if (res.diagnosisClassify) {
+									return dicDiagnosisClassify[res.diagnosisClassify];
+								}
+								return '';
+							}
+                        }
+						, {field: 'diseaseTypeFlag', title: '西医/中医', templet: function (res) {
+								if (res.diseaseTypeFlag) {
+									return dicDiseaseTypeFlag[res.diseaseTypeFlag];
+								}
+								return '';
+							}
+						}
+						, {field: 'diseaseName', title: '疾病名称'}
+						, {field: 'diseaseIcdTcd', title: 'ICD'}
+						, {field: 'diseaseDiagnosisDesc', title: '描述性诊断'}
+						, {field: 'inpatientState', title: '病情转归', templet: function (res) {
+								if (res.inpatientState) {
+									return dicPrognosis[res.inpatientState];
+								}
+								return '';
+							}
+                        }
+						, {field: 'clinicInPathFlag', title: '是否入临床路径', templet: function (res) {
+								if (res.clinicInPathFlag) {
+									return dicYesNo[res.clinicInPathFlag];
+								}
+								return '';
+							}
+							}
+						, {field: 'diagnosisFlag', title: '初诊病例', templet: function (res) {
+								if (res.diagnosisFlag) {
+									return dicYesNo[res.diagnosisFlag];
+								}
+								return '';
+							}
+							}
+						, {field: 'infectiousFlag', title: '是否传染病', templet: function (res) {
+								if (res.infectiousFlag) {
+									return dicYesNo[res.infectiousFlag];
+								}
+								return '';
+							}
+							}
+						, {field: 'chronicFlag', title: '是否慢性病', templet: function (res) {
+								if (res.chronicFlag) {
+									return dicYesNo[res.chronicFlag];
+								}
+								return '';
+							}
+					}
+					]],
+					done: function () {
+						// 去掉表格头部的全选及取消全选功能
+						common.removeHeadCheckbox('clinicPathId');
+					}
+				})
+		);
+	});
+</script>
+</html>

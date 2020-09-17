@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body class="de-bg">
+<!--搜索条件 开始-->
+<form id="sysUser_queryForm" class="layui-form">
+    <div class="layui-row-query">
+        <div class="layui-form-item change-inline-marginbottom">
+            <div class="layui-inline ">
+                <label class="layui-form-label">姓名</label>
+                <div class="layui-inline  wd-120">
+                    #formTextInput("name" "" "id='q_name' maxlength='10' autocomplete='off' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline ">
+                <label class="layui-form-label">账户</label>
+                <div class="layui-inline  wd-120">
+                    #formTextInput("accountLike" "" "id='q_accountLike' maxlength='30' autocomplete='off' class='layui-input'")
+                </div>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                    <i class="layui-icon layui-icon-search "></i>
+                </button>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                    <i class="iconfont icon-qingchu"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</form>
+<!--搜索条件 结束-->
+    <!-- 机构树 -->
+    <div class="layui-col-xs3 white-bg full-height-scroll m-r-xs  p-t-xs" id="orgTreeDiv" style="width: 230px;">
+        <h5>
+            <i class="dtreefont dtree-theme-dtreefont dtree-theme-ficon dtree-icon-jian"></i>
+            <i class="dtreefont dtreefont-special dtree-theme-dtreefont dtree-theme-icon dtree-icon-wenjianjiazhankai"></i>
+            <span>机构列表</span>
+        </h5>
+        <ul id="orgTree" class="dtree" data-id="0"></ul>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="layui-col-xs10 white-bg full-height-scroll" style="width: calc(100% - 235px);">
+        <table id="userList" lay-filter="userList" class="layui-hide"></table>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicSysDuty = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysDuty)');
+var dicSysUserAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUserAttribute)');
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['element', 'dtree', 'table'], function(){
+    var element = layui.element, dtree = layui.dtree, table = layui.table;
+    // 初始化左边树型
+    var dtreeObj = dtree.render({
+        dot:false,
+        initLevel: 1,
+        elem: "#orgTree",
+        url: contextPath + "/sys/getOrgDtree.jo",
+    });
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            name: '',
+            accountLike: '',
+            orgId: ''
+        }, common.serializeObject($('#sysUser_queryForm')))
+    }
+
+    // 监听树型节点点击事件
+    dtree.on("node('orgTree')" ,function(obj){
+        var curNode = JSON.parse(obj.param.basicData);
+        if (!curNode.orgId) {
+            common.msg('机构编号无效', function (){});
+            return ;
+        }
+        table.reload('userList', {page: {curr: 1},
+            where: $.extend({
+                name: '',
+                accountLike: '',
+                orgId: ''
+            },{orgId:curNode.orgId})
+        })
+        $('#btn_clean').click();
+    });
+
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+        var queryParams = getQueryParams();
+        // 加载用户列表
+        table.reload('userList', {page: {curr: 1},
+            where: queryParams ,
+        })
+        //移除选中树标志
+        $('#orgTree').find('.dtree-theme-item').removeClass('dtree-nav-this dtree-theme-item-this');
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('sysUser_queryForm')
+    })
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/sys/queryOrgUserList.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'userList',
+        elem: '#userList',
+        height: 'full-50',
+        //where: getQueryParams(),
+        cols: [[
+            {field:'name', title: '名称'},
+            {field:'sex', title: '性别', width : 60, templet :function (row) { if (row.sex) return (dicSex[row.sex] ? dicSex[row.sex] : ""); else return "" }},
+            /*{field:'dutyId', title: '职务', templet :function (row) { if (row.dutyId) return (dicSysDuty[row.printFlag] ? dicSysDuty[row.printFlag] : ""); else return "" }},*/
+            {field:'account', title: '账号'},
+            {field:'userAttributeId', title: '用户属性', templet :function (row) { if (row.userAttributeId) return (dicSysUserAttribute[row.printFlag] ? dicSysUserAttribute[row.printFlag] : ""); else return "" }},
+            {type:'radio',fixed: 'right', width : 60},
+        ]]
+    }));
+
+    //监听行单击事件
+    table.on('row(userList)', function(obj){
+        if (parent.selectSingleUserCall && typeof(parent.selectSingleUserCall) == 'function') {
+            parent.selectSingleUserCall(obj.data);
+        }
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+});
+</script>
+</html>

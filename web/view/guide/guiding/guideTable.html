@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>${SessionSysPortal.appTitle}导诊台设置</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;ie.html"/>
+    <![endif]-->
+    <link href="../../../resource/layuiadmin/layui/css/layui.css" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/admin.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/media.css?v=124" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/template.css" rel="stylesheet" media="all">
+    <link href="../../../resource/layuiadmin/style/style.css" rel="stylesheet" media="all">
+
+    <script nomodule src="../../../resource/polyfill/polyfill.js"></script>
+    <script src="../../../resource/hplus/js/jquery.min.js"></script>
+    <script src="../../../resource/hplus/js/plugins/layer/laydate/laydate.js"></script>
+    <script src="../../../resource/hplus/js/validate/form-validator.js"></script>
+    <script src="../../../resource/hplus/js/contabs.js?v=12"></script>
+    <script src="../../../resource/hplus/js/app-common.js?v=11"></script>
+    <script src="../../../resource/hplus/js/common-ui.js?v=1"></script>
+    <script src="../../../resource/layuiadmin/layui/layui.js"></script>
+    <script src="guideTable.js"></script>
+    <style>
+        .container_page {
+            height: 100%;
+            width: 100%;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .container_page::-webkit-scrollbar {
+            display: none
+        }
+
+        .container_page::-webkit-scrollbar-button:vertical {
+            display: none;
+        }
+
+        .container_page iframe.container_iframe {
+            border: 0;
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #app_body {
+            height: calc(100%);
+            margin-left: 40px;
+        }
+
+        .layui-form-item .layui-input-inline {
+            margin-bottom: 30px;
+        }
+
+        .layui-card-header2 {
+            color: #05a59c;
+            height: 23px;
+            line-height: 23px;
+        }
+
+        .layui-div-left {
+            margin-left: 13px;
+        }
+
+        .layui-input-height {
+            height: 28px;
+        }
+
+        .marginTop10 {
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10 full-height">
+            <div class="layui-col-md6 layui-col-xs6 full-height">
+                <!--搜索条件 开始-->
+                <form id="queryForm" class="layui-form p-t-xs p-b-n layui-bg-white">
+                    <div class="layui-form-item marginTop10">
+                        <div class="layui-inline"><label class="layui-form-label">分诊台名称</label></div>
+                        <div class="layui-inline">
+                            <input class="layui-input" name="guidingTableNameQuery" id="guidingTableNameQuery" autocomplete="off"/>
+                        </div>
+                        <div class="layui-inline"><label class="layui-form-label" style="width:auto;">导诊台机器IP</label></div>
+                        <div class="layui-inline">
+                            <input class="layui-input" name="guidingTableIpQuery" id="guidingTableIpQuery" autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="layui-form-item text-center marginTop10">
+                        <div class="layui-inline">
+                            <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                            <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                            <button id="btn_add" class="layui-btn layui-btn-sm m-l-lg layui-btn-normal" type="button" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                        </div>
+                    </div>
+                </form>
+                <!-- 操作栏操作按钮 -->
+                <script type="text/html" id="operatebar">
+                    <a class="layui-btn layui-btn-xs layui-btn-normal " lay-tips="详情" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+                    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i class="layui-icon"></i></a>
+                    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_delete"><i class="layui-icon layui-icon-delete"></i></a>
+                </script>
+                <!--列表 begin-->
+                <div class="layui-form-item marginTop10">
+                    <table id="guidingTableListGrid" class="layui-table-tabs" lay-filter="guidingTableListGrid"></table>
+                </div>
+            </div>
+            <div class="layui-col-md6 layui-col-xs6 full-height">
+                <form class="layui-form layui-bg-white full-height-scroll" id="guidingTableForm" style="height: calc(100% - 48px)">
+                    <input type="hidden" id="guidingTableId" name="guidingTableId"/>
+                    <input type="hidden" id="validFlag" name="validFlag"/>
+                    <div class="layui-card m-b-n">
+                        <div class="layui-card-header">分诊台信息</div>
+                        <div class="layui-card-body">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label"><span style="color:red">*</span>分诊台名称</label>
+                                <div class="layui-col-md4">
+                                    <input type="text" id="guidingTableName" name="guidingTableName"
+                                           lay-verify="required" autocomplete="off"
+                                           class="layui-input layui-input-height" onchange="checkNameIsRepeat()"/>
+                                </div>
+                                <label class="layui-form-label" style="width:auto;"><span style="color:red">*</span>分诊台位置</label>
+                                <div class="layui-col-md4 layui-div-left">
+                                    <input type="text" id="guidingTableLoction" name="guidingTableLoction"
+                                           lay-verify="required" autocomplete="off"
+                                           class="layui-input layui-input-height"/>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label"><span style="color:red">*</span>分诊台说明</label>
+                                <div class="layui-col-md4">
+                                    <input type="text" id="guidingTableDesc" name="guidingTableDesc"
+                                           lay-verify="required" autocomplete="off"
+                                           class="layui-input layui-input-height"/>
+                                </div>
+                                <label class="layui-form-label" style="width:auto;"><span style="color:red">*</span>导诊台机器IP</label>
+                                <div class="layui-col-md4">
+                                    <input type="text" id="guidingTableIp" name="guidingTableIp" lay-verify="checkIp"
+                                           autocomplete="off" class="layui-input layui-input-height"/>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label" style="width:auto;">是否显示姓名</label>
+                                <div class="layui-col-md4">
+                                    <input type="radio" name="showNameFlag" value="0" title="不显示"/>
+                                    <input type="radio" name="showNameFlag" value="1" title="显示"/>
+                                </div>
+                                <label class="layui-form-label" style="width:auto;">是否滚动显示</label>
+                                <div class="layui-col-md4">
+                                    <input type="radio" name="scrollFlag" value="0" title="否"/>
+                                    <input type="radio" name="scrollFlag" value="1" title="是"/>
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">导诊模式</label>
+                                <div class="layui-col-md4">
+                                    <input type="radio" name="guidingModeFlag" value="1" title="诊室排号"/>
+                                    <input type="radio" name="guidingModeFlag" value="2" title="科室排号"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layui-card">
+                        <div class="layui-card-header">分诊台对应科室</div>
+                        <div class="layui-card-body">
+                            <div class="layui-inline" id="sysOrd"></div>
+                        </div>
+                    </div>
+                    <div class="p-t-sm text-center" id="bottonDiv">
+                        <button class="layui-btn layui-btn-sm" lay-submit lay-filter="save">保存</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="renderer" content="webkit">
+<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+#parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+<style type="text/css">
+/* 表格红框 */
+.table-danger {
+    border-color: #FF5722 !important;
+}
+</style>
+</head>
+<body>
+
+    <div class="layui-col-md5">
+        <div class="layui-card">
+            <div class="layui-card-header">
+                <div class="layui-inline">
+                    <div class="layui-input-inline">#formTextInput("arrangeDutyDate" "$!date.format('yyyy-MM-dd', $arrangeDutyDate)" "id='arrangeDutyDate' class='layui-input' readonly")</div>
+                </div>
+                &nbsp; &nbsp; 挂号科室
+            </div>
+            <div class="layui-card-body">
+                <table id="arrangeDutyOfficeListGrid" lay-filter="arrangeDutyOfficeListGrid"></table>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md7">
+        <div class="layui-card">
+            <div class="layui-card-header">医生值班</div>
+            <div class="layui-card-body">
+                <table id="onDutyDoctorListGrid" lay-filter="onDutyDoctorListGrid"></table>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form" lay-filter="" id="">
+        <div class="layui-form-item" style="padding: 20px 0 0 0;">
+            #formHiddenInput("registerId" "$!{register.registerId}" " id='registerId' ") #formHiddenInput("patientId" "$!{register.patientId}" " id='patientId' ") #formHiddenInput("visitOfficeId" "$!{register.visitOfficeId}" " id='visitOfficeId' ") #formHiddenInput("visitOfficeIdOld" "$!{register.visitOfficeId}" " id='visitOfficeIdOld' ") #formHiddenInput("doctorId"
+            "$!{register.doctorId}" " id='doctorId' ") #formHiddenInput("doctorIdOld" "$!{register.doctorIdOld}" " id='doctorIdOld' ")
+            <div class="layui-inline">
+                <label class="layui-form-label">患者姓名:</label>
+                <div class="layui-input-inline">#formTextInput("patientName" "$!register.patientName" "id='patientName' class='layui-input' readonly")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">科室</label>
+                <div class="layui-input-inline">#formTextInput("visitOfficeName" "" "id='visitOfficeName' class='layui-input' lay-verify='requiredOffice' readonly")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">诊室</label>
+                <div class="layui-input-inline">#formTextInput("consultingRoomId" "" "id='consultingRoomId' class='layui-input' lay-verify='requiredDoct' readonly")</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">医生</label>
+                <div class="layui-input-inline">#formTextInput("doctorName" "" "id='doctorName' class='layui-input' lay-verify='requiredDoct' readonly")</div>
+            </div>
+        </div>
+        <div class="layui-form-item layui-hide">
+            <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+        </div>
+    </div>
+
+    <script>
+                    //护士医生
+                    var dicNurseDoctor = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseDoctor)');
+                    //科室
+                    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+                    //诊室
+                    var dicConsultingRoom = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsultingRoom)');
+                    //职称名称
+                    var dicRegisterDoctorDutyName = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyName)');
+                    //职称收费单价
+                    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)');
+                    layui.config({
+                        base : '../resource/layuiadmin/' //静态资源所在路径
+                    }).use([ 'form', 'laydate', 'layer', 'table', 'util' ], function() {
+                        var $ = layui.$
+                        laydate = layui.laydate //日期
+                        , layer = layui.layer //弹层
+                        , table = layui.table //表格
+                        , element = layui.element //元素操作
+                        , form = layui.form //表单
+                        , util = layui.util //工具
+                        //执行一个 科室 实例
+                        laydate.render({
+                            elem : '#arrangeDutyDate'//出生日期
+                            ,trigger: 'click',
+                            format : 'yyyy-MM-dd',
+                            min : 0 // 最小日期不允许超过当天 
+                            ,
+                            max : 7 //一周内
+                            ,
+                            btns : [ 'now', 'confirm' ],
+                            done : function(value) {
+                                table.reload('arrangeDutyOfficeListGrid', {
+                                    where : {
+                                        arrangeDutyDate : value
+                                    }
+                                }); //表格重载
+                            }
+                        });
+
+                        table.render({
+                            elem : '#arrangeDutyOfficeListGrid',
+                            url : "../register/officeRegisterTotalList.jo" //数据接口
+                            ,
+                            height : 'full-130'//高度
+                            ,
+                            where : {
+                                arrangeDutyDate : $("#arrangeDutyDate").val()
+                            },
+                            data : [],
+                            cols : [ [ //表头
+                            {
+                                type : 'radio',
+                                title : '<i id="btn_reset_arrangeDutyOfficeListGrid" class="layui-icon layui-icon-refresh"></i>'
+                            }, {
+                                field : 'arrangeDutyOfficeId',
+                                title : '挂号科室',
+                                templet : function(row) {
+                                    return dicSysOrgName[row.arrangeDutyOfficeId] || '';
+                                }
+                            }, {
+                                field : 'limitCount',
+                                title : '限额'
+                            }, {
+                                field : 'registerCount',
+                                title : '已挂'
+                            }, {
+                                field : 'appointCount',
+                                title : '预约'
+                            } ] ]
+                        });
+                        //重载表格
+                        $(document).on('click', '#btn_reset_arrangeDutyOfficeListGrid', function() {
+                            table.reload('arrangeDutyOfficeListGrid');
+                        })
+                        //监听行单击事件
+                        table.on('row(arrangeDutyOfficeListGrid)', function(obj) {
+                            var data = obj.data;
+                            $("#visitOfficeName").val(dicSysOrgName[data.arrangeDutyOfficeId]);
+                            $("#visitOfficeId").val(data.arrangeDutyOfficeId);
+                            $("#doctorId").val(null);
+                            $("#doctorName").val(null);
+                            selectOnDutyDoctorList(data.arrangeDutyOfficeId);
+                            clickRowSelectRadio(obj)
+                            //标注选中样式
+                            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                        });
+                        //单击行选中radio 与 点击radio选中行
+                        function clickRowSelectRadio(obj) {
+                            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+                            obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+                            form.render('radio');
+                        }
+                        //查询科室下的医生
+                        function selectOnDutyDoctorList(doctorOfficeId) {
+                            //当日值班医生
+                            queryParams = {
+                                doctorOfficeId : doctorOfficeId,
+                                arrangeDutyDate : $("#arrangeDutyDate").val()
+                            };
+                            var options = {
+                                url : '../outpatient/arrangeDutyDoctorListData.jo',
+                                where : queryParams
+                            };
+                            //执行重载
+                            table.reload('onDutyDoctorListGrid', options);
+                        }
+                        //执行一个 table 实例
+                        table.render({
+                            elem : '#onDutyDoctorListGrid',
+                            height : 'full-130'//高度
+                            ,
+                            data : [],
+                            cols : [ [ //表头
+                            {
+                                type : 'radio'
+                            }, {
+                                field : 'chargeItemId',
+                                title : '职称',
+                                templet : function(row) {
+                                    return dicRegisterDoctorDutyName[row.chargeItemId] + "(" + dicRegisterDoctorDutyUnitPrice[row.chargeItemId] + ")"
+                                }
+                            }, , {
+                                field : 'doctorId',
+                                title : '医生',
+                                templet : function(row) {
+                                    return (dicNurseDoctor[row.doctorId] || '') + "-" + row.consultingRoomName;
+                                }
+                            }, {
+                                field : 'limitCount',
+                                title : '限额'
+                            }, {
+                                field : 'registerCount',
+                                title : '已挂人数'
+                            }, {
+                                field : 'appointCount',
+                                title : '预约'
+                            } ] ]
+                        });
+                        //监听行单击事件
+                        table.on('row(onDutyDoctorListGrid)', function(obj) {
+                            var data = obj.data;
+                            $("#doctorId").val(data.doctorId);
+                            $("#doctorName").val(data.doctorName);
+                            $("#consultingRoomId").val(data.consultingRoomId);
+                            clickRowSelectRadio(obj)
+                            //标注选中样式
+                            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+                        });
+                        //自定义验证规则
+                        form.verify({
+                            requiredOffice : [ /[\S]+/, "请选择科室" ],
+                            requiredDoct : [ /[\S]+/, "请选择医生" ]
+                        });
+                        //非input元素
+                        laydate.render({
+                            elem : '#arrangeDutyDate',
+                            min : 0 //7天前
+                            ,trigger: 'click',
+                            btns : [ 'now', 'confirm' ],
+                            done : function(value, date, endDate) {
+                                var field = {
+                                    arrangeDutyDate : value
+                                }//得到日期生成的值，如：2017-08-18
+                                //执行重载
+                                table.reload('arrangeDutyOfficeListGrid', {
+                                    where : field
+                                });
+                            }
+                        });
+                        //表格颜色
+                        $("#visitOfficeName").focus(function() {
+                            $("#arrangeDutyOfficeListGrid").next().addClass('table-danger');
+                        }).blur(function() {
+                            $("#arrangeDutyOfficeListGrid").next().removeClass('table-danger');
+                        });
+
+                        //表格颜色
+                        $("#doctorName").focus(function() {
+                            $("#onDutyDoctorListGrid").next().addClass('table-danger');
+                        }).blur(function() {
+                            $("#onDutyDoctorListGrid").next().removeClass('table-danger');
+                        });
+
+                        form.on('submit(btn_save)', function(data) {
+                            var params = data.field;
+                            parent.$("#visitOfficeName").val(params.visitOfficeName);
+                            parent.$("#doctorName").val(params.doctorName);
+                            parent.$("#visitOfficeId").val(params.visitOfficeId);
+                            parent.$("#doctorId").val(params.doctorId);
+                            parent.$("#consultingRoomId").val(params.consultingRoomId);
+                            var index = parent.layer.getFrameIndex(window.name); //获取窗口索引
+                            parent.layer.close(index);
+                        });
+                    })
+                </script>
+
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style type="text/css">
+		@font-face {
+			font-family: 'iconfont';  /* project id 1218915 */
+			src: url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.eot');
+			src: url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.eot?#iefix') format('embedded-opentype'),
+			url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.woff2') format('woff2'),
+			url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.woff') format('woff'),
+			url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.ttf') format('truetype'),
+			url('//at.alicdn.com/t/font_1218915_uujmbq44zj8.svg#iconfont') format('svg');
+		}
+
+		.head {
+			position: absolute;
+			width: 90%;
+			height: 50px;
+			left: 0;
+			right: 0;
+			margin: auto;
+			display: flex;
+			justify-content: center;
+			align-items: center
+		}
+
+		.header-text {
+			font-weight: bold;
+			font-size: 18px;
+			color: #000;
+		}
+
+		.table {
+			position: absolute;
+			width: 100%;
+			height: calc(100% - 93px);
+			border: 1px solid rgba(0, 0, 0, .3);
+			/*overflow: scroll;*/
+			top: 50px;
+			left: 0;
+		}
+
+		.layui-table.custom-table {
+			min-width: 960px;
+		}
+
+		.table-bg {
+			background: #dce3f1;
+		}
+
+		#table_theadDiv {
+			overflow: hidden;
+			margin-right: 17px;
+			background-color: #D2D2D4;
+		}
+
+		#table_tbodyDiv {
+			height: calc(100% - 40px);
+			overflow-y: auto;
+		}
+	</style>
+</head>
+<body>
+<div class="head">
+
+<span class="header-text">
+排班日期:$date.format('yyyy-MM-dd', ${curDate})  ${weekIndex}
+</span>
+
+</div>
+<form class="layui-form" id="arrangeDutyDocotorEdtiForm" style="padding: 10px 30px 0 0;">
+	<div class="layui-inline">
+		<label class="layui-form-label">#requiredTag()门诊科室</label>
+		<div class="layui-input-inline">
+            #formSingleSelect("arrangeDutyOfficeId" "$!{doctorOfficeId}" $!{arrangeDutyOfficeMap}
+                "id='q_arrangeDutyOfficeId' lay-filter='q_arrangeDutyOfficeId' lay-search" " ")
+		</div>
+	</div>
+	<div class="table">
+
+        #formHiddenInput("arrangeDutyDate" "$date.format('yyyy-MM-dd', ${curDate})" "id='arrangeDutyDate'")
+        #formHiddenInput("arrangeDutyType" "$!DutyType" "id='arrangeDutyType'")
+		<div class="table-bg">
+			<div id="table_theadDiv">
+				<table class="layui-table custom-table" lay-skin="line">
+					<colgroup>
+						<col width="12%">
+						<col width="5%">
+						<col width="15%">
+						<col width="15%">
+						<col width="15%">
+						<col width="15%">
+						<col>
+					</colgroup>
+					<thead>
+					<tr>
+						<th>
+							<button type="button" class="layui-btn layui-btn-sm layui-btn-normal iconfont" lay-tips="增加"
+									id="addArrangeDutyDoctorTable">&#xeb8f;
+							</button>
+						</th>
+						<th>序号</th>
+						<th>#requiredTag()科室</th>
+						<th>#requiredTag()医生</th>
+						<th>#requiredTag()诊室</th>
+						<th>#requiredTag()挂号限额</th>
+					</tr>
+					</thead>
+				</table>
+			</div>
+		</div>
+		<div id="table_tbodyDiv">
+			<table class="layui-table custom-table" lay-skin="line">
+				<colgroup>
+					<col width="12%">
+					<col width="5%">
+					<col width="15%">
+					<col width="15%">
+					<col width="15%">
+					<col width="15%">
+					<col>
+				</colgroup>
+				<tbody id="tgtt">
+				</tbody>
+
+			</table>
+		</div>
+
+	</div>
+	<!-- 按钮 -->
+	<div class="tool-bottom-fixed">
+		<button class="layui-btn layui-btn-sm" id="btn_save" lay-submit="" lay-filter="btn_save" type="button"> 保存
+		</button>
+	</div>
+</form>
+</body>
+<script>
+	$('#table_tbodyDiv').on('scroll', function () {
+		$('#table_theadDiv').scrollLeft($('#table_tbodyDiv').scrollLeft());
+	});
+</script>
+    #parse("./outpatient/arrangeDutyDoctor/arrangeDutyDoctorAdd.js.vm")
+</html>

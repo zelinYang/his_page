@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-病种-病种管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+
+        .caller-icon {
+            position: absolute;
+            right: 30px;
+            top: 8px;
+            cursor: pointer;
+        }
+        .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            cursor: pointer;
+        }
+        .input2{
+            width: 465px!important;
+        }
+        /* 表格警告框 */
+        .table-danger {border-color:#FF5722 !important;}
+        .layui-form-label{
+            text-overflow: inherit!important;
+        }
+    </style>
+</head>
+<body  class="white-bg">
+<form class="layui-form" id="basDiseaseForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("diseaseId" "$!{basDisease.diseaseId}" " id='diseaseId' ")
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病分类名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("diseaseClassifyName" "$!{parendDiseaseClassify.dicName}" " maxlength='40' autocomplete='off'
+                id='diseaseClassifyName'  lay-verify='required' class='layui-input' readonly style='background-color: #fff;' ")
+                <i class="layui-icon layui-icon-close caller-dump-icon caller-icon " lay-tips="清空"></i>
+                <i class="layui-icon layui-icon-more choose" title="选择疾病分类"></i>
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病分类编码</label>
+            <div class="layui-input-inline">
+                #if(${basDisease})
+                #set($diseaseClassify = $!{basDisease.diseaseClassify})
+                #else
+                #set($diseaseClassify = $!{parendDiseaseClassify.dicCode})
+                #end
+                #formTextInput("diseaseClassify" "$!{diseaseClassify}" " maxlength='40' autocomplete='off' lay-verify='required'
+                id='diseaseClassify'  class='layui-input' readonly ")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()疾病名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("diseaseName" "#htmlEscape($!{basDisease.diseaseName})" " lay-verify='required' id='diseaseName' maxlength='200' lay-verify='required' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">疾病编码</label>
+            <div class="layui-input-inline">
+                #formTextInput("diseaseIcdTcd" "#htmlEscape($!{basDisease.diseaseIcdTcd})" " id='diseaseIcdTcd' maxlength='20' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()西/中医标志</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("diseaseTypeFlag" "$!{basDisease.diseaseTypeFlag}" ${dicData.dicDiseaseTypeFlag} "lay-filter='diseaseTypeFlag' lay-verify='reqRedio' check-msg='请选择西/中医标志' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()诊断类型</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formSingleSelectSearchFirstNone("diseaseType" "$!basDisease.diseaseType" ${dicData.dicDiseaseType} " lay-verify='required' maxlength='24' lay-search" " ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">医保编码</label>
+            <div class="layui-input-inline">
+                #formTextInput("mbfDiseaseCode" "#htmlEscape($!{basDisease.mbfDiseaseCode})" " id='mbfDiseaseCode' maxlength='20' autocomplete='off' class='layui-input'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label" title="中医-主要症状代码（中医病症对应的证候）">中医主要症状</label>
+            <div class="layui-input-inline " style="width: 505px">
+                #formHiddenInput("tcmSymptom" "$!{basDisease.tcmSymptom}" " id='tcmSymptom' lay-verify='tcmSymptom' maxlength='2000'")
+                <table id="tcmSymptomListGrid" class="layui-table-tabs" lay-filter="tcmSymptomListGrid"></table>
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否慢性病</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("chronicFlag" "$!{basDisease.chronicFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否慢性病'")
+            </div>
+        </div>
+
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否传染病</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("infectiousFlag" "$!{basDisease.infectiousFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否传染病'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否单病种</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("singleDiseaseFlag" "$!{basDisease.singleDiseaseFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否单病种'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否临床路径</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("clinicDiseaseFlag" "$!{basDisease.clinicDiseaseFlag}" ${dicData.dicYesNo} " lay-filter='clinicDiseaseFlag' lay-verify='reqRedio' check-msg='请选择是否设置临床路径'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">病种专业分类</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formSingleSelectSearchFirstNone("clinicDiseaseClassifyId" "$!basDisease.clinicDiseaseClassifyId" ${dicData.dicClinicDiseaseClassify} " id='clinicDiseaseClassifyId' maxlength='24' lay-search"
+                " ")
+            </div>
+        </div>
+        #if(${basDisease})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()有效类型</label>
+            <div class="layui-input-inline">
+                <!--  -->
+                #formRadioGroup("validFlag" "$!{basDisease.validFlag}" ${dicData.dicYesNo} " lay-verify='reqRedio' check-msg='请选择有效类型'")
+            </div>
+        </div>
+        #end
+    </div>
+
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存</button>
+    </div>
+    <!-- 表单 结束 -->
+
+</form>
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./bas/basDisease/basDiseaseEdit.js.vm")
+</body>
+</html>

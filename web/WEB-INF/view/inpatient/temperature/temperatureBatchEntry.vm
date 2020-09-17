@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+
+    <style type="text/css">
+        .layui-fluid{padding-bottom: 0;height: calc(100% - 9px)}
+        .layui-card-body .layui-input-block { margin-bottom: 0px;  }
+    </style>
+</head>
+
+<body class="white-bg">
+<div class="layui-fluid">
+    <form class="layui-form " id="editForm">
+        #formHiddenInput("" "$!temperature.inpatientSymptomId")
+        #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+
+        <div class="layui-form-item">
+            <div class="layui-inline">
+                <label class="layui-form-label">体温单日期</label>
+                <div class="layui-input-inline">
+                    #formTextInput("temperatureDate" "" "class='layui-input layer-date'  id='temperatureDate' readOnly")
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">时间点</label>
+                <div class="layui-input-block">
+                    #formRadioGroup("temperatureTimeSort" "1" $!dicData.dicTemperatureTimeSort "lay-filter='temperatureTimeSort'")
+                </div>
+            </div>
+            <!-- <div class="layui-inline">
+                <label class="layui-form-label">范围</label>
+                <div class="layui-input-inline">
+##                            #formSingleSelectFirstNone("dutyNurserRange" "" $!dicData.dicDutyNurserRange "class='layui-input-sm' id='dutyNurserRange' lay-filter='dutyNurserRange' " "全部")
+                </div>
+            </div> -->
+        </div>
+    </form>
+
+    <div id="tableHgt">
+        <iframe src="" class="J_iframe" id="temperatureEditIframe" name="iframe0" height="100%" width="100%" frameborder="0" data-id="" seamless></iframe>
+    </div>
+
+
+</div>
+
+<!-- 全局js -->
+
+#parse("./inpatient/temperature/temperatureBatchEntry.js.vm")
+</body>
+
+</html>

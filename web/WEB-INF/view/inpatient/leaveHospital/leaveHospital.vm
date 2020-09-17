@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-病区护士出院办理</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="inpatientOrder_queryForm" class="layui-form">
+            <div class="layui-card" id="queryForm">
+                <div class="layui-card-header">基本信息</div>
+                <div class="layui-card-body">
+                    <div class="layui-form-item width-auto">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">住院号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("inhospitalId" $!{inpatientInhospital.inhospitalId} " readonly
+                                class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" $!{inpatientInhospital.patientName} " readonly
+                                class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">床号</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" $!{inpatientInhospital.currentBedNo} " readonly
+                                class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">入院日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" "$!date.format('yyyy-MM-dd HH:mm',$!{inpatientInhospital.inhospitalDate}) " "readonly id='inhospitalDate' class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">住院天数</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" "$!{inhospitalDay}" "readonly id='inhospitalDay' class='layui-input' ")
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-form-item ">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">工作单位</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" $!{patient.companyName} " readonly class='layui-input'")
+                            </div>
+                        </div>
+                        <div class=" layui-inline">
+                            <label class="layui-form-label">入院情况</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" $!{inpatientInhospital.inpatientCondition} "
+                                readonly class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class=" layui-inline">
+                            <label class="layui-form-label">科室</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" $!{inpatientInhospital.currentOfficeName} " readonly
+                                class='layui-input' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">出院日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("outhospitalDate" "$!date.format('yyyy-MM-dd HH:mm',$!{inpatientInhospital.outhospitalDate})" "class='layui-input' id='outhospitalDate' lay-verify='required|dateTime' ")
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--搜索条件 结束-->
+            <div class="layui-card">
+                <div class="layui-card-header">未停、未发医嘱、出院带药</div>
+                <div class="layui-card-body">
+                    <!-- 列表表格 工具栏-->
+                    <!-- 列表表格 工具栏 结束-->
+                    <!-- 列表表格 begin -->
+                    <table id="inpatientOrderListGrid" lay-filter="inpatientOrderListGrid"></table>
+                    <!--  列表表格 end -->
+                </div>
+            </div>
+            <div class="tool-bottom-fixed">
+                <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm layui-disabled">确 定</button>
+                <!--<button type="button" id="btn_print" class="layui-btn layui-btn-sm">打 印</button>-->
+                <button type="button" id="btn_close" class="layui-btn layui-btn-sm">退 出</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- 本页面js -->
+#parse("./inpatient/leaveHospital/leaveHospital.js.vm")
+</body>
+</html>

@@ -1,0 +1,73 @@
+#parse("./common/pageCss.vm")
+<style>
+    .layui-table > thead > tr > th,
+    .layui-table > tbody > tr > td{
+        text-align: center;
+        line-height: 25px;
+    }
+</style>
+<div class="layui-content-wrapper layui-bg-white">
+    #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+	<table class="layui-table custom-table m-t-n">
+		<colgroup>
+			<col width="60px">
+			<col width="150px">
+			<col width="90px">
+			<col width="150px">
+			<col width="105px">
+			<col width="75px">
+			<col width="75px">
+			<col width="75px">
+			<col width="60px">
+			<col width="90px">
+			<col width="90px">
+			<col width="90px">
+			<col width="170px">
+			<col width="90px">
+		</colgroup>
+		<thead>
+		<tr>
+			<th>序号</th>
+			<th>疾病名称</th>
+			<th>诊断ICD</th>
+			<th>描述性诊断</th>
+			<th>诊断类别</th>
+			<th>中西医</th>
+			<th>传染病</th>
+			<th>慢性病</th>
+			<th>肿瘤</th>
+			<th>转归</th>
+			<th>诊断医生</th>
+			<th>医师职称</th>
+			<th>诊断时间</th>
+			<th>上级医生</th>
+		</tr>
+		</thead>
+		<tbody id="diagnosisEnterList">
+        #foreach($opt in $!diagnosiList)
+				<tr>
+					<td>
+						<span id="tr-index">$!velocityCount</span>
+              #formHiddenInput("inpatientDiagnosisId" "$!opt.inpatientDiagnosisId" "")
+					</td>
+					<td>#htmlEscape($!opt.diseaseName)</td><!-- 疾病标准名称 -->
+					<td>#htmlEscape($!opt.diseaseIcdTcd)</td><!-- ICD -->
+					<td>#htmlEscape($!opt.diseaseDiagnosisDesc)</td> <!-- 描述性诊断 -->
+					<td>#lookUpDict($dicData.dicDiagnosisClassify $!opt.diagnosisClassify)</td><!-- 诊断类别 -->
+					<td>#lookUpDict($dicData.dicDiseaseTypeFlag $!opt.diagnosisClassifyFlag) </td><!-- 中西医诊断 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.infectiousFlag)</td><!-- 是否传染病 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.chronicFlag)</td><!-- 是否慢性病 -->
+					<td>#lookUpDict($dicData.dicYesNo $!opt.tumourFlag)</td><!-- 是否肿瘤 -->
+					<td>#lookUpDict($dicData.dicPrognosis $!opt.inpatientState)</td><!-- 转归 -->
+					<td>#htmlEscape($!opt.diagnosisDoctorName)</td><!-- 诊断医生 -->
+					<td>#lookUpDict($dicData.dicDoctorPost $!opt.professionalTitle)</td><!-- 医师职称 -->
+					<td>#htmlEscape($!date.format('yyyy-MM-dd HH:mm:ss', $!opt.diagnosisTime))</td><!-- 诊断时间 -->
+					<td>#htmlEscape($!opt.supperiorDoctorName)</td><!-- 上级医生 -->
+				</tr>
+        #end
+		</tbody>
+	</table>
+</div>
+
+#parse("./common/pageJs.vm")
+#parse("./inpatient/inpatientInfo/diagnosisRecord.js.vm")

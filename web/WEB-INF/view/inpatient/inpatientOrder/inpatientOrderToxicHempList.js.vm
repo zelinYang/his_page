@@ -1,0 +1,205 @@
+<script>
+var dicBasDiseaseClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicBasDiseaseClassify)');
+var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicRegStatus = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegStatus)');
+var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)');
+var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)'); 
+var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+var dicAntibioticType = JSON.parse('$dicTools.changeMapToJson($dicData.dicAntibioticType)'); 
+layui.config({
+    base : '../resource/layuiadmin/' //静态资源所在路径
+}).extend({
+    index : 'lib/index', //主入口模块
+    autocomplete : 'autocomplete'
+}).use(
+    [ 'index', 'table', 'form', 'layer', 'laydate','util'  ],
+    function() {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, laydate = layui.laydate,util = layui.util;
+        //年选择器
+        laydate.render({
+            elem: '#q_yearPopu'
+            ,type: 'year'
+            ,trigger: 'click' //采用click弹出
+        });
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('.layui-form').height() - 10)
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('basDiseaseListGrid', {
+                height: height
+            })
+        })
+        //列表
+        table.render({
+            elem : '#basDiseaseListGrid',
+            url : '../inpatient/inpatientOrderListData.jo',//数据接口 ,  
+            //  where : { regionId : $("select[name='regionId']:first").val()},
+            limit : 20,
+            method:'post',
+			where : getQueryParams(),
+            cellMinWidth: 130,
+            cols : [ [
+                {
+                    title : '序号',
+                    type : 'numbers',
+                    fixed:'left'
+                },{
+                    field : 'exeOrderStartTime',
+                    fixed: 'left',
+                    width : 190,
+                    title : '发药时间',
+                    templet :function (row) {
+                        if (row.dispensingTime) return getFormatDateByLong(row.dispensingTime, 'yyyy-MM-dd hh:mm');
+                        return "";
+                    }
+                },{
+                    field : 'orderName',
+                    fixed: 'left',
+                    width : 190,
+                    title : '医嘱项目'
+                }, {
+                    field : 'orderState',
+                    fixed: 'left',
+                    width : 190,
+                    title : '医嘱状态',
+                    templet :function (row) {
+                        if (row.orderState) return $('select#orderState > option[value="' + row.orderState + '"]').text();
+                        return "";
+                    }
+                }, 
+                {
+                    field : 'antibioticType',
+                    title : '特殊药品类型',
+                    width: 190, templet: function (row) {
+                        return dicAntibioticType[row.antibioticType] || '';
+                    }
+                },{
+                    field : 'dosage',
+                    width : 190,
+                    title : '剂量'
+                }, {
+                    field : 'doseWayCode',
+                    title : '途径',
+                    width : 190,
+                    templet : function (row) {
+                        if (row.doseWayCode)
+                            return dicDoseWay[row.doseWayCode];
+                        return "";
+                    }
+                }, {
+                    field : 'pharmacyFreqId',
+                    title : '频次',
+                    width : 190,
+                    templet : function (row) {
+                        if (row.doseWayCode)
+                            return dicPharmacyFreq[row.doseWayCode] || '';
+                        return "";
+                    }
+                }, {
+                    field : 'giveTotalQuantity',
+                    title : '总量',
+                    width : 170
+                },{
+                    field : 'makeOrderDoctorName',
+                    title : '下达医生',
+                    width : 157
+                }
+
+            ] ],
+            page : true,
+            height : getTableHgt(),
+            request : {
+                pageName : 'pageNumber' //页码的参数名称，默认：page
+                ,
+                limitName : 'pageSize' //每页数据量的参数名，默认：limit
+            },
+            done : function() {
+                /*    this.elem.next().find('[lay-event="LAYTABLE_COLS"]').click(function(e) {
+                       setTimeout(function() {
+                           layui.$(e.currentTarget).find('.layui-form-checkbox').click(function() {
+                               console.log(this)
+                           })
+                       }, 50);
+                   }) */
+            }
+        });
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function(data) {
+            /* debugger */
+            var field = data.field;
+            //执行重载
+            table.reload('basDiseaseListGrid', {
+                where : getQueryParams()
+            });
+
+            return false;
+        });
+
+       
+        
+       //按日期范围查询
+    laydate.render({elem: '#exeOrderStartTime',trigger:'click', range: true, done: function (value, date, endDate){ reloadOrderList() }});
+        // 重载刷新医嘱列表
+        function reloadOrderList() {
+            mergeTd = {};
+            var params = common.serializeObject($('#queryForm'), ['exeOrderStartTime']);
+            tableIns.reload({url: '../inpatient/inpatientOrderJsonPageList.jo', where: params});
+        }
+        
+        
+        //新增事件
+        $('#btn_add').click(function() {
+            editBasDisease();
+        });
+        
+        function getQueryParams() {
+            var params = $.extend({
+            	orderName:'',
+            	orderState:'',
+            	antibioticType:'',
+                patientName:'',
+                operUserId:'',
+                settlementTime:''
+            }, common.serializeObject($('#patient_queryForm')));
+            var chargeDate = $('#chargeDate').val();
+            if (chargeDate) {
+                var chargeDates = chargeDate.split(' - ');
+                params.dispensingTimeBegin = chargeDates[0];
+                params.dispensingTimeEnd = chargeDates[1];
+            }
+            return params;
+        }
+        //日期时间范围
+        laydate.render({
+            elem: '#chargeDate'
+            , range: true
+        });
+        
+
+        //监听工具条
+        table.on('tool(basDiseaseListGrid)', function(obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'edit':
+                    editBasDisease(data);
+                    break;
+                case 'del':
+                    delBasDisease(data);
+                    break;
+                case 'btn_show':
+                    showBasDisease(obj.data);
+                    break;
+            }
+        });
+
+      
+    });
+</script>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+<style type="text/css">
+    #btn_box button{
+        font-size:medium;
+    }
+    #dispensingDate{
+        font-size: 18px;
+        height:38px;
+        text-align: center;
+    }
+    #staticDate .layui-laydate-main{width:378px;}
+    #staticDate .layui-laydate-content td,#staticDate .layui-laydate-content th{width:50px;}
+</style>
+</head>
+
+<body class="white-bg">
+    <div class="p-sm">
+         <div class="text-center">
+	 	     <input id="dispensingDate" name="dispensingDate" type="text" class="layui-input" value="$!date.format('yyyy-MM-dd','')"  >
+	         <div class="layui-inline" id="staticDate"></div> 
+         </div>
+    	 <div class="tool-bottom-fixed white-bg p-sm layui-hide ">
+		     <button class="btn  btn-success m-l-lg" id="confirm">确定</button>
+		     <button class="btn m-l-sm" id="cancel">取消</button>
+	    </div>
+    </div>
+    <!-- 全局js -->
+#parse("./common/pageJs.vm") 
+<script>
+    $(document).ready(function () {
+    	laydate.render({elem: '#staticDate', type: 'date',istime: true,position: 'static', min: getSmpFormatNowDate(true)
+    	    ,done:function(value, date, endDate){
+    	        $("#dispensingDate").val(value);
+    	    }
+    	});
+    	$("#dispensingDate").focus();
+    });
+</script>
+
+</body>
+
+</html>

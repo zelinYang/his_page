@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+<style type="text/css">
+	div { box-sizing: border-box}
+    .layui-table td, .layui-table th {padding: 5px;}
+    .layui-card-body .layui-input-block {
+        margin-bottom: 3px;
+    }
+    .layui-form-label{
+        width: 84px;
+    }
+    .layui-card-body .layui-input-block{
+        margin-left: 104px;
+    }
+    .layui-form-mid{
+        margin-left: 10px;
+    }
+    .layui-table-tool{background-color: white}
+	.baseInfo > div > label{
+		font-size: 14px;
+		color: #0262da;
+	}
+
+	.baseInfo > div > span{
+		font-size: 14px;
+	}
+	.baseInfo > .layui-inline{
+		padding:7px 14px;
+	}
+
+	.layui-col-xs6 .layui-card .layui-card-body {
+		height: 100px;
+	}
+	.layui-row .layui-col-xs6 {
+		padding-bottom: 5px;
+		padding-right: 5px;
+	}
+	.layui-timeline li.act {
+		background-color: #acf1a5;
+	}
+	.layui-timeline li {
+		cursor: pointer;
+	}
+
+	@media screen and (max-width: 768px){
+		.layui-table-tool .layui-btn-container{display: flex}
+	}
+	</style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div class="layui-card mainOne">
+			<div class="layui-card-body">
+				<div class="f-22 f-b text-center p-lg p-t-sm">$!{clinicPath.clinicPathName}临床路径表单</div>
+				<blockquote class="layui-elem-quote remarksTips">
+					<h5>适用对象</h5>
+					<dl class="remarksTips">
+						#set($hospitalEndDay = $!{clinicPath.hospitalStayDay} + $!{clinicPath.hospitalStayRange})
+						<dd>$!{clinicPath.clinicPathDesc}</dd>
+						<dd>标准住院日：$!{clinicPath.hospitalStayDay}-$!{hospitalEndDay}天</dd>
+						<dd>标准费用：$!{clinicPath.estimatedCost}元</dd>
+						<dd>适用科室：#if(!$!{clinicPath.pathOfficeName}) 全院 #else $!{clinicPath.pathOfficeName} #end</dd>
+					</dl>
+				</blockquote>
+			</div>
+			<div class="layui-card-body p-n">
+				#formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+				#formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+				#formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+				#formHiddenInput("clinicPatientPathId" "$!clinicPatientPath.clinicPatientPathId" "id='clinicPatientPathId'")
+				#formHiddenInput("clinicPathId" "$!clinicPatientPath.clinicPathId" "id='clinicPathId'")
+				<div class="timeAxisBox">
+					<ul class="timeAxisHead">
+						#foreach($clinicPathStage in $clinicPathStageList)
+							<li #if($!clinicPathStage.clinicPathStageId == $!clinicPatientPath.currentPatientStageId)class="act"#end>
+								#formHiddenInput("clinicPathStageId" "$!clinicPathStage.clinicPathStageId" "")
+								<div class="nodeName">第$!velocityCount阶段</div>
+								<div class="nodeTimes">$!clinicPathStage.pathStageContent</div>
+							</li>
+						#end
+					</ul>
+				</div>
+			</div>
+		</div>
+		<div class="layui-row mainTwo">
+			<div class="Page-left layui-bg-white p-t-md p-b-md full-height-scroll">
+				<ul class="layui-timeline">
+					#foreach($clinicPatientStage in $clinicPatientStageList)
+						<li class="layui-timeline-item">
+							#formHiddenInput("clinicPatientStageId" "$!clinicPatientStage.clinicPatientStageId" "")
+							#formHiddenInput("clinicPathStageId" "$!clinicPatientStage.clinicPathStageId" "")
+							<i class="layui-icon layui-timeline-axis">&#xe63f;</i>
+							<div class="layui-timeline-content layui-text">
+								<h3 class="layui-timeline-title">实际住院第$!DateUtils.dateDiff($!inpatientInhospital.inhospitalDate, $!{clinicPatientStage.operTime})天</h3>
+								<p>
+									$!clinicPatientStage.pathStageContent
+									<br>
+									$!clinicPatientStage.operTime
+								</p>
+							</div>
+						</li>
+					#end
+				</ul>
+			</div>
+			<div class="Page-right full-height-scroll">
+				#foreach($option in $dicData.dicPathActivityType.keySet())
+					<div class="layui-col-xs6 ">
+						<div class="layui-card">
+							<div class="layui-card-header">$!{dicData.dicPathActivityType.get($option)}</div>
+							<div class="layui-card-body" id="type$option" style="overflow: auto;">
+
+							</div>
+						</div>
+					</div>
+				#end
+				<div class="layui-col-xs12 ">
+					<div class="layui-card">
+						<div class="layui-card-header">阶段评估</div>
+						<div class="layui-card-body" id="assessContent">
+
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+		<div class="tool-bottom-fixed white-bg">
+
+			#if ("1" == "$!{queryInfo.type}" || "2" == "$!{queryInfo.type}")
+			<button type="button" id="btn_add" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_add"><span>生成路径</span></button>
+			<button type="button" id="btn_exe" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_exe"><span>执行项目</span></button>
+			<button type="button" id="btn_assess" class="layui-btn layui-btn-sm" lay-submit lay-filter="btn_evaluation"><span>阶段评估</span></button>
+			#end
+			#if ("1" == "$!{queryInfo.type}")
+			<a id="changeDisease" class="layui-btn layui-btn-sm" lay-filter="changeDisease"><span>更改病种</span></a>
+			<a id="changeStage" class="layui-btn layui-btn-sm" lay-filter="changeStage"><span>更改进度</span></a>
+			<a id="variantEtiology" class="layui-btn layui-btn-sm"><span>退出路径</span></a>
+			<a id="completeClinic" class="layui-btn layui-btn-sm"><span>完成路径</span></a>
+			#end
+		</div>
+	</div>
+</div>
+
+
+
+
+</body>
+	#parse("./clinic/exeClinicPatientPath.js.vm")
+</html>

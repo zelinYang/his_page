@@ -1,0 +1,205 @@
+<script>
+	var dicProducingArea = JSON.parse('$dicTools.changeMapToJson($dicData.dicProducingArea)');//产地
+	var dicMedicineVendor = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineVendor)');//供应商
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');//供应商
+	var dicDosageForm = JSON.parse('$dicTools.changeMapToJson($dicData.dicDosageForm)');//供应商
+	var medicineDosage = JSON.parse('$dicTools.changeMapToJson($dicData.medicineDosage)');//供应商
+	var dicDrugReportUsage = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugReportUsage)');// 报告用药
+	var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');// 科室
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');//
+	var templateTr = $('#itemList tr:last').prop("outerHTML");
+	layui.use(['table', 'element', 'laydate', 'form', 'util'], function () {
+		var table = layui.table, util = layui.util;
+		var form = layui.form;
+
+		var $ = layui.jquery, element = layui.element, laydate = layui.laydate;
+		//按日期范围查询
+		laydate.render({
+			elem: '#pharmacyOutDateSearch',trigger: 'click', range: true, done: function (value, date, endDate) {
+
+			}
+		});
+		initLayout = function () {
+			$('#container').layout({
+				west__size: 500//pane的大小
+				, togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				, togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				, spacing_open: 8//边框的间隙
+				, maskIframesOnResize: ".resizeiframe"
+				, onopen_end: refreshTable
+			});
+		}
+
+		//页面初始化
+		$(function () {
+			initLayout();
+		});
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+		function refreshTable() {
+			table.reload('mainTable', {
+				where: getQueryParams()
+			});
+		}
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['pharmacyOutDateSearch']);
+			return $.extend({
+				pharmacyOutWay: '',
+				pharmacyId: '',
+				pharmacyInDateBegin: '',
+				pharmacyInDateEnd: '',
+				pharmacyInFlag: ''
+			}, queryForm);
+		}
+
+		var mainTable = table.render($.extend(basePageTable, {
+			elem: '#mainTable'
+			, height: getLeftTableHeight()
+			, url: contextPath + '/pharmacy/pharmacyOutPageData.jo' //数据接口
+			, where: getQueryParams()
+			, id: 'mainTable'
+			, cols: [[ //表头
+				{
+					type: 'radio', fixed: 'left'
+				}, {field: 'pharmacyOutId', title: '序号', width: 80, fixed: 'left'}
+				, {field: 'pharmacyName', title: '药房名', width: 110}
+				, {field: 'pharmacyOutWayName', title: '出库方式', width: 110}
+				, {
+					field: 'pharmacyOutDate',
+					title: '出库日期 ',
+					width: 180,
+					templet: function (res) {
+						return res.pharmacyOutDate? layui.util.toDateString(res.pharmacyOutDate, 'yyyy-MM-dd'): '';
+					}
+				}
+				, {
+					field: 'pharmacyOutFlag'
+					, title: '出库状态'
+					, width: 80
+					, templet: function (res) {
+						return res.pharmacyOutFlag === '1' ? '出库' : '未出库';
+					}
+				}
+				, {field: 'operUserName', title: '操作人姓名', width: 100}
+				, {field: 'revUserName', title: '领用人姓名', width: 100}
+				, {field: 'revOfficeName', title: '领用科室名称', width: 100}
+				, {field: 'remark', title: '备注 ', width: 110}
+			]]
+		}));
+		var itemTable = table.render($.extend(singlePageTable, {
+			elem: '#itemTable'
+			, height: getRightTableHeight()
+			, data: []
+			, cols: [[ //表头
+				{type: 'numbers', fixed: 'left'}
+				, {field: 'medicineName', title: '药品通用名称', width: 200}
+				, {field: 'medicineSpec', title: '药品规格', width: 150}
+				, {
+					field: 'expireDate',
+					title: '药品效期',
+					width: 120,
+					templet: function (res) {
+						return res.expireDate? layui.util.toDateString(res.expireDate, 'yyyy-MM-dd'): '';
+					}
+				}
+				, {
+					field: 'minMedicineUnit', title: '药品单位', width: 80, templet: function (res) {
+						return dicDrugNumUnit[res.minMedicineUnit] || '';
+					}
+				}
+				, {field: 'minOutCount', title: '出库数量', width: 150}
+				, {field: 'medicineDosage', title: '药品剂量', width: 80}
+				, {
+					field: 'dosageUnit', title: '剂量单位', width: 80, templet: function (d) {
+						return dicDrugNumUnitDosageUnit[d.dosageUnit] || "";
+					}
+				}
+				,{field: 'dosageForm', title: '药品剂型', width:220, templet: function (row) {
+						return dicDosageForm[row.dosageForm] || '';
+					}}
+				, {field: 'minRetailPrice', title: '零售价', width: 80}
+				, {field: 'outTotalSum', title: '出库金额', width: 80}
+				, {field: 'batchNum', title: '药品批号', width: 80}
+				, {field: 'producingAreaName', title: '产地名称', width: 120, sort: true}
+
+			]]
+		}));
+
+		//监听行单击事件（单击事件为：row）
+		table.on('row(mainTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.mainTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var data = obj.data;
+			$('#editForm').find('input, select').each(function () {
+				var name = $(this).attr('name');
+				if (!data[name]) {
+					$(this).val('');
+					return;
+				}
+				if (name && data[name]) {
+					if (name === 'pharmacyOutDate') {
+						$(this).val(new Date(data[name]).format('yyyy-MM-dd'));
+					} else {
+						if (name === 'pharmacyOutFlag') {
+							$(this).val(data[name] === '1'? '出库': '未出库');
+						} else {
+							$(this).val(data[name]);
+						}
+					}
+				}
+			});
+			// 患者领药=01
+			if (data.pharmacyOutDateSearch === '01') {
+				$('.patient').show();
+			} else {
+				$('.patient').hide();
+			}
+			var pharmacyInId = data.pharmacyInId;
+			table.reload('itemTable', {
+				where: {pharmacyInId: pharmacyInId}
+				, url: '../pharmacy/pharmacyOutItemPageData.jo' //数据接口
+				, height: getRightTableHeight()
+			});
+			form.render();
+		});
+
+		// 获取表格高度
+		function getLeftTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		function getRightTableHeight() {
+			return ($('body').height() - $("#editForm").height() - 10);
+		}
+
+		$(window).resize(function () {
+			table.reload('mainTable', {
+				height: getLeftTableHeight()
+			})
+		})
+
+	});
+</script>

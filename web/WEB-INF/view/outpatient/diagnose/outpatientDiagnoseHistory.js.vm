@@ -1,0 +1,108 @@
+ <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var initLayout;
+
+  
+  
+  layui.use(['jquery','table', 'laypage','element'], function(){
+	    var table = layui.table;
+	    var element = layui.element;
+	    var $ = layui.$;
+	    var laypage = layui.laypage; 
+	    element.render();
+	    
+	    initLayout = function() {
+	        var interval =  setInterval(function() {
+	            if ($('#container').height()>0) {
+	                $('#container').layout({
+	                    south__size: 350//pane的大小 
+	                   ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▼</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content   
+	                   ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▲</div>"//pane关闭时，同上。  
+	                   ,spacing_open:8//边框的间隙 
+	                });
+	                clearInterval(interval );//停止
+	                hideSouthLayout();
+	            }
+	        }, 10);
+	    }
+	    //日期范围
+	    laydate.render({elem: '#diagnosisTime', range: true});
+	    
+	    //第一个实例
+	    var tableIns = table.render({
+	       elem: '#historyDiagnosisTable'
+	      ,defaultToolbar: []
+	      ,height: 'full-55'//高度
+	      ,url: '../outpatient/diagnosisListData.jo' //数据接口
+	      ,limit:200
+	      ,request: {pageName: 'pageNumber',limitName: 'pageSize'}
+	      ,where: common.serializeObject($('#historyDiagnosis_queryForm'))
+	      ,cols: [[ //表头
+	      	{type:'checkbox'}
+	       ,{field : 'diseaseIcdTcd',title : 'ICD'}
+	       ,{field : 'diseaseDiagnosisDesc',title : '描述性诊断'}
+	       ,{field : 'diseaseDiagnosisName', title : '诊断名称'}
+	       ,{field : 'makeOrderDoctorName',title : '诊断医生'}
+	       ,{field : 'diagnosisTime',title : '诊断时间' }
+	      ]]
+	      ,done: function(res, curr, count){
+	      }
+	    });
+	    
+	    $('.date-out-item').click(function() {
+	        $(this).siblings().removeClass('out-item-active');
+	        $(this).addClass('out-item-active');
+	        $('#outpatientId').val($(this).attr('outpatientId'));
+	        query();
+	    });
+	    
+	    $('.date-out-item').first().click();//默认第一个点击  
+	  
+	    // 查询按钮
+	    $('#btn_query').click(function (){
+	    	query();
+	    });
+	    
+	    // 导入历史诊断按钮
+	    $('#btn_import_outItem').click(function (){
+	    	importHistotyoutItem();
+	    });
+	    
+	    //查询列表
+	    function query() {
+	    	//var queryParams = common.serializeObject($('#historyDiagnosis_queryForm'), ['diagnosisTime']);
+	    	var queryParams = common.serializeObject($('#historyDiagnosis_queryForm'));
+	        tableIns.reload({ where: queryParams });
+		}
+	    
+	    //判断是否为病历资料中的页面，是则隐藏导入按钮
+	    if ('$!{viewFlag}'){
+	    	$('#btn_import_outItem').hide();
+	    }
+	    
+	    // 导入历史诊断
+	    function importHistotyoutItem() {
+		    var checkRows = table.checkStatus('historyDiagnosisTable'); //test即为基础参数id对应的值
+		    //获取选中行的数据 =checkRows.data 
+		    //获取选中行数量，可作为是否有选中行的条件 =checkRows.data.length
+		    //表格是否全选 =checkRows.isAll
+		    if (!checkRows.data.length) {
+		    	common.alert('请选择需要导入的数据', 0);
+		    	return false;
+				}
+		    var diagnosisArr = []; 
+		    $(checkRows.data).each(function(i,row) {
+					var diagnosis = {
+							 diseaseId:row.diseaseId
+							,diseaseIcdTcd :row.diseaseIcdTcd
+							,diseaseName :row.diseaseDiagnosisName
+							,commDiagnosisDesc :row.diseaseDiagnosisDesc
+					}
+					diagnosisArr.push(diagnosis);
+				});
+		    parent.addTr(diagnosisArr);
+		}
+	    
+	});//layui.use
+</script> 

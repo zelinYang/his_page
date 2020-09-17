@@ -1,0 +1,600 @@
+<script>
+	//医生没有结束处方，不能结算！
+	var PATIENT_KIND_SELF_PAYING = '$!{CONST.AppConstants.PATIENT_KIND_SELF_PAYING}';
+	var CHARGE_CLASSIFY_PRESCRIPTION = '$!{CONST.AppConstants.CHARGE_CLASSIFY_PRESCRIPTION}';
+	var dicClearSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicClearSex)')
+	var dicPatientAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientAttribute)')
+	var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)')
+	var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)')
+	var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+	//区医保业务配置信息
+	var sysDistrictMedicalInsurance = JSON.parse('$dicTools.changeMapToJson($dicData.sysDistrictMedicalInsurance)')
+	var recipeItemTable, techItemTable;
+	var settlementParams = {
+		recipeIds: '$!{recipeIds}',
+		techIds: '$!{techIds}',
+		recipeItemIds: '$!{recipeItemIds}',
+		techItemIds: '$!{techItemIds}',
+	};
+	var patCardNo = '$!{patCardNo}';
+	var ws;
+	var mbfData;
+	var aae140 = '', yab139 = '', ykb065 = '', insureType = '', aac001 = '', aac002 = '', aka130 = '11';// 分别是险种类型，参保所属机构，执行社会保险办法,险种类型,医保系统--人员ID,证件号码，对应  社保号，医/农保卡号,支付类别
+	var aaz217 = '', aaz216 = '';// 人员医疗就诊事件ID,人员医疗结算事件ID
+	var grxjzf;// 个人支付金额
+	var settlementData;
+	var outpatientFeeId = '';
+	var mbfParam = {
+		"insure_type": "GXYHJK",
+		"bus_code": "I0001",
+		"control": {
+			"edition": "",
+			"ykf008": "",
+			"yab278": "",
+			"aae011": "0277",
+			"ykc141": "苏月明",
+			"aae036": ""
+		},
+		"input": {}
+	};
+	console.log(mbfParam);
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index',
+		autocomplete: 'autocomplete'
+	}).use(['index', 'form', 'table', 'laytpl', 'layer', 'autocomplete'], function () {
+		var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl, autocomplete = layui.autocomplete;
+		var layer = layui.layer;
+		var mbfParams = {
+
+		};
+
+		form.render();
+
+		$(function() {
+			function initWS() {
+				ws = new WebSocket("ws://10.0.75.1:9100");
+				ws.onopen = function (e) {
+					console.log("Openened connection to websocket");
+					console.log(e);
+					initializationMbf();
+				};
+				ws.onclose = function () {
+					console.log("Close connection to websocket");
+					// 断线重连
+					initWS();
+				};
+
+				ws.onmessage = function (e) {
+					console.log("收到",e.data);
+				};
+			}
+
+			initWS();
+			$('#preSettlement').click(function() {
+				uploadData();
+			});
+
+			$('#readCard').click(function() {
+				readCard();
+			});
+
+			$('#settlement').click(function() {
+				if (!settlementData) {
+					common.alert('请先预结算', 0);
+					return;
+				}
+				settlement(settlementData, '1', 'M0004');
+			});
+
+			$('#refund').click(function() {
+				if (!settlementData) {
+					common.alert('请先预结算', 0);
+					return;
+				}
+				refund(settlementData, '1');
+			});
+		});
+
+		//病种名称
+		$('input[name="diseaseName"]').each(function () {
+			bindDiseaseSearch(this);
+		});
+
+		$("#actualCharge").on('input propertychange', function() {
+			if (grxjzf) {
+				$("#changeCharge").val($("#actualCharge").val() - grxjzf);
+			}
+		})
+
+		/* 挂号缴费方式 */
+		form.on('radio(payMode)', function (data) {
+			//不是现金的查询支付状态
+			if (data.value != 1) {
+				$('.payCode').show()
+			} else {
+				$('.payCode').hide()
+			}
+			$('input:radio[name=dicPatientKind]').each(function () {
+				this.checked = false;
+			})
+			form.render('radio');
+		});
+
+		// 绑定病种检索
+		function bindDiseaseSearch(elem) {
+			// 检索病种
+			var diseacs = autocomplete.render({
+				cache: false,
+				method: 'post',
+				searchField: 'keyWord',
+				elem: elem,
+				url: contextPath + '/mbfData/mbfDiseaseListData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+				template_val: '{{d.diseaseName}}',
+				template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{d.diseaseCode}}</span>&nbsp;&nbsp;&nbsp;&nbsp;{{d.diseaseName}}',
+				onselect: function (obj) {
+					$(elem).val(obj.diseaseName);
+					form.render();
+				}
+			});
+
+		}
+
+		function initializationMbf() {
+			ws.onmessage = function (e) {
+				console.log("收到初始化数据",e.data);
+				var result = JSON.parse(e.data);
+				if (result.status === '1') {
+					common.msg('初始化成功', 1);
+				} else {
+					common.alert(e.data.message, 0);
+				}
+			};
+			common.requestServer(contextPath + '/mbf/getAllMbfInsureInterfaceParam.jo', {}, function(result) {
+				if (result.code === '0') {
+					console.log(result.data);
+					result.data.identity = "1";
+					result.data.control = {};
+					result.data.control.aae011 = '0277';
+					result.data.control.ykc141 = '苏月明';
+					ws.send(JSON.stringify(result.data));
+				} else {
+					common.msg('获取参数失败', 0);
+				}
+			});
+		}
+
+		function readCard() {
+			ws.onmessage = function (e) {
+				console.log("读卡收到", e.data);
+				mbfData = JSON.parse(e.data);
+				console.log(mbfData.output);
+				aac002 = mbfData.output.aac002; //社保卡号
+				aae140 = mbfData.output.rows.row.aae140; //险种类型
+				yab139 = mbfData.output.rows.row.yab139; //参保所属机构
+				ykb065 = mbfData.output.rows.row.ykb065; //执行社会保险办法
+				insureType = mbfData.output.rows.row.aae140; //险种类型
+				saveMbfTransactionOutput(mbfParam.bus_code, JSON.stringify(mbfParam.input), e.data);
+				$("#aac003").val(mbfData.output.aac003);
+				$("#aac004").val(mbfData.output.aac004);
+				$("#aac005").val(mbfData.output.aac005);
+				$("#aae240").val(mbfData.output.aae240);
+				$("#aab004").val(mbfData.output.rows.row.aab004);
+				$("#aae140").val(mbfData.output.rows.row.aae140);
+				$("#yab139").val(mbfData.output.rows.row.yab139);
+				$("#ykb065").val(mbfData.output.rows.row.ykb065);
+				var params = {
+					mbfPatientId: mbfData.output.aac001,
+					patientId: $("#patientId").val(),
+					visitCardNo: $("#visitCardNo").val(),
+					socialSecurityCardMoney: mbfData.output.aae240,
+					mbfOrgId: mbfData.output.rows.row.aab001,
+					mbfOrgName: mbfData.output.rows.row.aab004,
+					mbfOrgRel: mbfData.output.rows.row.aaz159,
+					mbfOrgBelong: mbfData.output.rows.row.yab139,
+					insureType: mbfData.output.rows.row.aae140,
+					exeInsureMethod: mbfData.output.rows.row.ykb065,
+					mbfDataCenter: mbfData.output.yab278
+				};
+				common.requestServer(contextPath + '/mbf/saveMbfIdAuth.jo', params, function(result) {
+					if (result.code === '0') {
+						common.msg('读卡成功', 1);
+					} else {
+						common.alert('医保卡数据保存失败', 0);
+					}
+				});
+			};
+			mbfParam.insure_type = 'GXYHJK';
+			mbfParam.bus_code = 'I0001';
+			mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+			mbfParam.control.aae011 = '0277';
+			mbfParam.control.ykc141 = '苏月明';
+			mbfParam.input.aae140 = "310";
+			mbfParam.identity = "2";
+			console.log(mbfParam);
+			ws.send(JSON.stringify(mbfParam));
+		}
+
+		function uploadData() {
+			ws.onmessage = function (e) {
+				console.log("上传数据收到:", JSON.parse(e.data));
+				var mbfResult = JSON.parse(e.data);
+				aaz217 = mbfResult.output.aaz217;
+				saveMbfTransactionOutput(mbfParam.bus_code, JSON.stringify(mbfParam.input), e.data);
+				if (mbfResult.status === '1') {
+					common.requestServer(contextPath + '/mbf/saveUploadData.jo', {jsonData: JSON.stringify(mbfResult.output.rows.row)}, function(result) {
+						if (result.code === '0') {
+							settlement(mbfResult, '0', 'M0003');
+						} else {
+							common.alert('上传数据保存失败', 2);
+						}
+					});
+				} else {
+					common.alert('医保数据上传失败', 2);
+				}
+			};
+			mbfParam.bus_code = 'M0002';
+			mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+			mbfParam.control.aae011 = '0277';
+			mbfParam.control.ykc141 = '苏月明';
+			mbfParam.identity = "3";
+			console.log(mbfData);
+			common.requestServer(contextPath + '/mbf/getUploadMbfInsureInterfaceParam.jo', {recipeIds: settlementParams.recipeIds, techIds: settlementParams.techIds}, function(result) {
+				if (result.code === '0') {
+					console.log(result.data);
+					var inputData = {
+						// aaz217: mbfData.aaz217,
+						aac001: mbfData.output.aac001,
+						ykc010: $('#visitCardNo').val(),
+						ykc173: '',
+						aka130: '11',
+						aka120: $('#diseaseCode').val(),
+						aae140: aae140,
+						djxxrows: {
+							djxxrow: result.data
+						}
+					};
+					mbfParam.input = inputData;
+					console.log(mbfParam);
+					ws.send(JSON.stringify(mbfParam));
+				} else {
+					common.msg('获取参数失败', 2);
+				}
+			});
+		}
+
+		function settlement(data, type, busCode) {
+			ws.onmessage = function (e) {
+				if (type === '0') {
+					console.log("预结算收到:", e.data);
+					var mbfResult = JSON.parse(e.data);
+					aaz216 = mbfResult.output.rows.row.aaz216;
+					grxjzf = mbfResult.output.rows.row.grxjzf;
+					saveMbfTransactionOutput(mbfParam.bus_code, JSON.stringify(mbfParam.input), e.data);
+					if (mbfResult.status === '1') {
+						$("#akc264").val(mbfResult.output.rows.row.akc264);
+						$("#akc228").val(mbfResult.output.rows.row.akc228);
+						$("#akc268").val(mbfResult.output.rows.row.akc268);
+						$("#yka318").val(mbfResult.output.rows.row.yka318);
+						$("#yka319").val(mbfResult.output.rows.row.yka319);
+						$("#ake039").val(mbfResult.output.rows.row.ake039);
+						$("#ake029").val(mbfResult.output.rows.row.ake029);
+						$("#ake030").val(mbfResult.output.rows.row.ake030);
+						$("#ake035").val(mbfResult.output.rows.row.ake035);
+						$("#ake026").val(mbfResult.output.rows.row.ake026);
+						$("#ake105").val(mbfResult.output.rows.row.ake105);
+						$("#ake032").val(mbfResult.output.rows.row.ake032);
+						$("#ake042").val(mbfResult.output.rows.row.ake042);
+						$("#ake043").val(mbfResult.output.rows.row.ake043);
+						$("#ake031").val(mbfResult.output.rows.row.ake031);
+						$("#ame001").val(mbfResult.output.rows.row.ame001);
+						$("#yle001").val(mbfResult.output.rows.row.yle001);
+						$("#akb081").val(mbfResult.output.rows.row.akb081);
+						$("#grxjzf").val(mbfResult.output.rows.row.grxjzf);
+						$("#aae013").val(mbfResult.output.rows.row.aae013);
+						$("#akc263").val(mbfResult.output.rows.row.akc263);
+						$("#ake034").val(mbfResult.output.rows.row.ake034);
+						$("#actualCharge").val(mbfResult.output.rows.row.grxjzf);
+						$("#changeCharge").val(0);
+						var params = {
+							settlementFlag: $("#registerId").val()? '1': '2',
+							hospitalSettlementId: '',
+							mbfVisitId: aaz217,
+							mbfFeeId: aaz216,
+							mbfPatientId: aac001,
+							socialSecurityCard: aac002,
+							patientName: $("#patientName").val(),
+							exeInsureMethodProvince: ykb065,
+							mbfPayTypeProvince: aka130,
+							personalUsageFlag: type,
+							spouseIdCard: mbfParam.input.yac112,
+							spouseName: mbfParam.input.amc010,
+							mbfOrgRel: mbfResult.output.rows.row.aaz159,
+							mbfOrgBelong: mbfResult.output.rows.row.yab139,
+							medicalStaffType: mbfResult.output.rows.row.akc021,
+							entitledGroupsClassify: mbfResult.output.rows.row.ykc118,
+							retiredGroupsClassify: mbfResult.output.rows.row.ykc032,
+							qualificationClassify: mbfResult.output.rows.row.aac014,
+							officerFlag: mbfResult.output.rows.row.ykc117,
+							officerClassify: mbfResult.output.rows.row.ykc122,
+							settlementClassify: mbfResult.output.rows.row.aka030,
+							liquidationMode: mbfResult.output.rows.row.yka054,
+							liquidationClassify: mbfResult.output.rows.row.yka326,
+							liquidationOrg: mbfResult.output.rows.row.ykb037,
+							settlementTotalAmount: mbfResult.output.rows.row.akc264,
+							wholeSelfPayAmount: mbfResult.output.rows.row.akc228,
+							overSelfPayAmount: mbfResult.output.rows.row.akc268,
+							aheadSelfPayAmount: mbfResult.output.rows.row.yka318,
+							conformSelfPayAmount: mbfResult.output.rows.row.yka319,
+							originSelfPayAmount: mbfResult.output.rows.row.yka114,
+							thisTimeSelfPayAmount: mbfResult.output.rows.row.yka115,
+							actualSelfPayAmount: mbfResult.output.rows.row.yka058,
+							basicMedicalPayAmount: mbfResult.output.rows.row.ake039,
+							wholesaleMedicalPayAmount: mbfResult.output.rows.row.ake029,
+							seriousIllnessPayAmount: mbfResult.output.rows.row.ake030,
+							publicFundsPayAmount: mbfResult.outputv.ake035,
+							enterpriseFundsPayAmount: mbfResult.output.rows.row.ake026,
+							comfortFundsPayAmount: mbfResult.output.rows.row.ake105,
+							secondMedicalPayAmount: mbfResult.output.rows.row.ake032,
+							redArmyPayAmount: mbfResult.output.rows.row.ake042,
+							retirePayAmount: mbfResult.output.rows.row.ake043,
+							otherPayAmount: mbfResult.output.rows.row.ake031,
+							giveBirthPayAmount: mbfResult.output.rows.row.ame001,
+							onDutyInjuryPayAmount: mbfResult.output.rows.row.yle001,
+							fundsTotalPayAmount: mbfResult.output.rows.row.akb081,
+							mbfPersonalPayAmount: mbfResult.output.rows.row.ake034,
+							mbfAccountBalance: mbfResult.output.rows.row.aae240,
+							mbfTotalPayAmount: mbfResult.output.rows.row.akc263,
+							totalSelfPayAmount: mbfResult.output.rows.row.grxjzf,
+							otherPalcePersonFlag: mbfResult.output.rows.row.bkc002,
+							officerBedSubsidyStandard: mbfResult.output.rows.row.ykk001,
+							officerBedSubsidyAmount: mbfResult.output.rows.row.ykk002,
+							quotaTotalAmount: mbfResult.output.rows.row.ykk003,
+							quotaSurplusAmount: mbfResult.output.rows.row.ykk004,
+							diseaseQuotaStandard: mbfResult.output.rows.row.ykk005,
+							specialMaterialQuotaAmount: mbfResult.output.rows.row.ykk006,
+							diseaseQuotaAmount: mbfResult.output.rows.row.ykk007,
+							leaveHosiptalTakeDrugFee: mbfResult.output.rows.row.ykk008,
+							bloodProductAmount: mbfResult.output.rows.row.ykk009,
+							singleDiseaseFundsPay: mbfResult.output.rows.row.ykk010,
+							singleDiseaseWholesalePay: mbfResult.output.rows.row.ykk011,
+							singleDiseaseAccountPay: mbfResult.output.rows.row.ykk012,
+							singleDiseaseCashPay: mbfResult.output.rows.row.ykk013,
+							transfusionPrjAmount: mbfResult.output.rows.row.ykk014,
+							transfusionFundsAmount: mbfResult.output.rows.row.ykk015,
+							transfusionAccountAmount: mbfResult.output.rows.row.ykk016,
+							transfusionSelfPayAmount: mbfResult.output.rows.row.ykk017,
+							leaveHospitalClassaAmount: mbfResult.output.rows.row.ykk018,
+							leaveHospitalClassaFunds: mbfResult.output.rows.row.ykk019,
+							leaveHospitalClassaAccount: mbfResult.output.rows.row.ykk020,
+							leaveHospitalClassaSelfPay: mbfResult.output.rows.row.ykk021,
+							leaveHospitalClassbAmount: mbfResult.output.rows.row.ykk022,
+							leaveHospitalClassbFunds: mbfResult.output.rows.row.ykk023,
+							leaveHospitalClassbAccount: mbfResult.output.rows.row.ykk024,
+							leaveHospitalClassbSelfPay: mbfResult.output.rows.row.ykk025,
+							selfPayingDrugFee: mbfResult.output.rows.row.ykk026,
+							selfPayingDrugFunds: mbfResult.output.rows.row.ykk027,
+							selfPayingDrugAccount: mbfResult.output.rows.row.ykk028,
+							selfPayingDrugSelfPay: mbfResult.output.rows.row.ykk029,
+							outpatientChronicFunds: mbfResult.output.rows.row.ykk030,
+							outpatientChronicSettleNum: mbfResult.output.rows.row.ykk031,
+							singleDiseaseBedFee: mbfResult.output.rows.row.ykk032,
+							bedFeeFundsPay: mbfResult.output.ykk033.rows.row,
+							bedFeeAccountPay: mbfResult.output.ykk034.rows.row,
+							bedFeeSelfPay: mbfResult.output.ykk035.rows.row,
+							secondLiquidationClassify: mbfResult.output.rows.row.yka316,
+							basicFundsAddUp: mbfResult.output.rows.row.ykk036,
+							wholesaleFundsAddUp: mbfResult.output.rows.row.ykk037,
+							singleDiseaseClassaFee: mbfResult.output.rows.row.ykk038,
+							singleDiseaseClassbFee: mbfResult.output.rows.row.ykk039,
+							singleDiseaseClasscOneFee: mbfResult.rows.row.ykk040,
+							singleDiseaseClasscTwoFee: mbfResult.output.ykk041,
+							singleDiseaseBedAddFee: mbfResult.output.ykk042,
+							singleDiseaseSelfAddFee: mbfResult.output.ykk043,
+							mbfFeeRemark: mbfResult.output.rows.row.aae013,
+							recipeIds: settlementParams.recipeIds,
+							techIds: settlementParams.techIds,
+							outpatientFeeId: outpatientFeeId
+						};
+						common.requestServer(contextPath + '/mbf/saveMbfSettlement.jo', params, function(result) {
+							if (result.code === '0') {
+								settlementData = data;
+								common.msg('预结算成功', 1);
+							} else {
+								common.msg('预结算信息保存失败', 0);
+							}
+						});
+					} else {
+						common.alert('（' + mbfResult.error_code + '）' + mbfResult.message, 0);
+					}
+				} else {
+					console.log("结算收到:", e.data);
+					var mbfResult = JSON.parse(e.data);
+					if (mbfResult.status === '1') {
+						settlementParams.registerId = $("#registerId").val();
+						settlementParams.patCardType = '1';
+						settlementParams.patCardNo = patCardNo;
+						settlementParams.payMode = $("input[name='payMode']:checked").val();
+						settlementParams.payAmt = 0;
+						settlementParams.actualCharge = $("#actualCharge").val();
+						settlementParams.actualChargeAmount = $("#actualChargeAmount").val();
+						settlementParams.changeCharge = $("#changeCharge").val();
+						settlementParams.authCode = $("#authCode").val();
+						settlementParams.mbfVisitId = aaz217;
+						settlementParams.mbfFeeId = aaz216;
+						settlementParams.insuredType = aae140;
+						settlementParams.mbfPayType = aka130;
+						settlementParams.mbfWholeAmount = akb081;
+						settlementParams.mbfSelfPay = ake034;
+						settlementParams.mbfIndividualAmount = aae240;
+						common.requestServer(contextPath + '/outpatientFee/outpatientFeePay.jo', settlementParams, function(result) {
+							if (result.code === '0') {
+
+								common.alert('结算成功', 1);
+							} else {
+								common.alert(result.msg, 0);
+							}
+						});
+					} else {
+						common.alert('（' + mbfResult.error_code + '）' + mbfResult.message, 0);
+					}
+				}
+			};
+			mbfParam.bus_code = busCode;
+			mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+			mbfParam.input = {
+				"aac001": data.output.aac001,
+				"aaz217": data.output.aaz217,
+				"qrcode": "",
+				"ykb065": data.output.ykb065,
+				"aka130": '11',
+				"hisfye": $("#actualChargeAmount").val(),
+				"zsjsbz": type,// 正式结算标志(1表示正式结算，0表示预结算)
+				"grzhbz": "1",
+				"yac112": "",
+				"amc010": ""
+			};
+			console.log(mbfParam);
+			ws.send(JSON.stringify(mbfParam));
+		}
+
+		function refund() {
+			if (!aaz217 || !aaz216) {
+				common.alert('请先结算', 0);
+				return;
+			}
+			ws.onmessage = function (e) {
+				console.log("取消结算收到:", JSON.parse(e.data));
+				var mbfResult = JSON.parse(e.data);
+				aaz217 = mbfResult.output.aaz217;
+				saveMbfTransactionOutput(mbfParam.bus_code, JSON.stringify(mbfParam.input), e.data);
+				if (mbfResult.status === '1') {
+					common.alert('取消结算成功', 1);
+				} else {
+					common.alert('取消结算失败', 0);
+				}
+			};
+			mbfParam.bus_code = 'M0007';
+			mbfParam.control.aae036 = new Date().format('YYYY-mm-dd HH:MM:ss');
+			mbfParam.input = {
+				"aaz217": aaz217,
+				"ykb065": ykb065,
+				"aka130": '11',
+				"aaz216": aaz216
+			};
+			console.log(mbfParam);
+			ws.send(JSON.stringify(mbfParam));
+		}
+
+		function saveMbfTransactionOutput(busCode, inputParamJson, data) {
+			var result = JSON.parse(data);
+			var params = {
+				insureType: insureType,
+				busCode: busCode,
+				mbfVisitId: aaz217,
+				mbfFeeId: aaz216,
+				inputParamJson: inputParamJson,
+				registerId: $("#registerId").val(),
+				inhospitalId: $("#inhospitalId").val(),
+				mbfPatientId: aac001,
+				patientId: $("#patientId").val(),
+				patientName: $("#patientName").val(),
+				visitCardNo: $("#visitCardNo").val(),
+				socialSecurityCard: aac002,
+				feeFlag: $("#registerId").val()? '1': '2',
+				mbfPayType: aka130,
+				outputParamJson: JSON.stringify(result.output),
+				status: result.status,
+				message: result.message,
+				errorCode: result.errorCode
+			};
+			common.requestServer(contextPath + '/mbf/saveMbfTransactionOutput.jo', params, function(result) {
+				if (result.code !== '0') {
+					common.alert('医保交易结果保存失败', 2);
+				}
+			});
+		}
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			return common.serializeObject($('#outpatientFeeGroup_queryForm'))
+		}
+
+		// 获取表格高度
+		function getTableHgt() {
+			return ($('body').height() - $('#patientInfo').height() - $('#mbfInfo').height() - 20)
+		}
+
+		//处方列表
+		table.render($.extend(singlePageTable, {
+			elem: '#mainTable',
+			height: getTableHgt(),
+			totalRow: true,
+			url: contextPath + '/outpatientFeeItem/outpatientFeeItemListData.jo',
+			where: {
+				recipeIds: settlementParams.recipeIds,
+				outpatientTechIds: settlementParams.techIds,
+				validFlag: '1'
+			},
+			cols: [[{
+				type: 'numbers',
+				totalRowText: '合计'
+			}, {
+				field: 'chargeName',
+				title: '费用名称',
+
+			}, {
+				field: 'giveTotalQuantity',
+				title: '数量',
+
+			}, {
+				field: 'giveTotalQuantityUnit',
+				title: '单位',
+                width: 80,
+                templet: function (row) {
+					if (row.giveTotalQuantityUnit) {
+						return dicDrugNumUnit[row.giveTotalQuantityUnit];
+					}
+					return '';
+				}
+			}, {
+				field: 'unitPrice',
+				title: '单价',
+
+			}, {
+				field: 'actualPrice',
+				totalRow: true,
+				title: '金额',
+
+			}, {
+				field: 'remark',
+				title: '备注'
+			}
+			]],
+			done: function (res) {
+				var data = res.data;
+				var actualChargeAmount = 0;
+				$.each(res.data, function (index, feeItem) {
+					actualChargeAmount += feeItem.actualPrice;
+				});
+				$("#actualChargeAmount").val(actualChargeAmount);
+			}
+		}));
+
+		// 重置表格高度
+		$(window).resize(function () {
+			var height = getTableHgt()
+			table.reload('outpatientFeeGroupListGrid', {
+				height: height
+			})
+			table.reload('billRecipientListGrid', {
+				height: getBillItemTableHgt()
+			})
+		})
+
+
+	})
+
+</script>

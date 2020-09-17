@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>护士病区管理</title>
+    <meta charset="utf-8">
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style type="text/css">
+
+        .deps {
+            overflow: auto;
+        }
+        .caller-icon {
+            position: absolute;
+            right: 40px;
+            top: 5px;
+            cursor: pointer;
+        }
+
+        .choose {
+            font-size: 18px;
+            position: absolute;
+            top: 5px;
+            right: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form m-sm" id="wardForm">
+    <div class="layui-card">
+        <div class="layui-card-header">基本信息</div>
+        <div class="layui-card-body">
+            #formHiddenInput("nurseWardSettingId" "$!{nurseWardSetting.nurseWardSettingId}" " id='nurseWardSettingId' ")
+            #formHiddenInput("wardId" "$!{nurseWardSetting.wardId}" " id='wardId' ")
+            #formHiddenInput("officeId" "$!{nurseWardSetting.officeId}" " id='officeId' ")
+            <div class="layui-form-item">
+                <label class="layui-form-label">#requiredTag()护士名称</label>
+                <div class="layui-input-block">
+                    #formSingleSelectFirstNone("nurseUserId" "$!{nurseWardSetting.nurseUserId}" $!nurseMap
+                    "lay-search='' lay-verify='required'" "")
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">#requiredTag()病区名称</label>
+                <div class="layui-input-block">
+                    #formTextInput("" "" "id='wardName' class='layui-input'
+                    maxlength='50' autocomplete='off' ts-selected='$!{nurseWardSetting.wardId}' readonly style='background-color: #fff;'")
+                    <i class="layui-icon layui-icon-close caller-dump-icon caller-icon " lay-tips="清空"></i>
+                    <i class="layui-icon layui-icon-more choose" title="选择病区名称"></i>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">#requiredTag()科室名称</label>
+                <div class="layui-input-block">
+                    #formTextInput("" "" "id='officeName' class='layui-input'
+                    maxlength='50' autocomplete='off' ts-selected='$!{nurseWardSetting.officeId}' readonly style='background-color: #fff;'")
+                    <i class="layui-icon layui-icon-close caller-dump-icon caller-icon " lay-tips="清空"></i>
+                    <i class="layui-icon layui-icon-more choose" title="选择科室名称"></i>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="width: 90px">#requiredTag()是否为护士长</label>
+                <div class="layui-input-block">#formRadioGroup(
+                    "manageNurseFlag" "$!{nurseWardSetting.manageNurseFlag}" ${dicData.dicYesNo}
+                    "lay-verify='reqRedio' check-msg='请选择是否为护士长'")</div>
+            </div>
+            #if(${nurseWardSetting})
+            <div class="layui-form-item">
+                <label class="layui-form-label">是否有效</label>
+                <div class="layui-input-inline">
+                    #formRadioGroup("validFlag" "$!{nurseWardSetting.validFlag}" ${dicData.dicYesNo} "")
+                </div>
+            </div>
+            #end
+        </div>
+    </div>
+    ##    <div class="layui-card">
+    ##        <div class="layui-card-header">#requiredTag()关联科室</div>
+    ##        <div class="layui-card-body deps" id="deps">
+    ##            <div class="layui-row p-xs m-l-md">
+    ##                #foreach($option in $!orgMap.keySet())
+    ##                    <div class="layui-col-xs3 p-b-xs">#formSimpleCheckbox(
+    ##                        "officeIds" "$!option" "$!inpatientWard.inpatientWardOfficeIds.contains($option)"
+    ##                        " title='$!{orgMap.get($!option)}' lay-skin='primary' check-msg='请选择科室' lay-verify='reqRedio' "
+    ##                        "")</div>
+    ##                #end
+    ##            </div>
+    ##        </div>
+    ##    </div>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save" id="btn_save" value="确认">
+    </div>
+</form>
+<script>
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'tableSelect', 'layer'], function () {
+        var $ = layui.$, form = layui.form,tableSelect = layui.tableSelect;
+        common.verify(form);
+
+        //初始化科室名称 请求参数
+        var warOfficeOption = {
+            url: contextPath + '/inpatient/inpatientWardOfficeListData.jo?validFlag=1',
+            data:{
+                wardId: $("#wardId").val(),
+                officeId: $("#officeId").val()
+            },
+            success: function(result){
+                var data = result.data;
+                if(data && data.length > 0){
+                    var d = data[0];
+                    $("#wardName").val(d.inpatientWard.wardName);
+                    $("#wardId").val(d.wardId);
+                    $("#officeName").val(d.officeOrg.name);
+                    $("#officeId").val(d.officeId);
+                }
+            }
+        }
+        if(warOfficeOption.data.wardId || warOfficeOption.data.officeId){
+            $.ajax(warOfficeOption);
+        }
+        //选择科室
+        tableSelect.render({
+            elem: '#wardName,#wardName~.choose,#officeName,#officeName~.choose',	//定义输入框input对象 必填
+            checkedKey: 'dicCode', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: ' ',	//搜索输入框的提示文字 默认关键词搜索
+            table: $.extend({}, basePageTable,{	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: warOfficeOption.url,
+                cols: [[{type:'radio'},
+                    {
+                        field: 'wardId', title: '病区',
+                        templet: function (d) {
+                            return d.inpatientWard.wardName;
+                        }
+                    },{
+                        field: 'officeId', title: '科室',
+                        templet: function (d) {
+                            return d.officeOrg.name;
+                        }
+                    }]],done: function () {
+                }
+            }),
+            done: function (elem, result) {
+                warOfficeOption.success(result);
+            }
+        });
+
+        //清空 科室
+        $('#wardName+.caller-icon,#officeName+.caller-icon').click(function () {
+            $("#wardName").val("");
+            $("#wardId").val("");
+            $("#officeName").val("");
+            $("#officeId").val("");
+        })
+        $(window).resize(function () {
+            $('#deps').height($('body').height() - 194);
+        })
+    })
+    $(document).ready(function () {
+        $('#deps').height($('body').height() - 194);
+    })
+</script>
+</body>
+</html>

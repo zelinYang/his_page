@@ -1,0 +1,175 @@
+<script type="text/javascript">
+    var patientHospitalEmr; //正在审阅的病历
+    var loadTree;
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+    var loadInpatient = function(inpatientRow){
+        var pInfo = $('.p-info');
+        pInfo.find('.patientName').html(inpatientRow.patientName);
+        pInfo.find('.patientSex').html(dicSex[inpatientRow.patientSex]||"");
+        pInfo.find('.inhospitalOfficeName').html(inpatientRow.inhospitalOfficeName);
+        pInfo.find('.wardName').html(inpatientRow.wardName);
+        pInfo.find('.inhospitalId').html(inpatientRow.inhospitalId);
+        pInfo.find('.bedDoctorName').html(inpatientRow.bedDoctorName);
+
+        loadTree(inpatientRow.inhospitalId);
+    }
+
+    var initLayout = function() {
+        $('#container').layout({
+            west__size: 550//pane的大小
+            ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+            ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。
+            ,spacing_open:8//边框的间隙
+            ,maskIframesOnResize:".resizeiframe"
+        });
+    }
+
+    layui.use(['element', 'layer'], function(){
+        var element = layui.element;
+        $ = layui.$;
+        layer = layui.layer;
+        element.render();
+
+        $('#btn_selectInpatient').click(function() {
+            var url = '$contextPath/doc/inpatientSelectList.do';
+            common.open(url, '住院患者列表', {area : [ '80%', '80%' ] });
+        });
+    });//layui.use
+
+    //页面初始化
+    $(document).ready(function() {
+        initLayout();
+    });
+
+
+
+    //病历树形列表 z-tree
+     var setting = {
+         data: {key: {title: "text"},simpleData: {enable: true}},
+         view: {
+             fontCss: setFontCss,
+             selectedMulti : false,
+             showIcon: false,
+             addHoverDom: addHoverDom,
+             removeHoverDom: removeHoverDom
+         },
+         callback: {
+             onClick: function(event, treeId, treeNode) {
+                 showEmr(treeNode);
+                 showPatientEmrDefectItemList(treeNode);
+             },
+             onDblClick: function(event, treeId, treeNode) {
+                 showEmr(treeNode);
+                 showPatientEmrDefectItemList(treeNode);
+             }
+         }
+     };
+
+     function setFontCss(treeId, treeNode) {
+         return treeNode.validFlag == '0' ? {color:"#0bb5a5"} : {};
+     }
+
+     function addHoverDom(treeId, treeNode) {
+         if (treeNode.validFlag == '0') {
+             return ;
+         }
+
+         var aObj = $("#" + treeNode.tId + "_a");//得到节点的a标签节点
+         if ($("#diyBtn_"+treeNode.id).length>0) return;
+
+         var editStr = "<span id='diyBtn_space_" +treeNode.id+ "' > </span>" + "<i title='缺陷设置'  class='diyBtn1 layui-icon layui-icon-edit blue' id='diyBtn_" + treeNode.id
+             + "' title='"+treeNode.name+"' onfocus='this.blur();'></i>";
+         aObj.append(editStr);
+
+         var btn = $("#diyBtn_"+treeNode.id);
+         if (btn){
+             btn.click(function () {
+                 addTab(treeNode);
+             });
+         }
+     };
+
+     function removeHoverDom(treeId, treeNode) {
+         $("#diyBtn_"+treeNode.id).unbind().remove();
+         $("#diyBtn_space_" +treeNode.id).unbind().remove();
+     };
+
+     function showEmr(treeNode) {
+         var remark = treeNode.remark;
+         if (remark) {
+              remark= remark.replace('\"','"');
+             var patientEmr = JSON.parse(remark);
+             patientHospitalEmr = patientEmr;
+             var targetSrc=  $('#emrIframe').attr('targetSrc');
+             if (targetSrc) {
+                 targetSrc = targetSrc.replace('VemrTlpId',patientEmr.emrTlpId);
+                 targetSrc = targetSrc.replace('VpatientId',patientEmr.patientId);
+                 targetSrc = targetSrc.replace('VpatientHospitalEmrId',patientEmr.patientHospitalEmrId);
+                 if (patientEmr.inhospitalId) {
+                     targetSrc += '&inhospitalId='+ patientEmr.inhospitalId;
+                 } else {
+                     targetSrc += '&registerId='+ patientEmr.registerId;
+                 }
+                 $('#emrIframe').attr('src',targetSrc);
+             }
+         }
+     }
+
+     function showPatientEmrDefectItemList(treeNode) {
+         var remark = treeNode.remark;
+         if (remark) {
+             remark= remark.replace('\"','"');
+             patientHospitalEmr = JSON.parse(remark);
+             $('div[tab=patientEmrDefect] iframe')[0].contentWindow.tableReload(); //调用iframe的方法 ,刷新病历缺陷列表
+         }
+     }
+
+     //添加tab
+     function addTab(treeNode) {
+         if (treeNode.validFlag != '1') {
+             return false;
+         }
+         console.log(treeNode);
+         var url = '../emr/emrDefectPrjManualList.do?emrTlpClassifyId='+treeNode.emrTlpClassifyId + '&emrTlpClassifyName='+ treeNode.title;
+
+         var defectLi = $('.layui-tab-title li[lay-id=defect]');
+         if (defectLi.length >0) {
+             $('.docBorrow .layui-tab-content div[lay-id=defect] iframe').attr('src',url);
+             defectLi.click();
+             return;
+         }
+
+         var tabLi = $('<li lay-id="" href="" class="layui-this"></li>');
+         var tabContent = $('<div lay-id="" $layclass><iframe width="100%" height="100%" frameborder="0" scrolling="no" ></iframe></div>');
+
+         tabLi.html('病历缺陷管理');
+         tabLi.attr('lay-id', 'defect');
+         tabLi.attr('treeNodeId', treeNode.id);
+         tabLi.attr('href', url);
+
+         tabContent.attr('lay-id', 'defect');
+         tabContent.find('iframe').attr('src', url);
+
+         $('.docBorrow .layui-tab-title').append(tabLi);
+         $('.docBorrow .layui-tab-content').append(tabContent);
+         $('.docBorrow .layui-tab-title li').last().click();
+     }
+
+
+     loadTree = function (inhospitalId) {
+         // 加载检验单类型树型菜单
+         $.ajax({
+             type: "POST",
+             url : "../patient/getEmrTypeTree.jo",
+             data: {inhospitalId: inhospitalId},
+             dataType:"json",
+             async : false,
+             success: function(result){
+                 var zNodes = result;
+                 zTree_Menu = $.fn.zTree.init($("#emrTypeTree"), setting, zNodes);
+             },
+             error: function(res){jqueryPostError(res); }
+         });//ajax end
+     }
+</script>

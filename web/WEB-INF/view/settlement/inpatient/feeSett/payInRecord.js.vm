@@ -1,0 +1,65 @@
+ <script>
+ 
+   var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)'); 
+   var dicPaymentMethod = JSON.parse('$dicTools.changeMapToJson($dicData.dicPaymentMethod)');
+   
+   layui.use(['jquery','table', 'element', 'form', 'laydate', 'util'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate; 
+      var form = layui.form; 
+      var element = layui.element;
+      var util = layui.util;
+      element.render();
+ 
+      
+      
+    //第一个实例
+      var tableIns = table.render({
+         elem: '#regPatientTable'
+        ,defaultToolbar: []
+        ,height: 'full-130'//高度
+        ,url: '../inpatient/payInListData.jo' //数据接口
+        ,limit:200
+        ,method:'post'
+        ,request: {  pageName: 'pageNumber' ,limitName: 'pageSize' }
+        ,where: {inhospitalId: '$!{inhospitalId}'}
+        ,cols: [[ //表头
+             {type: 'numbers', title: '序号',width:60}
+            ,{field : 'payInDate',title : '缴款日期',templet:function(row){return util.toDateString(row.payInDate)}}
+            ,{field : 'receiptNo',title : '收据号码'}
+            ,{field : 'prepayInAmount',title : '缴款金额'} 
+            ,{field : 'payInWay', title : '缴款方式' , templet :function (row) {return dicPaymentMethod[row.payInWay];}}
+            ,{field : 'operPayUserId',title : '工号'}
+            ,{field : 'remark',title : '备注'}
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){ }
+      });//table.render
+      
+ 
+     var patientSettMaster = function() {
+        common.open('$contextPath/inpatient/patientSettMaster.do', '费用结算', {
+            area : [ '90%', '90%' ]
+        });
+     }
+      
+      
+      // 查询按钮
+      $('#btn_query').click(function (){
+        query();
+      });
+      // 查询按钮
+      $('#btn_sett').click(function (){
+          patientSettMaster();
+      });
+      
+      //查询列表
+      query = function() {
+        var queryParams = common.serializeObject($('#reg_patient_queryForm'));
+        tableIns.reload({ where: queryParams });
+      }
+      
+      
+  });
+   
+</script> 

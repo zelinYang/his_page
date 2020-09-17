@@ -1,0 +1,129 @@
+<script type="text/javascript">
+
+
+    $(document).ready(function () {
+        
+        //将桌面选项卡名称改为 护士桌面
+        //$("a[data-id='home.html']",parent.document).text('护士桌面');
+        
+
+        //绑定床位的单击事件
+        $('.bed_info').on('click',function () {
+            
+            //将所有床位背景色设为白色
+            $('.bed_info').css("background","white");
+            //将被点击的床位背景设为浅蓝色
+            $(this).css("background","#99CCFF");
+            var hide_inhospitalId = $("#temp_inhospitalId",parent.document).val();
+            var bed_inhospitalId = $.trim($("#td_inhospitalId",this).text());
+            var inhospitalNo=$("#bed_inhospitalNo",this).text();
+            var bedUsageFlag=$("#itemBedUsageFlag",this).val();
+            var patientSex=$("#patientSex",this).val();
+            //移除p标签中的span，并去掉换行
+            var bedEle=$("#bedNo",this).clone();
+            bedEle.children().remove("span");
+            var bedNo=bedEle.text().replace(/[\r\n]/g,"");
+            var temp_bedNo = $("#temp_bedNo",parent.document).val();
+            if(temp_bedNo == bedNo){
+            	return;
+            }
+            clearForm();
+            $("#temp_inhospitalId",parent.document).val(bed_inhospitalId);
+            $("#temp_inhospitalNo",parent.document).val(inhospitalNo);
+            $("#temp_bedNo",parent.document).val(bedNo);
+            $("#temp_bedUsageFlag",parent.document).val(bedUsageFlag);
+            $("#temp_patientSex",parent.document).val(patientSex);
+            $("#currentBedNo").val(bedNo);
+            
+            //查询住院患者信息，并在右侧展示
+            selectInpatient(bed_inhospitalId); 
+            
+            var nullClass = "layui-btn layui-btn-sm";
+            var haveClass = "layui-btn layui-btn-sm";
+            //是否有患者在该床位
+            if(bed_inhospitalId == null || bed_inhospitalId == ""){
+                haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+            }else{
+                nullClass = "layui-btn layui-btn-sm layui-btn-disabled";
+            }
+            parent.initButton(nullClass, haveClass);
+            
+        });
+        
+        //绑定床位的单击事件
+        $('.bed_info').on('dblclick',function () {
+            var inhospitalId = $.trim($("#td_inhospitalId",this).text());
+            var patientName = $.trim($("#td_patientName",this).text());
+            parent.dbclickBed(inhospitalId,patientName);
+        });
+        
+       
+        //刷新
+        $('#btn_refresh').on('click',function(){
+            window.location.href = window.location.href;
+        });
+        
+        //清空按钮
+        $('#toEmpty').on('click',function(){
+            clearForm();
+        });
+        
+        //清空表单信息
+        function clearForm(){
+            var form=$('#form_inpatient');
+            var inputs=form.find('input');
+            var textareas=form.find('textarea');
+            inputs.val(null);
+            textareas.val(null);
+        }
+        
+        
+
+        var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)'); 
+        var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)'); 
+        var dicOfficeName = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)'); 
+        var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)'); 
+        var dicFoodGuide = JSON.parse('$dicTools.changeMapToJson($dicData.dicFoodGuide)'); 
+        var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)'); 
+        
+        //查询住院信息
+        function selectInpatient(inhospitalId){
+            var msg;
+            $.post("../inpatient/matchPatientInhospital.jo",{inhospitalId:inhospitalId},function(result){
+                if(result.code=='0'||result.code=='1'){
+                    //msg=result.msg;
+                    var patient=result.data.patient;
+                    var inpatientInhospital=result.data.inpatientInhospital;
+                    /*var inpatientDiagnosis=result.data.inpatientDiagnosis;
+                    var supperiorDoctor=result.data.supperiorDoctor;*/
+                    $('#inhospitalId').val(inpatientInhospital.inhospitalId);
+                    $('#inhospitalNo').val(inpatientInhospital.inhospitalNo);
+                    $('#currentBedNo').val(inpatientInhospital.currentBedNo);
+                    $('#patientName').val(inpatientInhospital.patientName);
+                    $('#patientSex').val(dicSex[patient.patientSex]);
+                    $('#patientAgeShow').val(result.data.patient.patientAgeYear);
+                    $('#patientIdCard').val(patient.patientIdCard);
+                    $('#patientKind').val(dicPatientKind[inpatientInhospital.patientKind]);
+                    $('#currentOfficeId').val(dicOfficeName[inpatientInhospital.currentOfficeId]);
+                    $('#inhospitalDate').val(inpatientInhospital.inhospitalDate);
+                    $('#outOfficelDate').val(inpatientInhospital.outOfficelDate);
+                    $('#outOfficeId').val(dicOfficeName[inpatientInhospital.outOfficeId]);
+                    $('#currentCondition').val(dicPatientCondition[inpatientInhospital.currentCondition]);
+                    $('#nurseLevel').val(dicNurseLevel[inpatientInhospital.nurseLevel]);
+                    $('#foodGuide').val(dicFoodGuide[inpatientInhospital.foodGuide]);
+                    $('#allergyHistory').val(inpatientInhospital.allergyHistory);
+                    $('#supperiorDoctor').val(inpatientInhospital.managerDoctorName); 
+                    if(result.code=='1'){
+                        alert(result.msg,0);
+                    }
+                }else if(result.code=='-1'){
+                    //alert(result.msg,2);
+                }
+            });
+            //return msg;
+        }
+        
+        
+        
+     });
+</script>

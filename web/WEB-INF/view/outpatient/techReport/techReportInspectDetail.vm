@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>检验报告查阅</title>
+    <style>
+        .trend-chart{height: 100px;overflow: auto;}
+        .trend-chart img{height: 100%;margin: 3px;}
+    </style>
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+</head>
+
+<body class="white-bg">
+    <div class="main full-height">
+          <form class="layui-form">
+              <div class="layui-form-item">
+                  <button id="trendChartButton" class="layui-btn  layui-btn-sm" type="button" > 趋势图 </button>
+              </div>
+         </form>
+         <!--搜索条件 结束-->
+
+         <!--列表 begin-->
+
+         <div style="height: calc(100% - 30px); width: 100%;max-width: 1200px;">
+            <table id="sampleResultTable" lay-filter="sampleResultTable"></table>
+              <div class="trend-chart">
+                 <!-- <img src="#" alt="img"/> -->
+             </div>
+         </div>
+
+    </div>
+
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicQualitativeShow = JSON.parse('$dicTools.changeMapToJson($dicData.dicQualitativeShow)');
+    var loadOutTech; //右侧已申请的检验单
+    layui.use([ 'table', 'form', 'layer' ],function() {
+                var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table;
+
+       //检查结果明细列表
+       table.render({
+           elem : '#sampleResultTable',
+           id : 'sampleResultTable',
+           url : '../tech/inspectionSampleResult.jo',
+           height : 'full-30',
+           where:{
+               patientId: "$!patientId",
+               ##规避调用方参数问题(如果是“住院”模块使用,只用inhospitalId查询;如果是“门诊”模块使用,只用registerId)
+               #if("" != "$!{inhospitalId}")
+                   inhospitalId: "$!{inhospitalId}"
+               #else
+                   registerId: "$!{registerId}"
+               #end
+           },
+           cols : [ [
+                   {type:'checkbox'},
+                   {
+                       field : 'englishName',
+                       title : '项目',
+                       minWidth : 110
+                   },
+                   {
+                       field : 'chineseName',
+                       title : '中文名称',
+                       minWidth : 110
+                   },
+                   {
+                       field : 'quantitativeResult',
+                       title : '结果',
+                       width : 80
+                   },
+                   {
+                       field : 'testItemUnit',
+                       title : '单位',
+                       width : 110
+                   },
+                   {
+                       field : 'qualitativeResult',
+                       title : '定性',
+                       align : 'center',
+                       width : 50,
+                       templet : function(row) {
+                           if (row.qualitativeResult == "ah" || row.qualitativeResult == "h") {
+                               return '<font color="red">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                           } else if (row.qualitativeResult == "al" || row.qualitativeResult == "l") {
+                               return '<font color="blue">' + dicQualitativeShow[row.qualitativeResult] + '</font>';
+                           }
+                           return '';
+                       }
+                   },
+                   {
+                       field : 'testItemReference',
+                       title : '参考值'
+                   },
+                   {
+                       field : 'rulePrompt',
+                       title : '危急值'
+                   },
+                   {
+                       field : 'rulePromptFlag',
+                       title : '危急标记',
+                       templet : function(row) {
+                           var rulePromptFlag = typeof(row.rulePromptFlag) == "undefined" ? "" : row.rulePromptFlag;
+                           return '<font color="red">' + rulePromptFlag + '</font>';
+                       }
+                   }] ],
+           done : function() {
+               var tableData = table.cache['sampleResultTable'];
+               if (null != tableData && tableData.length > 0) {
+                   var inspectionIdArray = new Array();
+                   for (var i = 0; i < tableData.length; i++) {
+                       var inspectionSampleResult = tableData[0];
+                       var inspectionId = inspectionSampleResult.inspectionId;
+                       if (inspectionIdArray.indexOf(inspectionId) < 0) {
+                           inspectionIdArray.push(inspectionId);
+                       }
+                   }
+               }
+               loadInspectGraph(inspectionIdArray);
+           }
+       });
+
+        function loadInspectGraph(inspectionIdArray) {
+            if (!(inspectionIdArray instanceof Array)) {
+                return;
+            }
+            var params = {
+                inspectionIds : inspectionIdArray
+            };
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/tech/lisInpatientSampleGraphListData.jo',
+                data: params,
+                traditional: true,
+                dataType: "json",
+                success: function (result) {
+                    if (result.code = "0" && result.count > 0) {} {
+                        var htmlContent = "";
+                        for (var i = 0; i < result.data.length; i++) {
+                            var dataArray = result.data[i];
+                            htmlContent += "<img src='data:image/BMP;base64," + dataArray[1] + "' >";
+                        }
+                        $("div .trend-chart").html(htmlContent);
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        }
+
+        //加载已添加的申请单
+        loadOutTech = function (localFreshen) {
+                var params = {
+                    ##规避调用方参数问题(如果是“住院”模块使用,只用inhospitalId查询;如果是“门诊”模块使用,只用registerId)
+                    #if("" != "$!{inhospitalId}")
+                        inhospitalId: '$!{inhospitalId}',
+                    #else
+                        registerId: '$!{registerId}',
+                    #end
+                    lisFlag:'1',
+                    orderGroupFlag: '1',
+                    doctorOrderType: '03'
+                    , validFlag: '${CONST.AppConstants.YES_FLAG}'
+
+                }
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/outpatient/medicalTechListData.jo',
+                data: params,
+                dataType: "json",
+                success: function (result) {
+
+                    var lisTbody = $('.layui-table .outTechList');
+
+                    var emptyTr = $('.layui-table .data-empty');
+                    if (localFreshen) {
+                        $('.outTechList tr:gt(0)').remove();//移除tr内容
+                    }
+
+                    if (result.data.length == 0) {
+                        return false;
+                    }
+                    $(result.data).each(function (index, row) {
+                            var newTr = $('.table-tpl .tr-tpl').clone();
+                            newTr.find('.examApplyName').append($('<div><div>').html(row.orderGroupNo));
+                            newTr.find('.proName').append($('<div><div>').html(row.orderName));
+                            newTr.removeClass('tr-tpl').removeClass('layui-hide');
+                            newTr.data('row', row);
+                            lisTbody.append(newTr);
+                    });
+                    emptyTr.remove();
+                    if (localFreshen) {
+                        $('.outTechList tr:eq(1) td div').click();
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });//ajax end
+        };
+
+        $(document).ready(function () {
+            //加载已添加的申请单
+            loadOutTech();
+        });
+
+        $("#trendChartButton").on("click", function () {
+            var selectData = table.checkStatus('sampleResultTable').data;
+            if (null == selectData || 0 == selectData.length) {
+                common.alert("请选择检验结果", 0);
+                return;
+            }
+            var testItemIdStr = "";
+            for (var i = 0; i < selectData.length; i ++) {
+                var testItemIdEncode = encodeURI(selectData[i]["testItemId"]);
+                testItemIdStr += testItemIdEncode + ",";
+            }
+            if ("" !== testItemIdStr && testItemIdStr.length > 0) {
+                testItemIdStr = testItemIdStr.substring(0, testItemIdStr.length - 1);
+            }
+            var patientId = "$!{patientId}";
+            var inhospitalId = "$!{inhospitalId}";
+            var registerId = "$!{registerId}";
+            var patientParams = "patientId=$!{patientId}";
+            if (null != inhospitalId && "" != inhospitalId) {
+                patientParams += "&inhospitalId=" + inhospitalId;
+            } else if (null != registerId && "" != registerId) {
+                patientParams += "&registerId=" + registerId;
+            }
+           // common.open('$contextPath' + '/basDic/basDicEdit.do?dicTypeId='+(currentDicType.dicTypeId || ""), (currentDicType.dicTypeId ? '<b>' + currentDicType.dicTypeName + '</b>：' :'') +'字典明细新增', {
+            common.open('$contextPath/view/techReport/lisInspectionResultTends.html?' + patientParams + '&testItemIdStr=' + testItemIdStr, "趋势图",{
+                area: ['900px', '330px'],
+                scroll: true
+            });
+        });
+    });
+</script>
+</body>
+</html>

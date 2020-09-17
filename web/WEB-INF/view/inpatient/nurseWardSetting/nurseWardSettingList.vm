@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-护士权限设置</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="nurseWardSetting_queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病区</label>
+                        <div class="layui-input-inline">#formSingleSelectFirstNone(
+                            "wardId" "" $!inpatientWardMap "lay-search='' " "请选择病区")</div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" id="btn_query" class="layui-btn layui-btn-sm" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" id="btn_add"class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增">
+                            <i class="layui-icon layui-icon-add-1"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 性别模板 -->
+        <script type="text/html" id="sexTpl">
+            <span class="layui-badge {{dicSexClass[d.patientSex] || ''}}">{{ dicSex[d.patientSex] || '' }}</span>
+        </script>
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs layui-btn-normal " lay-tips="详情" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+            <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit"><i class="layui-icon layui-icon-edit"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="nurseWardSettingListGrid" lay-filter="nurseWardSettingListGrid"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./inpatient/nurseWardSetting/nurseWardSettingList.js.vm")
+</body>
+</html>

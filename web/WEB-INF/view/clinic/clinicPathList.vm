@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-临床路径</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style>
+        .layui-form-item .layui-form-checkbox {
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <!--搜索条件 开始-->
+        <form id="queryForm" class="layui-form autoWidth">
+            <div class="layui-row-query search-term">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病历分类</label>
+                        <div class="layui-input-inline wd-120">
+                            #formSingleSelectSearchFirstNone("clinicPathParting" "" $!{dicData.dicEmrParting} "id='clinicPathParting' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">适用病情</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearchFirstNone("inpatientCondition" "" $!{dicData.dicInpatientCondition} "id='inpatientCondition' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">适用性别</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearchFirstNone("sexFlag" "" $!{dicData.dicSexLimit} "id='sexFlag' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline" style="width: auto;">
+                            <input type="checkbox" name="singleDiseaseFlag" value="1" id="singleDiseaseFlag" title="是否单病种" lay-filter="singleDiseaseFlag">
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline wd-220">
+                            #formTextInput("clinicPathName" "" "class='layui-input' id='q_keyWord' autocomplete='off'
+                            maxlength='40' placeholder='临床路径名称' lay-tips='临床路径名称'")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-sm" id="btn_query" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+                        <button type="button" class="layui-btn layui-btn-sm" id="btn_clean" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btn_add" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+                    </div>
+                </div>
+            </div>
+        </form>
+        <!--搜索条件 结束-->
+        <!-- 是否有效开关 -->
+        <script type="text/html" id="validFlagTpl">
+            <input type="checkbox" name="validFlag" value="{{d.clinicPathId}}" lay-filter="validFlag" lay-skin="switch" lay-text="有效|无效" {{Boolean(+d.validFlag) && 'checked' }} >
+        </script>
+        <!-- 操作栏按钮模板 -->
+        <script type="text/html" id="operateTpl">
+            <a class="layui-btn layui-btn-xs layui-btn-normal " lay-tips="详情" lay-event="btn_show"><i class="layui-icon layui-icon-about"></i></a>
+            <a class="layui-btn layui-btn-xs" lay-tips="修改" lay-event="btn_edit"><i class="layui-icon layui-icon-edit"></i></a>
+            <a class="layui-btn layui-btn-xs" lay-tips="复制新版本" lay-event="btn_copy"><i class="layui-icon layui-icon-templeate-1"></i></a>
+        </script>
+        <!-- 列表表格 工具栏 结束-->
+        <!-- 列表表格 begin -->
+        <table id="mainTable" lay-filter="mainTable"></table>
+        <!--  列表表格 end -->
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./clinic/clinicPathList.js.vm")
+</body>
+</html>

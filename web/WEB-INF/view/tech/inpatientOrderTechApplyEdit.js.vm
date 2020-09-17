@@ -1,0 +1,106 @@
+<script>
+layui.use(['table', 'form'], function(){
+    var table = layui.table, form = layui.form;
+    var tempItemData = [];
+    var templateTr = $('#orderItemList > tr:last').prop("outerHTML");
+    // 渲染组套分页列表
+    table.render($.extend(basePageTable, {
+        id:'techGrid',
+        elem: '#techGrid', 
+        height: 'full-55',
+        url: contextPath + '/bas/basChargeItemListData.jo?doctorOrderType=02', 
+        cols: [[
+          {field:'chargeName', title: '组套名称', event: 'callClick'},
+          {field: 'chargeItemId', type:'checkbox', width:50}
+        ]], 
+        page: {layout: ['prev', 'page', 'next']},
+        done: function (){
+            // 去掉表格头部的全选及取消全选功能
+            common.removeHeadCheckbox('chargeItemId');
+        }
+      }));
+
+    // 关键字检索
+    $('#keyWord').on('input propertychange', function (){
+        table.reload('techGrid', {url: '../bas/basChargeItemListData.jo?doctorOrderType=02', where: {keyWord: $(this).val(), orderGroupClassify: $('#orderGroupClassify').val()}});
+    });
+
+    //监听复选框
+    table.on('checkbox(techGrid)', function(obj){
+        var checkData = table.checkStatus('techGrid');
+        if (!checkData || !checkData.data) { return ;}
+        var chargeName = [];
+        $(checkData.data).each(function (i, v){
+            chargeName.push(v.chargeName);
+        });
+        formDesign.setValue({id:'bw_va', value:chargeName.join('，')});
+    });
+
+    //监听点击组套表格行
+    table.on('tool(techGrid)', function(obj){
+        if(obj.event != 'callClick') { return; }
+        // 从后台获取组套明细数据
+        var params = {chargeItemId: obj.data.chargeItemId}
+        common.requestServer('../bas/orderItemAllList.jo', params, function (result){
+            if (!result || !result.data) {
+                return ;
+            }
+            $('#orderItemList').html('');
+            $('#orderItemList').show();
+            tempItemData = result.data;
+            $.each(result.data, function (i, v){
+                $('#orderItemList').append(templateTr);
+                var curTr = $('#orderItemList tr:last');
+                curTr.find('input[name="chargeItemId"]').val(v.chargeItemId);
+                curTr.find('input[name="orderName"]').val(v.orderName);
+                curTr.find('input[name="dosage"]').val(v.dosage);
+                curTr.find('select[name="dosageUnit"]').val(v.dosageUnit);
+                curTr.find('input[name="usageQuantity"]').val(v.usageQuantity);
+                curTr.find('select[name="pharmacyFreqId"]').val(v.pharmacyFreqId);
+                curTr.find('select[name="doseWayCode"]').val(v.doseWayCode);
+                curTr.find('select[name="lisSpecimenId"]').val(v.lisSpecimenId);
+                curTr.find('input[name="remark"]').val(v.remark);
+            });
+
+            var index = obj.tr.index();
+            $(obj.tr).parents('table').find('input[type="checkbox"]').each(function (i){
+                if (index != i) {
+                    $(this).prop('checked', false);
+                }
+            });
+            form.render('checkbox');
+        });
+    });
+
+    // 确定选择
+    $('#btn_confirm').click(function (){
+        if (!tempItemData || tempItemData.length <= 0) { return ; }
+        if (!parent.selectOrderGroupBack || typeof(parent.selectOrderGroupBack) != "function") { return ;}
+        var callData = [];
+        $('#orderItemList').find('input[name="chargeItemId"]').each(function(i){
+            var boxDiv = $(this).next();
+            if (boxDiv.hasClass("layui-form-checked") ) {
+                var data = tempItemData[i];
+                $(this).parents('tr').find('input, select, textarea').each(function (){
+                    var name = $(this).attr('name');
+                    if (name) {
+                        data[name] = $(this).val();
+                    }
+                });
+                callData.push(data);
+            }
+        });
+
+        if (!callData || callData.length <= 0) {
+            common.alert('请选择组套项目', 0);
+            return ;
+        }
+
+        parent.selectOrderGroupBack(callData);
+        // 关闭窗口
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index); 
+
+    });
+});
+</script>

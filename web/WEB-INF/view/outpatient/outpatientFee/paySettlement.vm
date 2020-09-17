@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>$!{SessionSysPortal.appTitle}</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+    </style>
+</head>
+<body>
+<div class="layui-row">
+    <div class="layui-col-md3 full-height text-center">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <form class="layui-form ">
+                    <!-- 患者主键 -->
+                    #formHiddenInput("BillNum" "$!{BillNum}" "id='BillNum'")
+                    #formHiddenInput("patientName" "$!{patientName}" "id='patientName'")
+                    <fieldset class="layui-elem-field">
+                        <legend>发票情况</legend>
+                        <div class="layui-field-box">
+                            <div class="layui-form-item ">
+                                <label class="layui-form-label">总计金额</label>
+                                <div class="layui-input-block">#formTextInput("" "$!{recipeTotalPrice}" "readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">账户支付</label>
+                                <div class="layui-input-block">#formTextInput("" "$!{accountPay}" "readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">其他支付</label>
+                                <div class="layui-input-block">#formTextInput("" "$!{otherPay}" "readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">记账金额</label>
+                                <div class="layui-input-block">#formTextInput("" "$!{amountPrice}" "readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+                    <fieldset class="layui-elem-field">
+                        <legend>收款金额</legend>
+                        <div class="layui-field-box">
+                            <div class="layui-form-item ">
+                                <label class="layui-form-label">应收款</label>
+                                <div class="layui-input-block">#formTextInput("" "$!{actualChargeAmount}" "
+                                    id='actualChargeAmount' readonly class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">实收金额</label>
+                                <div class="layui-input-block">
+                                    #formTextInput("" "$!{actualChargeAmount}" "id='fundsReceived' class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">找零金额</label>
+                                <div class="layui-input-block">#formTextInput("" "0" " id='changeTheAmount' readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">当前发票号</label>
+                                <div class="layui-input-block">#formTextInput("" "" "id='feeBillNo' readonly
+                                    class='layui-input'")
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="layui-elem-field">
+                        <legend>付款方式</legend>
+                        <div class="layui-field-box">
+                            <div class="layui-input-inline">#formRadioGroup("payMode"
+                                "$!{CONST.AppConstants.PAY_IN_WAY_CASH}" $!{dicData.dicOutPayInWay} "lay-filter='payMode'")
+                            </div>
+                        </div>
+                    </fieldset>
+                    <div class="layui-form-item payCode layui-hide">
+                        <label class="layui-form-label">付款码</label>
+                        <div class="layui-input-block">#formTextInput("QRCode" "" "class='layui-input' id='QRCode'
+                            autocomplete='off' ")
+                        </div>
+                        <div class="layui-input-block">
+                            <button class="layui-btn layui-btn-sm" type="button" id="btn_QRCode">
+                                <i class="layui-icon layui-icon-search layuiadmin-button-btn">查询支付状态</i>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="layui-col-md9 full-height text-center">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <table id="recipeDoc" lay-filter="recipeDoc"></table>
+                <div id="receipts" class=" ui-layout-east full-height ui-layout-pane ui-layout-pane-east">
+                    <div style="border: 1px solid #e6e6e6; height: calc(100% - 2px)">
+                        <div class="layui-card" style="overflow: hidden;">
+                            <div class="layui-card-header print">
+                                <h5 class="text-center" style="font-weight: 700; font-size: 18px; color: #000;">
+                                    医院门诊收费收据</h5>
+                            </div>
+                        </div>
+
+                        <form id="reg_patient_EditForm" class="layui-form">
+                            <div class="layui-card-body text-center">
+                                <!-- 数据表格 -->
+
+                                <table id="payInFee" lay-filter="payInFee"></table>
+
+                                <div class="layui-form-item"
+                                     style="padding-left: 30px; margin-top: 10px; font-size: 16px;">
+                                    <label class="layui-form-label wd-80">收款员：</label> <label
+                                        class="layui-form-label text-left " id="latestUserName" name="latestUserName">$!{sysUserName}</label>
+                                    <label class="layui-form-label wd-120">收款日期：</label>
+                                    <label
+                                            class="layui-form-label text-left wd-120" id="collectionDays"></label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+</div>
+#parse("./common/pageJs.vm") #parse("./outpatient/outpatientFee/paySettlement.js.vm")
+</body>
+</html>

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .layui-table td, .layui-table th {padding: 5px;}
+</style>
+</head>
+<body class="de-bg">
+    <div class="layui-col-xs2 white-bg full-height m-r-xs  p-t-xs" style="width: 200px;">
+        <div class="layui-row">
+            <div class="layui-form" action="">
+                <div class="p-l-sm">
+                    <div class="layui-inline">
+                        <div class="layui-input-inline" style="width:55%">
+                            #formTextInput("keyWord" "" "id='keyWord' class='layui-input' placeholder='请输入识别码' maxLength='50'")
+                        </div>
+                        <div class="layui-input-inline"  style="width:38%">
+                            #formSingleSelectFirstNone("orderGroupClassify" "" $!dicData.dicBelongSysType "lay-filter='orderGroupClassify' class='layui-input'" "类型")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-row" lay-filter="groupDiv" style="height: calc(100% - 48px);">
+            <table id="groupGrid" lay-filter="groupGrid" class="layui-hide"></table>
+        </div>
+    </div>
+    <div class="layui-col-xs9 white-bg full-height" style="width: calc(100% - 205px);">
+        <div class="layui-row p-t-xs p-b-xs p-l-xs">
+            <div class="layui-btn-group">
+                <button type="button" id="btn_confirm" class="layui-btn layui-btn-sm">确 定</button>
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                #if(!$orderGroupType)
+                $orderGroupType = ${CONST.AppConstants.ORDER_GROUP_TYPE_MEDICINE}
+                #end
+                #formHiddenInput("orderGroupType" "$!orderGroupType" "id='orderGroupType'")
+            </div>
+        </div>
+        <div class="full-height" style="overflow-x:scroll; height: calc(100% - 40px); ">
+            <div class="layui-row full-height" style="width: calc(100% + 250px);">
+                <form class="layui-form" action="">
+                <table class="layui-table custom-table m-t-n">
+                    <colgroup>
+                        <col width="20">
+                        <col width="120">
+                        <col width="120">
+                        <col width="200">
+                        <col width="120">
+                        <col width="70">
+                        <col width="80">
+                        <col width="80">
+                        <col width="80">
+                        <col width="120">
+                        <col width="120">
+                        <col width="120">
+                        <col width="130">
+                        <col width="120">
+                        <col width="150">
+
+                        <col>
+                    </colgroup>
+                    <thead>
+                        <tr>
+                            <th>
+                                <form class="layui-form" action="">#formSimpleCheckbox("allChargeId" "" "" "lay-skin='primary' lay-filter='allChargeId'" "")</form>
+                            </th>
+                            <th>项目类型</th>
+                            <th>医嘱类别</th>
+                            <th>项目名称</th>
+                            <th>规格</th>
+                            <th>剂量</th>
+                            <th>单位</th>
+                            <th>用量</th>
+                            <th>单位</th>
+                            <th>给药途径</th>
+                            <th>草药用法</th>
+                            <th>频次</th>
+                            <th>化验标本</th>
+                            <th>执行科室</th>
+                            <th>单条说明</th>
+                            <th style="min-width: 150px">住院结算分类</th>
+
+                        </tr>
+                    </thead>
+                    <tbody id="orderItemList" style="display: none" lay-filter="orderItemList">
+                        <tr>
+                            <td>
+                                #formHiddenInput("lisFlag" "" "")
+                                #formHiddenInput("orderGroupFlag" "" "")
+                                #formHiddenInput("examFlag" "" "")
+                                #formHiddenInput("medicineId" "" "")
+                                #formHiddenInput("chargeItemId" "" "")
+                                #formHiddenInput("surgeryFlag" "" "")
+                                #formHiddenInput("medicineFlag" "" "")
+                                #formHiddenInput("medicineType" "" "")
+                                #formHiddenInput("orderGroupNo" "" "")
+                                #formHiddenInput("orderName" "" "")
+                                #formHiddenInput("makeOrderFlag" "$!makeOrderFlag" "")
+                                #formSimpleCheckbox("chargeGroupId" "" "" "lay-skin='primary'" "")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("doctorOrderType" "" $!dicData.dicDoctorOrderType "class='layui-input'" "医嘱项目类型")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("orderClassify" "" $!dicData.dicOrderClassify "class='layui-input'" "医嘱类别")
+                            </td>
+                            <td>
+                                #formTextInput("orderName" "" "class='layui-input' maxLength='50' readOnly")
+                            </td>
+                            <td >#formTextInput("medicineSpec" "" "class='layui-input' readonly")</td>
+                            <td>
+                                #formTextInput("dosage" "" "class='layui-input' maxLength='50'")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "单位")
+                            </td>
+                            <td>
+                                #formTextInput("usageQuantity" "" "class='layui-input' maxLength='50'")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("dosageUnit" "" $!dicData.dicDrugNumUnitDosageUnit "class='layui-input' " "单位")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("doseWayCode" "" $!dicData.dicDoseWay "class='layui-input' " "")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("herbUsageWay" "" $!dicData.dicHerbUsage "class='layui-input' " "")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("pharmacyFreqId" "" $!dicData.dicPharmacyFreq "class='layui-input' " "")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("lisSpecimenId" "" $!dicData.dicBodyPartClassifyLis "class='layui-input' " "")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("exeOfficeId" "" $!dicData.dicSysOrgDeptName "class='layui-input'" "")
+                            </td>
+                            <td>
+                                #formTextInput("remark" "" "class='layui-input' maxLength='50'")
+                            </td>
+                            <td>
+                                #formSingleSelectFirstNone("inhospitalChargeGroupCode" "" $!dicData.dicInhospitalChargeGroupCode "class='layui-input'" "")
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./bas/basOrderGroup/selectOrderGroup.js.vm")
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>门诊诊断</title>
+	#parse("./common/pageCss.vm")
+	#parse("./outpatient/diagnose/diagnose.css.vm")
+	#parse("./common/pageJs.vm")
+	#parse("./common/commonSelect.js.vm")
+	#parse("./outpatient/outpatientMain/outCommon.js.vm")
+	#parse("./outpatient/diagnose/outpatientDiagnose.js.vm")<!-- 页面js -->
+	<link rel="stylesheet" href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+	<script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.min.js?v=2" ></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+	<style>
+		.webui-popover .webui-popover-content {
+			overflow: hidden;
+		}
+	</style>
+</head>
+<body class="white-bg">
+<div class="main layui-form" style="height: calc(100% - 41px)" >
+	#formHiddenInput("firstDiagnosis" "$!firstDiagnosis" "id='firstDiagnosis'")
+	#formHiddenInput("firstDiagnosis" "$!firstDiagnosis" "id='firstDiagnosis'")
+	#formHiddenInput("firstDiagnosis" "$!firstDiagnosis" "id='firstDiagnosis'")
+	#formHiddenInput("firstDiagnosis" "$!firstDiagnosis" "id='firstDiagnosis'")
+	<div id="container" >
+		<div class="ui-layout-center" style="text-align: center;">
+			<table class="layui-table reg-diagnose" table-eidt>
+				<colgroup>
+					<col width="30">
+					<col width="40">
+					<col data-index="3" width="70">
+					<col>
+					<col width="120">
+					<col>
+					<col width="60">
+					<col width="80">
+					<col width="80">
+					<col width="140">
+					<col width="60">
+				</colgroup>
+				<thead>
+				<tr>
+					<th><input type="checkbox" name="checkAll" id='checkAll' lay-filter='checkAll' lay-skin="primary" ></th>
+					<th><i lay-tips="新增" id="btn_add_outItem" class="layui-icon layui-icon-add-1 icon-btn" ></i></th>
+					<th data-index="4">#requiredTag()西医/中医</th>
+					<th>诊断名称</th>
+					<th>诊断ICD/TCD</th>
+					<th>描述性诊断</th>
+					<th>初诊病例</th>
+					<th>是否传染病</th>
+					<th>是否慢性病</th>
+					<th>诊断日期</th>
+					<th>操作</th>
+				</tr>
+				</thead>
+				<tbody class="tbody-data">
+				#foreach($!outpatientDiagnose in $outpatientDiagnoseList)<!-- 显示行 foreach 循环-->
+				<tr class="trRow">
+					#formHiddenInput("diagnosisIdPage" "" "")
+					#formHiddenInput("diagnosisId" "$!outpatientDiagnose.diagnosisId" "")
+					#formHiddenInput("diseaseId" "$!outpatientDiagnose.diseaseId" "")
+					#formHiddenInput("infectiousFlag" "0" "")
+					#formHiddenInput("chronicFlag" "0" "")
+					<td><input type="checkbox" name="isCheck"  lay-filter='isCheck'  lay-skin="primary" ></td>
+					<td >
+						<i lay-tips="已保存" class="layui-icon layui-icon-ok icon-btn"></i>
+					</td>
+					<td data-index="3">
+						<!-- 中/西医类别 -->
+						#formSingleSelectFirstNone("diseaseTypeFlag" "$!outpatientDiagnose.diseaseTypeFlag" $!dicData.dicDiseaseTypeFlag "class='layui-input layui-form-select' lay-filter='diseaseTypeFlag' " "")
+					</td>
+					<td>#formTextInput("diseaseDiagnosisName" "$!outpatientDiagnose.diseaseDiagnosisName" "class='layui-input' autocomplete='off' ")</td>
+					<td >#formTextInput("diseaseIcdTcd" "$!outpatientDiagnose.diseaseIcdTcd" "  class='layui-input input-show' readonly ")</td>
+					<td>#formTextInput("diseaseDiagnosisDesc" "$!outpatientDiagnose.diseaseDiagnosisDesc" "class='layui-input' autocomplete='off' ")</td>
+					<td class="text-center">
+						<input type="checkbox" name="diagnosisFlag" lay-filter='diagnosisFlag' lay-skin="primary"
+							   #if($!outpatientDiagnose.diagnosisFlag =='1' ) checked="checked"  value="1" #else value="0" #end  >
+					</td>
+					<td><span style="color: red;" name="infectiousFlag">#if($!outpatientDiagnose.infectiousFlag == '1')是#end</span></td>
+					<td><span style="color: red;" name="chronicFlag">#if($!outpatientDiagnose.chronicFlag == '1')是#end</span></td>
+					<td>#formTextInput("diagnosisTime" "$!date.format('yyyy-MM-dd HH:mm:ss', $!outpatientDiagnose.diagnosisTime)" "class='layui-input input-show' readonly ")</td>
+					<td>
+						<i lay-tips="上移" class="layui-icon layui-icon-triangle-d" style="transform: rotate(180deg);display: inline-block;" data-vertical="up" onclick="moveParentTr(this)"></i>
+						<i lay-tips="下移" class="layui-icon layui-icon-triangle-d" data-vertical="down" onclick="moveParentTr(this)"></i>
+					</td>
+				</tr>
+				#end
+				</tbody>
+			</table>
+
+			<!-- 表格模板 -->
+			<table class="rowTpl layui-hide">
+				<tbody>
+				<tr class="trRow">
+					#formHiddenInput("diagnosisIdPage" "" "")
+					#formHiddenInput("diagnosisId" "$!outDiagnosis.diagnosisId" "")
+					#formHiddenInput("diseaseId" "" "")
+					#formHiddenInput("infectiousFlag" "0" "")
+					#formHiddenInput("chronicFlag" "0" "")
+					<td><input type="checkbox" name="isCheck" lay-skin="primary" ></td>
+					<td >
+						<i lay-tips="删除" class="layui-icon layui-icon-delete icon-btn icon-red btn_del_tr" onclick="removeParentTr(this)" ></i>
+						<i lay-tips="已保存" class="layui-icon layui-icon-ok icon-btn layui-hide"></i>
+					</td>
+					<td data-index="3">
+						<!-- 中/西医类别 -->
+						#formSingleSelectFirstNone("diseaseTypeFlag" "$!{CONST.AppConstants.DICDISEASETYPEFLAG_WESTERN}" $!dicData.dicDiseaseTypeFlag "class='layui-input layui-form-select' lay-filter='diseaseTypeFlag' " "")
+					</td>
+					<td>#formTextInput("diseaseDiagnosisName" "" "class='layui-input' autocomplete='off' ") </td>
+					<td>#formTextInput("diseaseIcdTcd" "" "  class='layui-input input-show' readonly ")</td>
+					<td>#formTextInput("diseaseDiagnosisDesc" "" "class='layui-input' autocomplete='off' ")</td>
+					<td class="text-center">
+						<input type="checkbox" name="diagnosisFlag" value="0" lay-filter="diagnosisFlag"  lay-skin="primary" >
+					</td>
+					<td><span style="color: red;" name="infectiousFlag"></span></td>
+					<td><span style="color: red;" name="chronicFlag"></span></td>
+					<td>#formTextInput("diagnosisTime" "" "class='layui-input input-show'  readonly  ")</td>
+					<td>
+						<i lay-tips="上移" class="layui-icon layui-icon-triangle-d" style="transform: rotate(180deg);display: inline-block;" data-vertical="up" onclick="moveParentTr(this)"></i>
+						<i lay-tips="下移" class="layui-icon layui-icon-triangle-d" data-vertical="down" onclick="moveParentTr(this)"></i>
+					</td>
+				</tr>
+				</tbody>
+			</table>
+
+			<!-- 高频诊断 -->
+			<table class="layui-table much-diagnose">
+				<thead>
+				<tr>
+					<th>高频诊断 </th>
+				</tr>
+				</thead>
+				<tbody class="tbody-data-show">
+				#foreach($!commDiagnose in $commDiagnoseList)<!-- 显示行 foreach 循环-->
+				<tr class="trRow" id="much-diagnose">
+					<td diseaseId="$!commDiagnose.diseaseId" diseaseIcdTcd="$!commDiagnose.diseaseIcdTcd" diseaseName="$!commDiagnose.diseaseName" diseaseDiagnosisDesc="$!commDiagnose.commDiagnosisDesc" infectiousFlag="$!commDiagnose.infectiousFlag" chronicFlag="$!commDiagnose.chronicFlag" diseaseTypeFlag="$!commDiagnose.diseaseTypeFlag" >$!commDiagnose.diseaseName</td>
+				</tr>
+				#end
+				</tbody>
+			</table>
+		</div>
+
+		<div class="ui-layout-south layui-hide" >
+			<div class="content" style="height:calc(100% - 15px);">
+				<!-- 导航切换 -->
+				<div class="layui-tab layui-tab-card blod  full-height" lay-filter="outItemTabs">
+					<!-- 导航 名称 -->
+					<ul class="layui-tab-title"  >
+						<li lay-id="common" class="layui-this">常用</li>
+						<li lay-id="history" >历史诊断</li>
+					</ul>
+
+					<!-- 导航内容 -->
+					<div class="layui-tab-content" style="height: calc(100% - 36px);padding:0px;">
+						<div class="layui-tab-item common full-height layui-show" style="padding: 0px;">
+							<iframe targetSrc="$contextPath/outpatient/commonDiagnosis.do"  width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+						</div>
+						<div class="layui-tab-item history full-height" style="padding: 0px;">
+							<iframe targetSrc="$contextPath/outpatient/outpatientDiagnoseHistory.do" width="100%" height="100%" scrolling="no" frameborder="0" ></iframe>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div><!-- ui-layout-south -->
+	</div><!-- container -->
+</div><!-- main -->
+
+
+<!-- 底部按钮栏  -->
+<div class="tool-bottom-fixed btn_gorup">
+	<button id="btn_save" class="layui-btn layui-btn-sm layui-btn-danger" type="button">&nbsp;&nbsp;保&nbsp;存&nbsp;&nbsp;</button>
+	<button id="btn_common"  class="layui-btn layui-btn-sm" type="button" target="common">常用诊断</button>
+	<button id="btn_history" class="layui-btn layui-btn-sm" type="button" target="history">历史诊断</button>
+	<button id="btn_del_outItem" class="layui-btn layui-btn-sm" type="button">删除</button>
+	<button id="btn_refresh" type="button" class="layui-btn layui-btn-sm " style="margin-left: 30px" lay-tips="刷新">
+		<i class="layui-icon layui-icon-refresh"></i>
+	</button>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,127 @@
+<script>
+    var inpatientSettlementId = "$!{inpatientSettlementId}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+
+        $('#q_settlementTime,#q_inhospitalDate,#q_outhospitalDate').each(function () {
+            var that = this;
+            //按出院日期范围查询
+            laydate.render({
+                elem: that,
+                range: true,
+                trigger: 'click',
+                done: function (value, date, endDate) {
+                    setTimeout(function () {
+                        $('#btn_query').click();
+                    })
+                }
+            });
+        })
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#inpatientSettlementGroup_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                inpatientSettlementId: inpatientSettlementId,
+                settlementTimeBegin: '',
+                settlementTimeEnd: '',
+                inhospitalChargeGroupCode: '',
+                feeBillNo: '',
+                settlementNum: '',
+                validFlag: YES_FLAG
+            }, common.serializeObject($('#inpatientSettlementGroup_queryForm'), ['q_settlementTime']));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('inpatientSettlementGroupListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('inpatientSettlementGroup_queryForm');
+        })
+
+        //宽度 = (字数: 不好含符号) * (字符宽度: 全角字符宽度 = 15，字符宽度 = 10);
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#inpatientSettlementGroupListGrid',
+            url: '../fee/selectInpatientSettlementGroupPage.jo',//数据接口 ,
+            where: getQueryParams(),
+            cols: [
+                [
+                    {
+                        title: '序号',
+                        type: 'numbers',
+                        fixed: 'left',
+                        align: 'center',
+                        rowspan: 2
+                    },
+                    {
+                        field: 'settlementTime',
+                        title: '结算时间',
+                        fixed: 'left',
+                        width: 16 * 10,
+                        align: 'center',
+                        templet: function (row) {
+                            return row.settlementTime ? util.toDateString(row.settlementTime) : '';
+                        },
+                    },
+                    {
+                        field: 'inhospitalChargeGroupName',
+                        title: '费用归并名称',
+                        align: 'center'
+                    },
+                    {
+                        field: 'feeGroupAmount',
+                        title: '缴款归并总金额',
+                        align: 'center',
+                        style: 'text-align: right;'
+                    },
+                    {
+                        field: 'feeBillNo',
+                        title: '发票号码',
+                        align: 'center'
+                    },
+                    {
+                        field: 'settlementNum',
+                        title: '结算次数',
+                        align: 'center'
+                    }
+                ]
+            ],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+    })
+</script>

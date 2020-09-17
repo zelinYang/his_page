@@ -1,0 +1,237 @@
+<script>
+
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicSexLimit = JSON.parse('$dicTools.changeMapToJson($dicData.dicSexLimit)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicNurseLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseLevel)');
+    var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+    var dicFoodGuide = JSON.parse('$dicTools.changeMapToJson($dicData.dicFoodGuide)');
+    var dicInpatientWardAll = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var listenerRow;
+
+    layui.use(['table', 'element'], function () {
+        var table = layui.table;
+        var element = layui.element
+
+        var wardBedTable = table.render($.extend(basePageTable, {
+            elem: '#wardBedTable'
+            , url: '../inpatient/wardbedListData.jo' //数据接口
+            , page: false //开启分页
+            , height: 'full-10'
+            , where: parent.getQueryParam()
+            , cols: [[ //表头
+                {field: 'wardBedNo', title: '床位号', width: 280, sort: true, fixed: true}
+                , {field: 'wardRoomNo', title: '房间号', width: 280}
+                , {field: 'wardOfficeName', title: '床位科室', width: 280, templet: function (row) {
+                        if (row.wardOfficeName) {
+                            return dicOffice[row.wardOfficeName]
+                        }
+                    }}
+                , {
+                    field: 'wardId', title: '床位所在病区', width: 280, templet: function (row) {
+                        if (row.wardId) {
+                            return dicInpatientWardAll[row.wardId]
+                        }
+                    }
+                }
+                , {field: 'bedFee', title: '床位费用', width: 280}
+
+                , {
+                    field: 'latestTime', title: '最近操作时间', width: 280, templet: function (row) {
+                        return layui.util.toDateString(row.latestTime, 'yyyy-MM-dd');
+                    }
+                }
+
+                , {
+                    field: 'sexFlag', title: '床位限制', width: 190, templet: function (row) {
+                        if (row.sexFlag) {
+                            if (row.sexFlag == "0") {
+                                return dicSexLimit[row.sexFlag];
+                            } else if (row.sexFlag == "1") {
+                                return '<span style="color:blue;">' + dicSexLimit[row.sexFlag] + '</span>';
+                            } else if (row.sexFlag == "2") {
+                                return '<span style="color:red;">' + dicSexLimit[row.sexFlag] + '</span>';
+                            }
+                        } else return "";
+                    }
+                }
+            ]],
+            done: function (res, curr, count) {
+                $('th,td').css({'text-align': 'center'});
+            }
+        }));
+
+        var inpatientTable = table.render($.extend(basePageTable, {
+            elem: '#inpatientTable'
+            , url: '../inpatient/wardInpatientListData.jo' //数据接口
+            , page: true //开启分页
+            , height: 'full-70'
+            , where: parent.getQueryParam()
+            , cols: [[ //表头
+                {fixed: true, align:'center', width : 60, templet: '#operateFormatter',event:'open'},
+                {field: 'currentBedNo', title: '床位号', width: 105, sort: true, fixed: true}
+                , {field: 'patientName', title: '姓名', width: 90, sort: true, fixed: true}
+                , {field: 'inhospitalNo', title: '住院号', width: 180}
+                , {
+                    field: 'inhospitalState', title: '状态', width: 100, templet: function (row) {
+                        if (row.inhospitalState) {
+                            if (row.inhospitalState=="0"){
+                                return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                            }if (row.inhospitalState=="1"){
+                                return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                            }
+                            if (row.inhospitalState=="3"){
+                                return '<span style="color:red;">' + dicInhospitalState[row.inhospitalState] + '</span>'
+                            }
+                            else{
+                                return dicInhospitalState[row.inhospitalState];
+                        }
+                        }else return "";
+
+                    }
+                }
+                , {
+                    field: 'nurseLevel', title: '护理级别', width: 90, templet: function (row) {
+                        if (row.nurseLevel) return dicNurseLevel[row.nurseLevel]; else return "";
+                    }
+                }
+                , {field: 'visitCardNo', title: '就诊卡号', width: 180}
+
+                , {field: 'patientIdCard', title: '身份证号', width: 180}
+                , {
+                    field: 'patientSex', title: '性别', width: 100, templet: function (row) {
+                        if (row.patientSex) return dicSex[row.patientSex]; else return "";
+                    }
+                }
+                , {field: 'patientAgeYear', title: '年龄', width: 80}
+                , {
+                    field: 'inhospitalDate', title: '入院日期', width: 180, sort: true, templet: function (row) {
+                        return layui.util.toDateString(row.inhospitalDate, 'yyyy-MM-dd')
+                    }
+                }
+                , {
+                    field: 'currentOfficeId', title: '当前科室', width: 120, templet: function (row) {
+                        if (row.currentOfficeId) return dicOffice[row.currentOfficeId]; else return "";
+                    }
+                }
+                , {
+                    field: 'inpatientCondition', title: '患者情况', width: 90, templet: function (row) {
+                        if (row.inpatientCondition) return dicPatientCondition[row.inpatientCondition]; else return "";
+                    }
+                }
+                , {
+                    field: 'foodGuide', title: '饮食情况', width: 90, templet: function (row) {
+                        if (row.foodGuide) return dicFoodGuide[row.foodGuide]; else return "";
+                    }
+                }
+                , {field: 'managerDoctorName', title: '主管医生', width: 90}
+                , {field: 'dutyNurserName', title: '责任护士', width: 90}
+                , {field: 'outOfficelDate', title: '转入时间', width: 105}
+                , {
+                    field: 'outOfficeId', title: '转出科室', width: 120, templet: function (row) {
+                        if (row.outOfficeId) return dicOffice[row.outOfficeId]; else return "";
+                    }
+                }
+                , {field: 'allergyHistory', title: '过敏药物', width: 150}
+            ]],
+            done: function (res, curr, count) {
+                $('th,td').css({'text-align': 'center'});
+            }
+        }));
+
+
+        //表格排序事件（点击排序后，表格重组，原先绑定的行事件会失效，所以在这里需要重新绑定行事件）
+        table.on('sort(inpatientTable)', function (obj) {
+            listenerRow();
+        })
+
+        listenerRow();
+        //监听行工具事件
+        table.on('tool(inpatientTable)', function(obj){
+                var layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === "open") {
+                openDbClickBed(obj.data)
+            }
+        });
+        //监听行事件
+        function listenerRow() {
+            //监听行单击事件（单击事件为：row）
+            table.on('row(inpatientTable)', function (obj) {
+                var data = obj.data;
+                $("#temp_inhospitalId", parent.document).val(data.inhospitalId);
+                $("#temp_inhospitalNo", parent.document).val(data.inhospitalNo);
+                $("#temp_bedNo", parent.document).val(data.wardBedNo);
+                $("#temp_bedUsageFlag", parent.document).val(data.arrangeBedFlag);
+
+                var nullClass = "layui-btn layui-btn-sm";
+                var haveClass = "layui-btn layui-btn-sm";
+                //是否有患者在该床位
+                if (data.inhospitalId == null || data.inhospitalId == "") {
+                    haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                } else {
+                    nullClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                }
+                parent.initButton(nullClass, haveClass);
+                //标注选中样式
+                obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            });
+
+            //监听行单击事件
+            table.on('row(inpatientTable)', function (obj) {
+                openDbClickBed(obj.data)
+            });
+        }
+    function openDbClickBed(data){
+        parent.dbclickBed(data.inhospitalId, data.patientName);
+    }
+
+        //触发查询按钮
+        $("#query_btn").click(function () {
+            var params = parent.getQueryParam();
+            params.arrangeBedFlag = "1";
+            console.log(JSON.stringify(params) + "dinenc")
+            inpatientTable.reload({url: '../inpatient/wardInpatientListData.jo', where: params});
+        });
+        $("#btn_assignment").click(function () {
+            var params = parent.getQueryParam();
+            params.arrangeBedFlag = "1";
+            console.log(JSON.stringify(params) + "dinenc2")
+            inpatientTable.reload({url: '../inpatient/wardInpatientListData.jo', where: params});
+        });
+        $("#btn_unassignment").click(function () {
+            table.on('row(wardBedTable)', function (obj) {
+                var data = obj.data;
+
+                console.log(JSON.stringify(data) + "datass")
+                // $("#temp_inhospitalId", parent.document).val(data.inhospitalId);
+                // $("#temp_inhospitalNo", parent.document).val(data.inhospitalNo);
+                $("#temp_bedNo", parent.document).val(data.wardBedNo);
+                $("#temp_bedUsageFlag", parent.document).val(data.bedUsageFlag);
+                var nullClass = "layui-btn layui-btn-sm";
+                var haveClass = "layui-btn layui-btn-sm";
+                //是否有患者在该床位
+                if (data.bedUsageFlag == 0) {
+                    haveClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                } else {
+                    nullClass = "layui-btn layui-btn-sm layui-btn-disabled";
+                }
+                parent.initButton(nullClass, haveClass);
+                //标注选中样式
+                obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            });
+
+            var params = parent.getQueryParam();
+            params.bedUsageFlag = "0";
+            params.wardId = params.currentWardId;
+            params.validFlag = "1"
+            console.log(JSON.stringify(params) + "dinenc3")
+            wardBedTable.reload({url: '../inpatient/wardbedListData.jo', where: params});
+        });
+
+    });
+
+
+</script>

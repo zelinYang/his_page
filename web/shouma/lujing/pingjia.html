@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>路径评价</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+  <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+  <style>
+    * {box-sizing: border-box;}
+    .layui-table th, .layui-table td { padding: 3px 9px; height: 21px; line-height:21px;}
+    .layui-form-label { width: 150px; text-align: right; }
+    .layui-col-sm4 { margin-bottom: 10px;}
+    .layui-card-body .layui-input-block { margin-left: 150px; min-height: 30px;}
+  </style>
+
+</head>
+<body>
+<div class="layui-content-wrapper">
+  <div class="layui-card mainOne">
+    <div class="layui-card-body layui-row p-b-n">
+      <div class="text-center f-18 f-b">
+        路径评价
+      </div>
+    </div>
+    <div class="layui-card-body">
+      <table class="layui-hide" id="test"></table>
+<!--      <table class="layui-table m-n">-->
+<!--        <thead>-->
+<!--        <tr>-->
+<!--          <th lay-data="{field:'id', width:120}">病人ID</th>-->
+<!--          <th lay-data="{field:'city', width:120}">住院次数</th>-->
+<!--          <th lay-data="{field:'city', width:80}">住院号</th>-->
+<!--          <th lay-data="{field:'zone', width:80}">床号</th>-->
+<!--          <th lay-data="{field:'province', width:80}">患者姓名</th>-->
+<!--          <th lay-data="{field:'city', width:80}">性别</th>-->
+<!--          <th lay-data="{field:'city', width:80}">入科时间</th>-->
+<!--          <th lay-data="{field:'city', width:80}">费别</th>-->
+<!--          <th lay-data="{field:'city', width:80}">年龄</th>-->
+<!--        </tr>-->
+<!--        </thead>-->
+<!--        <tbody>-->
+<!--        <tr>-->
+<!--          <td>病人ID</td>-->
+<!--          <td>住院次数</td>-->
+<!--          <td>住院号</td>-->
+<!--          <td>床号</td>-->
+<!--          <td>患者姓名</td>-->
+<!--          <td>性别</td>-->
+<!--          <td>入科时间</td>-->
+<!--          <td>费别</td>-->
+<!--          <td>年龄</td>-->
+<!--        </tr>-->
+<!--        </tbody>-->
+<!--      </table>-->
+    </div>
+    <div class="layui-card-body layui-row p-b-n">
+      <div class="text-center f-18 f-b">
+        大肠息肉临床路径
+      </div>
+    </div>
+    <div class="layui-card-body layui-row">
+      <blockquote class="layui-elem-quote remarksTips">
+        <dl class="remarksTips">
+          <dd>第一诊断为大肠息肉（ICD-10: D12.6/D12.8/K62.1/K63.5）  行内镜下大肠息摘除术（ICD-9-CM-3: 45.42）</dd>
+          <dd>标准住院日：2 ~ 20天</dd>
+          <dd>适用科室：0元</dd>
+        </dl>
+      </blockquote>
+    </div>
+  </div>
+
+  <div class="layui-card mainTwo">
+    <div class="layui-card-body">
+      <form class="layui-form layui-bg-white" action="" lay-filter="component-form-element">
+        <div class="layui-row layui-form-item">
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">抗菌药物使用天数：</label>
+            <div class="layui-input-block">
+              <input type="text" name="fullname" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">术前住院日：</label>
+            <div class="layui-input-block">
+              <select name="type" lay-verify="required" lay-filter="aihao">
+                <option value=""></option>
+                <option value="0">第一天</option>
+                <option value="1">住院2-4天</option>
+                <option value="2">住院5-10天</option>
+                <option value="3">住院11-30天</option>
+                <option value="4">超过30天</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">是否医院感染：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="isInhospital" value="yes" title="是">
+              <input type="radio" name="isInhospital" value="no" title="否">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">是否30日再入院：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="isThirty" value="yes" title="是">
+              <input type="radio" name="isThirty" value="no" title="否">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">治疗结果：</label>
+            <div class="layui-input-block">
+              <select name="type" lay-verify="required" lay-filter="aihao">
+                <option value=""></option>
+                <option value="0">治愈</option>
+                <option value="1">显效</option>
+                <option value="2">好转</option>
+                <option value="3">恶化</option>
+                <option value="4">死亡</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">是否手术部位感染：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="isOperation" value="yes" title="是">
+              <input type="radio" name="isOperation" value="no" title="否">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">是否非预期再手术：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="isExpect" value="yes" title="是">
+              <input type="radio" name="isExpect" value="no" title="否">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">非预期再手术次数：</label>
+            <div class="layui-input-block">
+              <input type="text" name="fullname" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">是否有并发症：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="hasConcurrent" value="yes" title="是">
+              <input type="radio" name="hasConcurrent" value="no" title="否">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">并发症名称：</label>
+            <div class="layui-input-block">
+              <input type="text" name="fullname" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">并发症原因：</label>
+            <div class="layui-input-block">
+              <input type="text" name="fullname" lay-verify="required" placeholder="" autocomplete="off" class="layui-input">
+            </div>
+          </div>
+
+          <div class="layui-col-sm4 layui-col-sm-offset1">
+            <label class="layui-form-label">患者满意度：</label>
+            <div class="layui-input-block">
+              <input type="radio" name="Satisfaction" value="yes" title="满意">
+              <input type="radio" name="Satisfaction" value="no" title="一般">
+              <input type="radio" name="Satisfaction" value="no" title="不满意">
+            </div>
+          </div>
+
+
+
+        </div>
+      </form>
+    </div>
+  </div>
+  <div class="tool-bottom-fixed">
+    <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btn_save" lay-submit="" lay-filter="btn_save"> 提 交 </button>
+    <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btn_cancel"> 取 消 </button>
+  </div>
+</div>
+
+
+
+
+<script src="../../resource/layuiadmin/layui/layui.js"></script>
+<script src="../../resource/hplus/js/jquery.min.js"></script>
+<script src="../../resource/hplus/js/app-common.js?v=11"></script>
+<script src="../../resource/hplus/js/common-ui.js?v=1"></script>
+<script>
+	layui.config({
+		base: '../../resource/layuiadmin/' //静态资源所在路径
+	}).extend({
+		index: 'lib/index' //主入口模块
+	}).use(['index','table', 'form','jquery'], function(){
+		var $ = layui.$
+				,admin = layui.admin
+				,element = layui.element
+				,form = layui.form;
+      var table = layui.table;
+
+      /**获取URL参数
+       * @param {Object} queryName
+       */
+      function getQueryValue(queryName) {
+        var query = decodeURI(window.location.search.substring(1));
+        var vars = query.split("&");
+        for (var i = 0; i < vars.length; i++) {
+          var pair = vars[i].split("=");
+          if (pair[0] == queryName) { return pair[1]; }
+        }
+        return null;
+      }
+      var clinicPatientPathId = getQueryValue("clinicPatientPathId");
+      table.render({
+        elem: '#test'
+        ,url:'../../clinicPatientAssess/clinicPatientAssessPageData.jo'
+        ,where : {
+          clinicPatientPathId:clinicPatientPathId
+        }
+        ,cellMinWidth: 80 //全局定义常规单元格的最小宽度，layui 2.2.1 新增
+        ,cols: [[
+          {field:'patientId',  title: '病人ID'}
+          ,{field:'inhospitalNum',  title: '住院次数'}
+          ,{field:'inhospitalNo',  title: '住院号'}
+          ,{field:'currentBedNo',  title: '床号'}
+          ,{field:'patientName', title: '患者姓名'} //minWidth：局部定义当前单元格的最小宽度，layui 2.2.1 新增
+          ,{field:'patientSex', title: '性别'}
+          ,{field:'inhospitalDate', title: '入科时间',
+                templet :function (row) {
+                    return row.inhospitalDate ? layui.util.toDateString(row.inhospitalDate, 'yyyy-MM-dd') : '';
+                }
+          }
+          ,{ title: '费别',
+            templet: function () {
+              return '自费';
+            }
+          }
+          ,{field:'age',  title: '年龄'}
+        ]]
+      });
+
+		form.render(null, 'component-form-element');
+		element.render('breadcrumb', 'breadcrumb');
+
+		form.on('submit(component-form-element)', function(data){
+			layer.msg(JSON.stringify(data.field));
+			return false;
+		});
+
+      $("#btn_cancel").click(function (){
+        history.back()
+      })
+      $("#btn_save").click(function (){
+        common.msg('提交成功',1,function () {
+          history.back()
+        })
+
+      })
+
+		$(document).ready(function () {
+			$(".mainTwo").height($('body').height() - $(".mainOne").height() - 20);
+			$(".linchuanglujing .layui-card").height($('.mainTwo').height()/2 - 40);
+		});
+
+	});
+
+
+    // $.ajax({
+    //   type: "POST",
+    //   url: "../../sys/selectDicData.jo",
+    //   data: {},
+    //   dataType: "json",
+    //   async: false,//同步
+    //   success: function (result) {
+    //     if (result.code == "0") {
+    //
+    //     }
+    //   },
+    //   error: function (res) {
+    //   }
+    // });
+
+</script>
+
+
+</body>
+</html>

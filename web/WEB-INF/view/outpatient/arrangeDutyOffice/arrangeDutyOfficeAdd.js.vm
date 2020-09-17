@@ -1,0 +1,290 @@
+
+<!-- 复选框列表 -->
+<script type="text/html" id="checkboxTpl">
+    {{# layui.each(d.data, function(val, key){ }}
+    <input type="checkbox" name="{{d.name || ''}}" lay-filter="{{d.filter || ''}}" value="{{val || ''}}" {{val== d.value
+           ? 'checked' : ''}}  title="{{key || ''}}" {{d.attr || ''}} lay-skin="primary">
+    {{# }) }}
+</script>
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    // 初始化树形分类
+    var zTreeObj, setting = {
+        view: {
+            selectedMulti: false,
+            showIcon: false
+        },
+        async: {
+            enable: true,
+            url: "../sys/getDepTree.jo"
+        },
+        check: {
+            enable: true
+        },
+        callback: {
+            onAsyncSuccess: function (event, treeId, treeNode, msg) {
+                if (treeNode == undefined) {
+                    treeNode = zTreeObj.getNodeByTId("tree_1");
+                }
+                zTreeObj.selectNode(treeNode, false, true);
+                if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+            },
+            onCheck: function (event, treeId, treeNode) {
+                var nodes = zTreeObj.getCheckedNodes(true);
+                var data = $.map(nodes, function (item) {
+                    return item.object;
+                });
+                addRow(data);
+            }
+        }
+    }
+
+    //根节点
+    zTreeObj = $.fn.zTree.init($('#officeTree'), setting, []);
+
+    //节点是否选中
+    function checkNode(value, checked) {
+        var nodes = zTreeObj.getNodesByParam("id", value, null);
+        for (var i = 0, l = nodes.length; i < l; i++) {
+            zTreeObj.checkNode(nodes[i], checked, null, true);
+        }
+    }
+    //刷新树
+    $('#btn_refresh').click(function(){
+        zTreeObj = $.fn.zTree.init($('#officeTree'), setting, []);
+    });
+</script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl', 'laydate', 'util'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl, laydate = layui.laydate,
+            util = layui.util;
+
+        common.verify(form);
+
+        window.addRow = function (data) {
+            var arrangeDutyOfficeIdsStr = $.grep($.map(data, function (item) {
+                return item.orgId
+            }).concat($.map(table.cache['arrangeDutyOfficeListGrid'], function (item) {
+                if (item.arrangeDutyOfficeId) return item.arrangeDutyOfficeId;
+            })), function (n) {
+                return $.trim(n).length > 0;
+            }).toString();
+            table.reload('arrangeDutyOfficeListGrid', {
+                url: arrangeDutyOfficeIdsStr ? contextPath + '/outpatient/arrangeDutyOfficePageData.jo' : '',
+                where: {arrangeDutyOfficeIds: arrangeDutyOfficeIdsStr},
+                parseData: function (res) { //res 即为原始返回的数据
+                    //修改的数据
+                    $.each(res.data, function (i, item) {
+                        res.data[i].registerStartTime = util.toDateString(item.registerStartTime, 'HH:mm:ss');
+                        res.data[i].registerEndTime = util.toDateString(item.registerEndTime, 'HH:mm:ss');
+                        res.data[i].registerTime = res.data[i].registerStartTime + ' - ' + res.data[i].registerEndTime;
+                        var arrangeDutyOffice = table.cache['arrangeDutyOfficeListGrid'].find(function (x) {
+                            return x.arrangeDutyOfficeId == item.arrangeDutyOfficeId;
+                        });
+                        if (arrangeDutyOffice) {
+                            res.data[i] = arrangeDutyOffice;
+                        }
+                    });
+                    //新增的数据
+                    $.each(data, function (i, item) {
+                        var arrangeDutyOffice = res.data.find(function (x) {
+                            return x.arrangeDutyOfficeId == item.orgId;
+                        });
+                        if (!arrangeDutyOffice) {
+                            res.data.push({
+                                arrangeDutyOfficeId: item.orgId,
+                                arrangeDutyOfficeName: item.name,
+                                registerStartTime: '00:00:00',
+                                registerEndTime: '00:00:00',
+                                registerTime: '00:00:00 - 00:00:00',
+                                timeInterval: '0',
+                                emergencyRegisterFlag: NO_FLAG,
+                                appointOnlineFlag: YES_FLAG,
+                                validFlag: YES_FLAG
+                            });
+                        }
+                    });
+                    return res;
+                }
+            });
+        }
+
+        table.render($.extend({}, basePageTable, {
+            elem: '#arrangeDutyOfficeListGrid', height: 'full-50',
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            page: false,
+            limit: 100000,
+            data: [],
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'arrangeDutyOfficeName',
+                    title: '门诊科室',
+                    minWidth: 200
+                }, {
+                    field: 'registerTime',
+                    event: 'registerTime',
+                    title: '#requiredTag()预约时段',
+                    edit: 'text',
+                    width: 150
+                }, {
+                    field: 'timeInterval',
+                    event: 'number',
+                    title: '#requiredTag()预约时段间隔(分钟)',
+                    edit: 'text',
+                    width: 120,
+                }, {
+                    event: 'checkbox',
+                    title: '#requiredTag()急诊科室',
+                    width: 100,
+                    align: 'center',
+                    templet: function (d) {
+                        return laytpl($('#checkboxTpl').html()).render({
+                            filter: 'emergencyRegisterFlag',
+                            value: d.emergencyRegisterFlag,
+                            data: {[YES_FLAG]: ''},
+                        });
+                    }
+                }, {
+                    event: 'checkbox',
+                    title: '#requiredTag()网上预约',
+                    width: 100,
+                    align: 'center',
+                    templet: function (d) {
+                        return laytpl($('#checkboxTpl').html()).render({
+                            filter: 'appointOnlineFlag',
+                            value: d.appointOnlineFlag,
+                            data: {[YES_FLAG]: ''},
+                        });
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]]
+            , done: function (res) {
+
+            }
+        }));
+
+        //操作栏操作按钮的事件
+        table.on('tool(arrangeDutyOfficeListGrid)', function (obj) {
+            var that = this;
+            switch (obj.event) {
+                case 'registerTime':
+                    //时间选择器
+                    laydate.render({
+                        elem: $(this).find('.layui-table-edit').get(0),
+                        show: true
+                        , type: 'time'
+                        , range: true
+                        , done: function (value) {
+                            var times = value.split(' - ');
+                            //同步更新缓存对应的值
+                            obj.update({
+                                'registerTime': value
+                            });
+                            obj.update({
+                                'registerStartTime': times[0]
+                            });
+                            obj.update({
+                                'registerEndTime': times[1]
+                            });
+                        }
+                    });
+                    break;
+                case 'number':
+                    $(this).find('input').attr('type', 'number');
+                    break;
+                case 'checkbox':
+                    $(that).find(':checkbox[lay-filter]').each(function () {
+                        var field = $(this).attr('lay-filter');
+                        obj.update({
+                            [field]: Number(+$(this).is(':checked'))
+                        });
+                    });
+                    break;
+                case 'btn_delete':
+                    obj.del();
+                    layer.closeAll('tips'); //关闭所有的tips层
+                    checkNode(obj.data.arrangeDutyOfficeId, false);
+                    break;
+            }
+        });
+
+        //自定义验证规则
+        form.verify({
+            arrangeDutyOffice: function (value) {
+                var arrangeDutyOfficeList = $.map(table.cache['arrangeDutyOfficeListGrid'], function (item) {
+                    if (item.arrangeDutyOfficeId) return item.arrangeDutyOfficeId;
+                });
+                if (arrangeDutyOfficeList.length == 0) {
+                    $('#btn_add_arrangeDutyOffice').focus(function () {
+                        $('#arrangeDutyOfficeListGrid').next().addClass('table-danger');
+                    }).blur(function () {
+                        $('#arrangeDutyOfficeListGrid').next().removeClass('table-danger');
+                    }).focus();
+                    return "门诊科室不能为空";
+                }
+            }
+        });
+
+        //提交表单
+        function saveArrangeDutyOffice() {
+            var arrangeDutyOfficeParams = common.serializeObject($('#arrangeDutyOfficeForm'));
+            var arrangeDutyOfficeEditInfoList = $.map(table.cache['arrangeDutyOfficeListGrid'], function (item) {
+                return $.extend(item, arrangeDutyOfficeParams);
+            });
+            arrangeDutyOfficeParams.arrangeDutyOfficeEditInfoList = arrangeDutyOfficeEditInfoList;
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/outpatient/saveArrangeDutyOffices.jo', JSON.stringify(arrangeDutyOfficeParams), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        var arrangeDutyOfficeIds = $.map(arrangeDutyOfficeEditInfoList, function (item) {
+                            return item.arrangeDutyOfficeId
+                        })
+                        table.reload('arrangeDutyOfficeListGrid', {
+                            where: {arrangeDutyOfficeIds: arrangeDutyOfficeIds.toString()}
+                        });
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveArrangeDutyOffice();
+            return false
+        })
+
+        // 关闭窗口
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            $('#btn_query', window.parent.document).click()
+        })
+    })
+</script>

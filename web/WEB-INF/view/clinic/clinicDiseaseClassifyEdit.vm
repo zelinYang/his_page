@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-row full-height p-xs">
+        <form class="layui-form full-height" id="editForm">
+            #formHiddenInput("clinicDiseaseClassifyId" "$!diseaseClassify.clinicDiseaseClassifyId" "")
+            <div class="layui-card full-height-scroll m-b-n border-bottom"  style="height: calc(100% - 45px);">
+                <div class="layui-card-body p-b-n">
+                    <div class="layui-row">
+                        <div class="layui-col-sm3">
+                            <label class="layui-form-label">专业名称</label>
+                            <div class="layui-input-block">
+                                #formTextInput("diseaseClassifyName" "#htmlEscape($!diseaseClassify.diseaseClassifyName)" "required lay-verify='required' placeholder='请输入专业名称' autocomplete='off' maxlength='30' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-col-sm3">
+                            <label class="layui-form-label">专业编码</label>
+                            <div class="layui-input-block">
+                                #formTextInput("diseaseClassifyCode" "#htmlEscape($!diseaseClassify.diseaseClassifyCode)" "required lay-verify='required' placeholder='请输入专业专业编码' autocomplete='off' maxlength='15' class='layui-input'")
+                            </div>
+                        </div>
+                        <div class="layui-col-sm3">
+                            <label class="layui-form-label">专业类别</label>
+                            <div class="layui-input-block">
+                                #formSingleSelectFirstNone("diseaseClassifyFlag" "$!diseaseClassify.diseaseClassifyFlag" $!dicData.dicDiseaseClassify "lay-verify='required'" "")
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
+            <div class="tool-bottom-fixed">
+                <button class="layui-btn layui-btn-sm" id="btn_save" lay-submit lay-filter="btn_save" type="button"> 保 存  </button>
+            </div>
+        </form>
+      </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use('form', function(){
+    var form = layui.form;
+    //监听提交
+    form.on('submit(btn_save)', function(data){
+        common.requestServer(contextPath + '/pathway/saveDiseaseClassify.jo', data.field, function (result){
+            if (result.code == "0") {
+                $('#btn_refreshTree', window.parent.document).click();
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            } else {
+                common.alert(result.msg, 0);
+            }
+        });
+    });
+});
+</script>
+</html>

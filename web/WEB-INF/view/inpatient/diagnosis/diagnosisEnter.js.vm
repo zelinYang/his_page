@@ -1,0 +1,370 @@
+<script type="text/javascript">
+    /** 诊断类别: 1-门诊诊断 */
+    var DIAGNOSIS_CLASSIFY_OUTPATIENT = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_OUTPATIENT}";
+    /** 诊断类别: 2-入院诊断 */
+    var DIAGNOSIS_CLASSIFY_INTO = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_INTO}";
+    /** 诊断类别: 3-出院主诊断 */
+    var DIAGNOSIS_CLASSIFY_OUT_MAIN = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_OUT_MAIN}";
+    /** 诊断类别: 4-出院次诊断 */
+    var DIAGNOSIS_CLASSIFY_OUT_SECOND = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_OUT_SECOND}";
+    /** 诊断类别: 5-院内感染 */
+    var DIAGNOSIS_CLASSIFY_HOSPITAL_INFECT = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_HOSPITAL_INFECT}";
+    /** 诊断类别: 6-修正诊断 */
+    var DIAGNOSIS_CLASSIFY_REVISE = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_REVISE}";
+    /** 诊断类别: 7-中医诊断 */
+    var DIAGNOSIS_CLASSIFY_CHINESE_MEDICINE = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_CHINESE_MEDICINE}";
+    /** 诊断类别: 8-补充诊断 */
+    var DIAGNOSIS_CLASSIFY_SUPPLEMENT = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_SUPPLEMENT}";
+    /** 诊断类别: 9-确立诊断 */
+    var DIAGNOSIS_CLASSIFY_ESTABLISH = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_ESTABLISH}";
+    /** 诊断类别: 10-鉴别诊断 */
+    var DIAGNOSIS_CLASSIFY_DISTINGUISH = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_DISTINGUISH}";
+    /** 诊断类别: 11-死亡 */
+    var DIAGNOSIS_CLASSIFY_POSTMORTEM = "$!{CONST.AppConstants.DIAGNOSIS_CLASSIFY_POSTMORTEM}";
+    /** 中西医诊断: 1-西医 */
+    var DICDISEASETYPEFLAG_WESTERN = "$!{CONST.AppConstants.DICDISEASETYPEFLAG_WESTERN}";
+    /** 中西医诊断: 2-中医 */
+    var DICDISEASETYPEFLAG_CHINESE = "$!{CONST.AppConstants.DICDISEASETYPEFLAG_CHINESE}";
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    var inClinic;
+    //移动行
+    function moveTr(elem) {
+        var vertical = $(elem).data('vertical');
+        var tr = $(elem).closest('tr');
+        var verticalMap ={
+            'up' :{move:'prev',insert:'before'},
+            'down' :{move:'next',insert:'after'}
+        }
+        tr[verticalMap[vertical].move]()[verticalMap[vertical].insert](tr);
+        tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+    }
+
+    //删除一行初步诊断
+    function deleteTr(obj) {
+        var tr = $(obj).parents('tr');
+        var hideInput = $(tr).find('input[name="inpatientDiagnosisId"]')[0]
+        if (hideInput && $(hideInput).val()) {
+            common.confirm('确定要从库中删除吗？', function () {
+                var url = contextPath + '/inpatient/deleteDiagnosis.jo',params={ids: $(hideInput).val()},msg ="删除成功"
+                common.requestServerHandler(url, params, msg, function (result) {
+                    $(tr).remove();
+                })
+            });
+        } else {
+            $(tr).remove();
+        }
+    }
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        autocomplete: 'autocomplete'
+    }).use(['index','form', 'autocomplete'], function () {
+        var templateTr = $('#diagnosisEnterList > tr:last').prop("outerHTML");
+        var form = layui.form, autocomplete = layui.autocomplete;
+        var diseacs;
+        // 绑定病种检索
+        function bindDiseaseSearch(elem) {
+            // 检索病种
+            var diseacs =autocomplete.render({
+                cache: false,
+                method: 'post',
+                searchField: 'keyWord',
+                elem: elem,
+                url: contextPath + '/basDisease/basDiseaseListData.jo',//?diseaseTypeFlag='+diseaseTypeFlag,
+                template_val: '{{d.diseaseName}}',
+                template_txt: '<span class=\'layui-badge layui-bg-gray\'>{{dicDiseaseTypeFlag[d.diseaseTypeFlag]}}</span>&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{d.diseaseIcdTcd}}</strong>&nbsp;&nbsp;&nbsp;{{d.diseaseName}}',
+                onselect: function (obj) {
+                    $(elem).val(obj.diseaseName);
+                    var trElem = $(elem).closest('tr');
+                    trElem.find('input[name=diseaseId]').val(obj.diseaseId);
+                    trElem.find('input[name=infectiousFlag]').val(obj.infectiousFlag);
+                    trElem.find('input[name=chronicFlag]').val(obj.chronicFlag);
+                    trElem.find("input[name='diseaseIcdTcd']").val(obj.diseaseIcdTcd);
+                    trElem.find('select[name="diseaseTypeFlag"]').val(obj.diseaseTypeFlag);
+                    trElem.find('input[name="diseaseDiagnosisDesc"]').val(obj.diseaseName);
+                    trElem.find('input[name="diseaseDiagnosisDesc"]').val(obj.diseaseName);
+                    trElem.find('input[name=infectiousFlag]').val(obj.infectiousFlag);//是否传染病
+                    trElem.find('input[name=chronicFlag]').val(obj.chronicFlag);//是否慢性病
+                    trElem.find('span[name=infectiousFlag]').html(obj.infectiousFlag === '1'? '是': '');//是否传染病
+                    trElem.find('span[name=chronicFlag]').html(obj.chronicFlag === '1'? '是': '');//是否慢性病
+                    form.render();
+                }
+            });
+
+            //中西医诊断
+            form.on('select(diseaseTypeFlag)', function(data){
+                diseacs.config.url = contextPath + '/basDisease/basDiseaseListData.jo?diseaseTypeFlag='+data.value;
+                $(elem).parent().siblings().find("input[name='diseaseName']").val("");
+                $(elem).parent().siblings().find("input[name='diseaseIcdTcd']").val("");
+            });
+            //清除icd
+            $(elem).change(function () {
+				console.log('in');
+                $(elem).parent().find("input[name='diseaseId']").val('');
+                $(elem).parent().siblings().find("input[name='diseaseIcdTcd']").val('');
+                $(elem).parent().siblings().find("input[name='diseaseDiagnosisDesc']").val('');
+				$(elem).val('');
+            })
+
+        }
+        //诊断名称
+        $('input[name="diseaseName"]').each(function () {
+            bindDiseaseSearch(this);
+        });
+
+        // 新增一行初步诊断
+        $('#btn_add_tr').click(function () {
+            $('#diagnosisEnterList').append(templateTr);
+            var lastTr = $('#diagnosisEnterList > tr:last');
+            lastTr.find("input").val('');
+            lastTr.find("select").val('');
+            lastTr.find("[name='hid-items']").attr('item-type', '');
+            // 序号
+            var index = lastTr.index() + 1;
+            $(lastTr).find('span#tr-index').html(index);
+            bindDiseaseSearch($(lastTr).find('input[name="diseaseName"]')[0]);
+            form.render();
+        });
+
+        // 保存按钮
+        $('#btn_save').click(function () {
+            var arrayObj = getTbodyData();
+            if (!arrayObj) {
+                return;
+            }
+            var errorMsg = '';
+            $.each(arrayObj, function (index, diagnosis) {
+                if (!diagnosis.diseaseName && !diagnosis.diseaseDiagnosisDesc) {
+					errorMsg = '诊断名称和诊断描述不能同时为空';
+                }
+			})
+            if (errorMsg) {
+				common.alert(errorMsg, 2);
+				return;
+            }
+            if ($('#inhospitalId').val()) {
+                var params;
+                if (arrayObj.length > 0) {
+                    params = {inhospitalId: $('#inhospitalId').val(), jsonDiagnosisData: JSON.stringify(arrayObj)};
+                }
+                common.requestServer('../inpatient/saveDiagnosis.jo', params, function (result) {
+                    if (result.code == "0") {
+                        common.msg("保存成功。", 1, function () {
+                        	var inpatientDiagnosiss = result.data;
+							$('#diagnosisEnterList > tr').each(function (index) {
+								$(this).find('td > input[name=inpatientDiagnosisId]').val(inpatientDiagnosiss[index].inpatientDiagnosisId);
+								$(this).find('td > input[name=clinicNotInPathReason]').val(inpatientDiagnosiss[index].clinicNotInPathReason || '');
+							});
+                        	var clinicInPathFlag = result.data[0].clinicInPathFlag;
+							if (clinicInPathFlag !== '1') {
+								addClinicPatientPath(result.data[0].diseaseIcdTcd, result.data[0].inpatientDiagnosisId);
+							} else {
+								window.location.reload();
+                            }
+                        });
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                })
+            }
+        });
+
+		// 选择临床路径
+		function addClinicPatientPath(diseaseIcdTcd, inpatientDiagnosisId) {
+			layer.open({
+				type: 2
+				, title: '选择临床路径'
+				, content: contextPath + '/clinic/clinicPathSelect.do?diseaseIcdTcds=' + diseaseIcdTcd
+				, area: ['800px', '600px']
+				, btn: ['确定', '取消']
+				, scrollbar: true
+				, maxmin: true
+				, yes: function (index, layero) {
+					var iframeWindow = window['layui-layer-iframe' + index]
+							, submitID = 'LAY-emr-submit'
+							, submit = layero.find('iframe').contents().find('#' + submitID);
+
+					//监听提交
+					iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+						var field = data.field; //获取提交的字段
+						console.log(field);
+						var clinicPathId = iframeWindow.getParams();
+						if (!clinicPathId) {
+							common.alert('请选择临床路径', 2);
+							return;
+                        }
+						field.clinicPathId = clinicPathId;
+						field.inhospitalId = $("#inhospitalId").val();
+						field.inpatientDiagnosisId = inpatientDiagnosisId;
+						if (field.clinicInPathFlag == '0') {
+							common.requestServer(contextPath + '/inpatient/updateInpatientDiagnosis.jo', field, function(result){
+								if (result.code == '0') {
+									common.msg("保存成功。", 1, function(){
+										layer.close(index);
+										window.location.reload();
+									});
+								} else {
+									common.alert(result.msg, 0);
+								}
+							})
+                        } else {
+							$.post(contextPath + "/clinic/saveClinicPatientPath.jo", field, function (result) {
+								if (result.code === "0") {
+									common.msg("保存成功!", 1, function () {
+										layer.close(index);
+										window.location.reload();
+									});
+								} else {
+									common.alert(result.msg, 0);
+								}
+							}, "json");
+                        }
+					});
+
+					submit.trigger('click');
+				}
+				, success: function (layero, index) {
+
+				}
+			});
+		}
+
+		inClinic = function(dom) {
+			var inpatientDiagnosisId = $(dom).parents('tr').find('input[name=inpatientDiagnosisId]').val();
+			if (!inpatientDiagnosisId) {
+				common.alert('请先保存诊断', 2);
+				return;
+			}
+			var diseaseIcdTcd = $(dom).parents('tr').find('input[name=diseaseIcdTcd]').val();
+			var clinicInPathFlag = $(dom).parents('tr').find('input[name=clinicInPathFlag]').val();
+			var clinicNotInPathReason = $(dom).parents('tr').find('input[name=clinicNotInPathReason]').val();
+			if (clinicInPathFlag === '0') {
+				common.alert('改诊断不进入临床路径，原因：' + clinicNotInPathReason, 2);
+				return;
+            } else if (clinicInPathFlag === '1') {
+				common.alert('该诊断已进入临床路径', 2);
+				return;
+            }
+			addClinicPatientPath(diseaseIcdTcd, inpatientDiagnosisId);
+		}
+
+        //判断父页面是否是电子病历
+        if(parent.minieditorDesign || parent.parent.minieditorDesign){
+            //显示导入诊断按钮
+            $("#btn_import").removeClass("layui-hide");
+        }
+
+        // 导入诊断
+        $('#btn_import').click(function () {
+            var diagnosisNames = [];
+            $('input[name="hid-items"]').each(function () {
+                var $checkBox = $(this.parentNode).find('input[type="checkbox"]');
+                var diseaseName = $(this).attr('item-name');
+                var diseaseDiagnosisDesc = $(this).parent().siblings().find("input[name='diseaseDiagnosisDesc']").val();
+                if (diseaseName && $checkBox[0].checked) {
+                    diagnosisNames.push({diseaseName:diseaseName,diseaseDiagnosisDesc:diseaseDiagnosisDesc});
+                }
+            });
+            if (parent.inserthtml) {
+                parent.inserthtml(assembleDiagnosis(diagnosisNames));
+                common.msg("导入成功。", 1);
+            } else {
+                parent.parent.inserthtml(assembleDiagnosis(diagnosisNames));
+                common.msg("导入成功。", 1);
+            }
+            return;
+
+            var addDiagnosisItems = [];
+            var modifyDiagnosisItems = [];
+            var inhospitalDiagnosisItems = [];
+            var outhospitalDiagnosisItems = [];
+            $('input[name="hid-items"]').each(function () {
+                if ($(this).find('item-type') == DIAGNOSIS_CLASSIFY_SUPPLEMENT) {
+                    addDiagnosisItems.push({diagnosisName: $(this).attr('item-name')});
+                }
+                if ($(this).attr('item-type') == DIAGNOSIS_CLASSIFY_REVISE) {
+                    modifyDiagnosisItems.push({diagnosisName: $(this).attr('item-name')});
+                }
+                if ($(this).attr('item-type') == DIAGNOSIS_CLASSIFY_INTO) {
+                    inhospitalDiagnosisItems.push({diagnosisName: $(this).attr('item-name')});
+                }
+                if ($(this).attr('item-type') == DIAGNOSIS_CLASSIFY_OUT_MAIN || $(this).attr('item-type') == DIAGNOSIS_CLASSIFY_POSTMORTEM) {
+                    outhospitalDiagnosisItems.push({diagnosisName: $(this).attr('item-name')});
+                }
+            });
+            if (parent.importDiagnosis && typeof (parent.importDiagnosis) == 'function') {
+                var diagnosisItems = {
+                    addDiagnosis: assembleDiagnosis(addDiagnosisItems)
+                    , modifyDiagnosis: assembleDiagnosis(modifyDiagnosisItems)
+                    , inhospitalDiagnosis: assembleDiagnosis(inhospitalDiagnosisItems)
+                    , outhospitalDiagnosis: assembleDiagnosis(outhospitalDiagnosisItems)
+                };
+                console.log(diagnosisItems);
+                var flag = parent.importDiagnosis(diagnosisItems);
+                if (flag) {
+                    common.confirm('已导入，是否要关闭窗口？', function () {
+                        var index = parent.layer.getFrameIndex(window.name);
+                        parent.layer.close(index);
+                    }, function () {
+                    }, ['是', '否']);
+                }
+            }
+        });
+    });
+
+    var dicDiagnosisClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiagnosisClassify)');
+
+    function getTbodyData() {
+        var arrayObj = [];
+        $('#diagnosisEnterList > tr').each(function (index) {
+            var obj = {sort:index};
+            $(this).find('td > input, select').each(function () {
+                var name = $(this).attr('name');
+                var value = $(this).val();
+                if (name && value) {
+                    obj[name] = value;
+                }
+            });
+            //验证诊断对象
+            var valid = validTrForm(obj);
+            if (valid == '1') {
+                obj['diagnosisClassifyName'] = dicDiagnosisClassify[obj['diagnosisClassify']];
+                arrayObj.push(obj);
+            } else {
+                arrayObj = null;
+                $(".input-error").removeClass("input-error");
+                $(this).find("input[name='" + valid + "'],select[name='" + valid + "']").parents('td').addClass("input-error");
+                $(".input-error").click(function () {
+                    $(this).removeClass("input-error").unbind();
+                });
+                return false;
+            }
+
+            obj["diagnosisGroupNo"] = 0; // 诊断组号，目前还没用到，先设置为0
+            //if(!$.isEmptyObject(obj) && (obj.diseaseName || obj.diseaseDiagnosisDesc)) { arrayObj.push(obj); }
+        });
+        return arrayObj;
+    }
+
+    //验证编辑行数据
+    function validTrForm(obj) {
+
+        if (obj.diagnosisClassify == null || obj.diagnosisClassify == "") {
+            layer.msg('请选择诊断类别', {time: 3000, icon: 2});
+            return 'diagnosisClassify';
+        }
+        return '1';
+    }
+
+    //组装诊断数组成字符串
+    function assembleDiagnosis(array) {
+        if (array.length == 1) {
+            return array[0].diseaseName;
+        }
+        return $.map(array, function (item, index) {
+            return (index + 1) + '、' + (item.diseaseName || item.diseaseDiagnosisDesc);
+        }).join('');
+    }
+
+</script>

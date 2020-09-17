@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+</head>
+<body>
+<div class="white-bg full-height m-n overflow-y-h">
+    <form class="layui-form white-bg p-t-xs p-b-xs">
+        <div class="layui-inline">
+            <label class="layui-form-label">选择模板：</label>
+            <div class="layui-input-inline">
+                #formSingleSelect("emrTlpId" "$!{emrTlpId}" $!emrTlpMap "id='emrTlpId' lay-filter='emrTlpId' lay-search")
+                #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId' ")
+                #formHiddenInput("registerId" "$!{register.registerId}" "id='registerId'")
+                #formHiddenInput("outpatientId" "$!{outpatient.outpatientId}" "id='outpatientId'")
+                #formHiddenInput("patientId" "$!{patient.patientId}" "id='patientId'")
+                #formHiddenInput("emrTlpClassifyId" "$!{emrTlpClassifyId}" "id='emrTlpClassifyId' ")
+            </div>
+        </div>
+    </form>
+    <iframe id="emrEdit" name="emrEdit" src="" width="100%" scrolling="no" frameBorder="0"
+            style="height:calc(100% - 43px); "></iframe>
+</div>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.use(['jquery', 'element', 'table', 'form'], function () {
+        var table = layui.table;
+        var element = layui.element;
+        var form = layui.form;
+        layer = layui.layer;
+        //页面初始化
+        $(function () {
+            ckOutRegExist();//判断医生是否已选取患者、填写门诊日志;;
+        });
+        var emrTlpId = $("#emrTlpId").val();
+        var registerId = $("#registerId").val();
+        var patientId = $("#patientId").val();
+        var returnVisitFlag = $('input[name=returnVisitFlag]:checked').val();
+        var emrTlpClassifyId = $("#emrTlpClassifyId").val();
+
+        if (patientId && registerId) {
+            loadEmrTlp(emrTlpId)
+        } else {
+            return;
+        }
+
+        form.on('select(emrTlpId)', function (data) {
+            loadEmrTlp(data.value);
+        });
+
+        function selectPatientHospitalEmr(registerId, emrTlpId) {
+            var patientHospitalEmrId;
+            $.ajax({
+                type: "GET",
+                url: '$contextPath/emr/getPatientEmrByClassify.jo',
+                data: {
+                    registerId: registerId,
+                    emrTlpId: emrTlpId
+                },
+                dataType: "json",
+                async: false,//同步 请求
+                success: function (result) {
+                    if (result.length > 0) {
+                        patientHospitalEmrId = result[0].patientHospitalEmrId;
+                    }
+                },
+                error: function (res) {
+                    jqueryPostError(res);
+                }
+            });
+            return patientHospitalEmrId;
+        }
+
+        document.onkeydown = function (e) {
+            var keyCode = e.keyCode || e.which || e.charCode;
+            var altKey = e.altKey
+            if (altKey && e.keyCode == 83) {
+                e.preventDefault();
+                $("#emrEdit").contents().find("#btn_save, #btn_submit").click();
+
+            }
+        };
+
+
+        function loadEmrTlp(emrTlpId) {
+            var patientHospitalEmrId = selectPatientHospitalEmr(registerId, emrTlpId) ? selectPatientHospitalEmr(registerId, emrTlpId) : '';
+            if (!returnVisitFlag) {
+                returnVisitFlag = "0";
+            }
+            $("#emrEdit").attr("src", contextPath + "/emr/commonEmrTemplate.do?emrTlpId=" + emrTlpId + "&patientHospitalEmrId=" + patientHospitalEmrId + "&registerId=" + registerId + "&patientId=" + patientId + '&view=outpatient/outpatientEmr/outpatientEmrEdit&serviceId=outpatientService');
+        }
+
+    });
+
+</script>
+</body>
+
+</html>

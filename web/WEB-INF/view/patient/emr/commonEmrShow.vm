@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+#parse("./common/visualizationCss.vm")
+<style type="text/css">
+.layui-table td, .layui-table th{padding: 9px 5px}
+#designContent{position: relative;}
+</style>
+</head>
+<body>
+    <div class="pane ui-layout-center">
+        #if("$!emrFuncList" != "")
+            #set($btnHeight = "52px")
+        #end
+        <div class="layui-row white-bg full-height-scroll m-n layui-shade" style="height: calc(100% - $!btnHeight);overflow: auto">
+             #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+             #formHiddenInput("patientId" "$!info.patientId" "id='patientId'")
+             #formHiddenInput("inhospitalId" "$!info.inhospitalId" "id='inhospitalId'")
+             #formHiddenInput("patientHospitalEmrId" "$!info.patientHospitalEmrId" "id='patientHospitalEmrId'")
+             <div class="full-height p-r-n p-l-n" id="designContent" style="width:100%; margin:0 auto; display: none;">$!emrTlp.emrTlpContent</div>
+        </div>
+
+        #if("$!btnHeight" != "")
+            <!-- 按钮 -->
+            <div class="layui-row gray-bg text-center p-t-sm p-b-sm">
+                <button class="layui-btn layui-btn-sm" id="btn_medicalRecord" type="button"> 病历资料  </button>
+                <label><input type="checkbox" id="trace" title="留痕">留 痕</label>
+            </div>
+        #end
+    </div>
+    #if("$!btnHeight" != "")
+        <!-- 选择操作区域 -->
+        <div id="material" class="ui-layout-south">
+            <iframe src="" id="materialIframe" scrolling="no" frameborder="0" class="layadmin-iframe"></iframe>
+        </div>
+    #end
+</body>
+#parse("./common/pageJs.vm")
+#parse("./common/visualizationJs.vm")
+<link rel="stylesheet" href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css">
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+<script src="../resource/hplus/js/plugins/layer/layer.min.js"></script>
+<script>
+
+var emrAuditing;
+
+layer.ready(function(){
+    common.openLoad();
+});
+var minieditorDesign = new window.minieditorDesign('designContent', {
+    initData: #if("$!emrData" != "") $!emrData #else '' #end,
+    modelType: 'readonly',
+    printType: '$!{emrTlp.printType}',
+    outhtmlWidth: '$!{emrTlp.printType}' == '1'? '794px': '1070px',
+    hospitalName:'$!{info.hospitalName}',
+    dicEmrClassNameKeyField: JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrClassNameKeyField)'),
+    baseFormParams: {PatientHospitalEmr: {patientHospitalEmrId: $('#patientHospitalEmrId').val(), patientId: $('#patientId').val(), inhospitalId: $('#inhospitalId').val(), emrTlpId: $('#emrTlpId').val()}}
+});
+$(function () {
+    $("#trace").change(function() {
+        console.log(this.checked);//判断当前状态
+        if (this.checked) {
+            minieditorDesign.miniEditor.setTrace();
+        } else {
+            minieditorDesign.miniEditor.restoreCacheContent();
+        }
+    });
+})
+</script>
+<script type="text/javascript">
+layui.use(['element', 'layer'], function(){
+    var winLayout = $('body').layout({resizerDragOpacity:0.5, maskIframesOnResize:"#material", togglerLength_open:100,togglerLength_closed:200, togglerTip_closed:"首次请先点击“病历资料”按钮以打开",togglerTip_open:"关闭",initClosed:true});
+
+    // 病历资料
+    $('#btn_medicalRecord').click(function (){
+        openSouthLayout('/patient/patientMedicalInformation.do?patientId=' + $('#patientId').val() + '&inhospitalId=' + $('#inhospitalId').val());
+    });
+
+    // 打开底部模板区域
+    function openSouthLayout(url) {
+        //pane是否关闭中
+        var isClosed = $("#material").css("display") == "none";
+        if(isClosed){
+            winLayout.sizePane("south", 200);
+            winLayout.toggle("south");
+        }
+        var materialIframe = $('#materialIframe');
+        if ($(materialIframe).attr('src') == contextPath + url) {//url未改变
+            if(!isClosed){//url未改变且pane打开中
+                winLayout.toggle("south");
+            }
+            return ;
+        }
+        $(materialIframe).attr('src', contextPath + url);
+    }
+
+    //审核状态
+    emrAuditing = function() {
+        var emrAuditing = $('.emrAuditing', parent.document);
+        if (emrAuditing.length > 0) {
+            var emrAuditing = emrAuditing.clone().removeClass('layui-hide');
+            $('body #designContent .emrAuditing').remove();
+            $('body #designContent').append(emrAuditing);
+        }
+    }
+
+    //页面初始化
+    $(document).ready(function() {
+        emrAuditing();
+    });
+
+
+});
+</script>
+</html>

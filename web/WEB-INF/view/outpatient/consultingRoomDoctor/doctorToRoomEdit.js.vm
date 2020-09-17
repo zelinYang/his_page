@@ -1,0 +1,210 @@
+<script>
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util, tableSelect = layui.tableSelect;
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('body').height() - $('#basPostDoctor_queryForm').height() - ($('body').height() - $('.layui-fluid').height());
+        }
+
+        //根据name 加载 下拉框 dicMap = {"code":"name"}
+        function loadSelect(name, dicMap) {
+            $('select[name=' + name + ']').empty();
+            var consultingRooms = $.map(dicMap, function (key, value) {
+                return '<option value="' + value + '">' + key + '</option>';
+            })
+            $('select[name=' + name + ']').html(consultingRooms.join(''));
+            form.render();
+        }
+
+        //门诊科室选择
+        tableSelect.render({
+            elem: '#arrangeDutyOfficeName,.choose',	//定义输入框input对象 必填
+            checkedKey: 'arrangeDutyOfficeId', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '门诊科室',	//搜索输入框的提示文字 默认关键词搜索
+            table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: contextPath + '/outpatient/arrangeDutyOfficePageData.jo',
+                cols: [[
+                    {type: 'radio'},
+                    {
+                        field: 'arrangeDutyOfficeName', title: '门诊科室'
+                    }]]
+            }),
+            done: function (elem, result) {
+                var d = result.data[0];
+                $('#arrangeDutyOfficeName').val(dicSysOrgName[d.arrangeDutyOfficeId]);
+                $('#arrangeDutyOfficeId').val(d.arrangeDutyOfficeId);
+                $('#btn_query').click();
+            }
+        })
+
+        //医生 查询按钮
+        $('#btn_query').click(function () {
+            reloadbasPostDoctor();
+        })
+
+        //重载医生表
+        function reloadbasPostDoctor() {
+            var arrangeDutyOfficeId = $('#arrangeDutyOfficeId').val();
+            if(!arrangeDutyOfficeId) {
+                common.msg('请选择门诊科室', 0);
+                $("#arrangeDutyOfficeName").addClass('layui-form-danger').focus();
+            }
+            table.reload('basPostDoctorListGrid', {url: arrangeDutyOfficeId ? contextPath + '/bas/basPostDoctorListData.jo' : '', where: {officeId: arrangeDutyOfficeId}})
+        }
+
+        //医生 表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#basPostDoctorListGrid',
+            height: getTableHgt(),
+            data: [],
+            cols: [[{
+                fixed: 'left',
+                type: 'numbers'
+            }, {
+                fixed: 'left',
+                type: 'checkbox'
+            }, {
+                fixed: 'left',
+                field: 'doctorId',
+                hide: true
+            }, {
+                field: 'doctorName',
+                fixed: 'left',
+                minWidth: 150,
+                title: '医生'
+            }, {
+                field: 'doctorPost',
+                title: '职称',
+                minWidth: 150,
+                templet: function (row) {
+                    return dicDoctorPost[row.doctorPost] || ""
+                }
+            }, {
+                title: '电子签名等级',
+                minWidth: 100,
+                templet: function (row) {
+                    return dicDoctorSignType[row.doctorSign] || ""
+                }
+            }]], done: function (res) {
+                consultingRoomLoadSelect();
+            }
+        }));
+
+        //医生
+        table.on('checkbox(basPostDoctorListGrid)', function (obj) {
+            var checkStatus = table.checkStatus('basPostDoctorListGrid')
+                , data = checkStatus.data; //获取选中的数据
+            if (data.length > 0) {
+                $('#btn_add').removeClass("layui-btn-disabled layui-btn-primary");
+            } else {
+                $('#btn_add').addClass("layui-btn-disabled layui-btn-primary");
+            }
+        });
+
+        // 医生关联诊室
+        $("#btn_add").click(function () {
+            var consultingRoomId = $('#q_consultingRoomId').val();
+            if ($(this).hasClass('layui-btn-disabled')) {
+                common.msg('请选择一行', 0);
+                return;
+            } else if (!consultingRoomId) {
+                common.msg('当前科室无所属诊室', 0);
+                $("#q_consultingRoomId").addClass('layui-form-danger').focus();
+                return;
+            }
+            var checkStatus = table.checkStatus('basPostDoctorListGrid')
+                , data = checkStatus.data; //获取选中的数据
+            var doctorIds = $.map(data, function (item) {
+                return item.doctorId;
+            })
+            var consultingRoom = $('#q_consultingRoomId option:selected').text();
+            common.confirm("当前选择的医生确定要关联【" + consultingRoom + "】诊室吗？", function () {
+                common.requestServerHandler('$contextPath' + '/outpatient/saveConsultingRoomDoctor.jo', {consultingRoomId: consultingRoomId, doctorIds: doctorIds.join()}, "关联成功", function (result) {
+                    reloadConsultingRoomDoctor();
+                })
+            });
+        })
+
+        //获取门诊科室下的诊室
+        function consultingRoomLoadSelect() {
+            $('#q_consultingRoomId').empty();
+            if (!$("#arrangeDutyOfficeId").val()) return;
+            common.requestServer(contextPath + '/outpatient/consultingRoomListData.jo', {depId: $("#arrangeDutyOfficeId").val()}, function (result) {
+                if (result.code == '0') {
+                    var consultingRooms = $.map(result.data, function (item) {
+                        return '<option value="' + item.consultingRoomId + '">' + item.roomName + '</option>';
+                    })
+                    $('#q_consultingRoomId').html(consultingRooms.join(''));
+                    reloadConsultingRoomDoctor();
+                    $('#btn_query', window.parent.parent.document).click()
+                } else {
+                    common.alert(result.msg, 0);
+                }
+                form.render();
+            });
+        }
+
+        //重载医生诊室关联表
+        function reloadConsultingRoomDoctor() {
+            var consultingRoomId = $('#q_consultingRoomId').val();
+            table.reload('consultingRoomDoctorListGrid', {url: consultingRoomId ? contextPath + '/outpatient/consultingRoomDoctorPageData.jo' : '', where: {consultingRoomId: consultingRoomId}})
+        }
+
+        //选择诊室
+        form.on('select(q_consultingRoomId)', function (data) {
+            reloadConsultingRoomDoctor();
+        });
+
+        //医生诊室关联表格设置
+        table.render($.extend(singlePageTable, {
+            elem: '#consultingRoomDoctorListGrid',
+            height: getTableHgt(),
+            data: [],
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'doctorName',
+                title: '医生姓名'
+            }, {
+                title: '操作',
+                width: 60,
+                align: 'center',
+                fixed: 'right',
+                toolbar: '#operateTpl'
+            }]]
+        }));
+
+        //操作栏操作按钮的事件
+        table.on('tool(consultingRoomDoctorListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_delete':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServerHandler('$contextPath' + '/outpatient/delConsultingRoomDoctor.jo', {consultingRoomDoctorId: row.consultingRoomDoctorId}, "删除成功", function (result) {
+                            reloadConsultingRoomDoctor();
+                        })
+                    });
+                    break;
+            }
+        });
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('basPostDoctorListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>

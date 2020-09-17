@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm") 
+
+<style type="text/css">
+    .infoTable .label-td{
+        width:80px;
+        text-align: center;
+        color:#111111;
+    }
+    .infoTable .content-td{
+        
+    }
+    
+    .leftFeeTable{
+        margin-bottom: 0px;
+    }
+    
+    .rightFeeTable{
+        margin-bottom: 0px;
+    }
+    
+    .totalTable{
+        marigin:0px !important;
+    }
+    .totalTable td{
+        color:black;
+    }
+    
+    
+    
+    
+    
+</style>
+</head>
+
+<body style="background: #f9f9f9;height:calc(100% - 10px);">
+    <table class="layui-table infoTable">
+        <tbody>
+            <tr>
+                <td class="label-td">姓名：</td>
+                <td class="content-td">$!inpatientInhospital.patientName</td>
+                <td class="label-td">性质：</td>
+                <td class="content-td">$dicData.dicPatientKind.get($!inpatientInhospital.patientKind)</td>
+                <td class="label-td">入院日期：</td>
+                <td class="content-td">$!date.format("yyyy-MM-dd",$!inpatientInhospital.inhospitalDate)</td>
+                <td class="label-td">出院日期：</td>
+                <td class="content-td">$!date.format("yyyy-MM-dd",$!inpatientInhospital.outhospitalDate)</td>
+                <td class="label-td">天数：</td>
+                <td class="content-td">$!inpatientInhospital.days</td>
+            </tr>
+            <tr>
+                <td class="label-td">总费用：</td>
+                <td class="content-td">$!inhospitalCurrentFee.feeAmount</td>
+                <td class="label-td">自负：</td>
+                <td class="content-td">$!inhospitalCurrentFee.feeAmount</td>
+                <td class="label-td">缴款：</td>
+                <td class="content-td">$!inhospitalCurrentFee.prepayInAmount</td>
+                <td class="label-td">余额：</td>
+                #set($balance=$!{inhospitalCurrentFee.prepayInAmount} - $!{inhospitalCurrentFee.feeAmount})
+                <td class="content-td">$balance</td>
+                <td class="label-td">药比(%)：</td>
+                <td class="content-td"></td>
+            </tr>
+        </tbody>
+    </table>
+    
+    <div class="layui-col-md6">
+        <table class="layui-table leftFeeTable">
+            <thead>
+                <tr>
+                    <th>费用名称</th>
+                    <th>费用金额</th>
+                    <th>自付金额</th>
+                </tr>
+            </thead>
+            <tbody>
+                #foreach($item in $!feeItemGroup1)
+                <tr>
+                    <td>$!dicData.dicInhospitalChargeGroupCodeName.get($!item.get("chargeGroupId").toString())</td>
+                    <td>$item.get("chargeGroupAmount")</td>
+                    <td>$item.get("chargeGroupAmount")</td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    </div>
+    <div class="layui-col-md6">
+        <table class="layui-table rightFeeTable">
+            <thead>
+                <tr>
+                    <th>费用名称</th>
+                    <th>费用金额</th>
+                    <th>自付金额</th>
+                </tr>
+            </thead>
+            <tbody>
+                
+                #foreach($item in $!feeItemGroup2)
+                <tr>
+                    <td>$!dicData.dicInhospitalChargeGroupCodeName.get($!item.get("chargeGroupId").toString())</td>
+                    <td>$item.get("chargeGroupAmount")</td>
+                    <td>$item.get("chargeGroupAmount")</td>
+                </tr>
+                #end
+            </tbody>
+        </table>
+    </div>
+    <table class="layui-table totalTable" id="totalTable">
+        <colgroup>
+            <col width="16.6%">
+            <col width="16.6%">
+            <col width="16.6%">
+            <col width="16.6%">
+            <col width="16.6%">
+            <col width="16.6%">
+        </colgroup>
+        <tbody>
+            <tr>
+                <td colspan="1" class="text-center">合计金额：</td>
+                <td colspan="5">$!totalAmount</td>
+            </tr>
+            <tr>
+                <td colspan="1" class="text-center">人民币大写：</td>
+                <td colspan="5">贰万零壹佰伍拾肆元陆角贰分</td>
+            </tr>
+        </tbody>
+    </table>
+    
+    
+
+</body>
+#parse("./common/pageJs.vm") 
+#parse("./inpatient/account/inpatientAccount.js.vm")
+</html>

@@ -1,0 +1,199 @@
+<script>
+    var dicDrugNumUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugNumUnitDosageUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+    var dicPharmacyFreq  = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+    var dicDoseWay  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var queryRecipeGroup;//查询方法
+    var initLayout;
+    var delRecipeGroup;//删除组套
+    var editRecipeGroup;//编辑组套
+    var userId = '$!{user.userId}';
+
+    layui.use(['jquery','table', 'element', 'form'], function(){
+        var table = layui.table, element = layui.element, $ = layui.$, form = layui.form;
+        element.render();
+
+        initLayout = function() {
+            $('#container').layout({
+                west__size: 430//pane的大小
+                ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+                ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+                ,spacing_open:8//边框的间隙
+                ,maskIframesOnResize:".resizeiframe"
+                ,onopen: function () {
+					queryRecipeGroup();
+				}
+            });
+        }
+
+        //页面初始化
+        $(document).ready(function() {
+            initLayout();
+        });
+
+        //组套tabel
+        var examineGroupTable = table.render({
+            elem: '#examineGroupTable'
+            ,defaultToolbar: []
+            ,cellMinWidth: 80
+            ,url: '../outpatient/orderGroupListData.jo' //数据接口
+            ,page: true //开启分页
+            ,where: getParams()
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,cols: [[ //表头
+                { type: 'radio' }
+                , {field : 'orderGroupName',title : '项目名称'}
+                , {title : '操作',width : 100,align : 'center',fixed : 'right',toolbar : '#colstoolbar'}
+            ]] , done:function () {
+                tableReHeight(this, getTableHgt);
+            }
+        });
+
+
+        //监听行操作按钮 tool
+        table.on('tool(examineGroupTable)', function(obj) {
+            var row = obj.data;
+            switch (obj.event) {
+                case 'edit':
+                    editRecipeGroup(row);
+                    break;
+                case 'del':
+                    removeOrderItem(row);
+                    break;
+            }
+        });
+
+        function getParams() {
+			var initQFrom = common.serializeObject($('#recipeGroup_queryForm'));
+			if (initQFrom.orderGroupClassify === '1') {
+				initQFrom.orderUserId = userId;
+            } else {
+				initQFrom.orderUserId = '';
+            }
+			return $.extend({
+				orderGroupName:'',
+				commonMedicineFlag:'',
+				orderGroupClassify:''
+			}, initQFrom);
+        }
+
+        // 查询按钮
+        $('#btn_query_recipeGroup').click(function (){
+            queryRecipeGroup();
+        });
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('recipeGroup_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            var src = '$contextPath/bas/outRecipeTcmGroupEdit.do';
+            $('#outRecipeTcmGroupEdit').attr('src',src);
+        })
+
+        //查询列表
+        queryRecipeGroup = function() {
+            var queryParams = common.serializeObject($('#recipeGroup_queryForm'));
+            examineGroupTable.reload({ where: queryParams });
+        }
+
+        form.on('radio(orderGroupClassify)', function(data){
+            queryRecipeGroup();
+        });
+
+        //监听行单击事件
+        table.on('row(examineGroupTable)', function(obj){
+            var row = obj.data;
+            editRecipeGroup(row);
+
+			// 行选触发radio选中
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index')
+			var thisData = table.cache.recipeTcmGroupTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+        });
+
+        //处方组套行单击查询处方明细
+        editRecipeGroup = function(recipeGroupRow) {
+            var src = '$contextPath/bas/outRecipeTcmGroupEdit.do?orderGroupId=' + recipeGroupRow.orderGroupId;
+            $('#outRecipeTcmGroupEdit').attr('src',src);
+        }
+
+        //确认是否要删除
+        removeOrderItem = function(recipeGroupRow) {
+            //询问框
+            layer.confirm('您确认删除吗？', {
+                btn: ['否','是'] //按钮
+            }, function(){
+                return false;
+            }, function(){
+                //删除处方
+                delRecipeGroup(recipeGroupRow);
+            });
+        }
+
+        //删除组套
+        delRecipeGroup = function(recipeGroupRow) {
+            $.ajax({
+                type : "POST",
+                url : '../bas/deleteOrderGroup.jo',
+                data : {ids: recipeGroupRow.orderGroupId},
+                dataType : "json",
+                async : true,//同步 请求
+                success : function(result) {
+                    if(result.code == '0') {
+                        common.msg("删除成功!", iconType.success);
+                        queryRecipeGroup();
+                        //刷新右侧详情
+                        var orderGroupId = $('#outRecipeTcmGroupEdit').contents().find("input[name=orderGroupId]").val();//获取iframe的orderGroupId值
+                        if (recipeGroupRow.orderGroupId == orderGroupId) {
+                            var src = '$contextPath/bas/outRecipeTcmGroupEdit.do';
+                            $('#outRecipeTcmGroupEdit').attr('src',src);
+                        }
+
+                    } else {
+                        common.alert(result.msg, iconType.warn);
+                    }
+                },
+                error : function(res) {jqueryPostError(res);}
+            });//ajax end
+        }
+
+
+        //生成组套
+        function addBasOrderGroup() {
+            common.open('$contextPath/bas/outRecipeTcmGroupEdit.do', '新增组套', {area: ['600px', '350px']});
+        }
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+        function getTableHgt(){
+            return $('body').height() - $('#recipeGroup_queryForm').height() - ($('body').height() - $('.layui-fluid').height()) -10
+        }
+    });//layui.use
+</script>

@@ -1,0 +1,99 @@
+<link rel="stylesheet" href="$!contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css" />
+<script src="$!contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    //住院 诊疗项目内容propover 弹框参数
+    var basChargeItemIframeSettings = {
+        width: 650,
+        height: 335,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../bas/basChargeItemPopover.do?inhospitalUsageFlag=' + YES_FLAG
+    };
+
+    //药品名称内容propover 弹框参数
+    var medicineIframeSettings = {
+        width: 650,
+        height: 335,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../medicine/medicineSelect.do'
+    };
+
+	//药库关联药品名称内容propover 弹框参数
+	var drugstoreMedicineIframeSettings = {
+		width: 650,
+		height: 335,
+		closeable: false,
+		padding: false,
+		type: 'iframe',
+		url: '../drugstore/drugstoreMedicineSelect.do'
+	};
+    //供货商名称内容propover 弹框参数
+    var medicineVendorIframeSettings = {
+        width: 500,
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../medicine/medicineVendorSelect.do'
+    };
+    //生产商名称内容propover 弹框参数
+    var medicineProducingAreaIframeSettings = {
+        width: 400,
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../medicine/medicineProducingAreaSelect.do'
+    };
+    //药品库存内容propover 弹框参数
+    var drugstoreMedicineStockIframeSettings = {
+        width: 800,
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: contextPath + '/drugstore/drugstoreMedicineStockSelect.do'
+    };
+    //诊断内容propover 弹框参数
+    var basDiseaseIframeSettings = {
+        width:700,
+        height:350,
+        closeable:false,
+        padding:false,
+        type:'iframe',
+        url:'../outpatient/basDiseaseSelect.do?diseaseTypeNot=$!{CONST.AppConstants.DISEASE_TYPE_SYNDROME}'
+    };
+    // 药房库存
+    var pharmacyStockIframeSettings = {
+        width: 900,//医嘱名称内容propover 弹框参数
+        height: 350,
+        closeable: false,
+        padding: false,
+        type: 'iframe',
+        url: '../outpatient/medicineSelect.do'
+    };
+
+    // 初始化Popover
+    function initPopover(doms, settings, queryFun) {
+        doms.each(function (index) {
+            var elem = $(this);
+            if (!elem.webuiPopover) {
+                return;
+            }
+            elem.webuiPopover('destroy').webuiPopover($.extend({}, settings));
+            elem.data('queryFun', queryFun);
+            elem.on('input propertychange', function () {
+                elem.webuiPopover('show');
+                var popoverId = $(this).attr('data-target');
+                var queryFun = $(this).data('queryFun');
+                $('#' + popoverId + ' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+                $('#' + popoverId + ' iframe')[0].contentWindow[queryFun](); //调用iframe的方法
+            });
+        });
+    }
+</script>
+

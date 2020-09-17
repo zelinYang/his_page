@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>门诊医嘱组套维护</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+	#parse("./common/pageCss.vm")
+	#parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+
+</head>
+
+<body class="outRecipeGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<!-- 历史处方主信息 -->
+			<div class="ui-layout-center full-height">
+				<iframe id="outRecipeGroupEdit" src="$contextPath/bas/basOrderGroupEdit.do" class="resizeiframe" style="height: calc(100% - 3px);" width="100%"  scrolling="no" frameborder="0" ></iframe>
+			</div>
+
+			<!-- 历史处方明细 -->
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="recipeGroup_queryForm" class="layui-form">
+							<!-- 组套类型，MZZTLX   0住院  1西药 2成药 3草药 4检查 5化验（检验） 6处置 7针剂 1-7都是门诊的组套 -->
+##							#formTextInput("orderGroupTypes" "01,02,07" " style='display:none;'")
+							#formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										#formTextInput("orderGroupName" "" " maxlength='50' class='layui-input' placeholder='组套检索' ")
+									</div>
+									<div class="layui-inline">
+										<input type="checkbox" name="commonMedicineFlag" value="1" lay-filter="commonMedicineFlag" title="常用" lay-skin="primary" >
+									</div>
+									#if(${CONST.AppConstants.NO_FLAG} == ${groupRoleFalg})
+										#formHiddenInput("orderGroupClassify" "${CONST.AppConstants.VISABLE_INDIVIDUAL}" "")
+									#else
+										<div class="layui-inline " >
+											#formRadioGroup("orderGroupClassify" "${CONST.AppConstants.VISABLE_INDIVIDUAL}" ${dicData.dicBelongSysType} " lay-filter='orderGroupClassify' ")
+										</div>
+									#end
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query_recipeGroup" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+										<button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="recipeGroupTable" lay-filter="recipeGroupTable"></table> <!-- 数据表格 -->
+						<script type="text/html" id="colstoolbar">
+							<a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="del"><i class="layui-icon layui-icon-delete"></i></a>
+						</script>
+					</div>
+				</div>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+#parse("./outpatient/basOrderGroup/outRecipeGroup.js.vm")<!-- 页面js -->
+</body>
+</html>

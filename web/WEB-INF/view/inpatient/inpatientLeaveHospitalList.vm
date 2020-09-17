@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle} - 出院情况查询</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-content-wrapper">
+        <div class="layui-fluid">
+            <!-- 医嘱查询条件 -->
+            <div class="layui-bg-white">
+                <form class="layui-form" id="queryForm">
+                  <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">出院情况</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("currentCondition" "" $!dicData.dicPatientCondition "id='currentCondition' lay-filter='currentCondition'" " ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">科室</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("inhospitalOfficeId" "" $!dicData.dicOffice "id='inhospitalOfficeId' lay-filter='inhospitalOfficeId' " "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">病 区</label>
+                            <div class="layui-input-inline">
+                                #formSingleSelectFirstNone("wardId" "" $!dicData.dicInpatientWardAll "id='wardId' lay-filter='wardId'" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">住院日期</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("" "" "id='inhospitalDate' tag='inhospitalDateBegin,inhospitalDateEnd' class='layui-input' readOnly")
+                            </div>
+                        </div>
+                    </div>
+                  </div>
+                </form>
+                <!-- 患者列表 -->
+                <table class="layui-hide" id="patientList" lay-filter="patientList"></table>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var table;
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+    var dicInhospitalState = JSON.parse('$dicTools.changeMapToJson($dicData.dicInhospitalState)');
+    var dicPatientCondition = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientCondition)');
+    layui.use(['table', 'form', 'laydate'], function() {
+        var laydate = layui.laydate, form = layui.form;
+        table = layui.table;
+
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('patientList', {
+                height: height
+            })
+        })
+        function getTableHgt(){
+            return $('body').height() - $('#queryForm').height() - 5 // 获取表格高度
+        }
+
+        var tableUrl = '../inpatient/inpatientLeaveHospitalPageJson.jo';
+        table.render($.extend(basePageTable, {
+            id: 'patientList',
+            elem: '#patientList',
+            height: getTableHgt(), // 获取表格高度
+            where: common.serializeObject($('#queryForm', ['inhospitalDate'])),
+            url: tableUrl,
+            cols : [ [ {
+                field : 'currentOfficeId',
+                width : 100,
+                title : '科室',
+                templet :function (row) {
+                    var currentOffice = $('#currentOfficeId > option[value="' + row.wardId + '"]');
+                    if (row.wardId && currentOffice) {
+                        return currentOffice.text();
+                    }
+                }
+            }, {
+                field : 'wardName',
+                width : 130,
+                title : '病区'
+            }, {
+                field : 'currentBedNo',
+                width : 100,
+                title : '床号',
+            }, {
+                field : 'patientMedicalNo',
+                width : 100,
+                title : '病案号',
+            }, {
+                field : 'patientName',
+                width : 80,
+                title : '姓名'
+            }, {
+                field : 'patientSex',
+                width : 60,
+                title : '性别',
+                templet :function (row) { if (row.patientSex) return dicSex[row.patientSex]; }
+            }, {
+                field : 'inhospitalState',
+                title : '状态',
+                width : 100,
+                templet :function (row) { if (row.inhospitalState) return dicInhospitalState[row.inhospitalState]; }
+            }, {
+                field : 'outhospitalDate',
+                width : 160,
+                title : '入院日期'
+            }, {
+                field : 'inhospitalDate',
+                title : '入院时间',
+                width : 160
+            }, {
+                field : 'patientMedicalNo',
+                title : '入院诊断',
+                width : 100,
+            }, {
+                field : 'patientMedicalNo',
+                title : '出院诊断',
+                width : 100,
+            }, {
+                field : 'currentCondition',
+                title : '病情',
+                templet :function (row) { if (row.currentCondition) return dicPatientCondition[row.currentCondition];else return ""; }
+            }] ]
+        }));
+
+        // 重新加载列表
+        function queryList(){
+            if (table) {
+                table.reload('patientList', {url: tableUrl, page:{curr: 1}, where: common.serializeObject($('#queryForm'), ['inhospitalDate'])});
+            }
+        }
+        // 出院情况
+        form.on('select(currentCondition)', function(data){
+            queryList();
+        });
+        // 科室
+        form.on('select(currentOfficeId)', function(data){
+            queryList();
+        });
+        // 病区
+        form.on('select(wardId)', function(data){
+            queryList();
+        });
+        //住院日期
+        laydate.render({elem: '#inhospitalDate',trigger:'click', range: true, done: function (value, date, endDate){ queryList() }});
+    });
+</script>
+</html>

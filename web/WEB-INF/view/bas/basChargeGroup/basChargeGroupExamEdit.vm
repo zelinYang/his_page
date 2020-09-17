@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-基础配置-医技组套-检查</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style>
+        /* 底部按钮条 */
+        #basChargeGroupForm.layui-form {
+            margin-bottom: 50px;
+        }
+
+        /*单元格 必填红框*/
+        .layui-table-cell-danger {
+            border: 1px solid rgb(255, 87, 34) !important;
+            position: absolute !important;
+            z-index: 99999;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #FF5722 !important;
+        }
+
+        .input2 {
+            width: calc(2px * 2 + (100px + 180px) * 2 - 100px) !important;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+        .tableSelect + .layui-table-tips {
+            z-index: 66666669!important;
+        }
+    </style>
+</head>
+<body>
+<form class="layui-form" id="basChargeGroupForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("chargeGroupId" "$!{basChargeGroup.chargeGroupId}" " id='chargeGroupId' ")
+    #formHiddenInput("surgeryCodeId" "$!{basChargeGroup.surgeryCodeId}" "")
+    #formHiddenInput("lisFlag" "$!{basChargeGroup.lisFlag}" "")
+    #formHiddenInput("examFlag" "$!{CONST.AppConstants.YES_FLAG}" "")
+    #formHiddenInput("treatFlag" "$!{basChargeGroup.treatFlag}" "")
+    #formHiddenInput("surgeryFlag" "$!{basChargeGroup.surgeryFlag}" "")
+    #formHiddenInput("doctorOrderType" "$!{CONST.AppConstants.ORDER_TYPE_EXAM}" "")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()医技组套名称</label>
+            <div class="layui-input-inline input2">
+                #formTextInput("chargeGroupName" "$!basChargeGroup.chargeGroupName" "id='chargeGroupName'
+                class='layui-input'
+                maxlength='50' autocomplete='off' lay-verify='required'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()检查分类</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("doctorOrderSubtype" "$!basChargeGroup.doctorOrderSubtype"
+                $!dicData.dicFreeOrderType " lay-filter='doctorOrderSubtype' id='doctorOrderSubtype'
+                lay-verify='required' autocomplete='off' lay-search" "")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()部位分类</label>
+            <div class="layui-input-inline">
+                #formSingleSelectSearchFirstNone("bodyPartClassify" "$!basChargeGroup.bodyPartClassify"
+                $!dicData.dicBodyPartClassifyExam " lay-filter='bodyPartClassify' id='bodyPartClassify'
+                lay-verify='required' autocomplete='off' lay-search" "")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()门诊使用</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("outpatientUsageFlag" "$!{basChargeGroup.outpatientUsageFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择门诊使用'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()住院使用</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("inhospitalUsageFlag" "$!{basChargeGroup.inhospitalUsageFlag}" ${dicData.dicYesNo}
+                "lay-verify='reqRedio' check-msg='请选择住院使用'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label" style="color: #ff4500!important;">#requiredTag()使用限制</label>
+            <div class="layui-input-inline">
+                <!--默认为公用-->
+                #if(!$!{basChargeGroup.hospitalId} || $!{CONST.AppConstants.PUBLIC_PROJECT} ==
+                $!{basChargeGroup.hospitalId})
+                #set($hospitalId = $!{CONST.AppConstants.PUBLIC_PROJECT.toString()})
+                #else
+                #set($hospitalId = $!{CONST.AppConstants.UNIT_PROJECT.toString()})
+                #end
+                #formRadioGroup("hospitalId" "$!{hospitalId}" ${dicData.dicProjectUseLimits} "lay-skin='primary'
+                class='layui-input' check-msg='请选择药品使用限制' lay-verify='reqRedio'")
+            </div>
+        </div>
+        #if(${basChargeGroup})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()是否有效</label>
+            <div class="layui-input-inline">
+                #formRadioGroup("validFlag" "$!{basChargeGroup.validFlag}" ${dicData.dicYesNo} "")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item ">
+        <label class="layui-form-label">#requiredTag()执行科室</label>
+        <div class="layui-input-block">
+            #formHiddenInput("exeOfficeIdStr" "$!{basChargeGroup.exeOfficeIdStr}" " id='exeOfficeIdStr' ")
+            #formHiddenInput("exeOfficeNameStr" "$!{basChargeGroup.exeOfficeNameStr}" " id='exeOfficeNameStr' ")
+            <div id="arrangeDutyOfficeIds" style="height: 30px;"></div>
+        </div>
+    </div>
+    <div class="layui-form-item ">
+        <label class="layui-form-label">#requiredTag()收费项目</label>
+        <div class="layui-input-block">
+            #formHiddenInput("chargeItemIdStr" "$!{basChargeGroup.chargeItemIdStr}" " id='chargeItemIdStr'
+            lay-verify='chargeItem'")
+            <table id="basChargeItemListGrid" class="layui-table-tabs" lay-filter="basChargeItemListGrid"></table>
+        </div>
+    </div>
+    <div class="layui-form-item ">
+        <label class="layui-form-label">药品耗材</label>
+        <div class="layui-input-block">
+            #formHiddenInput("medicineIdStr" "$!{basChargeGroup.medicineIdStr}" " id='medicineIdStr'
+            lay-verify='medicine'")
+            <table id="medicineListGrid" class="layui-table-tabs" lay-filter="medicineListGrid"></table>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">适应症</label>
+            <div class="layui-input-block ">#formTextarea("adaptationDisease"
+                "#htmlEscape($!{basChargeGroup.adaptationDisease})" " class='layui-textarea'
+                maxlength='500' placeholder='请输入内容，字数最多500字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">作用</label>
+            <div class="layui-input-block ">#formTextarea("orderEffect"
+                "#htmlEscape($!{basChargeGroup.orderEffect})" " class='layui-textarea'
+                maxlength='500' placeholder='请输入内容，字数最多500字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">注意事项</label>
+            <div class="layui-input-block ">#formTextarea("needAttention"
+                "#htmlEscape($!{basChargeGroup.needAttention})" " class='layui-textarea'
+                maxlength='2000' placeholder='请输入内容，字数最多2000字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">项目说明</label>
+            <div class="layui-input-block ">#formTextarea("projectDesc"
+                "#htmlEscape($!{basChargeGroup.projectDesc})" " class='layui-textarea'
+                maxlength='2000' placeholder='请输入内容，字数最多2000字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">准备工作</label>
+            <div class="layui-input-block ">#formTextarea("prepareWork"
+                "#htmlEscape($!{basChargeGroup.prepareWork})" " class='layui-textarea'
+                maxlength='2000' placeholder='请输入内容，字数最多2000字'")
+            </div>
+        </div>
+        <div class="layui-form-item layui-form-text ">
+            <label class="layui-form-label">检查意义</label>
+            <div class="layui-input-block ">#formTextarea("examMeaning"
+                "#htmlEscape($!{basChargeGroup.examMeaning})" " class='layui-textarea'
+                maxlength='2000' placeholder='请输入内容，字数最多2000字'")
+            </div>
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+#parse("./bas/basChargeGroup/basChargeGroupExamEdit.js.vm")
+</body>
+</html>

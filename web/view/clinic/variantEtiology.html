@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>变异因素登记</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+  <link rel="stylesheet" href="../../resource/layuiadmin/layui/css/layui.css" media="all">
+  <link rel="stylesheet" href="../../resource/layuiadmin/style/admin.css" media="all">
+  <style>
+    * {box-sizing: border-box;}
+    .layui-table th, .layui-table td { padding: 3px 9px; height: 21px; line-height:21px;}
+    .layui-form-checkbox { display: block; margin-bottom: 10px;}
+  </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+  <div class="layui-card mainOne">
+    <div class="layui-card-body layui-row">
+      <div class="text-center f-22 f-b">
+        变异因素登记
+      </div>
+    </div>
+    <div class="layui-card-body">
+      <table class="layui-table m-n">
+        <thead>
+        <tr>
+          <th lay-data="{field:'id', width:120}">病人ID</th>
+          <th lay-data="{field:'city', width:120}">住院次数</th>
+          <th lay-data="{field:'city', width:80}">住院号</th>
+          <th lay-data="{field:'zone', width:80}">床号</th>
+          <th lay-data="{field:'province', width:80}">患者姓名</th>
+          <th lay-data="{field:'city', width:80}">性别</th>
+          <th lay-data="{field:'city', width:80}">入径时间</th>
+          <th lay-data="{field:'city', width:80}">费别</th>
+          <th lay-data="{field:'city', width:80}">年龄</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr>
+          <td><span id="patientId"></span></td>
+          <td><span id="inhospitalNum"></span></td>
+          <td><span id="inhospitalNo"></span></td>
+          <td><span id="currentBedNo"></span></td>
+          <td><span id="patientName"></span></td>
+          <td><span id="patientSex"></span></td>
+          <td><span id="inPathTime"></span></td>
+          <td><span id="patientKind"></span></td>
+          <td><span id="patientAgeYear"></span></td>
+        </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="layui-row mainTwo layui-form"><div class="layui-card">
+      <div class="layui-card-body">
+        <fieldset class="layui-elem-field layui-field-title">
+          <legend>第 <span id="sort"></span> 阶段 <span id="pathStageContent"></span></legend>
+        </fieldset>
+        <form id="reasonList" class="lujingbianyi">
+        </form>
+      </div>
+    </div>
+    <div class="tool-bottom-fixed">
+      <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btn_save" lay-submit="" lay-filter="btn_save"> 提 交 </button>
+      <button type="button" class="layui-btn layui-btn-sm layui-btn-primary" id="btn_reset"> 取 消 </button>
+    </div>
+  </div>
+</div>
+<script src="../../resource/layuiadmin/layui/layui.js"></script>
+<script src="../../resource/hplus/js/jquery.min.js"></script>
+<script src="../../resource/hplus/js/app-common.js"></script>
+<script>
+	layui.config({
+		base: '../../resource/layuiadmin/' //静态资源所在路径
+	}).extend({
+		index: 'lib/index' //主入口模块
+	}).use(['index', 'form','jquery','table'], function(){
+        var $ = layui.$
+              ,admin = layui.admin
+              ,element = layui.element
+              ,form = layui.form;
+
+        form.render(null, 'component-form-element');
+        element.render('breadcrumb', 'breadcrumb');
+
+
+        $(".mainTwo").height($('body').height() - $(".mainOne").height() - 20);
+        $(".linchuanglujing .layui-card").height($('.mainTwo').height()/2 - 40);
+        $("#btn_reset").click(function () {
+          var index = parent.layer.getFrameIndex(window.name);
+          parent.layer.close(index);
+        });
+
+       var dicSex = getDic("dicSex");
+       var dicPatientKind = getDic("dicPatientKind");
+       var clinicPatientPathId = getQueryVariable("clinicPatientPathId");
+       var inhospitalId = getQueryVariable("inhospitalId");
+
+      //提交表单
+      function saveFrom () {
+        var params = common.serializeObject($('#reasonList'));
+        var reasonContents= [];
+        var reasonTypes = [];
+        var otherReasonTypes = [];
+
+        if (params.reasonIds || params.otherReasonIds) {
+
+          $('input[name="otherReasonIds"]:checked').each(function () {
+            otherReasonTypes.push($(this).data("type"));
+            var value = $(this).parent().find("input[name = 'otherReasonContents']").val();
+            if (value.length == 0) {
+              common.alert($(this).data("typename") + "其他内容不能为空", 0);
+              return;
+            }
+          });
+
+          $('input[name="reasonIds"]:checked').each(function () {
+            reasonContents.push($(this).attr("title"));
+            reasonTypes.push($(this).data("type"));
+          });
+
+          if (reasonContents.length > 0) {
+            params.reasonContents = reasonContents.toString();
+            params.reasonTypes = reasonTypes.toString();
+          }
+
+          if (otherReasonTypes.length > 0) {
+            params.otherReasonTypes = otherReasonTypes.toString();
+          }
+
+        } else {
+          common.alert("变异因素不能为空", 0);
+          return;
+        }
+
+        params.inhospitalId = inhospitalId;
+        params.clinicPatientPathId = clinicPatientPathId;
+
+        common.requestServer("../../clinic/saveVariantEtiologyData.jo", params, function (result) {
+          if (result.code == '0') {
+            common.msg('保存成功。', 1, function () {
+              parent.window.location.reload();
+            })
+          } else {
+            common.alert(result.msg, 2)
+          }
+        })
+      }
+
+      // 保存按钮
+      form.on('submit(btn_save)', function (data) {
+        saveFrom();
+        return false
+      })
+
+      // 初始化数据
+      function initData() {
+          $.ajax({
+            type: "POST",
+            url: '../../clinic/getVariantEtiologyData.jo',
+            contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+            data: {
+              "clinicPatientPathId": clinicPatientPathId,
+              "inhospitalId": inhospitalId
+            },
+            dataType: "json",
+            async: true,
+            success: function (result) {
+
+              if (result.code === '0') {
+                console.log(result.data.clinicPatientPath)
+                $("#patientId").html(result.data.inpatientInhospital.patientId);
+                $("#inhospitalNum").html(result.data.inpatientInhospital.inhospitalNum);
+                $("#inhospitalNo").html(result.data.inpatientInhospital.inhospitalNo);
+                $("#currentBedNo").html(result.data.inpatientInhospital.currentBedNo);
+                $("#patientName").html(result.data.inpatientInhospital.patientName);
+                $("#patientSex").html(dicSex[result.data.inpatientInhospital.patientSex]);
+                $("#inPathTime").html(result.data.clinicPatientPath.inPathTime);
+                $("#patientKind").html(dicPatientKind[result.data.inpatientInhospital.patientKind]);
+                $("#patientAgeYear").html(result.data.inpatientInhospital.patientAgeYear);
+
+                if (result.data.clinicPathStage) {
+                  $("#sort").html(result.data.clinicPathStage.sort);
+                  $("#pathStageContent").html(result.data.clinicPathStage.pathStageContent);
+                }
+
+                // 构建组件
+                $.each(result.data.reasonType, function (index, item) {
+                  var inputItem = "";
+                  $.each(result.data.reasonList, function (index, val) {
+                    if (val.variationFactor == item.dicCode) {
+                      if (val.variationReasonContent == "其他")  {
+                          inputItem = inputItem + "<input type='checkbox' lay-filter='other' name='otherReasonIds' value='" + val.clinicVariationReasonId + "' title='" + val.variationReasonContent + "' data-type='" + item.dicCode + "' data-typename='" + item.dicName + "' lay-skin='primary'>";
+                          inputItem = inputItem + "<input type='text' readonly class='layui-input ' data-type='" + item.dicCode + "'  name='otherReasonContents' data-type='" + item.dicCode + " placeholder='请录入其他因素'>";
+                      } else {
+                          inputItem = inputItem + "<input type='checkbox' name='reasonIds' value='" + val.clinicVariationReasonId + "' title='" + val.variationReasonContent + "' data-type='" + item.dicCode + "' lay-skin='primary'>";
+                      }
+                    }
+                  });
+                  var content = "<div class='layui-card'>\n" +
+                          "<div class='layui-card-header'>" + item.dicName +"</div>\n" +
+                          "<div class='layui-card-body'>\n" + inputItem + "</div>\n" + "</div>";
+                  $("#reasonList").append(content);
+                });
+                form.render();
+
+                // 添加选择其他的点击事件
+                form.on('checkbox(other)', function () {
+                    var obj = $(this).parent().find("input[name = 'otherReasonContents']");
+                    if ($(obj).attr("readonly")) {
+                        $(obj).attr("readonly", false);
+                    } else {
+                        $(obj).attr("readonly", true);
+                    }
+                    $(obj).val("")
+                    form.render('checkbox');
+                });
+              } else {
+                common.alert(result.msg, 0);
+              }
+            }
+          });
+      }
+
+      initData();
+	});
+
+	//获取链接中的参数
+    function getQueryVariable(variable) {
+        var query = window.location.search.substring(1);
+        var vars = query.split("&");
+        for (var i=0;i<vars.length;i++) {
+          var pair = vars[i].split("=");
+          if (pair[0] == variable) {
+            return pair[1];
+          }
+        }
+        return null;
+    }
+
+    //获取字典
+    function getDic(dicMapNames){
+        var data = {}
+        $.ajax({
+            type: "POST",
+            url: '../../doc/getDicBorrowFlag.jo',
+            contentType: 'application/x-www-form-urlencoded;charset=utf-8',
+            data: {"dicMapNames": dicMapNames},
+            dataType: "json",
+            async: false,
+            success: function (returl) {
+              data =  returl.dicMap;
+            }
+        });
+        return data;
+    }
+
+
+</script>
+
+</body>
+</html>

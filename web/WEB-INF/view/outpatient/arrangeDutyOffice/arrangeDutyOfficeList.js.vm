@@ -1,0 +1,260 @@
+
+<!-- 是否急诊科室 -->
+<script type="text/html" id="emergencyRegisterFlagTpl">
+    <input type="checkbox" lay-filter="emergencyRegisterFlag" data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch"
+           lay-text="是|否" {{Boolean(+d.emergencyRegisterFlag) && 'checked' }} >
+</script>
+<!-- 是否停挂开关 -->
+<script type="text/html" id="validFlagTpl">
+    <input type="checkbox" lay-filter="validFlag"
+           data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch" lay-text="启用|停用" {{Boolean(+d.validFlag) && 'checked' }} >
+</script>
+<!-- 操作栏按钮模板 -->
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="查看" lay-event="btn_show"><i
+            class="layui-icon layui-icon-about"></i></a>
+    <a class="layui-btn layui-btn-xs " lay-tips="编辑" lay-event="btn_edit"><i
+            class="layui-icon"></i></a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs " lay-tips="删除" lay-event="btn_del"><i
+            class="layui-icon layui-icon-delete"></i></a>
+</script>
+<!-- 是否允许网上预约 -->
+<script type="text/html" id="appointOnlineFlagTpl">
+    <input type="checkbox" lay-filter="appointOnlineFlag" data-d="{{layui.util.escape(JSON.stringify(d))}}"
+           lay-skin="switch"
+           lay-text="是|否" {{Boolean(+d.appointOnlineFlag) && 'checked' }} >
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicIncisionLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicIncisionLevel)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        xmSelect: 'xm-select'
+    }).use(['index', 'form', 'table', 'util', 'xmSelect', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, xmSelect = layui.xmSelect, util = layui.util;
+
+        // 科室
+        var arrangeDutyOfficeIds = xmSelect.render({
+            el: '#arrangeDutyOfficeIds',
+            size: 'small',
+            theme: {
+                color: '#5FB878'
+            },
+            name: 'arrangeDutyOfficeIds',
+            filterable: true, //开启搜索
+            remoteSearch: true,//开启自定义搜索
+            paging: true,  //启用分页
+            pageRemote: true,//远程分页
+            remoteMethod: function (val, cb, show, pageIndex) { //数据处理
+                common.requestServer('../org/sysOrgListData.jo', {
+                    pageNumber: pageIndex,
+                    keyWord: val
+                }, function (result) {
+                    var data = $.map(result.code == "0" ? result.data : [], function (item) {
+                        return {name: item.name, value: item.orgId};
+                    })
+                    cb(data, result.count ? Math.ceil(result.count / 20) : 0);
+                })
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                arrangeDutyOfficeIds: '',
+                emergencyRegisterFlag: '',
+                appointOnlineFlag: '',
+                validFlags: Object.keys(dicYesNo).toString(),
+            }, common.serializeObject($('#arrangeDutyOffice_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('arrangeDutyOfficeListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('arrangeDutyOffice_queryForm');
+            arrangeDutyOfficeIds.setValue([])
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            common.open('$contextPath' + '/outpatient/arrangeDutyOfficeAdd.do', '设置门诊科室', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+        });
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#arrangeDutyOfficeListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/outpatient/arrangeDutyOfficePageData.jo',
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'hospitalName',
+                    title: '医院名称',
+                    minWidth: 250,
+                }, {
+                    field: 'arrangeDutyOfficeName',
+                    title: '门诊科室',
+                    minWidth: 150,
+                }, {
+                    title: '预约时段',
+                    width: 150,
+                    templet: function (d) {
+                        return layui.util.toDateString(d.registerStartTime, 'HH:mm:ss') + ' - ' + layui.util.toDateString(d.registerEndTime, 'HH:mm:ss');
+                    }
+                }, {
+                    field: 'timeInterval',
+                    title: '预约时段间隔(分钟)',
+                    width: 120,
+                }, {
+                    field: 'emergencyRegisterFlag',
+                    title: '急诊科室',
+                    templet: '#emergencyRegisterFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    field: 'appointOnlineFlag',
+                    title: '网上预约',
+                    templet: '#appointOnlineFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    field: 'validFlag',
+                    title: '是否停挂',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 120,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }
+            ]],
+            done: function () {
+                tableReHeight(this, getTableHgt);
+                autoSetHeigt()
+            }
+        }));
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#arrangeDutyOffice_queryForm').height();
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ')
+                that.height = heightCallback();
+                table.resize(that.id);
+            }).resize();
+        }
+
+        //监听是否急诊科室
+        form.on('switch(emergencyRegisterFlag)', function (obj) {
+            var data = $(this).data('d');
+            obj.elem.checked = !obj.elem.checked
+            form.render();
+            common.confirm("确定要操作吗？", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                common.requestServer('../outpatient/arrangeDutyOfficeUpdateEmergencyRegisterFlag.jo', {
+                    arrangeDutyOfficeId: data.arrangeDutyOfficeId,
+                    emergencyRegisterFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+        });
+
+        //监听是否允许网上预约
+        form.on('switch(appointOnlineFlag)', function (obj) {
+            var data = $(this).data('d');
+            obj.elem.checked = !obj.elem.checked
+            form.render();
+            common.confirm("确定要操作吗？", function () {
+                obj.elem.checked = !obj.elem.checked;
+                form.render();
+                common.requestServer('../outpatient/arrangeDutyOfficeUpdateAppointOnlineFlag.jo', {
+                    arrangeDutyOfficeId: data.arrangeDutyOfficeId,
+                    appointOnlineFlag: Number(obj.elem.checked)
+                }, function (result) {
+                    common.responseAtcion(result);
+                })
+            });
+        });
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            var data = $(this).data('d');
+            common.requestServer('../outpatient/arrangeDutyOfficeUpdateValidFlag.jo', {
+                arrangeDutyOfficeId: data.arrangeDutyOfficeId,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(arrangeDutyOfficeListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/outpatient/arrangeDutyOfficeShow.do?arrangeDutyOfficeId=' + row.arrangeDutyOfficeId, '门诊科室', {
+                        area: ['60%', '60%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/outpatient/arrangeDutyOfficeEdit.do?arrangeDutyOfficeId=' + row.arrangeDutyOfficeId, '门诊科室', {
+                        area: ['60%', '60%'],
+                        scroll: true
+                    })
+                    break;
+                case 'btn_del':
+                    common.confirm("确定要删除吗？", function () {
+                        common.requestServer('../outpatient/delArrangeDutyOffice.jo', {
+                            ids: row.arrangeDutyOfficeId,
+                        }, function (result) {
+                            common.responseAtcion(result);
+                            obj.del();
+                        });
+                    });
+                    break;
+            }
+        });
+
+    })
+</script>

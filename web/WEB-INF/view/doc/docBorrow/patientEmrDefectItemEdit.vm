@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>患者病历缺陷编辑</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+<style type="text/css">
+  .active {
+	 background-color: #99D7FD;
+   }
+</style>
+</head>
+<body>
+    <table id="emrDefectPrjManualTable" lay-filter="emrDefectPrjManualTable"></table>
+    <div class="layui-form-item layui-hide">
+        <input type="button" lay-submit lay-filter="btn_save_dic" id="btn_save_dic" value="确认">
+    </div>
+<script>
+//是否有效
+var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+layui.use( [ 'table', 'form', 'layer'], function() {
+    var $ = layui.$, form = layui.form, table = layui.table;
+    //字典表列表
+    
+    
+    var radioElem = '<input type="radio" name="_name" value="_value"  title="_title" scoreAttr="_scoreAttr" lay-filter="scoreFilter" >';
+    table.render({
+        elem : '#emrDefectPrjManualTable',
+        url : '../emr/emrDefectPrjManualListData.jo',
+        limit : 20,
+        id : 'emrDefectPrjManualTable',
+        where : { 'emrTlpClassifyId' : '$!emrTlpClassifyId' },
+        cols : [[
+                {type : 'numbers'},
+                {field : 'emrTlpClassifyName',title : '病历分类'},
+                {field : 'defectName',title : '缺陷项目'},
+                {field : 'defectScore',title : '项目分值'},
+                {field : 'oneNegativeScore',title : '甲类扣分',
+                	templet : function(row) {
+                	    var radioInput = radioElem.replace('_name','score' + row.emrDefectPrjManualId)
+	                	    .replace('_value', row.oneNegativeScore)
+	                	    .replace('_title', row.oneNegativeScore)
+	                	    .replace('_scoreAttr', 'oneNegativeScore')
+                        return radioInput;
+                    }
+                },
+                {field : 'twoNegativeScore',title : '乙类扣分',
+                	templet : function(row) {
+                	    var radioInput = radioElem.replace('_name','score' + row.emrDefectPrjManualId)
+	                	    .replace('_value', row.twoNegativeScore)
+	                	    .replace('_title', row.twoNegativeScore)
+	                	    .replace('_scoreAttr', 'twoNegativeScore')
+                        return radioInput;
+                    }
+	            },
+                {field : 'threeNegativeScore',title : '丙类扣分',
+                	templet : function(row) {
+                	    var radioInput = radioElem.replace('_name','score' + row.emrDefectPrjManualId)
+	                	    .replace('_value', row.threeNegativeScore)
+	                	    .replace('_title', row.threeNegativeScore)
+	                	    .replace('_scoreAttr', 'threeNegativeScore')
+                        return radioInput;
+                    }
+	            }
+        ]],
+        page : false,
+        height : 'full-80',
+        request : { pageName : 'pageNumber',limitName : 'pageSize'  }//页码的参数名称，默认：page，每页数据量的参数名，默认：limit
+    });
+    
+    //监听行单击事件（单击事件为：row）
+    table.on('row(emrDefectPrjManualTable)', function(obj){
+        var rowData = obj.data;
+        window.emrDefectPrj = rowData;
+    });
+    
+    form.on('radio(scoreFilter)', function (data) {
+        $(data.elem).parents('tr').addClass('active');
+    	$(data.elem).parents('tr').siblings().removeClass('active'); 
+        $(data.elem).parents('tr').siblings().find('input[type=radio]').prop('checked', false);
+        form.render();
+        window.score = data.value;
+        window.scoreAttr = $(data.elem).attr('scoreAttr');
+    	$(data.elem).parents('tr').click();
+    });
+});
+</script>
+</body>
+</html>

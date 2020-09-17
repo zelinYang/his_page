@@ -1,0 +1,41 @@
+<script>
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'laytpl', 'tableSelect'], function () {
+    var $ = layui.$, form = layui.form, laytpl = layui.laytpl, tableSelect = layui.tableSelect;
+
+      //日期时间选择器
+      laydate.render({
+          elem: '#therapyTime',trigger: 'click',
+          type: 'datetime',
+      });
+
+      //提交表单
+    function saveTreatRecord () {
+      var TreatRecordParams = common.serializeObject($('#treatRecordForm'))
+      common.requestServer(contextPath + '/surgery/saveTreatRecord.jo', TreatRecordParams, function (result) {
+        if (result.code == '0') {
+          common.msg('保存成功。', 1, function () {
+              if ($.isFunction(parent.editTreatRecordCallBack)) {
+                  parent.editTreatRecordCallBack(result.data);
+              } else {
+                  $('#btn_query', window.parent.document).click()
+              }
+            var index = parent.layer.getFrameIndex(window.name)
+            parent.layer.close(index)
+          })
+        } else {
+          common.alert(result.msg, 2)
+        }
+      })
+    }//save function
+
+     // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveTreatRecord()
+      return false
+    })
+  })
+</script>

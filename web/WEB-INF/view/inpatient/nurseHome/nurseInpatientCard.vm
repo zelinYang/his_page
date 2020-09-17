@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+<style type="text/css">
+    .bed_info span {
+        color:#555555;
+    }
+    .bed_info span{
+        color:black;
+    }
+    #btn_box button{
+        font-size:medium;
+    }
+
+    .layui-inline{
+        width:100%;
+    }
+    .wd-65bf{
+        width:70%;
+    }
+    .lable-short{
+        padding-left:12px;
+        padding-right:4px;
+        letter-spacing:6px;
+    }
+    .layui-inline{margin-bottom: 10px}
+    .layadmin-contact-box {
+        padding: 10px;
+        background-color: #fff;
+        border: 1px solid #e7eaec;
+        overflow: hidden;
+        cursor: pointer;
+        display: flex;
+    }
+    .layui-col-md2.layui-col-sm2.layui-col-xs2{min-width: 60px;}
+    .layui-col-md3.layui-col-sm3.layui-col-xs3{min-width: 80px;}
+    .layui-col-md7.layadmin-padding-left10.layui-col-sm7.layui-col-xs7,
+    .layui-col-md7.layadmin-padding-left10.layui-col-sm7.layui-col-xs7 p{min-width: max-content}
+    @media screen and (max-width: 1024px){
+        .bed_info{ width: calc(50% - 20px);}
+    }
+    @media screen and (max-width: 768px){
+        .bed_info{ width: 100%;}
+    }
+</style>
+</head>
+
+<body class="gray-bg" style="margin-top: 15px;height:calc(100% - 15px);overflow: hidden;" >
+    <div class="full-height gray-bg bed-table" style="overflow:scroll;width: calc(100% - 246px);" >
+
+        #foreach($item in $!bedList)
+        <div class="bed_info" >
+            <div class="layadmin-contact-box cursorHover" lay-text="">
+                #formHiddenInput("" "$!item.inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("" "$!item.arrangeBedFlag" "id='itemBedUsageFlag'")
+                #formHiddenInput("" "$!item.patientSex" "id='patientSex'")
+                <div class="layui-col-md2 layui-col-sm2 layui-col-xs2">
+                    <div id="img" class="layadmin-text-center">
+                        #if($item.inhospitalId)
+                            #if($item.patientSex==1)
+                                <i class="iconfont v icon-jiating-baba"></i>
+                            #elseif($item.patientSex==2)
+                                <i class="iconfont v icon-jiating-mama"></i>
+                            #end
+                        #else
+                            #if($item.sexFlag==1)
+                                <i class="iconfont v icon-jiating-baba"></i>
+                            #elseif($item.sexFlag==2)
+                                <i class="iconfont v icon-jiating-mama"></i>
+                            #end
+                        #end
+                    </div>
+                </div>
+                <div class="layui-col-md7 layadmin-padding-left10 layui-col-sm7 layui-col-xs7">
+                        <p>
+                            <span  >姓名：</span >
+                            <span>$!item.patientName</span>
+                            <span  >年龄：</span >
+                            <span>$!item.patientAgeYear</span>
+                        </p>
+                        <p>
+                            <span >住院ID：</span >
+                            <span id="td_inhospitalId">
+                            $!item.inhospitalId
+                            </span>
+                        </p>
+                        <p>
+                            <span >住院号：</span >
+                            <span id="bed_inhospitalNo">$!item.inhospitalNo</span>
+                            <span class="text-center">
+                            #if($item.inpatientOfDay)
+                               $!item.inpatientOfDay天
+                            #end</span>
+                        </p>
+                        <p>
+                            <span >主治医生：</span >
+                            <span>$!item.diagnosisDoctorName</span>
+                            <span class="text-center">$!dicData.dicPatientCondition.get($item.inpatientCondition)</span>
+                        </p>
+                </div>
+                <div class="layui-col-md3 layui-col-sm3 layui-col-xs3">
+
+                    <span >
+                        <p id="bedNo">$!item.inhospitalBedNo
+                        <span>
+                            #if($!item.nurseLevel)
+                                $!dicData.dicNurseLevel.get($!item.nurseLevel)护理
+                            #else
+                                -
+                            #end
+                        </span>
+                        </p>
+                    </span>
+                </div>
+            </div>
+        </div>
+        #end
+    </div>
+    <!-- 右侧详细信息表单 -->
+    <div class="full-height p-l-sm  m-t-n" style="width: 236px;position:absolute;right: 0;top: 0;overflow: auto; background-color: rgb(245, 245, 245); border:1px solid rgb(200, 200, 200);">
+        <form class="layui-form m-t-sm" id="form_inpatient">
+            <input id="bedUsageFlag" type="hidden" >
+            <input id="inhospitalId" type="hidden" >
+
+            <div class="layui-inline">
+                <label class="   " >住院号码</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="inhospitalNo" type="text" class="layui-input "  readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class=" lable-short" id="">床号</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="currentBedNo" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="lable-short ">姓名</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="patientName" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="lable-short ">年龄</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="patientAge" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="">当前情况</label>
+                <div class="layui-input-inline wd-65bf   ">
+                    <input id="inpatientCondition" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline full-width">
+                <label class=" ">身份证号</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="patientIdCard" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">患者性质</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="patientKind" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">当前科室</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="currentOfficeId" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">入院时间</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="inhospitalDate" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">转入时间</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="outOfficelDate" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">转出科室</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="outOfficeId" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">饮食情况</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="foodGuide" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">主管医生</label>
+                <div class="layui-input-inline wd-65bf  ">
+                    <input id="supperiorDoctor" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+            <div class="layui-inline">
+                <label class="  ">过敏药物</label>
+                <div class="layui-input-inline wd-65bf">
+                    <input id="allergyHistory" type="text" class="layui-input " readonly>
+                </div>
+            </div>
+        </form>
+    </div>
+    <button class="layui-hide" type="button" id="btn_query"></button>
+</body>
+#parse("./common/pageJs.vm")
+#parse("./inpatient/nurseHome/nurseInpatientCard.js.vm")
+</html>

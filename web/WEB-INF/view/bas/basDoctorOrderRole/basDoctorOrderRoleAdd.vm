@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生职称设置-医生开处方权限（特殊药品）设置管理-设置</title>
+    #parse("./common/pageCss.vm")
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .layui-card.left-box {
+            height: calc(100vh - 10px);
+        }
+
+        .layui-card.right-box {
+            height: calc(100vh - 50px);
+            overflow-y: auto;
+        }
+
+        /* 防止下拉框的下拉列表被隐藏---必须设置--- */
+        .layui-table-col-special > .layui-table-cell {
+            overflow: visible;
+        }
+
+        td .layui-form-select {
+            margin-left: -5px;
+            margin-right: -5px;
+            margin-top: -2px;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #FF5722 !important;
+        }
+
+        .layui-form .layui-form-label {
+            text-overflow: inherit !important;
+        }
+
+        .layui-card-header .caller-seach {
+            display: inline-block;
+            width: calc(100% - 45px);
+        }
+
+        .layui-card-header .caller-seach > .caller-icon {
+            right: 110px;
+        }
+
+        .layui-card-header .caller-seach > input:invalid + .caller-icon {
+            visibility: hidden;
+        }
+
+        .layui-card-header .layui-btn-group {
+            height: 35px;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space10">
+            <div class="layui-col-md4 layui-col-xs4">
+                <!--搜索条件 开始-->
+                <form id="arrangeDutyOffice_queryForm" class="layui-form ">
+                    <div class="layui-row-query search-term">
+                        <div class="layui-form-item ">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">门诊科室</label>
+                                <div class="layui-input-inline ">
+                                    #formSingleSelectSearchFirstNone("orgId" "" ""
+                                    "id='q_orgId'
+                                    lay-filter='q_orgId' lay-search" "")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-input-inline input2">
+                                    #formTextInput("keyWord" "" "id='q_keyWord' class='layui-input'
+                                    maxlength='100' autocomplete='off' required")
+                                </div>
+                            </div>
+                            <div class="layui-inline">
+                                <div class="layui-btn-group">
+                                    <button id="btn_query" class="layui-btn layui-btn-sm" type="button"
+                                            lay-tips="查询"><i
+                                            class="layui-icon layui-icon-search "></i></button>
+                                    <button id="btn_clean" class="layui-btn layui-btn-sm " type="button"
+                                            lay-tips="清 空">
+                                        <i class="iconfont icon-qingchu"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+                <!--搜索条件 结束-->
+                <table id="basPostDoctorListGrid" lay-filter="basPostDoctorListGrid"></table>
+            </div>
+            <div class="layui-col-md8 layui-col-xs8">
+                <form class="layui-form" lay-filter="basDoctorOrderRoleForm" id="basDoctorOrderRoleForm">
+                    <input type="hidden" id="submitFlag">
+                    <div class="layui-card right-box">
+                        <div class="layui-card-body" style="padding: 20px 0px 0 0;">
+                            <div class="layui-form-item">
+                                #if($!{basPostDoctor})
+                                #set($validFlag = $!{basPostDoctor.validFlag})
+                                #else
+                                #set($validFlag = $!{CONST.AppConstants.YES_FLAG})
+                                #end
+                                <div class="layui-inline">
+                                    <label class="layui-form-label">#requiredTag()是否有效</label>
+                                    <div class="layui-input-block">
+                                        #formRadioGroup("validFlag" "$!{validFlag}"
+                                        ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <table id="basPostDoctorListGrid" class="layui-table-tabs"
+                               lay-filter="basPostDoctorListGrid" lay-verify="basPostDoctor"></table>
+                    </div>
+                    <div class="tool-bottom-fixed " style="position: sticky;">
+                        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                class="layui-btn layui-btn-sm">保 存
+                        </button>
+                        <button type="button" id="btn_close" class="layui-btn layui-btn-sm">关闭</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+##parse("./bas/basDoctorOrderRole/basDoctorOrderRoleAdd.js.vm")
+
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+
+<!--下拉列表-->
+<script type="text/html" id="selectTpl">
+    <select name="{{d.name || ''}}" lay-filter="{{d.filter}}" lay-search>
+        <option value=""></option>
+        {{# layui.each(d.data, function(val, key){ }}
+        <option value="{{val}}" {{val== d.value ?
+        'selected' : ''}}>{{key}}</option>
+        {{# }) }}
+    </select>
+</script>
+<script>
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var DIC_TYPE_ID_POST_FEE = "$!{CONST.AppConstants.DIC_TYPE_ID_POST_FEE}";
+    var OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE = "$!{CONST.AppConstants.OUTPATIENT_FEE_CODE_DIAGNOSTIC_FEE}";
+    var AGE_FEE_FLAG_LE6YEAR = "$!{CONST.AppConstants.AGE_FEE_FLAG_LE6YEAR}";
+    var AGE_FEE_FLAG_GT6YEAR = "$!{CONST.AppConstants.AGE_FEE_FLAG_GT6YEAR}";
+    var dicAgeFeeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicAgeFeeFlag)');
+    var dicDoctorSignType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorSignType)');
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'laytpl', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, laytpl = layui.laytpl,
+            tableSelect = layui.tableSelect;
+
+        common.verify(form);
+
+        //根据name 加载 下拉框 dicMap = {"code":"name"}
+        function loadSelect(name, dicMap, val) {
+            $('select[name=' + name + ']').empty();
+            var options = $.map(dicMap, function (key, value) {
+                return '<option value="' + value + '">' + key + '</option>';
+            })
+            options.unshift('<option value="">' + (options.length == 0 ? '无数据' : '') + '</option>')
+            $('select[name=' + name + ']').html(options.join('')).val(val);
+            form.render();
+        }
+
+        //获取门诊科室列表
+        function loadDutyOfficeSelect() {
+            $('#q_orgId').empty();
+            common.requestServer(contextPath + '/outpatient/arrangeDutyOfficePageData.jo', function (result) {
+                if (result.code == '0') {
+                    var dicMap = {};
+                    $.each(result.data, function (index, item) {
+                        dicMap[item.arrangeDutyOfficeId] = item.arrangeDutyOfficeName || "";
+                    })
+                    loadSelect("orgId", dicMap, $("#q_orgId").val());
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        loadDutyOfficeSelect();
+        form.on('select(q_orgId)', function (data) {
+            $('#btn_query').click();
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                orgId: '',
+                keyWord: '',
+            }, common.serializeObject($('#arrangeDutyOffice_queryForm')));
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basPostDoctorListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('arrangeDutyOffice_queryForm');
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basPostDoctorListGrid',
+            url: contextPath + '/bas/basPostDoctorListData.jo',
+            height: 'full-60',
+            cols: [[
+                {type: 'radio'},
+                {
+                    title: '门诊科室',
+                    minWidth: 200,
+                    templet: function (d) {
+                        return $.map(d.orgMap, function (name) {
+                            return name;
+                        }).join();
+                    }
+                }, {
+                    field: 'doctorName',
+                    title: '医生',
+                    minWidth: 200
+                }, {
+                    title: '职称',
+                    event: 'doctorPost',
+                    width: 150,
+                    templet: function (d) {
+                        return dicDoctorPost[d.doctorPost] || '';
+                    }
+                }
+            ]], done: function () {
+            }
+        }));
+
+        //单击行
+        table.on('radio(basPostDoctorListGrid)', function (obj) {
+            var data = obj.data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            var checked = obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked');
+            obj.tr.find(':checkbox[name="layTableCheckbox"]').prop('checked', !checked);
+            form.render();
+            $("#submitFlag").val('0');//未提交
+        });
+
+        form.on('radio(doctorPost)', function (data) {
+            $("#doctorPostName").val($(data.elem).attr('title'));
+            var callBack = function () {
+                table.reload('basPostDoctorListGrid', {
+                    url: contextPath + '/bas/basPostDoctorListData.jo?doctorPost=' + data.value, //接口
+                });
+                var tbView = $('#basPostDoctorListGrid').next('.layui-table-view');
+                //表格移除选择
+                tbView.find('.layui-table-main :checkbox[name="layTableCheckbox"]:checked').prop('checked', false);
+                tbView.find('.layui-table-main tr.layui-table-click').removeClass('layui-table-click');
+                $("#submitFlag").val('');
+                data.elem.checked = true;
+                $(':radio[name="doctorPost"]').each(function () {
+                    this.defaultChecked = this.checked;
+                })
+                form.render();
+            }
+            //未提交
+            if ($("#submitFlag").val()) {
+                //上次
+                var defaultElem = $(':radio[name="doctorPost"]').filter(function () {
+                    return this.defaultChecked;
+                });
+                defaultElem.prop('checked', true);
+                form.render();
+                layui.layer.confirm("数据发生变化，需要保存吗？", {
+                    btn: ['保存', '不保存', '取消']
+                }, function (index) {
+                    $("#btn_save").click();
+                    layer.close(index);
+                }, function (index) {
+                    callBack();
+                    layer.close(index);
+                }, function (index) {
+                    defaultElem.prop('checked', true);
+                    form.render();
+                    layer.close(index);
+                });
+            } else {
+                callBack();
+            }
+        });
+
+        table.render({
+            elem: '#basPostDoctorListGrid',
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 'full-120',
+            cols: [[
+                {
+                    type: 'numbers',
+                },
+                {
+                    field: 'doctorName',
+                    title: '医生',
+                    minWidth: 200
+                }, {
+                    title: '门诊科室',
+                    minWidth: 200,
+                    templet: function (d) {
+                        return $.map(d.orgMap, function (name) {
+                            return name;
+                        }).join();
+                    }
+                }, {
+                    title: '电子签名等级',
+                    event: 'doctorSign',
+                    width: 150,
+                    templet: function (d) {
+                        return laytpl($('#selectTpl').html()).render({
+                            filter: 'doctorSign',
+                            value: d.doctorSign,
+                            data: dicDoctorSignType
+                        });
+                    }
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#delTpl'
+                }]]
+            , done: function (res) {
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(basPostDoctorListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            $("#submitFlag").val('0');//未提交
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    break;
+                case 'doctorSign':
+                    //选择床位等级
+                    form.on('select(doctorSign)', function (data) {
+                        obj.update({
+                            'doctorSign': $(obj.tr).find('select[lay-filter="doctorSign"]').val()
+                        })
+                    });
+                    break;
+            }
+        });
+
+        //提交表单
+        function saveBasDoctorOrderRole() {
+            var params = common.serializeObject($('#basDoctorOrderRoleForm'));
+            var basDoctorOrderRoles = $.map(table.cache['basPostDoctorListGrid'], function (item) {
+                return $.extend(item, params);
+            });
+            params.basPostDoctorEditInfoList = basDoctorOrderRoles;
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/bas/saveBasDoctorOrderRoleList.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('basPostDoctorListGrid', {
+                            url: contextPath + '/bas/basPostDoctorListData.jo?doctorPost=' + $(':radio[name="doctorPost"]:checked').val(), //接口
+                        });
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveBasDoctorOrderRole()
+            return false
+        })
+        $("#btn_close").click(function () {
+            $('#btn_query', window.parent.document).click();
+            // 关闭窗口
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        })
+    })
+</script>
+</body>
+</html>

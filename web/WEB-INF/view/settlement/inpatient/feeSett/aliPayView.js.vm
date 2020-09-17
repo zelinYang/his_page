@@ -1,0 +1,52 @@
+ <script>
+   layui.use(['jquery', 'element', 'form', 'laydate'], function(){
+      var table = layui.table;
+      var laydate = layui.laydate; 
+      var form = layui.form; 
+      var element = layui.element;
+      element.render(); 
+      var actualCharge = $('#cutSettlementSum', parent.document).val();
+      var inhospitalId = '$!{inhospitalInfo}';
+      var actualCharge = $('#actualCharge', parent.document).val();
+      var changeCharge = $('#changeCharge', parent.document).val();
+      var payInWay = $('#payInWay', parent.document).val();
+      var paywaitmsg = function(){
+    	  
+      };
+    $('#btn_query').click(function(){
+    	//支付宝授权码
+    	var authCode = $('#authCode').val();
+    	//actualCharge - 应付
+        var param = {inhospitalId: inhospitalId,orderAmount:actualCharge,aliAuthCode:authCode,actualCharge:actualCharge,changeCharge:changeCharge,payInWay:payInWay};
+         layer.msg('等待支付中...', {icon: 16,shade: [0.5, '#f5f5f5'],scrollbar: false,offset: 'auto', time:20000}); 
+         $.ajax({  
+            type: "POST",  
+            url: '$contextPath/inpatient/aliPay.jo',  
+            data: param,
+            dataType:"json",
+            async:true,//同步 请求
+           /*  beforeSend: function(xhr){
+            	console.log()
+            	return false;
+            }, */
+            success: function(result){ 
+            	console.log("result.code: "+result.code)
+                if (result.code == '10000') { 
+                	parent.window.closeWXpayview();
+                	
+                } else if(result.code == '1') {
+                	common.msg('支付失败！', iconType.fail);
+                	
+               }else {
+            	   layer.msg('支付异常！',iconType.fail); 
+               }
+            },  
+            error: function(res){jqueryPostError(res);} 
+        });//ajax end 
+    	
+    	 
+    });      
+
+       
+  });
+</script> 

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="renderer" content="webkit">
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+	<style type="text/css">
+		.layui-table td, .layui-table th {
+			padding: 5px;
+		}
+	</style>
+</head>
+<body>
+<div class="layui-col-xs12 full-height">
+	<form class="layui-form" action="" id="editForm">
+		#formHiddenInput("clinicPathStageId" "$!clinicPathStageId" "id='clinicPathStageId'")
+		<blockquote class="layui-elem-quote remarksTips">
+			<dl class="remarksTips">
+				<dd>生成路径项目日期：$!date.format('yyyy-MM-dd', $DateUtils.getTodayDate())，第$!{inhospitalDay}天</dd>
+				<dd>当前选择时间阶段：$!clinicPathStage.pathStageContent</dd>
+			</dl>
+		</blockquote>
+		<div class="layui-form-item layui-hide" style="overflow: auto">
+			<input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认"/>
+		</div>
+	</form>
+	<table id="stageTable" lay-filter="stageTable"></table>
+</div>
+</body>
+    #parse("./common/pageJs.vm")
+<script type="text/javascript">
+	var dicPathActivityType = JSON.parse('$dicTools.changeMapToJson($dicData.dicPathActivityType)');
+	var getParams;
+	layui.use(['table', 'form', 'layer'], function () {
+		layer = layui.layer;
+		var table = layui.table, form = layui.form;
+
+		// 路径分页列表
+		var tableUrl = contextPath + '/clinic/pathActivityListData.jo';
+		var tablePathList = table.render($.extend(singlePageTable, {
+				url: tableUrl,
+				id: 'stageTable',
+				elem: '#stageTable',
+				height: getTableHeight(),
+				where: {clinicPathStageId: $("#clinicPathStageId").val()},
+				cols: [[
+					{type: 'checkbox', width: 50},
+					{field: 'activityContent', title: '活动名称'},
+					{field: 'activityType', title: '活动类别', templet: function (res) {
+							if (res.activityType) {
+								return dicPathActivityType[res.activityType];
+							}
+							return '';
+						}
+					}
+
+				]],
+				done: function () {
+					// 去掉表格头部的全选及取消全选功能
+					common.removeHeadCheckbox('clinicPathId');
+				}
+			})
+		);
+
+		function getTableHeight() {
+			return $('body').height() - $("#editForm").height() - 10;
+		}
+
+		getParams = function () {
+			var checkStatus = table.checkStatus('stageTable');
+			var activityIds = [];
+			console.log(checkStatus.data)
+			$.each(checkStatus.data, function (index, activity) {
+				activityIds.push(activity.clinicPathActivityId);
+			});
+			return activityIds.join(',');
+		}
+
+	});
+</script>
+</html>

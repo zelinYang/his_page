@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>检验检查历史列表</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/tech/tech.css.vm")
+    #parse("./outpatient/tech/techHistory.js.vm")
+    <style type="text/css">
+    
+    
+    </style>
+</head>
+<body class="white-bg">
+  <!-- 查询表单 -->   
+  <form id="oupatientTech_queryForm" class="layui-form"> 
+    #if(!$patientId) #set($patientId = -1)
+	#end
+    #formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "id='reportTplId'") 
+    #formHiddenInput("patientId" "$patientId" "id='patientId'") 
+    <div class="layui-row-query p-b-xs" > 
+         <div class="layui-inline">
+             <label class="layui-form-label wd-50 ">日期</label>
+             <div class="layui-inline wd-120 ">
+               #set($todayDay = $!date.format('yyyy-MM-dd', $DateUtils.getTodayDate()))
+               #formTextInput("registerTime" $todayDay "id='registerTime' maxlength='10'  class='layui-input' ")
+             </div>
+         </div>
+         
+         <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button">查询</button>
+    </div>
+  </form>
+   <!-- 数据表格 -->
+   <div class="grid">
+       <table id="oupatientTechTable" lay-filter="oupatientTechTable"></table>
+   </div>
+</body>
+</html>

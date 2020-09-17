@@ -1,0 +1,336 @@
+<script >
+var users = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var wardMap = JSON.parse('$dicTools.changeMapToJson($dicData.dicInpatientWardAll)');
+var dicPatientClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientClassify)');
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index', //主入口模块
+    cascader: 'cascader'
+  }).use(['index','form','laydate', 'cascader','layer','util'], function(){
+    var $ = layui.$,form = layui.form,laydate = layui.laydate, layer = layui.layer, util = layui.util;;
+
+    common.verify(form);
+
+    //是否拥有就诊卡号
+    form.on('radio(notvisitCardNo)', function(data){
+        //拥有
+        if (data.value == "1") {
+            $('#visitCardTypeDivBtn').hide();
+            $('#randomCardNoBtn').hide();
+            $('#patientIdCard').attr("readonly","readonly");
+            $('#visitCardNo').attr("readonly","readonly").removeAttr('placeholder');
+            //还原监护人信息为非必填
+            $(".children").find("input,select").removeAttr("lay-verify");
+            $('.requiredTag').children('span').remove();//隐藏儿童信息
+            $("#patientIdType").attr("lay-verify" , "required");
+            $("#marryState").attr("lay-verify" , "required");
+            //还原患者类别按钮
+            $('input[name="patientClassify"][value="${CONST.AppConstants.PATIENT_CLASSIFY_ADULT}"]').prop("checked",true);
+            $('#patientName').attr("readonly","readonly");
+            clearForm();
+            $('#patientIdType').val("${CONST.AppConstants.PATIENTIDTYPE_IDCARD}");
+        }else{//尚未拥有
+            $('#visitCardTypeDivBtn').show();
+            $('#randomCardNoBtn').show();
+            $('#patientIdCard').removeAttr("readonly");
+            $('#patientName').removeAttr("readonly");
+            $('#visitCardNo').removeAttr("readonly").attr('placeholder', "默认自动生成就诊卡号");
+            $('#regionId').attr("readonly","readonly");
+            clearForm();
+            $('#patientIdType').val("${CONST.AppConstants.PATIENTIDTYPE_IDCARD}");
+
+        }
+        form.render();
+    });
+
+    //验证证件号码格式是否正确，并设置出生日期患者类别
+    function validPatientIdCardFormat(patientIdType, patientIdCard) {
+        layer.closeAll('tips') //关闭所有的tips层
+        $('#patientIdCard').removeAttr('lay-tips').removeClass('layui-form-orange')
+        //身份证信息未填写完整不进行校验
+        if (patientIdType == '' || patientIdCard == '') {
+            return
+        }
+        common.requestServer('$contextPath/patient/validPatientIdCardFormat.jo', {
+            patientIdType: patientIdType,
+            patientIdCard: patientIdCard
+        }, function (result) {
+            if (result.code === '0') {
+                var data = result.data
+                if (data) {
+                    //根据身份证取生日，性别,年龄
+                    //获取性别
+                    $('[name="patientSex"][value="' + data.patientSex + '"]').prop('checked', true)
+                    //获取出生日期
+                    $('#patientBirth').val(data.patientBirthDate)
+                    //患者类别
+                    $('[name="patientClassify"][value="' + data.patientClassify + '"]').prop('checked', true)
+                    togglePatientClassifyVerify(data.patientClassify)
+                    form.render()
+                }
+            } else {
+                $('#patientIdCard').attr('lay-tips', result.msg).addClass('layui-form-orange').focus()
+            }
+        })
+    }
+
+    //证件类型改变时的校验
+    form.on('select(patientIdType)', function (data) {
+        var patientIdType = $('#patientIdType').val()
+        var patientIdCard = $('#patientIdCard').val()
+        validPatientIdCardFormat(patientIdType, patientIdCard)
+    })
+
+    //监听证件号码输入、 回车（Enter）键自动设置性别姓名
+    $('#patientIdCard').on('keydown', function (event) {//给输入框绑定按键事件
+        if (event.key == 'Enter') {
+            var patientIdType = $('#patientIdType').val()
+            var patientIdCard = $('#patientIdCard').val()
+            validPatientIdCardFormat(patientIdType, patientIdCard)
+            return false
+        }
+    }).on('input propertychange', function () {
+        var patientIdType = $('#patientIdType').val()
+        var patientIdCard = $('#patientIdCard').val()
+        validPatientIdCardFormat(patientIdType, patientIdCard)
+    })
+
+    //渲染出生年月
+    laydate.render({
+        elem: '#patientBirth'
+        , format: 'yyyy-MM-dd'
+        ,trigger: 'click' //采用click弹出
+        , max: 0 // 最大日期不允许超过当天
+    })
+
+    //切换患者类别：成人、儿童的必填校验和提示
+    function togglePatientClassifyVerify(patientClassify) {
+        if (!patientClassify) {
+            return
+        }
+        var requiredTag = '#requiredTag()'
+        $('.adultReqTitle,.childReqTitle').children('span').remove()//标题移除必填
+        $('.childReq,.adultReq').removeAttr('lay-verify')//移除必填
+        switch (patientClassify) {
+            case '${CONST.AppConstants.PATIENT_CLASSIFY_CHILD}':
+                //成人adult
+                $('.adultReqTitle').html(function (index, text) {
+                    return requiredTag + text
+                })//标题显示必填
+                $('.adultReq').attr('lay-verify', 'required')//添加必填
+                break
+            case '${CONST.AppConstants.PATIENT_CLASSIFY_ADULT}':
+                //儿童children
+                $('.childReqTitle').html(function (index, text) {
+                    return requiredTag + text
+                })//标题显示必填
+                $('.childReq').attr('lay-verify', 'required')//添加必填
+                break
+        }
+    }
+
+    togglePatientClassifyVerify($('input[name="patientClassify"]:checked').val())
+
+    //监听患者类别
+    form.on('radio(patientClassify)', function (data) {
+        togglePatientClassifyVerify(data.value)
+    })
+    var len = 2// 每个区域ID长度的倍数
+    // 行政区域数据加载及监听选择
+    $(function() {
+        common.requestServer('../basRegion/selectRegion.jo', {regionIdLen: 8}, function (data) {
+            if (!data) {
+                return
+            }
+            // 出生地
+            layui.cascader({
+                data: data,
+                elem: '#birthRegionName',
+                value: ["45"],
+                success: function (data) {
+                    $('#birthRegionId').val(data[data.length - 1])
+                }
+            })
+            // 现住地址
+            layui.cascader({
+                data: data,
+                elem: '#regionName',
+                value: $('#regionId').val() ? common.strToRegionIdArray($('#regionId').val(), len) : [],
+                success: function (data) {
+                    $('#regionId').val(data[data.length - 1])
+                }
+            })
+            // 户口地址
+            layui.cascader({
+                data: data,
+                elem: '#nativeRegionName',
+                value: $('#nativeRegionId').val() ? common.strToRegionIdArray($('#nativeRegionId').val(), len) : [],
+                success: function (data) {
+                    $('#nativeRegionId').val(data[data.length - 1])
+                }
+            })
+            // 工作单位
+            layui.cascader({
+                data: data,
+                elem: '#companyRegionName',
+                value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#companyRegionId').val(), len) : [],
+                success: function (data) {
+                    $('#companyRegionId').val(data[data.length - 1])
+                }
+            })
+
+            // 联系人地址
+            layui.cascader({
+                data: data,
+                elem: '#contactRegionName',
+                value: $('#companyRegionId').val() ? common.strToRegionIdArray($('#contactRegionId').val(), len) : [],
+                success: function (data) {
+                    $('#contactRegionId').val(data[data.length - 1])
+                }
+            })
+        })
+    });
+    // 籍贯
+    layui.cascader({
+        type: 'post',
+        elem: '#nativePlace',
+        url: '../basRegion/selectRegion.jo',
+        where: {regionIdLen: 6},
+        value: $('#nativePlaceId').val() ? common.strToRegionIdArray($('#nativePlaceId').val(), len) : [],
+        success: function (data) {
+            $('#nativePlaceId').val(data[data.length - 1])
+        }
+    })
+
+    //获取住院预交款收据号码
+    var url="../billRecipient/getUseInpatientBillRecipient.jo"
+    var params={usageMode: "$!{CONST.AppConstants.USAGE_MODE_HOSPITALIZATION_INVOICE}"}
+    common.requestServer(url, params, function(result) {
+        if (result.code === '0') {
+            $("#receiptNo").val(result.data.currentNum);
+        } else {
+            common.alert(result.msg, 0);
+        }
+     });
+
+    //入院登记
+    if($('#inhospitalDate').val()){
+        $('#inhospitalDate').prop('readonly',true);
+    }else{
+        laydate.render({elem: '#inhospitalDate', type: 'datetime',format :'yyyy-MM-dd HH:mm', value:new Date(),min:0});
+    }
+
+    $("#toEmpty").click(function(){
+        clearForm();
+    });
+    //自定义验证规则
+    form.verify({
+        dateTime: function(value, item){
+            //转化格式完整日期时间格式
+            $(item).val(layui.util.toDateString(new Date(value)))
+        }
+    });
+    //提交表单
+    form.on("submit(btn-save)",function(data){
+       var params = data.field;
+       params['recvDoctorName'] = users[params['recvDoctorId']];
+       params['diagnosisDoctorName'] = users[params['diagnosisDoctorId']];
+       params['managerDoctorName'] = users[params['managerDoctorId']];
+       params['bedDoctorName'] = users[params['bedDoctorId']];
+       params['headNurserName'] = users[params['headNurserId']];
+       params['dutyNurserName'] = users[params['dutyNurserId']];
+       params['outpatientDoctorName'] = users[params['outpatientDoctorId']];
+       params['wardName'] = wardMap[params['wardId']];
+       params['inhospitalOfficeName'] = $("#inhospitalOfficeId").find("option:selected").text();
+       var notvisitCardNo = $('[name="notvisitCardNo"]:checked').val();
+       console.log(params);
+       common.requestServer('../inpatient/saveDirectInhospitalPaitient.jo',params , function(result){
+           if (result.code == "0") {
+               common.alertCall("保存成功。", 1, function (){
+                   clearForm();
+                   parent.window.location.href = parent.window.location.href;
+               });
+           } else {
+               common.alert(result.msg, 0);
+           }
+       });
+    });
+    //监听“是否一个月内再入院”单选框，如果选择是，相关的输入项做必填校验
+    form.on('radio(oneMonthVisitFlag)',function(obj){
+        var input = $("#oneMonthVisitAim");
+        var label = input.parent().prev();
+        var hasReqFlag = label.find("span").length > 0;
+        if(obj.value == '1' && !hasReqFlag){
+            label.prepend('<span class="reqFlag" style="color:red">*</span>');
+            input.attr("lay-verify","required")
+        } else if(obj.value == '0' && hasReqFlag){
+            label.find("span.reqFlag").remove();
+            input.attr("lay-verify","");
+        }
+    });
+    //监听“是否脑颅损伤”单选框，如果选择是，相关的输入项做必填校验
+    form.on('radio(brainInjuryFlag)',function(obj){
+        var input = $("#brainInjuryTimeNum");
+        var select = $("#brainInjuryTimeUnit");
+        var label = input.parent().parent().prev();
+        var hasReqFlag = label.find("span.reqFlag").length > 0;
+        if(obj.value == '1' && !hasReqFlag){
+            label.prepend('<span class="reqFlag" style="color:red">*</span>');
+            input.attr("lay-verify","required");
+            select.attr("lay-verify","required");
+        } else if(obj.value == '0' && hasReqFlag){
+            label.find("span.reqFlag").remove();
+            input.attr("lay-verify","");
+            select.attr("lay-verify","");
+        }
+    });
+    form.render();
+
+    //监听入院科室
+    form.on('select(inhospitalOfficeId)', function(data){
+        common.requestServer('$contextPath/inpatient/findwardId.jo', {'officeId' : data.value}, function(result){
+            if (result.code == '0' && result.data != 0) {
+                $('[name="wardId"]').val(result.data);
+                form.render('select');
+            }
+        });
+    });
+  //监听入院病区
+    form.on('select(wardId)', function(data){
+        console.log(123);
+        common.requestServer('$contextPath/inpatient/selectInpatientWardOfficeList.jo', {'wardId' : data.value}, function(result){
+            if (result.code == '0') {
+                console.log(result.data);
+
+                form.render('select');
+            }
+        });
+    });
+
+});
+
+//清空表单信息
+function clearForm(){
+  var form=$("#register_form");
+  var inputs=form.find('input:not([type="radio"],[name="patientClassify"],[id="receiptNo"],[name="inhospitalDate"],[name="patientIdType"])');
+  var textareas=form.find('textarea');
+  var selects=form.find('select');
+  inputs.val(null);
+  textareas.val(null);
+  selects.val(null);
+}
+
+//预付款是否为null
+$('#prepayInAmount').bind("input propertychange", function () {
+    var prepayInAmount = this.value.replace(/\ +/g , '');
+    if(prepayInAmount != "" ){
+        $('[name="payInWay"]').attr("lay-verify" , "required");
+        $('#span_payInWay').css('display' , 'inline');
+    }else{
+        $('[name="payInWay"]').removeAttr("lay-verify");
+        $('#span_payInWay').css('display' , 'none');
+    }
+});
+
+</script>

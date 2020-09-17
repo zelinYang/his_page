@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>住院临床路径-更改病种</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<style>
+		* {box-sizing: border-box;}
+		.layui-btn+.layui-btn { margin: 0;}
+		.layui-table th, .layui-table td { padding: 3px 9px; height: 21px; line-height:21px;}
+	</style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+	<div class="layui-card mainOne">
+		<div class="layui-card-body">
+			<table class="layui-table m-n">
+				<thead>
+				<tr>
+					<th lay-data="{field:'id', width:120}">病人ID</th>
+					<th lay-data="{field:'city', width:120}">住院次数</th>
+					<th lay-data="{field:'city', width:80}">住院号</th>
+					<th lay-data="{field:'zone', width:80}">床号</th>
+					<th lay-data="{field:'province', width:80}">患者姓名</th>
+					<th lay-data="{field:'city', width:80}">性别</th>
+					<th lay-data="{field:'city', width:80}">入科时间</th>
+					<th lay-data="{field:'city', width:80}">费别</th>
+					<th lay-data="{field:'city', width:80}">年龄</th>
+				</tr>
+				</thead>
+				<tbody>
+				<tr>
+					<td>$!inpatientInhospital.patientId</td>
+					<td>$!inpatientInhospital.inhospitalNum</td>
+					<td>$!inpatientInhospital.inhospitalNo</td>
+					<td>#htmlEscape($!inpatientInhospital.currentBedNo)</td>
+					<td>#htmlEscape($!inpatientInhospital.patientName)</td>
+					<td>#lookUpDict($dicData.dicSex $!inpatientInhospital.patientSex)</td>
+					<td>$!date.format('yyyy-MM-dd', $!inpatientInhospital.inhospitalDate)</td>
+					<td>#lookUpDict($dicData.dicPatientKind $!inpatientInhospital.patientKind)</td>
+					<td>$!inpatientInhospital.patientAgeYear岁</td>
+				</tr>
+				</tbody>
+			</table>
+		</div>
+		<div class="layui-card-body layui-row layui-form p-b-n p-t-n">
+			<div class="layui-col-sm6 layui-form-item layui-col-sm-offset4">
+				<form class="layui-form" action="" id="editForm">
+					#formHiddenInput("patientId" "$!inpatientInhospital.patientId" "id='patientId'")
+					#formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId" "id='inhospitalId'")
+					#formHiddenInput("registerId" "$!inpatientInhospital.registerId" "id='registerId'")
+					#formHiddenInput("clinicPathStageId" "$!clinicPatientStage.clinicPathStageId" "id='clinicPathStageId'")
+					#formHiddenInput("clinicPatientPathId" "$!clinicPatientPath.clinicPatientPathId" "id='clinicPatientPathId'")
+					#formHiddenInput("currentPatientStageId" "$!clinicPatientPath.currentPatientStageId" "id='currentPatientStageId'")
+					<div class="layui-inline m-b-n">
+						<label class="layui-form-label" style="width: 200px;"><b>临床路径病种</b></label>
+						<div class="layui-input-inline">
+							<select id="clinicPathId" name="clinicPathId" lay-filter="clinicPathId" lay-verify="required" class="layui-input">
+								<option value="">请选择</option>
+								#foreach($clinicPath in $clinicPathList)
+									<option value='${clinicPath.clinicPathId}' #if($!clinicPatientPath.clinicPathId == ${clinicPath.clinicPathId})selected='selected'#end>${clinicPath.clinicPathName}</option>
+								#end
+							</select>
+						</div>
+					</div>
+					<div class="layui-form-item layui-hide" style="overflow: auto">
+						<input type="button" lay-submit="" lay-filter="LAY-emr-submit" id="LAY-emr-submit" value="确认"/>
+					</div>
+				</form>
+			</div>
+		</div>
+		<div class="layui-card-body layui-row">
+			<blockquote class="layui-elem-quote remarksTips">
+				<h5 id="">适用对象</h5>
+				<dl class="remarksTips">
+					<dd>第一诊断为: <span id="pathDiseaseName">无数据</span></dd>
+					<dd>标准住院日：<span id="hospitalStayDay">0</span>天</dd>
+					<dd>标准收费：<span  id="estimatedCost">0</span>元</dd>
+				</dl>
+			</blockquote>
+		</div>
+	</div>
+
+	<div class="layui-row mainTwo">
+		<div class="Page-left layui-bg-white" style="overflow: auto;">
+			<div class="layui-card m-n">
+				<div class="layui-card-body">
+					<ul class="layui-timeline" id="pathStageList">
+						无数据
+					</ul>
+				</div>
+##				<div class="layui-card-body layui-btn-container">
+##					<button type="button" class="layui-btn layui-btn-sm layui-btn-fluid" id="btn_save"> 确 定 </button>
+##					<button type="button" class="layui-btn layui-btn-primary layui-btn-sm layui-btn-fluid" id="btn_cancel"> 取 消 </button>
+##				</div>
+			</div>
+		</div>
+		<div class="Page-right layui-bg-white">
+			<fieldset class="layui-elem-field layui-field-title m-b-sm">
+				<legend id="pathStageContent">阶段描述</legend>
+			</fieldset>
+			<div class="layui-row linchuanglujing" style="overflow: auto;">
+				无数据
+			</div>
+		</div>
+	</div>
+</div>
+#parse("./clinic/changeClinicPatientPathDisease.js.vm")
+</body>
+</html>

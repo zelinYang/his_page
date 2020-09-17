@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>${SessionSysPortal.appTitle}-系统维护-管理类配置-医生权限设置-医生职称-编辑</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <link rel="stylesheet" href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css"/>
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.min.js?v=2"></script>
+    <style>
+        @media screen and (max-width: 1366px) {
+            /*table*/
+            .layui-table-view .layui-table td, .layui-table-view .layui-table th {
+                padding: initial;
+            }
+        }
+    </style>
+    <style type="text/css">
+        .layui-card-body {
+            height: calc(100vh - 100px);
+        }
+
+        .choose {
+            position: absolute;
+            right: 18px;
+            top: 3px;
+            cursor: pointer;
+            pointer-events: none;
+        }
+
+        .layui-card-header .layui-btn-group i.layui-icon {
+            position: initial;
+            line-height: inherit;
+        }
+
+        .webui-popover .webui-popover-content {
+            overflow: hidden;
+        }
+
+        /* 表格警告框 */
+        .table-danger {
+            border-color: #FF5722 !important;
+        }
+
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-card layui-col-md7 layui-col-xs7">
+                <div class="layui-card-header">医生信息</div>
+                <div class="layui-card-body">
+                    <form class="layui-form" lay-filter="basPostDoctorForm" id="basPostDoctorForm"
+                          style="padding: 20px 30px 0 0;">
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()医生</label>
+                                <div class="layui-input-inline ">
+                                    #formHiddenInput("doctorId" "$!{basPostDoctor.doctorId}" " id='doctorId' ")
+                                    #if($!{basPostDoctor})
+                                    #formTextInput("doctorName" "$!{basPostDoctor.doctorName}" " readonly
+                                    lay-verify='required' class='layui-input'")
+                                    #else
+                                    #formTextInput("doctorName" "$!{basPostDoctor.doctorName}" " readonly
+                                    id='doctorName' lay-verify='required' class='layui-input'")
+                                    <i class="layui-icon layui-icon-more choose" title="选择医生"></i>
+                                    #end
+                                </div>
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label">#requiredTag()职称</label>
+                            <div class="layui-input-block">
+                                #formSingleSelectSearchFirstNone("doctorPost" "$!{basPostDoctor.doctorPost}"
+                                $dicData.dicDoctorPost " id='doctorPost' lay-filter='doctorPost' lay-verify='required'
+                                lay-search"
+                                "直接选择或搜索选择")
+                            </div>
+                        </div>
+                        <div class="layui-form-item">
+                            <label class="layui-form-label" style="overflow: visible;">职称病历签名</label>
+                            <div class="layui-input-block">
+                                #formHiddenInput("doctorSign" "$!{basPostDoctor.doctorSign}" " id='doctorSign' ")
+                                #formTextInput("" "#lookUpDict(${dicData.dicDoctorSignType}
+                                $!{basPostDoctor.doctorSign})" " class='layui-input' readonly='readonly'
+                                id='doctorSignName'")
+                            </div>
+                        </div>
+                        <div class="layui-form-item ">
+                            <label class="layui-form-label">职称诊查费</label>
+                            <div class="layui-input-block">
+                                <table id="basPostFeeListGrid" class="layui-table-tabs"
+                                       lay-filter="basPostFeeListGrid" lay-verify='chargeItem'></table>
+                            </div>
+                        </div>
+                        #if($!{basPostDoctor})
+                        #set($validFlag = $!{basPostDoctor.validFlag})
+                        #else
+                        #set($validFlag = $!{CONST.AppConstants.YES_FLAG})
+                        #end
+                        <div class="layui-form-item">
+                            <div class="layui-inline">
+                                <label class="layui-form-label">#requiredTag()是否有效</label>
+                                <div class="layui-input-block" id="validFlag">#formRadioGroup("validFlag"
+                                    "$!{validFlag}" ${dicData.dicYesNo} "lay-verify='reqRedio' check-msg='请选择是否有效'")
+                                </div>
+                            </div>
+                        </div>
+                        <div class="tool-bottom-fixed">
+                            <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save"
+                                    class="layui-btn layui-btn-sm">保 存
+                            </button>
+                            <button id="btn_query" class="layui-btn layui-btn-sm layui-hide" type="button"
+                                    lay-tips="查询"><i
+                                    class="layui-icon layui-icon-search "></i></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="layui-card layui-col-md5 layui-col-xs5">
+                <div class="layui-card-header">设置诊室
+                    <div class="layui-btn-group">
+                        <button type="button" class="layui-btn layui-btn-normal layui-btn-xs" lay-tips="新增诊室"
+                                id="btn_add">
+                            <i class="layui-icon">&#xe654;</i>
+                        </button>
+                    </div>
+                </div>
+                <div class="layui-card-body">
+                    <table id="consultingRoomDoctorListGrid" lay-filter="consultingRoomDoctorListGrid"></table>
+                    <!--  列表表格 end -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./bas/basPostDoctor/basPostDoctorEdit.js.vm")
+</body>
+</html>

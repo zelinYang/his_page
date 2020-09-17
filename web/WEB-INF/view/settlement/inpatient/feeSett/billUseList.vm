@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>票据使用历史查询</title>
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./settlement/inpatient/feeSett/feeSett.css.vm")<!-- 页面js -->
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+</head>
+<body>
+	<div class="layui-content-wrapper">
+		<div class="layui-fluid">
+			<div id="container">
+				<form id="bill_queryForm" class="layui-form" #if("$!{inhospitalId}" != "") style="display: none;" #end>
+					<div class="layui-row-query search-term" >
+						<div class="layui-form-item">
+							<div class="layui-inline">
+								<label class="layui-form-label">收据号码</label>
+								<div class="layui-input-inline">
+								  #formTextInput("prepayReceiptNo" "" "id='receiptNo' class='layui-input' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">住院号</label>
+								<div class="layui-input-inline">
+								  #formTextInput("inhospitalId" "$!{inhospitalId}" "id='inhospitalId' class='layui-input' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">患者姓名</label>
+								<div class="layui-input-inline">
+								  #formTextInput("patientName" "" "id='patientName' class='layui-input' ")
+								</div>
+							</div>
+							<div class="layui-inline">
+								<label class="layui-form-label">缴款操作员</label>
+								<div class="layui-input-inline">
+									 #formTextInput("operPrepayUserName" "" "id='operPrepayUserName' class='layui-input' ")
+								 </div>
+							</div>
+							<div class="layui-inline layui-btn-group">
+							  <button class="layui-btn  layui-btn-sm " id="btn_query" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+							  <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_freshen"><i class="layui-icon layui-icon-refresh"></i></button>
+							</div>
+						</div>
+					</div>
+				 </form>
+
+				 <!-- 数据表格 -->
+				 <table id="billUseListTab" lay-filter="billUseListTab"></table>
+			</div>
+		</div>
+	</div>
+</body>
+#parse("./settlement/inpatient/feeSett/billUseList.js.vm")
+</html>

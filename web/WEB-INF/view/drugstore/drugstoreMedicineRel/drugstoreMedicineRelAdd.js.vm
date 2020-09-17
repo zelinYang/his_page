@@ -1,0 +1,308 @@
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicMedicineTypeMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineTypeMedicine)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+    }).use(['index', 'form', 'table'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table;
+
+        common.verify(form);
+
+        //根据name 加载 下拉框 dicMap = {"code":"name"}
+        function loadSelect(name, dicMap, val) {
+            $('select[name=' + name + ']').empty();
+            var options = $.map(dicMap, function (key, value) {
+                return '<option value="' + value + '">' + key + '</option>';
+            })
+            options.unshift('<option value="">' + (options.length == 0 ? '无数据' : '') + '</option>')
+            $('select[name=' + name + ']').html(options.join('')).val(val);
+            form.render();
+        }
+
+        //获取药库列表
+        function loadDrugstoreSelect() {
+            $('#q_drugstoreId').empty();
+            common.requestServer(contextPath + '/drugstore/drugstoreListData.jo', {
+                materialFlag: NO_FLAG
+            }, function (result) {
+                if (result.code == '0') {
+                    var dicMap = {};
+                    $.each(result.data, function (index, item) {
+                        dicMap[item.drugstoreId] = item.drugstoreName || "";
+                    })
+                    loadSelect("drugstoreId", dicMap, $("#drugstoreId").val());
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        loadDrugstoreSelect();
+
+        // 药库检索
+        form.on('select(drugstoreId)', function (data) {
+            var drugstoreId = data.value;
+            loadDrugstoreStorageSelect();
+            table.reload('drugstoreMedicineRelListGrid', {
+                url: drugstoreId ? contextPath + '/drugstore/drugstoreMedicineRelPageData.jo' : '',
+                where: {drugstoreId: drugstoreId, storageCode: ''}
+            });
+            table.reload('medicineListGrid', {
+                url: drugstoreId ? contextPath + '/medicine/medicineListData.jo' : '',
+                where: {drugstoreIdNotIn: drugstoreId}
+            });
+            var drugstoreName = $(data.elem).children('option:selected').text();
+            $("#drugstoreId").val(drugstoreId);
+            $("#drugstoreName").val(drugstoreName);
+            $("#drugstoreStorageId").val('');
+            $("#drugstoreStorageName").val('');
+            form.render();
+        });
+
+        //
+        var drugstoreStorageMap = {};
+
+        //获取库位列表
+        function loadDrugstoreStorageSelect() {
+            $('#drugstoreStorageId').empty();
+            common.requestServer(contextPath + '/drugstore/drugstoreStoragePageData.jo', {
+                materialFlag: NO_FLAG,
+                drugstoreId: $("#drugstoreId").val()
+            }, function (result) {
+                if (result.code == '0') {
+                    var dicMap = {};
+                    $.each(result.data, function (index, item) {
+                        dicMap[item.drugstoreStorageId] = item.drugstoreStorageName + '(' + item.drugstoreStorageCode + ')' || "";
+                        drugstoreStorageMap[item.drugstoreStorageId] = item;
+                    })
+                    loadSelect("drugstoreStorageId", dicMap, $("#drugstoreStorageId").val());
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        loadDrugstoreStorageSelect();
+        //库位检索
+        form.on('select(drugstoreStorageId)', function (data) {
+            var drugstoreStorageId = data.value;
+            //根据库位获取药库
+            if (!$('#q_drugstoreId').val() && drugstoreStorageMap[drugstoreStorageId]) {
+                $('#q_drugstoreId').val(drugstoreStorageMap[drugstoreStorageId].drugstoreId || '');
+
+                var drugstoreName = $('#q_drugstoreId').children('option:selected').text();
+                $("#drugstoreId").val($('#q_drugstoreId').val());
+                $("#drugstoreName").val(drugstoreName);
+                form.render();
+            }
+            table.reload('drugstoreMedicineRelListGrid', {
+                where: {storageCode: drugstoreStorageId}
+            });
+            var drugstoreStorageName = $(data.elem).children('option:selected').text();
+            $("#drugstoreStorageId").val(drugstoreStorageId);
+            $("#drugstoreStorageName").val(drugstoreStorageName);
+        });
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('drugstoreMedicineRelListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            //执行重载
+            table.reload('drugstoreMedicineRelListGrid', {
+                url: ''
+            });
+            table.reload('medicineListGrid', {
+                url: ''
+            });
+            $("#drugstoreId").val('');
+            $("#drugstoreName").val('');
+            $("#drugstoreStorageId").val('');
+            $("#drugstoreStorageName").val('');
+            common.cleanForm('drugstoreMedicineRel_queryForm');
+        })
+
+        // 获取查询表单参数对象
+        window.getQueryParams = function (params) {
+            return $.extend({
+                drugstoreId: '',
+                drugstoreStorageId: '',
+                keyWord: '',
+            }, params || common.serializeObject($('#drugstoreMedicineRel_queryForm')));
+        }
+
+        //表格设置 药库药品
+        table.render($.extend(basePageTable, {
+            elem: '#drugstoreMedicineRelListGrid',
+            height: 'full-100',
+            data: [],
+            where: getQueryParams(),
+            cols: [[
+                {
+                    type: 'numbers',
+                    fixed: 'left'
+                }, {
+                    field: 'drugstoreName',
+                    title: '药库',
+                    minWidth: 100
+                }, {
+                    field: 'storageCode',
+                    title: '库位编号',
+                    minWidth: 100
+                }, {
+                    field: 'medicineType',
+                    title: '药品类型',
+                    minWidth: 100,
+                    templet: function (d) {
+                        return dicMedicineTypeMedicine[d.medicineType] || '';
+                    }
+                }, {
+                    field: 'medicineName',
+                    title: '药品名称',
+                    minWidth: 250
+                }, {
+                    field: 'medicineSpec',
+                    title: '药品规格',
+                    minWidth: 100
+                }, {
+                    field: 'producingAreaName',
+                    title: '药品产地',
+                    minWidth: 200
+                }
+            ]],
+            done: function () {
+            }
+        }));
+
+        form.on('checkbox(doctorOrderTypes)', function (data) {
+            //勾选完类型直接进行查询
+            $("#btn_query_medicine").click();
+        });
+
+        //回车触发查询
+        $("#q_keyWord_medicine").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query_medicine').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query_medicine').click(function () {
+            var doctorOrderTypes = $.makeArray($(':checkbox[lay-filter="doctorOrderTypes"]:checked').map(function (index, item) {
+                return item.value
+            })).toString();
+            debugger
+            var keyWord = $('#q_keyWord_medicine').val();
+            //执行重载
+            table.reload('medicineListGrid', {
+                where: {
+                    doctorOrderTypes: doctorOrderTypes,
+                    keyWord: keyWord
+                }
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean_medicine').click(function () {
+            $(':checkbox[lay-filter="doctorOrderTypes"]').prop('checked', false);
+            $('#q_keyWord_medicine').val('');
+            form.render();
+        })
+
+        //表格设置 药品
+        table.render($.extend(basePageTable, {
+            elem: '#medicineListGrid',
+            height: 'full-100',
+            cols: [[
+                {
+                    type: 'checkbox',
+                    fixed: 'left'
+                }, {
+                    field: 'medicineName',
+                    title: '药品名称',
+                    minWidth: 250
+                }, {
+                    field: 'medicineType',
+                    title: '药品类型',
+                    minWidth: 100,
+                    templet: function (d) {
+                        return dicMedicineTypeMedicine[d.medicineType] || ""
+                    }
+                }, {
+                    field: 'medicineSpec',
+                    title: '药品规格',
+                    minWidth: 100
+                }, {
+                    field: 'producingAreaName',
+                    title: '药品产地',
+                    minWidth: 200
+                }
+            ]],
+            done: function () {
+
+            }
+        }));
+
+        //提交表单
+        function saveDrugstoreMedicineRel() {
+            var params = common.serializeObject($('#drugstoreMedicineRelForm'));
+            var medicines = table.checkStatus('medicineListGrid').data; //idTest 即为基础参数 id 对应的值
+            if (medicines.length == 0) {
+                $('#btn_save').focus(function () {
+                    $('#medicineListGrid').next().addClass('table-danger');
+                }).blur(function () {
+                    $('#medicineListGrid').next().removeClass('table-danger');
+                }).focus();
+                common.msg('请选择药品！', 0);
+                return;
+            }
+            params.drugstoreMedicineRelEditInfoList = $.map(medicines, function (item) {
+                if (!$.isArray(item)) return $.extend(item, params);
+            });
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/drugstore/saveDrugstoreMedicineRelList.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        table.reload('drugstoreMedicineRelListGrid');
+                        table.reload('medicineListGrid');
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveDrugstoreMedicineRel()
+            return false
+        })
+
+        // 关闭窗口
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            $('#btn_query', window.parent.document).click()
+        })
+    })
+</script>

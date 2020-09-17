@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>病历审阅</title>
+    <link href="../resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <script type="text/javascript" src="../resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="../resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <script src="../resource/layuiadmin/modules/ztree/js/jquery.ztree.all.min.js"></script>
+    <link href="../resource/layuiadmin/modules/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #set($path = $!contextPath)
+    <style>
+        .text-v{line-height: 30px; color: #ff3d00;}
+        .dic-name{ color:  red;}
+        .ztree li a.curSelectedNode { background-color: #f5f7f7; border: 1px #dedede solid; }
+        .layui-icon.blue:hover{color: #6cbbd4;}
+        .layui-form-item.search-term .layui-inline,
+        .layui-form-item .layui-btn.layui-btn-sm { margin-bottom: 0;}
+        .layui-form-item .layui-input-inline { width:auto;}
+        .layui-form-item.search-term label { font-weight: 100; padding-right: 5px; color: #555;}
+        .layui-tab-title.btn { padding: 10px; margin-left: 0;}
+        .layui-bg-gray{ color: #05a59c!important;}
+        #container .ui-layout-resizer-closed {
+             display: block !important;
+        }
+        .layui-table-view .layui-table{width: 100%}
+        @media screen and (max-width:1024px){
+            .layui-form-item.search-term{overflow-x: auto;white-space: nowrap;height: 30px}
+        }
+    </style>
+</head>
+
+<body >
+<div class="layui-content-wrapper">
+  <div class="layui-fluid">
+    <div class="p-info layui-form m-b-sm">
+        <div class="layui-form-item search-term p-sm layui-bg-white">
+            <div class="layui-inline wd-80 layui-bg-white" style="position: absolute;z-index: 9;transform: translateX(-10px);text-align: center">
+                <button class="layui-btn layui-btn-sm" id="btn_selectInpatient"><i class="layui-icon layui-icon-search "></i>选择患者</button>
+            </div>
+            <div class="layui-inline" style="margin-left: 70px">
+                <label class="layui-form-label">姓名:</label>
+                <div class="layui-input-inline text-v" id="div_patientName">$!{inpatientInhospital.patientName}</div>
+                <input type="hidden" name="inhospitalId" id="inhospitalId" value="$!{inpatientInhospital.inhospitalId}">
+                <input type="hidden" name="hospitalId" id="hospitalId" value="$!{inpatientInhospital.hospitalId}">
+                <input type="hidden" name="currentOfficeId" id="currentOfficeId" value="$!{inpatientInhospital.currentOfficeId}">
+                <input type="hidden" name="patientEmrDefectId" id="patientEmrDefectId" value="$!{patientEmrDefect.patientEmrDefectId}">
+                <input type="hidden" name="submitFlag" id="submitFlag" value="$!{CONST.AppConstants.NO_FLAG}">
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">年龄:</label>
+                <div class="layui-input-inline text-v" id="div_patientAgeYear">$!{inpatientInhospital.patientAgeYear}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">床号:</label>
+                <div class="layui-input-inline text-v" id="div_currentBedNo">$!{inpatientInhospital.currentBedNo}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">住院号:</label>
+                <div class="layui-input-inline text-v" id="div_inhospitalNo">$!{inpatientInhospital.inhospitalNo}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">管床医师:</label>
+                <div class="layui-input-inline text-v " id="div_bedDoctorName">$!{inpatientInhospital.bedDoctorName}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">质控次数:</label>
+                <div class="layui-input-inline text-v" id="div_controlNumber">$!{patientEmrDefect.controlNumber}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">质控时间:</label>
+                <div class="layui-input-inline text-v" id="div_controlTime">#displayOnlyTime($!{patientEmrDefect.controlTime})</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">质控人:</label>
+                <div class="layui-input-inline text-v" id="div_controlUserName">$!{patientEmrDefect.controlUserName}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">得分:</label>
+                <div class="layui-input-inline text-v" id="div_defectTotalScore">$!{patientEmrDefect.defectTotalScore}</div>
+            </div>
+            <div class="layui-inline">
+                <label class="layui-form-label">等级:</label>
+                <div class="layui-input-inline text-v" id="div_qualityGrade">#lookUpDict($dicData.dicQualityCode $!{patientEmrDefect.qualityGrade})</div>
+            </div>
+            <div class="layui-inline fr">
+                ##<button class="layui-btn layui-btn-sm layui-btn-normal" id="btn_submit">保存质控</button>
+                ##<button class="layui-btn layui-btn-sm layui-btn-normal" id="btn_send">提交病案室</button>
+                <button class="layui-btn layui-btn-sm" id="btn_full_screen">全屏</button>
+                <button class="layui-btn layui-btn-sm layui-btn-normal" id="btn_reform">发送整改通知</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="container" style="height: calc(100% - 55px);">
+        <div class="ui-layout-west" >
+            <div class="layui-card m-b-sm n-shadow" style="height: calc(55% - 10px); overflow: hidden;">
+                <div class="layui-card-header">病历列表#cardDisplayHover</div>
+                <div class="layui-card-body p-n full-height-scroll" style="height: calc(100% - 33px);">
+                    <ul id="emrTypeTree" class="ztree white-bg full-height"></ul>
+                </div>
+            </div>
+            <div class="layui-card m-b-n n-shadow"  style="height: 45%;">
+                <div class="layui-card-header p-xs layui-bg-gray">缺陷列表
+                ##<button class="layui-btn layui-btn-sm fr" id="btn_addItem">增加缺陷</button>
+                <button class="layui-btn layui-btn-sm fr wd-80" id="auto_submit">自动评分</button>
+                </div>
+                <div class="layui-card-body p-n" id="tableHight" style="height: calc(100% - 45px);">
+                    <div class="layui-tab blod b-n m-t-n m-b-n full-height">
+                        <ul class="layui-tab-title btn">
+                            <li tab="manualDefect" class="layui-this" >手动缺陷</li>
+                            <li tab="autoDefect" class="visitOffice">自动缺陷</li>
+                        </ul>
+                        <div class="layui-tab-content p-t-n p-b-n">
+                            <div tab="manualDefect" class="layui-tab-item full-height layui-show">
+                                <!--列表 begin-->
+                                <table id="manualDefectListGrid" lay-filter="manualDefectListGrid"></table>
+                                <!--  列表表格 end -->
+                            </div>
+                            <div tab="autoDefect" class="layui-tab-item full-height ">
+                                <!--列表 begin-->
+                                <table id="autoDefectListGrid" lay-filter="autoDefectListGrid"></table>
+                                <!--  列表表格 end -->
+                            </div>
+                            <div tab="payedRecip" class="layui-tab-item full-height ">
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div><!--east  -->
+        <div class="layui-form ui-layout-center">
+            <!-- 中间导航nav -->
+            <div class="docBorrow full-height" id="component-tabs">
+                <div class="layui-tab inSettNav m-n full-height" lay-filter="inSettNav" lay-allowclose="">
+                    <!-- 主页导航名称 -->
+                    <ul class="layui-tab-title">
+                        <li lay-id="inhospitalReg" href="$path/inpatient/inhospitalRegisterList.do" class="layui-this">病历审阅</li>
+                    </ul>
+                    <!-- 导航内容 根据index对应li -->
+                    #set($attr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+                    #set($layclass = 'class="layui-tab-item full-height"')
+                    <div class="layui-tab-content layui-bg-white p-l-n p-r-n" style="height: calc(100% - 55px);">
+                        <div lay-id="inhospitalReg" class="layui-tab-item layui-show full-height" >
+                            <iframe targetSrc="$!contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&showBtn=0&emrTlpId=VemrTlpId&&patientId=VpatientId&patientHospitalEmrId=VpatientHospitalEmrId" id="emrIframe" width="100%" height="100%" frameborder="0" scrolling="no" ></iframe>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 中间导航nav end -->
+        </div><!-- center -->
+    </div>
+
+
+  </div>
+</div>
+
+
+#parse("./emrDefect/patientEmrNodeQualityMain.js.vm")
+</body>
+</html>

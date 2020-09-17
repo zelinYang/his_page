@@ -1,0 +1,83 @@
+<html>
+<head>
+  <meta http-equiv="content-type" content="text/html; charset=gbk" />
+  <title>$!_System_Name_</title>
+  <link href="../script/css.css" rel="stylesheet" type="text/css" />
+  <script language="javascript" type="text/javascript" src="../script/common.js"></script>
+</head>
+<script>
+function deleteAction(url) {
+      if (confirm("确认要删除吗？") == true)
+       {
+            document.location=url;
+    }
+}
+</script>
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+  <tr valign="top" height="1">
+    <td>
+      <table width="100%" height="26" border="0" cellpadding="0" cellspacing="0" class="table_bg">
+        <tr>
+          <td height="24">
+            <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="pagetitle">
+              <tr>
+                <td>
+                  <table width="100%" border="0" cellpadding="0" cellspacing="0" class="unnamed1">
+                    <tr>
+                      <td width="1%"></td>
+                      <td width="49%" height="24">
+                        <img src="../images/mb_top_zl1.gif" width="16" height="13" align="absmiddle" alt="工具条" />
+                        <span class="text12">暂存系统数据列表</span>
+                      </td>
+                      <td width="49%" align="right" valign="middle" class="text12">
+                      </td>
+                      <td width="1%"></td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+  <tr valign="top">
+    <td>
+      <table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="table_border">
+#changePage($page "../systemdata/systemDataQuery.do")
+        <tr>
+          <td valign="top">
+            <table width="100%" border="0" cellpadding="3" cellspacing="0" class="t">
+              <tr align="center">
+                <td width="15%"  class="t1">节点标识</td>
+                <td width="20%"  class="t1">键值名</td>
+                <td width="20%"  class="t1">值内容</td>
+                <td width="15%"  class="t1">值类型</td>
+                <td width="10%"  class="t1">父节点标识</td>
+                <td width="10%"  class="t1">排列顺序号</td>
+                <td width="10%" colspan="2" class="t1">操作</td>
+              </tr>
+#foreach($data in ${page.data})
+              <tr align="center">
+                <td width="15%"  class="t2">$!{data.systemDataId}</td>
+                <td width="20%"  class="t2">$!{data.keyName}</td>
+                <td width="20%"  class="t2">$!{data.value}</td>
+                <td width="15%"  class="t2">$!{data.valueType}</td>
+                <td width="10%"  class="t2">$!{data.parentId}</td>
+                <td width="10%"  class="t2">$!{data.orderNumber}</td>
+                <td class="t3" width="5%"><a href="../systemdata/systemDataEdit.do?systemDataId=$!{data.systemDataId}">修改</a></td>
+                <td class="t3" width="5%">
+                <a href="javascript:deleteAction('../systemdata/deleteSystemData.do?systemDataId=$!{data.systemDataId}')">删除</a></td>
+              </tr>
+#end
+            </table>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

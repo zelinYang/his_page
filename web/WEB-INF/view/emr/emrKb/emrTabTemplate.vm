@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+</head>
+<body>
+    <div class="layui-tab layui-tab-card full-height">
+        <ul id="tab_li" class="layui-tab-title">
+            <li class="layui-this" target-id="nodeList">节点模板</li>
+            <li target-id="entiretyList">整体模板</li>
+            <li target-id="textList">文本模板</li>
+        </ul>
+        <div class="layui-tab-content full-height">
+            <div class="layui-tab-item layui-show full-height-scroll" style="height: calc(100% - 45px)">
+                <form class="layui-form">
+                    #formSimpleRadio("nodeKbBelong" "1" "true" "title='个人' lay-filter='nodePersonal'" "")
+                    #formSimpleRadio("nodeKbBelong" "2" "false" "title='科室' lay-filter='nodeOffice'" "")
+                </form>
+                <div class="layui-collapse" id="nodeList" lay-filter="nodeList"></div>
+            </div>
+            <div class="layui-tab-item full-height-scroll" style="height: calc(100% - 45px)">
+                <form class="layui-form">
+                    #formSimpleRadio("entiretyKbBelong" "1" "true" "title='个人' lay-filter='entiretyPersonal'" "")
+                    #formSimpleRadio("entiretyKbBelong" "2" "false" "title='科室' lay-filter='entiretyOffice'" "")
+                </form>
+                <div class="layui-collapse" id="entiretyList" lay-filter="entiretyList"></div>
+            </div>
+            <div class="layui-tab-item full-height-scroll" style="height: calc(100% - 45px)">
+                <form class="layui-form">
+                    #formSimpleRadio("textKbBelong" "1" "true" "title='个人' lay-filter='textPersonal'" "")
+                    #formSimpleRadio("textKbBelong" "2" "false" "title='科室' lay-filter='textOffice'" "")
+                </form>
+                <div class="layui-collapse" id="textList" lay-filter="textList"></div>
+            </div>
+        </div>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+layui.use(['form', 'element'], function(){
+    var element = layui.element, form = layui.form, temObj = {};
+    // 监听选项卡点击事件
+    $('#tab_li > li').click(function (){
+        var targetId = $(this).attr('target-id');
+        // 判断选项卡是否第一次点击，如已经点击过不再从新再次获取数据
+        if (temObj[targetId]) {
+            return ;
+        }
+
+        temObj[targetId] = targetId;
+        var container  = $('#' + targetId);
+        loadTemplate(container, $(container).prev().find('input[type="radio"]:checked').val());
+    });
+
+    // 监听单选按钮（个人、科室）
+    $('input[type="radio"]').each(function (){
+        var self = this;
+        form.on('radio(' + $(this).attr('lay-filter') + ')', function(data){
+            loadTemplate($(self).parent().next(), data.value);
+        });
+    });
+    // 加载模板数据
+    function loadTemplate(container, kbBelongFlag) {
+        var html = [];
+        var btn = '<button name="leadingIn" class="layui-btn layui-btn-xs layui-btn-radius layui-btn-normal m-l-sm"><i class="iconfont icon-daoru3"> 导入</i></button>';
+        html.push('<div class="layui-colla-item">');
+        //html.push('<h2 class="layui-colla-title">' + (v.kbName ? v.kbName : '') + '</h2>');
+        //html.push('<div class="layui-colla-content">' + btn + '<div>' + (v.kbContent ? v.kbContent : '') + '</div></div>');
+        html.push('</div>');
+        container.html(html.join(''));
+    }
+
+    $('#tab_li > li:first').click();
+});
+</script>
+</html>

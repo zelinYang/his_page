@@ -1,0 +1,234 @@
+<script>
+	var dicIsValid = JSON.parse('$dicTools.changeMapToJson($dicData.dicIsValid)');
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)');
+	var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+	var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+	layui.config({
+		base: '$contextPath/resource/layuiadmin/' //静态资源所在路径
+	}).extend({
+		index: 'lib/index', //主入口模块
+		autocomplete: 'autocomplete'
+	}).use(['index', 'table', 'form', 'layer', 'autocomplete'], function () {
+		var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table, autocomplete = layui.autocomplete;
+
+
+		//表列表
+		table.render({
+			elem: '#basCommDiagnosisListGrid',
+			url: '../basCommDiagnosis/basCommDiagnosisListData.jo',
+			limit: 20,
+			where: common.serializeObject($('#queryForm')),
+			cols: [[
+				{
+					type: 'numbers'
+				},
+				{
+					field: 'diseaseName',
+					title: '诊断名称/疾病名称',
+					minWidth: 150
+				},
+				{
+					field: 'commDiagnosisDesc',
+					title: '描述性诊断',
+					minWidth: 150
+				},
+				{
+					field: 'diseaseTypeFlag',
+					title: '西医/中医标志',
+					minWidth: 150,
+                    templet: function (d) {
+                        return dicDiseaseTypeFlag[d.diseaseTypeFlag] || '';
+                    }
+				},
+				{
+					field: 'diseaseIcdTcd',
+					title: 'TCD/ICD10编码',
+					minWidth: 150
+				},
+				{
+					field: 'diagnosisClassify',
+					title: '所属类型',
+					templet: function (d) {
+						return dicBelongSysType[d.diagnosisClassify] || '';
+					}
+				},
+				{
+					field: 'officeId',
+					title: '科室',
+					templet: function (d) {
+						return dicSysOrgName[d.officeId] || '';
+					}
+				},
+				{
+					field: 'doctorId',
+					title: '医生',
+					templet: function (d) {
+						return dicSysUser[d.doctorId] || '';
+					}
+				},
+				{
+					field: 'sort',
+					title: '排序顺序'
+				},
+				{
+					field: 'validFlag',
+					title: '是否有效',
+					unresize: true,
+					width: 100,
+					templet: function (d) {
+						return '<input type="checkbox" name="validFlag" value="' + d.commDiagnosisId + '" lay-skin="switch" lay-text="有效|无效" lay-filter="validFlag" '
+								+ (d.validFlag == 1 && 'checked') + '>';
+					}
+				}, {
+					title: '操作',
+					width: 80,
+					align: 'center',
+					fixed: 'right',
+					toolbar: '#colstoolbar'
+				}]],
+			page: true,
+			height: getTableHgt(),
+			done: function (res, curr, count) {
+				autoSetHeigt()
+
+			},
+			request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				,
+				limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+		});
+
+		// 获取表格高度
+		function getTableHgt() {
+			return ($('body').height() - $('#queryForm').height() - 17)
+		}
+
+		$(window).resize(function () {
+			var height = getTableHgt()
+			table.reload('basCommDiagnosisListGrid', {
+				height: height
+			})
+		})
+
+		// 根据诊断/疾病名称查询icd
+		autocomplete.render({
+			cache: false,
+			searchField: 'keyWord',
+			elem: $('#q_diseaseName')[0],
+			url: '../basDisease/basDiseaseListData.jo?pageSize=7',
+			template_val: '{{d.diseaseName}}',
+			template_txt: '{{d.diseaseName}} （{{d.diseaseIcdTcd}}）'
+		});
+
+		//监听数据搜索
+		form.on('submit(btn_query)', function (data) {
+			var field = data.field;
+            field.diseaseTypeFlag = $(':radio[name="diseaseTypeFlag"]:checked').val() || '';
+			//执行重载
+			table.reload('basCommDiagnosisListGrid', {
+				where: field
+			});
+			return false;
+		});
+
+		//重置查询表单并刷新表格
+		$("#btn_reset").click(function () {
+			setTimeout(function () {
+				$('#btn_query').click();
+			}, 50);
+		})
+
+		//新增事件
+		$('#btn_add').click(function () {
+			editBasCommDiagnosis();
+		});
+
+		//监听是否有无效事件
+		form.on('switch(validFlag)', function (obj) {
+			var commDiagnosisId = obj.value;
+			common.requestServer('../basCommDiagnosis/updateBasCommDiagnosisValidFlag.jo', {
+				commDiagnosisId: commDiagnosisId,
+				validFlag: Number(obj.elem.checked)
+			}, function (result) {
+				if (result.code === '0') {
+					common.responseAtcion(result);
+				} else {
+					common.alert(result.msg, 0);
+					obj.elem.checked = !obj.elem.checked;
+					form.render('checkbox');
+				}
+			})
+		})
+
+		//监听工具条
+		table.on('tool(basCommDiagnosisListGrid)', function (obj) {
+			var data = obj.data;
+			switch (obj.event) {
+				case 'edit':
+					editBasCommDiagnosis(data);
+					break;
+			}
+		});
+
+
+		//编辑
+		function editBasCommDiagnosis(data) {
+			var title = '常用诊断'
+			var content = '$contextPath' + '/basCommDiagnosis/outCommDiagnosisEdit.do';
+			//true 执行
+			if (data) {
+				title = data.commDiagnosisDesc;
+				content += '?commDiagnosisId=' + data.commDiagnosisId;
+			}
+			common.open(content, title, {
+				area: ['550px', '450px'],
+				btn: ['保存'],
+				yes: function (index, layero) {
+					save(index, layero);
+				}
+			});
+		}
+
+		//显示
+		function showBasCommDiagnosis(data) {
+			var title = data.commDiagnosisDesc + '详情'
+			var content = '$contextPath' + '/basCommDiagnosis/BasCommDiagnosisShow.do?commDiagnosisId=' + data.commDiagnosisId
+			common.open(content, title, {
+				area: ['420px', '420px'],
+				btn: ['关闭']
+			});
+		}
+
+		//保存
+		function save(index, layero) {
+			var iframeWindow = window['layui-layer-iframe' + index], submitID = 'btn_save',
+					submit = layero.find('iframe').contents().find('#' + submitID);
+			//监听提交
+			iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+				var url = contextPath + '/basCommDiagnosis/saveBasCommDiagnosis.jo', params = data.field, msg = "保存成功";
+				common.requestServerHandler(url, params, msg, function (result) {
+					$('#btn_query').click();
+					layer.close(index); //关闭弹层
+				})
+			});
+			submit.trigger('click');
+		}
+
+		//删除
+		function delBasCommDiagnosis(data) {
+			common.confirm("确定要删除吗？", function () {
+				common.requestServer('$contextPath/basCommDiagnosis/delBasCommDiagnosis.jo', {
+					ids: data.commDiagnosisId
+				}, function (result) {
+					if (result.code == "0") {
+						$('#btn_query').click();
+					} else {
+						common.alert(result.msg, 0);
+					}
+				});
+			});
+		}
+	});
+</script>

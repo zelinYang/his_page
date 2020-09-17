@@ -1,0 +1,353 @@
+<script>
+/**父页面的菜单点击要注意清空和修改操作、子页面休息修改保存，也会更新此信息**/
+var curPatient =  {}; //患者对象
+//全局对象=grobalModel： {patientId:'患者id',registerId:'挂号记录ID',outpatientId:'门诊就诊ID',urgencyFlag:'急诊标识'}
+var grobalModel = {patientId:'',registerId:'',outpatientId:'',urgencyFlag:0}
+var selectRegId = 0;
+/******全局对象 end***********************************************************/
+
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+
+var curOutpatient;//当前门诊日志
+var getDrugAllergy;
+var endVisit;//就诊结束
+var showFirstDiagnosis;
+var showDiagnosis
+var showAllergy;
+var initLayout;
+var initLayIfamePage;//延迟加载Ifame页面
+var layuielement;
+
+layui.use('element', function(){
+    var element = layui.element;
+
+    //监听导航菜单点击事件
+    element.on('tab(outRightNav)', function(elem){
+        var layId = $(this).attr('lay-id');
+        var href = $(this).attr('href');
+        var patient = $(this).attr('patient');
+
+        reqIframe(layId, href, 1);
+    });
+
+    //iframe请求页
+    function reqIframe(layId,url,force) {
+        var destIframe = $('div[lay-id="'+layId+'"] iframe');
+        if(!destIframe.attr('src') || force) {
+            destIframe.attr('src',url + common.objToParamStr(grobalModel));
+        }
+    }
+});
+
+//显示当前就诊患者信息
+function showCurPatient(registerId, patientId) {
+    curPatient = getPatient(patientId);
+    if (curPatient){
+        for (var key in curPatient) {
+           $('.'+key).html(curPatient[key]);
+        }
+        console.log(curPatient);
+        if (curPatient.lowIncomeFlag === '1') {
+            $('#lowIncomeFlag').show();
+        } else {
+            $('#lowIncomeFlag').hide();
+        }
+        $('.patient').removeClass('hide');//显示或者隐藏患者信息
+        $('.patient-no').addClass('hide');//显示或者隐藏患者信息
+    } else {
+        $('.patient').addClass('hide');//显示或者隐藏患者信息
+        $('.patient-no').removeClass('hide');//显示或者隐藏患者信息
+    }
+    showPatientAddr();
+    getDrugAllergy(patientId);
+    getFirstDiagnosis(registerId);
+    countOutpatientFee(registerId);
+    $('.drugAllergy-area').removeClass('layui-hide');
+}
+
+
+
+//显示当前就诊患者信息
+function getPatient(patientId) {
+    var patientInfo;
+    $.ajax({
+        type: "POST",
+        url: '$contextPath/patient/findPatient.jo',
+        data: {patientId:patientId},
+        dataType:"json",
+        async:false,//同步 请求
+        success: function(result){
+            patientInfo = result.data;
+            if (patientInfo) {
+                grobalModel.patientId = patientInfo.patientId;
+                if (patientInfo.patientSex) {
+                    patientInfo.patientSexText = dicSex[patientInfo.patientSex];
+                }
+                if (patientInfo.patientKind) {
+                    patientInfo.patientKindText = dicPatientKind[patientInfo.patientKind];
+                }
+            }
+        },
+        error: function(res){
+            jqueryPostError(res);
+       }
+    });//ajax end
+    return patientInfo;
+}
+
+
+//显示当前就诊患者过敏信息
+getDrugAllergy =  function(patientId) {
+    var patientInfo;
+    $.ajax({
+        type: "POST",
+        url: '$contextPath/patient/patientDrugAllergyJsonList.jo',
+        data: {patientId:patientId},
+        dataType:"json",
+        async:false,//同步 请求
+        success: function(result){
+          showDrugAllergy(result);
+        },
+        error: function(res){
+            jqueryPostError(res);
+       }
+    });//ajax end
+    return patientInfo;
+}
+
+
+//显示当前患者诊断信息
+getFirstDiagnosis = function(registerId){
+    var registerInfo;
+    $.ajax({
+        type: "POST",
+        url: '$contextPath/outpatient/diagnosisListData.jo',
+        data: {registerId: registerId},
+        dataType:"json",
+        async:false,//同步 请求
+        success: function(result){
+            showFirstDiagnosis(result);
+        },
+        error: function(res){
+            jqueryPostError(res);
+       }
+    });//ajax end
+    return registerInfo;
+}
+
+function showDrugAllergy(result,allergyDrugName) {
+    var drugAllergy = '';
+    if ((result.data == null || result == '') && allergyDrugName == '') {
+        $('.drugAllergy').html(drugAllergy);
+        return false;
+    }
+    if(result.data){
+        $(result.data).each(function(index, data) {
+            drugAllergy += data.allergyDrugName + '、';
+        });
+        showAllergy(drugAllergy);
+    }
+
+    if(allergyDrugName){
+        showAllergy(allergyDrugName);
+    }
+}
+
+//设置诊断内容
+showFirstDiagnosis = function(outpatientResult, firstDiagnosis) {
+    var firstDiagnosisResult = '';
+    if((outpatientResult==null || outpatientResult.data==null || outpatientResult == '') && firstDiagnosis == ''){
+        firstDiagnosisResult = '未诊断';
+        $('.firstDiagnosis').html(firstDiagnosisResult);
+    }
+
+    if(outpatientResult && outpatientResult.data){
+        if(outpatientResult.data.length > 1){
+            $(outpatientResult.data).each(function(index, data){
+                firstDiagnosisResult += (index+1) + '、' + data.diseaseDiagnosisName + '，   ';
+            });
+            firstDiagnosisResult = common.clearLastChar(firstDiagnosisResult,'，   ');
+        } else if(outpatientResult.data.length == 0){
+                firstDiagnosisResult = '未诊断';
+        } else {
+            firstDiagnosisResult = outpatientResult.data[0].diseaseDiagnosisName;
+        }
+        showDiagnosis(firstDiagnosisResult);
+    }
+    if(firstDiagnosis){
+        showDiagnosis(firstDiagnosis);
+    }
+}
+
+showAllergy = function(allergyDrug){
+    var reg = /、$/gi;
+    allergyDrug = allergyDrug.replace(reg,"");
+    allergyDrug = common.strLimit(allergyDrug,10,'...');
+    $('.drugAllergy').html(allergyDrug);
+}
+
+showDiagnosis = function(firstDiagnosisResult){
+    var reg = /、$/gi;
+    firstDiagnosisResult = firstDiagnosisResult.replace(reg,"");
+    $('.firstDiagnosis').attr('title',firstDiagnosisResult);
+    firstDiagnosisResult = common.strLimit(firstDiagnosisResult,10,'...');
+    $('.firstDiagnosis').html(firstDiagnosisResult);
+}
+
+showPatientAddr = function(){
+    var patientAddr = $('.patientAddr');
+    patientAddr.attr('title',patientAddr.html());
+    patientAddrHtml = common.strLimit(patientAddr.html(),15,'...');
+    patientAddr.html(patientAddrHtml);
+}
+
+
+//设置全局 急诊标识 urgencyFlag
+function setUrgencyFlag(registerType) {
+    grobalModel.urgencyFlag = registerType == 5 ? 1 :0;//4=门诊
+}
+
+initLayout = function() {
+        if ($('#container').height()>0) {
+            $('#container').layout({
+                east__size: 400//pane的大小
+               ,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+               ,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane关闭时，同上。
+               ,spacing_open:12//边框的间隙
+               ,spacing_closed:12//边框的间隙
+               ,maskIframesOnResize:".resizeiframe"
+            });
+                 // hideEastLayout();
+
+            var li = $("#component-tabs li");
+              for(let i in li){
+                li.eq(i).click(function(){
+                    var layId = li[i].getAttribute("lay-id");
+                    layId === "regPatient"? hideEastLayout(): showEastLayout();
+                })
+            }
+        }
+}
+
+
+//延迟加载Ifame页面
+initLayIfamePage = function() {
+    function loadIfamePage() {
+       $('iframe[targetSrc]').each(function(index) {
+            var elem = $(this);
+            var src = elem.attr('targetSrc') + common.objToParamStr(grobalModel);
+            elem.attr('src',src);
+        });
+    }
+    //延迟加载
+    setTimeout(function(){
+        loadIfamePage();
+    }, 500);
+}
+
+//隐藏东侧界面
+function hideEastLayout() {
+    let contentOpen = $(".ui-layout-resizer-east .content-open");
+    if(contentOpen.css("display")!="none"){
+        contentOpen.trigger('click');
+        $('#container .ui-layout-east').addClass("noInfo");
+        $('#container .ui-layout-resizer').addClass("noInfo");
+    }
+}
+
+//显示东侧界面
+function showEastLayout() {
+    let contentClose = $(".ui-layout-resizer-east .content-closed");
+    if(contentClose.css("display")!="none"){
+        $('#container .ui-layout-east').removeClass("noInfo");
+        $('#container .ui-layout-resizer').removeClass("noInfo");
+        $(".ui-layout-resizer-east .content-closed").trigger('click');
+    }
+}
+//加载特殊字符
+function loadSpecilChar() {
+    var specilCharDiv = $('.specilChar');
+    var specilChars = specilCharDiv.html().trim().replace(/\s/g,"");;
+    var specilCharArr = [];
+    specilCharDiv.empty();
+    for (var i = 0; i < specilChars.length; i++) {
+        specilCharArr.push(specilChars.substring(i,(i+1)));
+        var charDiv = $('<div class="layui-col-xs2"></div>');
+        charDiv.html(specilChars.substring(i,(i+1)));
+        specilCharDiv.append(charDiv);
+    }
+}
+
+//结束就诊
+endVisit = function(){
+    var registerId = grobalModel.registerId;
+    if (!registerId) {
+        common.msg('请先在患者列表中就诊患者', 0);
+        return false;
+    }
+    common.confirm("确定结束当前就诊吗？", function() {
+        endVisitRegister(registerId);//更改就诊患者状态
+    });
+
+}
+
+//结束就诊
+function endVisitRegister(registerId) {
+    var regIframe = $('div[lay-id=regPatient] iframe')[0].contentWindow;
+    common.requestServer('$contextPath/register/endVisitRegister.jo', {registerId : registerId}, function (result) {
+        if (result.code === '0') {
+            tabChange('outNav', 'regPatient');//跳转到选择患者页面
+            regIframe.freshen();//刷新
+            $('.reg_patient_info td span[class]').html('');
+            $('.reg_patient_info .drugAllergy-area').html('');
+            grobalModel = {patientId:'',registerId:'',outpatientId:'',urgencyFlag:0};
+            common.responseAtcion(result);
+            hideEastLayout()
+        } else {
+            if (result.data === "$!{CONST.AppConstants.OPEN_INFECTIOUS_REPORT}") {
+                tabAddOutNav("infectious_" + registerId,"传染病报卡", "../emr/1903/getPatientEmrByDateGroup.do?emrTlpClassifyId=48&patientId=" + grobalModel.patientId + "&registerId=" + grobalModel.registerId + "&outpatientId=" + grobalModel.outpatientId + "&urgencyFlag=" + grobalModel.urgencyFlag);
+            } else if (result.data === "$!{CONST.AppConstants.OPEN_CHRONIC_REPORT}") {
+                tabAddOutNav("chronic_" + registerId,"慢性病报卡", "../emr/1909/getPatientEmrByDateGroup.do?emrTlpClassifyId=90&patientId=" + grobalModel.patientId + "&registerId=" + grobalModel.registerId + "&outpatientId=" + grobalModel.outpatientId + "&urgencyFlag=" + grobalModel.urgencyFlag);
+            }
+            common.alert(result.msg, 0);
+        }
+    })
+}
+
+//刷新诊疗费用
+function countOutpatientFee(registerId) {
+    if (!registerId) {
+        return;
+    }
+    $.ajax({
+        type: "POST",
+        url: '$contextPath/outpatientFee/countOutpatientFee.jo',
+        data: {registerId : registerId},
+        dataType:"json",
+        async:false,//同步 请求
+        success: function(result){
+            if (result.code == '0') {
+                $('.fee').html(result.data);
+            }
+        } ,error: function(res){  jqueryPostError(res); }
+    });//ajax end
+}
+
+$(document).ready(function() {
+    initLayout();
+    initLayIfamePage();
+    loadSpecilChar();//加载特殊字符
+
+    $('li[lay-id=medicineRecipe]').click(function(){
+        $('li[lay-id=3]').click();
+    });
+    $('li[lay-id=outpatientEmr]').click(function(){
+        $('li[lay-id=1]').click();
+    });
+});
+
+
+</script>
+
+

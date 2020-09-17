@@ -1,0 +1,725 @@
+<script language="javascript" type="text/javascript">
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    //1    门诊
+    var REGISTERTYPE_OUTPATIENT = "$!{CONST.AppConstants.REGISTERTYPE_OUTPATIENT}";
+    var REGISTERTYPE_EMERGENCY = "$!{CONST.AppConstants.REGISTERTYPE_EMERGENCY}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    //挂号类别 6    义诊
+    var REGISTERTYPE_FREE = "$!{CONST.AppConstants.REGISTERTYPE_FREE}";
+
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)')
+    //就诊卡类型
+    var dicvisitCardType = JSON.parse('$dicTools.changeMapToJson($dicData.dicvisitCardType)')
+    //性别
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)')
+    //患者类别
+    var dicPatientClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientClassify)')
+    //患者性质
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)')
+    //科室
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)')
+    //护士医生
+    var dicNurseDoctor = JSON.parse('$dicTools.changeMapToJson($dicData.dicNurseDoctor)')
+    var dicDoctorPost = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorPost)')
+    //诊室
+    var dicConsultingRoom = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsultingRoom)')
+    //职称名称
+    var dicRegisterDoctorDutyName = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyName)')
+    //职称收费单价
+    var dicRegisterDoctorDutyUnitPrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterDoctorDutyUnitPrice)')
+    //病历费
+    var dicMedicalRecordsFeePrice = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicalRecordsFeePrice)')
+    /* 上午下午 */
+    var dicVisitTimeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeFlag)')
+    var dicVisitTimeRange = JSON.parse('$dicTools.changeMapToJson($dicData.dicVisitTimeRange)')
+
+    //=========== 报价器实现begin ============
+    var BS_TdBjq;
+    $(document).ready(function () {
+        //报价器需要在加载完页面后初始化下面这两行代码
+        if (window.ActiveXObject) {
+            BS_TdBjq = new ActiveXObject("Tdbjq.BS_Tdbjq");
+            BS_TdBjq.BS_dsbdll(0, "&TLINK$");
+        }
+    });
+
+    //报价
+    $('#btn_quotedPrice').click(function () {
+        var patientName = $("#patientName").val();
+        var diagnosisFee = $("#diagnosisFee").val();
+
+        BS_TdBjq.BS_dsbdll(0, "&Sc$");
+        BS_TdBjq.BS_dsbdll(0, "&C21您好，请稍等！$");
+        BS_TdBjq.BS_dsbdll(0, "A1");
+        BS_TdBjq.BS_dsbdll(0, "&Sc$");
+        BS_TdBjq.BS_dsbdll(0, "&C11尊敬的"+ patientName +"，您好！$");
+        BS_TdBjq.BS_dsbdll(0, diagnosisFee + "J");
+    });
+
+    //找零
+    $('#btn_smallChange').click(function () {
+
+        var actualCharge = $("#actualCharge").val();
+        if (!actualCharge) {
+            common.alertError("请填写[实收金额]");
+            return;
+        }
+
+        var diagnosisFee = $("#diagnosisFee").val();
+        BS_TdBjq.BS_dsbdll(0, diagnosisFee + "J");
+
+        var actualCharge = $("#actualCharge").val();
+        var changeCharge = $("#changeCharge").val();
+        changeCharge = changeCharge ? changeCharge : 0;
+        BS_TdBjq.BS_dsbdll(0, actualCharge + "Y");
+        BS_TdBjq.BS_dsbdll(0, changeCharge + "Z");
+    });
+    //=========== 报价器实现end ============
+
+    //================YHK===================
+    function onObjectError() {
+        common.alertError("加载OCX控件失败!");
+    }
+
+    function payByBankCard () {
+        var param = buildCardParams();
+        //var data = "01000000000001                                                                                                      000080626323020200724155401289";
+        if (0 == param) {
+            return "error";
+        }
+        return Singlee.CardTrans(param);
+    }
+
+    function buildCardParams() {
+        var payType = "01";//消费
+        var money = $("#diagnosisFee").val();
+        if (0 != m && !m) {
+            return 0;
+        }
+        m = (m + "").replace(".", "");
+        var m_len = m.length;
+        var bw = 12 - m_len;
+        if (bw > 0) {
+            for (var i=0; i < bw; i++) {
+                m = "0" + m;
+            }
+        } else {
+            return 0;
+        }
+        var bwStr = "";
+        for (var i=0; i < 56; i++) {
+            bwStr += " ";
+        }
+        var tradingCode = $("#authCode").val();
+        for (var i=0; i < 46; i++) {
+            tradingCode = " " + tradingCode;
+        }
+        return payType + m + bwStr + tradingCode;
+    }
+    //================YHK===================
+
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'layer', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, layer = layui.layer, element = layui.element, table = layui.table,
+                util = layui.util
+        // 分页列表
+        var tableUrl_arrangeDutyOfficeList = contextPath + '/register/officeRegisterTotalList.jo',
+                tableId_arrangeDutyOffice = 'arrangeDutyOfficeList'
+        var tableUrl_arrangeDutyDoctorList = contextPath + '/outpatient/arrangeDutyDoctorListData.jo',
+                tableId_arrangeDutyDoctor = 'arrangeDutyDoctorList'
+        var editUrl = contextPath + '/basCommDiagnosis/basCommDiagnosisEdit.do'
+        var showUrl = contextPath + '/basCommDiagnosis/basCommDiagnosisShow.do'
+        var delUrl = contextPath + '/basCommDiagnosis/delBasCommDiagnosis.jo'
+        var updateValidFlagUrl = contextPath + '/basCommDiagnosis/updateBasCommDiagnosisValidFlag.jo'
+        common.verify(form)
+
+        //挂号类型设置
+        function setRegisterType(registerType) {
+            //重载科室排班
+            selectArrangeDutyOfficeList(queryOfficeListDone)
+            switch (registerType) {
+                case '1':
+                    $('.regTyep').find('.layui-form-label').html(function (index, text) {
+                        return '#requiredTag()' + text;
+                    })//显示儿童信息
+                    $('.regTyep').find('input').attr('lay-verify', 'required');
+                    $('.emergencyTreatmentFee').hide();
+                    break;
+                case '2':
+                    $('.regTyep').find('.layui-form-label span').remove();
+                    $('.regTyep').find('input').removeAttr('lay-verify');
+                    $('.emergencyTreatmentFee').show();
+                    break
+                case "$!{CONST.AppConstants.REGISTERTYPE_FREE}":
+                    regFee();
+                    break;
+                default:
+                    $('.emergencyTreatmentFee').hide();
+            }
+        }
+
+        //监听挂号类型
+        form.on('radio(registerType)', function (data) {
+            setRegisterType(data.value)
+        });
+
+        /* 设置预约挂号参数 */
+        function setAppoint(appoint) {
+            //触发科室医生表格选择
+            var officedone = function (res, curr, count) {
+                selectRow(tableId_arrangeDutyOffice, 'arrangeDutyOfficeId', appoint.visitOfficeId)
+                var done = function (res, curr, count) {
+                    selectRow(tableId_arrangeDutyDoctor, 'visitDoctorId', appoint.visitDoctorId)
+                }
+                selectArrangeDutyDoctor(appoint.visitOfficeId, done)
+            }
+            selectArrangeDutyOfficeList(officedone)
+        }
+
+        //获取当前就诊患者信息
+        window.getPatientInfo = function (params) {
+            common.requestServer('$contextPath/register/findPatientIndex.jo', params, function (result) {
+                if (result.code == '0') {
+                    var patientInfo = $.extend({}, result.data.patient, result.data.patientIndex)
+                    patientInfo.patientSexName = dicSex[patientInfo.patientSex]//性别名称
+                    patientInfo.patientClassifyName = dicPatientClassify[patientInfo.patientClassify]
+                    patientInfo.patientKindName = dicPatientKind[patientInfo.patientKind]
+                    patientInfo.medicalRecordsFeeFlag = null
+                    patientInfo.medicalRecordsFeeUnitPrice = '0.00'
+                    patientInfo.emergencyTreatmentFee = '0.00'
+                    var emergencyTreatmentFee
+                    //成人 急诊
+                    if ($('#registerType').val() == 2 && patientInfo.patientClassify == 1) {
+                        patientInfo.emergencyTreatmentFee = '5.00'
+                    }
+                    if (patientInfo.patientBirth) {
+                        patientInfo.patientBirth = util.toDateString(patientInfo.patientBirth, 'yyyy-MM-dd')
+                    }
+                    //表单初始赋值
+                    form.val('registerForm', patientInfo)
+                    if ("" != $("patientId").val() && "" != $("visitDoctorId").val()) {
+                        regFee();
+                    }
+                } else {
+                    $('.patient-search').click();
+                }
+            })
+        }
+
+        //监听就诊卡号 回车（Enter）键自动根据查询患者信息事件
+        $('#keyWordEqu').on('keydown', function (event) {//给输入框绑定按键事件
+            if (event.key == 'Enter') {
+                var params = {
+                    keyWordEqu: $(this).val()
+                }//就诊卡号
+                getPatientInfo(params)
+                return false
+            }
+        })
+
+        //监听图标查询就诊卡号click事件 选择患者弹窗
+        $('.patient-search').click(function () {
+            var title = '选择患者'
+            var content = '../patient/selectPatient.do'
+            findPatient(content, title)
+        })
+
+        //监听病历费复选框
+        form.on('checkbox(medicalRecordsFeeFlag)', function (data) {
+            setMedicalRecordsFee(data.elem.checked, data.value)
+        })
+
+        /* 挂号科室 */
+        table.render({
+            elem: '#' + tableId_arrangeDutyOffice,
+            url: tableUrl_arrangeDutyOfficeList, //数据接口
+            where: getQueryParams(),
+            data: [],
+            cols: [[ //表头
+                {
+                    title: '<i class="layui-icon layui-icon-refresh"></i>',
+                    type: 'radio',
+                    fixed: 'left'
+                }, {
+                    title: '科室名称',
+                    field: 'arrangeDutyOfficeId',
+                    fixed: 'left',
+                    minWidth: 100,
+                    templet: function (row) {
+                        return dicSysOrgName[row.arrangeDutyOfficeId] || ''
+                    }
+                }, {
+                    field: 'limitCount',
+                    title: '限额',
+                    templet: function (d) {
+                        return '<span style="' + (Boolean(d.limitCount) ? 'color: #FF5722;' : "") + '">' + d.limitCount + '</span>';
+                    }
+                }, {
+                    field: 'registerCount',
+                    title: '已挂',
+                    templet: function (d) {
+                        return '<span style="' + (Boolean(d.registerCount) ? 'color: #FF5722;' : "") + '">' + d.registerCount + '</span>';
+                    }
+                }]], done: queryOfficeListDone
+        })
+
+        function queryOfficeListDone() {
+            var that = this;
+            //重载挂号科室表格
+            $(that.elem).next().find('.layui-icon-refresh').click(function () {
+                selectArrangeDutyOfficeList(queryOfficeListDone)
+            })
+        }
+
+        //单击科室查询医生
+        table.on('row(' + tableId_arrangeDutyOffice + ')', function (obj) {
+            var tr = obj.tr, data = obj.data;
+            data.visitOfficeId = data.arrangeDutyOfficeId;
+            data.visitOfficeName = dicSysOrgName[data.arrangeDutyOfficeId];
+            data.registerTypeName = dicRegisterType[data.registerType];
+            //表单初始赋值
+            form.val('registerForm', data);
+            $('.doctorInfo').val(null);
+            clickRowSelectRadio(tr);
+            form.render('select');
+            selectArrangeDutyDoctor(data.arrangeDutyOfficeId);
+        })
+
+        /* 挂号医生 */
+        table.render({
+            elem: '#' + tableId_arrangeDutyDoctor,
+            data: [],
+            cols: [[ //表头
+                {
+                    type: 'radio',
+                    fixed: 'left'
+                }, {
+                    field: 'doctorId',
+                    title: '医生姓名',
+                    fixed: 'left',
+                    minWidth: 110,
+                    templet: function (row) {
+                        return row.doctorName + (NO_FLAG == row.validFlag ? ' <span class="layui-badge">停诊</span>' : '');
+                    }
+                }, {
+                    field: 'doctorPost',
+                    title: '职称',
+                    width: 80,
+                    templet: function (row) {
+                        return dicDoctorPost[row.doctorPost] || '';
+                    }
+                }, {
+                    field: 'limitCount',
+                    title: '时段限额'
+                }, {
+                    field: 'registerCount',
+                    title: '已挂'
+                }, {
+                    field: 'consultingRoomName',
+                    title: '诊室',
+                    minWidth: 100
+                }]]
+        })
+
+        //监听医生行单击事件
+        table.on('row(' + tableId_arrangeDutyDoctor + ')', function (obj) {
+            //已超过医生挂号限额，是否继续？
+            var msg = '已超过医生挂号限额，是否继续？'
+            if (obj.data.limitCount == obj.data.registerCount) {
+                common.confirm(msg, function () {
+                    setArrangeDutyDoctor(obj.tr, obj.data);
+                })
+            } else if (NO_FLAG == obj.data.validFlag) {
+                common.alert('选择的医生"' + dicNurseDoctor[obj.data.doctorId] + '"已经停诊，请选择其他医生！');
+            } else {
+                setArrangeDutyDoctor(obj.tr, obj.data);
+            }
+        })
+
+        /* 查询患者 */
+        function findPatient(content, title) {
+            common.open(content, title, {
+                area: ['80%', '80%'],
+                btn: ['确定'],
+                yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index], submitID = 'LAY-user-back-submit',
+                            submit = layero.find('iframe').contents().find('#' + submitID)
+
+                    var checkStatus = iframeWindow.layui.table.checkStatus('patientTable')
+                    if (checkStatus.data.length == 0) {
+                        layer.msg('请选择患者', {
+                            icon: 5
+                        })
+                        return
+                    }
+                    var params = {
+                        patientId: checkStatus.data[0].patientId
+                    }//就诊卡号
+                    getPatientInfo(params)
+                    layer.close(index)
+                },
+                success: function (layero, index) {
+                    $('#keyWordEqu').val() && layero.find('iframe').contents().find('#q_keyWord').val($('#keyWordEqu').val())
+                }
+            })
+        }
+
+        /* 挂号缴费方式 */
+        form.on('radio(selfPayInWay)', function (data) {
+            setselfPayInWay(data.value)
+        });
+
+        //获取银行交易索引号
+        function getTradingCode () {
+            var data = {
+                "orgId": 99,
+                "partnerId": "1003"
+            };
+            $.ajax({
+                type: "POST",
+                url: '$contextPath/register/getTradingCode.jo',
+                data: data,
+                dataType: "json",
+                async: false,
+                success: function (result) {
+                    if (result) {
+                        $("#authCode").val(result.data);
+                    }
+                }
+            });
+        }
+
+        /* 缴费方式 */
+        function setselfPayInWay(selfPayInWayVal) {
+            //不是现金的查询支付状态
+            if (selfPayInWayVal != 1) {
+                if (selfPayInWayVal == 4) {
+                    getTradingCode();
+                } else {
+                    $("#authCode").val("");
+                }
+                $('.payCode').show();
+
+                $("#changeChargeDiv").hide();
+                //设置实收金额为应收金额
+                $("#actualCharge").val($("#diagnosisFee").val());
+                $("#actualCharge").attr("readonly","readonly");
+                //清空找零
+                $("#changeCharge").val("");
+            } else {
+                //现金支付展示实收金额
+                $('.payCode').hide();
+                $("#changeChargeDiv").show();
+                $("#actualCharge").removeAttr("readonly");
+                $("#authCode").val("");
+            }
+        }
+
+        //计算找零
+        $("#actualCharge").on('keyup', function (event) {
+            calculateCharge();
+        });
+
+        //计算找零金额
+        function calculateCharge () {
+            var actualCharge = $("#actualCharge").val();
+            var diagnosisFee = $("#diagnosisFee").val();
+            var changeCharge = Number(actualCharge - diagnosisFee).toFixed(2);
+            //$("#changeCharge").val(changeCharge);
+            form.val('registerForm', {
+                changeCharge: changeCharge,
+                actualCharge: actualCharge
+            });
+        }
+
+        //付款码
+        $('#btn_authCode').click(function () {
+            var authCode = $('#authCode').val()
+        });
+
+        /* 选择病历费 */
+        function setMedicalRecordsFee(checked, value) {
+            var unitPrice
+            if (checked) {
+                unitPrice = Number(dicMedicalRecordsFeePrice[value]).toFixed(2)
+            } else {
+                unitPrice = '0.00'
+            }
+            form.val('registerForm', {
+                medicalRecordsFeeUnitPrice: unitPrice
+            })
+            regFee();
+        }
+
+        //计算应收费用
+        function regFee() {
+            if ("" == $("#patientId").val() || "" == $("#visitDoctorId").val()) {
+                return;
+            }
+            var params = {patientId: $("#patientId").val(), visitDoctorId: $("#visitDoctorId").val(), registerType: $(':radio[name="registerType"]:checked').val()};
+            common.requestServer('$contextPath/bas/getDoctorPostFee.jo', params, function (result) {
+                if (result.code == '0') {
+                    if (null != result.data) {
+                        $("#chargeName").val(result.data.chargeName);
+                        $("#registerFee").val(Number(result.data.unitPrice).toFixed(2));
+                    } else {
+                        $("#chargeName").val("");
+                        $("#registerFee").val("");
+                    }
+                    var medicalRecordsFeeUnitPrice = $('#medicalRecordsFeeUnitPrice').val();
+                    var registerFee = 0;
+                    if (REGISTERTYPE_FREE != $(':radio[name="registerType"]:checked').val()) {
+						registerFee = $('#registerFee').val();
+                    }
+                    var emergencyTreatmentFee = $('#emergencyTreatmentFee').val() || 0
+                    var payableSum = Number(Number(registerFee) + Number(medicalRecordsFeeUnitPrice) + Number(emergencyTreatmentFee)).toFixed(2);// 应交款  诊查费+病历 // 应收合计
+                    $('#diagnosisFee').val(payableSum);
+
+                    //现金收款-应收款改变时计算对应找零
+                    var selfPayInWay = $("input[name=selfPayInWay]:checked").val();
+                    if (selfPayInWay == 1) {
+                        calculateCharge();
+                    } else {
+                        //设置实收金额为应收金额
+                        $("#actualCharge").val($("#diagnosisFee").val());
+                    }
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }
+
+        /* 清空表单隐藏域 */
+        function resetPatientForm() {
+            //清除隐藏输入框的值,排除就诊卡类型
+            $('#registerForm').find(':not(#appointRegisterType):not(#visitCardType):not(:radio[name="registerType"]):not(:radio[name="selfPayInWay"])').val(null);
+            //重载科室排班
+            selectArrangeDutyOfficeList('');
+        }
+
+        // 挂号按钮
+        function saveRegister() {
+            var url = contextPath + '/register/saveRegisterAndPay.jo',
+                    params = common.serializeObject($('#registerForm')),
+                    msg = '挂号成功！';
+
+            var validMsg = validateParameter(params);
+            if (validMsg) {//验证必填参数
+                common.msg(validMsg, 3);
+                return false;
+            }
+
+            //银行卡收费
+            if (4 == params.selfPayInWay) {
+                var ret = payByBankCard();
+                if ("error" == ret) {
+                    common.alertError("银联卡支付失败");
+                    return false;
+                } else if (ret) {
+                    if (ret.startsWith("000000")) {
+                        ret = ret.replace(/[^\x00-\xff]/g, "**");
+                        var jyNum = ret.substring(89, 101);
+                        params.agtOrderNum = jyNum;
+                    } else {
+                        common.alertError("银联卡支付失败");
+                        return false;
+                    }
+                } else {
+                    common.alertError("银联卡支付失败");
+                    return false;
+                }
+            }
+
+            common.confirm('是否确认挂号？', function () {
+				common.requestServer(contextPath + '/register/saveRegisterAndPay.jo', params, function (result) {
+					if (result.code === '0') {
+						var url = contextPath + "/emr/commonEmrTemplate.do?emrTlpId=$!{dicData.dicSysPro.get('EMR_TLP_ID_GUIDE_SINGLE')}&registerId=" + result.data.registerId + "&patientId=" + result.data.patientId + "&modelType=print";
+						common.open(url, '打印挂号指引单', {
+							area: ['500px', '80%'],
+							scroll: true
+						});
+						layer.msg('挂号成功', {icon: 1, time: 2000});
+						resetPatientForm();
+                    } else {
+						common.alert(result.msg);
+                    }
+				});
+			});
+        }
+
+        //重载查询科室的限额和已挂人数
+        function selectArrangeDutyOfficeList(done) {
+            $('.officeDepInfo').val(null)
+            $('.doctorInfo').val(null)
+            form.render('select');
+            var params = getQueryParams();
+            table.reload(tableId_arrangeDutyOffice, {
+                where: params,
+                done: done
+            })
+            selectArrangeDutyDoctor(0)//重载医生
+        }
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            var registerType = $(':radio[name="registerType"]:checked').val();
+            var emergencyRegisterFlag = '';
+            switch (registerType) {
+                case REGISTERTYPE_OUTPATIENT://门诊
+                    emergencyRegisterFlag = NO_FLAG;
+                    break;
+                case REGISTERTYPE_EMERGENCY://急诊
+                    emergencyRegisterFlag = YES_FLAG;
+                    break;
+                default:
+                    emergencyRegisterFlag = '';
+            }
+            return {registerType: registerType, emergencyRegisterFlag: emergencyRegisterFlag};
+        }
+
+        //单击行选中radio 与 点击radio选中行
+        function clickRowSelectRadio(tr) {
+            tr.addClass('layui-table-click').siblings().removeClass('layui-table-click')//选中行样式
+            tr.find('input[lay-type="layTableRadio"]').prop('checked', true)
+            form.render('radio')
+        }
+
+        /**
+         *表格根据键值对选择行
+         *tbId 表格id
+         *key 键
+         *val 值，是表头设置temple的列
+         */
+        function selectRow(tbId, key, val) {
+            var index = $('#' + tbId).next().find('.layui-table-body').find('td[data-field="' + key + '"][data-content="' + val + '"]').parent('tr').data('index')
+            $('#' + tbId).next().find('tr[data-index="' + index + '"] input[lay-type="layTableRadio"]').next().click()
+        }
+
+        /* 获取上午下午 */
+        function getArrangeDutyType() {
+            var hour = new Date().getHours();
+            if (hour < 12) {
+                //上午
+                arrangeDutyType = '$!{CONST.AppConstants.ARRANGE_DUTY_TYPE_AM}'
+            } else {
+                arrangeDutyType = '$!{CONST.AppConstants.ARRANGE_DUTY_TYPE_PM}'
+            }
+            return arrangeDutyType
+        }
+
+        // 获取 日期和类别
+        function getVisitTimeFlagData() {
+//当日值班医生ARRANGE_DUTY_TYPE_AM
+            var arrangeDutyType = getArrangeDutyType();
+            return {
+                arrangeDutyDate: new Date(),
+                arrangeDutyType: arrangeDutyType
+            }
+        }
+
+        // 设置 日期和类别
+        function setVisitTimeFlag(data) {
+            $('#q_arrangeDutyDate').text(util.toDateString(data.arrangeDutyDate, 'yyyy-MM-dd')).data('value', util.toDateString(data.arrangeDutyDate, 'yyyy-MM-dd'));
+            $('#q_visitTimeFlag').text(dicVisitTimeFlag[data.arrangeDutyType] + ' ' + dicVisitTimeRange[data.arrangeDutyType]).data('value', data.arrangeDutyType);
+        }
+
+        setVisitTimeFlag(getVisitTimeFlagData())
+
+        //重载查询科室下的医生
+        function selectArrangeDutyDoctor(doctorOfficeId, done) {
+            //当日值班医生ARRANGE_DUTY_TYPE_AM
+            var data = getVisitTimeFlagData()
+            setVisitTimeFlag(data)
+            var queryParams = {
+                doctorOfficeId: doctorOfficeId,
+                arrangeDutyDate: util.toDateString(data.arrangeDutyDate, 'yyyy-MM-dd'),
+                arrangeDutyType: data.arrangeDutyType
+            }
+            var options = {
+                url: tableUrl_arrangeDutyDoctorList,
+                where: queryParams
+            }
+            done && (options.done = done)
+            //执行重载
+            table.reload(tableId_arrangeDutyDoctor, options)
+        }
+
+        //验证参数
+        function validateParameter(data) {
+            if (!data.visitCardNo) {
+                return '就诊卡号不能为空'
+            }
+            if (!data.visitCardType) {
+                return '诊疗类型不能为空'
+            }
+            if (!data.visitOfficeId) {
+                return '科室不能为空'
+            }
+            if (!data.visitDoctorId) {
+                return '医生不能为空'
+            }
+            if (!data.selfPayInWay) {
+                return '缴费方式不能为空'
+            }
+            if (!data.actualCharge) {
+                return '实收金额不能为空'
+            }
+            if (data.changeCharge < 0) {
+                return '实收金额不能小于应收合计'
+            }
+        }
+
+        /* 设置挂号医生表单 */
+        function setArrangeDutyDoctor(tr, data) {
+            clickRowSelectRadio(tr)
+            //表单初始赋值
+            data.roomName = dicConsultingRoom[data.consultingRoomId];
+            data.consultingRoomId = data.consultingRoomId;
+            data.visitDoctorId = data.doctorId;
+            data.visitDoctorName = data.doctorName;
+            data.visitDate = util.toDateString(data.arrangeDutyDate, 'yyyy-MM-dd');
+            data.visitTimeFlag = data.arrangeDutyType;
+            data.visitDoctorPost = data.doctorPost;
+            data.visitDoctorPostName = dicDoctorPost[data.doctorPost] ||'';
+            form.val('registerForm', data)
+            regFee();
+        }
+
+        //监听提交
+        form.on('submit(btn_save)', function (data) {
+            //缴费方式
+            saveRegister();
+            return false;
+        });
+        var active = {
+            table: function () {
+                //轮询 iframe 显示隐藏
+                var int = setInterval(function () {
+                    if ($('body').css("width") !== '0px') {
+                        clearInterval(int);
+                        selectArrangeDutyOfficeList(queryOfficeListDone);
+                    }
+                }, 100);
+            }
+        }
+        //
+
+        /**
+         * 监听门诊挂号页面的刷新事件 web\WEB-INF\view\outpatient\arrangeDutyDoctor\arrangeDutyDoctorMain.js.vm
+         * modName 模块名 刷新页面 "refreshPage"
+         * events 事件名 监听 "refreshPage" 模块的 "register" 事件
+         * callback(params) 回调函数(参数)  一个参数 "table"; 多个参数  ["table"]
+         *
+         * 配合 top.layui.event("refreshPage", "register", "table"); 使用
+         */
+        top.layui.onevent("refreshPage", "register", function () {
+            $.each(arguments, function (i, type) {
+                active[type] ? active[type].call(this) : '';
+            })
+        });
+    })
+</script>
+

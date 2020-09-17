@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>药库盘点</title>
+	<link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+	<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+
+
+</head>
+
+<body class="outRecipeGroup">
+<div class="layui-content-wrapper">
+	<div class="layui-fluid">
+		<div id="container" class="main full-height">
+			<div class="ui-layout-center full-height">
+				<iframe id="itemEdit" src="" class="resizeiframe" style="height: calc(100% - 3px);" width="100%"  scrolling="no" frameborder="0" ></iframe>
+			</div>
+
+			<div class="ui-layout-west full-height" style="background: #fff;position: relative;overflow-y: hidden">
+				<div class="layui-card" >
+					<div class="layui-card-body p-n">
+						<!-- 查询表单 -->
+						<form id="queryForm" class="layui-form">
+                            #formHiddenInput("validFlag" "${CONST.AppConstants.YES_FLAG}" "")
+                            #formHiddenInput("perStockFlag" "${CONST.AppConstants.NO_FLAG}" "")
+							<div class="layui-row-query search-term">
+								<div class="layui-form-item">
+									<div class="layui-inline">
+										<select id="drugstoreId" name="drugstoreId" lay-filter="drugstoreId" lay-verify="required" class="layui-input">
+											<option value="">请选择</option>
+                                            #foreach($drugstore in $drugstoreList)
+												<option value='${drugstore.drugstoreId}'>${drugstore.drugstoreName}</option>
+                                            #end
+										</select>
+									</div>
+									<div class="layui-inline layui-btn-group fr" >
+										<button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search"></i></button>
+										<button type="button" id="btn_clean" class="layui-btn layui-btn-sm" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+										<button type="button" id="btn_add" class="layui-btn layui-btn-sm layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>
+									</div>
+								</div>
+							</div>
+						</form>
+						<table id="drugstorePerStockTable" lay-filter="drugstorePerStockTable"></table> <!-- 数据表格 -->
+					</div>
+				</div>
+			</div>
+
+		</div><!-- layui-row -->
+	</div>
+</div>
+	#parse("./drugstore/drugstorePerStock/drugstorePerStockList.js.vm")<!-- 页面js -->
+</body>
+</html>

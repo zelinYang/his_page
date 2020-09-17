@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>患者就诊费用查询</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+      .layui-table-header div.layui-table-cell{
+      text-align: left;
+      }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <div class="layui-bg-white">
+            <!-- 列表表格 工具栏-->
+            <!--搜索条件 开始-->
+            <form id="patient_queryForm" class="layui-form autoWidth">
+                <div class="layui-row-query search-term">
+                    <div class="layui-form-item">
+
+                        <div class="layui-inline">
+                            <label class="layui-form-label">收费日期</label>
+                            <div class="layui-input-inline auto-width" style="width: auto;">
+                                #formTextInput( "chargeDate" "" "id='chargeDate' class='layui-input' placeholder='请选择时间' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">发票号码</label>
+                            <div class="layui-input-inline">
+                                #formTextInput("feeBillNo" "" " id='q_dicTypeName' class='layui-input' autocomplete='off' maxlength='50' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">就诊卡号</label>
+                            <div class="layui-input-inline wd-150">
+                                #formTextInput("visitCardNo" "" "  class='layui-input' autocomplete='off' maxlength='48' ")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">患者姓名</label>
+                            <div class="layui-input-inline wd-150">
+                                #formTextInput( "patientName" "" "  class='layui-input' autocomplete='off' maxlength='48' ")
+                            </div>
+                        </div>
+
+                        <div class="layui-inline ">
+                            <label class="layui-form-label">开单科室</label>
+                            <div class="layui-input-inline  wd-120">#formSingleSelectSearch( "outpatientOfficeId" "" $!{officeMap} "lay-search")
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">收款员</label>
+                            <div class="layui-input-inline wd-150">
+                                #formSingleSelectFirstNone("operUserId" "$!{command.operUserId}" ${userMap} "" "")
+                            </div>
+                        </div>
+                        <div class="layui-inline m-r-n">
+                            <div class="layui-btn-group">
+                                <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query" id="btn_query">
+                                    <i class="layui-icon layui-icon-search "></i>
+                                </button>
+                                <button class="layui-btn layui-btn-sm layui-btn-normal" type="button" lay-tips="导出" id="btn_add">
+                                    <i class="layui-icon layui-icon-export" style="margin-top: 7px"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+            <!--列表 begin-->
+            <table id="basDiseaseListGrid" class="layui-table-tabs" lay-filter="basDiseaseListGrid">
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- 本页面js -->
+    #parse("./report/syncOutpatientFee/syncOutpatientFeeList.js.vm")
+</body>
+</html>

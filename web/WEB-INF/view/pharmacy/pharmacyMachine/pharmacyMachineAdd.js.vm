@@ -1,0 +1,336 @@
+<!-- 操作栏操作按钮 -->
+<script type="text/html" id="delTpl">
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-tips="刪除" lay-event="btn_delete">
+        <i class="layui-icon layui-icon-delete"></i></a>
+</script>
+<script>
+    var NO_FLAG = "$!{CONST.AppConstants.NO_FLAG}";
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table;
+
+        common.verify(form);
+
+        //清空分类
+        $('.caller-icon').click(function () {
+            $("#q_pharmacyName").val("");
+        });
+
+        //回车触发查询
+        $("#q_pharmacyName").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            //执行重载
+            table.reload('pharmacyListGrid', {where: {pharmacyName: $("#q_pharmacyName").val()}});
+        })
+
+        // 新增药房按钮
+        $('#btn_add').click(function () {
+            var pharmacyId = $("#pharmacyId").val();
+            common.open(contextPath + '/pharmacy/pharmacyMedicineAdd.do?pharmacyId=' + pharmacyId, '药房设置', {
+                area: ['90%', '90%'],
+                scroll: true
+            });
+        })
+
+        //表格设置
+        table.render($.extend({}, basePageTable, {
+            elem: '#pharmacyListGrid',
+            url: contextPath + '/pharmacy/pharmacyListData.jo?materialFlag=' + NO_FLAG,
+            height: 'full-60'
+            , parseData: function (res) { //res 即为原始返回的数据
+                //设置选择
+                var pharmacy = res.data.find(function (x) {
+                    return x.pharmacyId == $("#pharmacyId").val();
+                });
+                if (pharmacy) {
+                    pharmacy.LAY_CHECKED = true;
+                }
+                return res;
+            },
+            cols: [[{
+                type: 'radio',
+            }, {
+                field: 'pharmacyName',
+                title: '药房',
+                minWidth: 100
+            }]],
+            done: function () {
+                //首次执行
+                if (!this.first) {
+                    this.elem.next('.layui-table-view').find('.layui-table-main :radio[lay-type="layTableRadio"]:checked').next('.layui-form-radio').click();
+                    this.first = true;
+                }
+            }
+        }));
+
+        //赋值表单
+        function setFormData(data) {
+            form.val("pharmacyMachineForm", data);
+            //药房摆药机列表
+            table.reload('pharmacyMachineListGrid', {
+                url: contextPath + '/pharmacy/pharmacyMachineListData.jo?pharmacyId=' + data.pharmacyId, //接口
+            });
+            $("#submitFlag").val('');
+            form.render();
+        }
+
+        //单击行
+        table.on('row(pharmacyListGrid)', function (obj) {
+            var data = obj.data;
+            //标注选中样式
+            obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            obj.tr.find(':radio[lay-type="layTableRadio"]').prop('checked', true);
+            //未提交
+            if ($("#submitFlag").val()) {
+                layui.layer.confirm("数据发生变化，需要保存吗？", {
+                    btn: ['保存', '不保存', '取消']
+                }, function (index) {
+                    $("#btn_save").click();
+                    layer.close(index);
+                }, function (index) {
+                    setFormData(data);
+                    layer.close(index);
+                });
+            } else {
+                setFormData(data);
+            }
+        });
+
+        //药房摆药机
+        function renderPharmacyMachineAdd() {
+            if (!$('#pharmacyId').val()) {
+                $("#btn_add_pharmacyWindow").click(function () {
+                    common.msg('请先选择药房', 0);
+                    return;
+                }).addClass('layui-btn-disabled');
+                return;
+            }
+            $("#btn_add_pharmacyMachine").click(function () {
+                var pharmacyMachines = table.cache['pharmacyMachineListGrid'].filter(function (item) {
+                    return item.length != 0;
+                });
+                var pharmacyMachine = $.extend({
+                    machineNum: ''
+                }, pharmacyMachines.slice(-1)[0]);
+                pharmacyMachine.pharmacyMachineId = '';//复制最后一行，设置主键为空
+                if (pharmacyMachine && pharmacyMachine.machineNum && RegExp(/\d/g).test(pharmacyMachine.machineNum)) {
+                    //最后连续数字自增1
+                    var lastmachineNum = pharmacyMachine.machineNum.toString().match(/\d{1,}/g).slice(-1)[0];
+                    pharmacyMachine.machineNum = pharmacyMachine.machineNum.replace(new RegExp("(.*)" + lastmachineNum), '$1' + layui.util.digit(Number(lastmachineNum) + 1, lastmachineNum.length));
+                }
+                pharmacyMachines.push(pharmacyMachine);
+                table.reload('pharmacyMachineListGrid', {
+                    url: '', //接口
+                    data: pharmacyMachines,
+                });
+                var tbView = $('#pharmacyMachineListGrid').next('.layui-table-view');
+                //最后一行首个单元格编辑状态
+                tbView.find('.layui-table-main tr:last td[data-edit="text"]:first').click().closest('tr').addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            });
+        }
+
+        table.render($.extend({}, basePageTable, {
+            elem: '#pharmacyMachineListGrid',
+            where: {validFlags: Object.keys(dicYesNo).toString()},
+            page: false,
+            limit: 100000,
+            data: [],
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_pharmacyMachine" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'machineNum',
+                    event: 'maxlength',
+                    title: '#requiredTag()摆药机编号',
+                    minWidth: 200,
+                    edit: 'text'
+                }, {
+                    title: '操作',
+                    width: 60,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                }]]
+            , done: function (res) {
+                renderPharmacyMachineAdd();
+                tableReHeight(this, getTableHgt);
+            }
+        }));
+
+        table.on('edit(pharmacyMachineListGrid)', function (obj) { //注：edit是固定事件名，test是table原始容器的属性 lay-filter="对应的值"
+            var value = obj.value //得到修改后的值
+                , data = obj.data //得到所在行所有键值
+                , field = obj.field; //得到字段
+            $(this).siblings().removeClass('layui-table-cell-danger');
+            $("#submitFlag").val('0');//未提交
+            switch (obj.field) {
+                case 'machineNum':
+                    var pharmacyMachines = table.cache['pharmacyMachineListGrid'].filter(function (x) {
+                        return x.machineNum && x.machineNum == value;
+                    });
+                    if (pharmacyMachines.length > 1) {
+                        common.msg("编码重复请修改！", 0);
+                        var oldValue = $(this).prev().text()//得到修改前的值
+                        $(this).val(oldValue);
+                        obj.update({[field]: oldValue});
+                    }
+                    var maxLength = 10;//最大字节长度
+                    var byteLength = value.replace(/[^ -~]/g, 'AA').length;//字节长度
+                    if (byteLength > maxLength) {
+                        var excessSize = (byteLength - maxLength);//超出字符数
+                        common.msg('已超出' + excessSize + '字符', 0);
+                        var oldValue = $(this).prev().text()//得到修改前的值
+                        $(this).val(oldValue);
+                        obj.update({[field]: oldValue});
+                    }
+                    break;
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(pharmacyMachineListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            $("#submitFlag").val('0');//未提交
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    break;
+                case 'experience':
+                    $(this).find('input').attr('type', 'number');
+                    $(this).removeClass('layui-table-cell-danger');
+                    break;
+            }
+        });
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return $('.layui-fluid').height() - $('#pharmacyMachineForm .layui-form-item').height() - 100;
+        }
+
+        /**
+         * 动态重置表格高度
+         * 调用： table.done = function () { tableReHeight(this, function(){ return 0}) }
+         * 注意： table.height 不需要添加
+         * @param that 表格实例 this
+         * @param heightCallback 高度回调方法 返回数值,需要动态获取
+         */
+        function tableReHeight(that, heightCallback) {
+            // 动态重置表格高度
+            $(window).resize(function () {
+                that.elem.next('.layui-table-view').attr('style', ' ');
+                that.height = heightCallback();
+                table.resize();
+            }).resize();
+        }
+        table.resize();
+        //自定义验证规则
+        form.verify({
+            pharmacyMachineListGrid: function () {
+                var flag = true;
+                $.each(table.cache['pharmacyMachineListGrid'], function (index, pharmacyMachine) {
+                    if (!$.isArray(pharmacyMachine) && ('' === pharmacyMachine.machineNum)) {
+                        //显示红色边框
+                        $('#pharmacyMachineListGrid + .layui-table-view .layui-table-main')
+                            .find('td[data-field="machineNum"]').children('.layui-table-cell:empty').addClass('layui-table-cell-danger');
+                        flag = false;
+                        return false;
+                    }
+                });
+                if (!flag) {
+                    return "必填项不能为空"
+                }
+
+                var repeatFlag = $('#pharmacyMachineListGrid + .layui-table-view .layui-table-main')
+                    .find('td[data-field="machineNum"]').children('.layui-table-cell').filter(function (index) {
+                        var text = $(this).text();
+                        return $(this).closest('tr').siblings().find(".layui-table-cell:contains('" + text + "')").filter(function () {
+                            return $(this).text() == text;
+                        }).length > 0;
+                    }).addClass('layui-table-cell-danger').length > 0;
+                if (repeatFlag) {
+                    return "摆药机编号列不能重复";
+                }
+            }
+        })
+
+        //提交表单
+        function savePharmacy() {
+            var params = common.serializeObject($('#pharmacyMachineForm'));
+            //药房摆药机
+            params.pharmacyMachineEditInfoList = $.map(table.cache['pharmacyMachineListGrid'], function (item) {
+                if (!$.isArray(item)) return $.extend(item, params);
+            })
+            $.ajaxSettings.contentType = 'application/json';
+            common.requestServer(contextPath + '/pharmacy/savePharmacyMachineList.jo', JSON.stringify(params), function (result) {
+                $.ajaxSettings.contentType = 'application/x-www-form-urlencoded; charset=UTF-8';
+                if (result.code == '0') {
+                    $("#submitFlag").val('');
+                    common.msg('保存成功。', 1, function () {
+                        //重载药房摆药机列表
+                        table.reload('pharmacyMachineListGrid', {
+                            url: contextPath + '/pharmacy/pharmacyMachineListData.jo?pharmacyId=' + $("#pharmacyId").val(), //接口
+                        });
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            savePharmacy()
+            return false
+        })
+
+        // 关闭窗口
+        $("#btn_close").click(function () {
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+            $('#btn_query', window.parent.document).click()
+        })
+
+        /*
+        *编辑数据表格，键盘快捷键方法。
+        *可跳过无编辑属性的列
+        *tab 右边一个单元格
+        *shift + tab 左边一个单元格
+        *enter 下一行的单元格
+        *shift + enter 上一行的单元格
+        */
+        $(document).on('keydown keyup', '.layui-input',
+            function (event) {
+                var td = $(this).parent('td'),
+                    index = td.index(),
+                    tr = td.parent('tr'),
+                    isShift = $(document).data('shift'),
+                    isKeydown = (event.type == "keydown");
+                switch (event.key) {
+                    case "Shift":
+                        $(document).data('shift', isKeydown);
+                        break;
+                    case "Tab":
+                        event.preventDefault();
+                        isKeydown && td[isShift ? 'prevAll' : 'nextAll']('[data-edit="text"]:first').click();
+                        break;
+                    case "Enter":
+                        isKeydown && tr[isShift ? 'prev' : 'next']().children('td').eq(index).click();
+                        break;
+                }
+            })
+    })
+</script>

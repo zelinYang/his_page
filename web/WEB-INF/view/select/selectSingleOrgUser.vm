@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+
+    <style>
+        @media screen and (max-width: 768px){
+            .layui-form-item.change-inline-marginbottom,
+            .layui-form-item.change-inline-marginbottom .layui-inline{display: inline-flex;}
+            .layui-form-item.change-inline-marginbottom .layui-inline label{width: unset;}
+        }
+    </style>
+</head>
+<body class="de-bg">
+<!--搜索条件 开始-->
+<form id="sysUser_queryForm" class="layui-form">
+    #formHiddenInput("code" "" "id='code'")
+    #formHiddenInput("userAttributeId" "$!{sysUserQueryInfo.userAttributeId}" "id='userAttributeId'")
+    <div class="layui-row-query">
+        <div class="layui-form-item change-inline-marginbottom">
+            <div class="layui-inline">
+                <div class="layui-input-inline wd-220">
+                    <input type="text" name="keyWord" value="" class="layui-input" id="q_keyWord" autocomplete="off" maxlength="40" placeholder="账号/姓名">
+                </div>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_query" class="layui-btn layui-btn-sm m-l-lg" type="button" lay-tips="查询">
+                    <i class="layui-icon layui-icon-search "></i>
+                </button>
+            </div>
+            <div class="layui-inline ">
+                <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空">
+                    <i class="iconfont icon-qingchu"></i>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</form>
+<!--搜索条件 结束-->
+    <!-- 机构树 -->
+    <div class="layui-col-xs3 white-bg full-height-scroll m-r-xs  p-t-xs" id="orgTreeDiv" style="width: 230px;height: calc(100% - 52px );">
+        <!--<ul id="orgTree" class="dtree" data-id="0"></ul>-->
+        <ul id="orgTree" class="ztree"></ul>
+    </div>
+
+    <!-- 用户列表 -->
+    <div class="layui-col-xs10 white-bg full-height-scroll overflow-y-h" style="height: calc(100% - 52px );width: calc(100% - 235px);">
+        <table id="userList" lay-filter="userList" class="layui-hide"></table>
+        <script type="text/html" id="operateFormatter">
+            <a class="" ><i class="layui-icon layui-icon-ok-circle"></i></a>
+        </script>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicSysDuty = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysDuty)');
+var dicSysUserAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUserAttribute)');
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['element', 'dtree', 'table'], function(){
+    var element = layui.element, dtree = layui.dtree, table = layui.table;
+
+    // 初始化树形分类
+    var zTreeObj, setting = {
+        view : {
+            selectedMulti : false
+        },
+        async : {
+            enable : true,
+            url : "../sys/getDepTree.jo",
+            dataType : "json",
+            autoParam : [ "id" ],
+            type : "POST"
+        },
+        callback : {
+            onAsyncSuccess: function(event, treeId, treeNode, msg){
+
+                if(treeNode == undefined){
+                    treeNode = zTreeObj.getNodeByTId("tree_1");
+                }
+                zTreeObj.selectNode(treeNode, false, true);
+                if (!(!!window.ActiveXObject || "ActiveXObject" in window)) { // 非ie
+                    zTreeObj.expandNode(treeNode, true, false, true, false); //只展开第一个节点
+                }
+
+                //only first time load tree includeRoot = true ,after set false
+                zTreeObj.setting.async.otherParam["includeRoot"] = false;
+            },
+            onClick: function(event, treeId, treeNode) {
+                if (treeNode) {
+                    // 加载用户列表
+                    table.reload('userList', {page: {curr: 1},
+                        where: {orgId: treeNode.id} ,
+                    })
+                }
+            },
+            onCheck: function (event, treeId, treeNode) {
+                var functionIds = $("#functionIds").val();
+                if (functionIds.indexOf("," + treeNode.id + ",") > -1) {
+                    $("#" + treeNode.id).remove();
+                    functionIds = functionIds.replace(treeNode.id + ",", "");
+                    $("#functionIds").val(functionIds);
+                } else {
+                    var nodeHtml = "<li id='" + treeNode.id + "'>" + treeNode.name + "</li>";
+                    $("#selected").append(nodeHtml);
+                    $("#functionIds").val(functionIds + treeNode.id + ",");
+                }
+            }
+        }
+    };
+
+    zTreeObj = $.fn.zTree.init($("#orgTree"), setting, []);
+
+    // 获取查询表单参数对象
+    function getQueryParams() {
+        return $.extend({
+            orgId :'',
+            userAttributeId: '',
+            keyWord: '',
+        }, common.serializeObject($('#sysUser_queryForm')))
+    }
+
+    //回车触发查询
+    $("#q_keyWord").keydown(function (event) {
+        if (event.keyCode == 13) {
+            $('#btn_query').click();
+            return false;
+        }
+    });
+
+    // 查询按钮
+    $('#btn_query').click(function () {
+        zTreeObj.cancelSelectedNode();
+        var queryParams = getQueryParams();
+        // 加载用户列表
+        table.reload('userList', {page: {curr: 1},
+            where: queryParams ,
+        })
+
+    })
+
+    // 清空按钮
+    $('#btn_clean').click(function () {
+        common.cleanForm('sysUser_queryForm')
+    })
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/sys/selectSysUserPageData.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'userList',
+        elem: '#userList',
+        height: 'full-50',
+        where: getQueryParams(),
+        cols: [[
+            {fixed: true, align:'center',width : 60, templet: '#operateFormatter',event:'select'},
+            {field:'account', title: '账号',templet:function (row) {
+                    return row.account || '';
+                }},
+            {field:'name', title: '姓名',templet:function (row) {
+                    return row.name || '';
+                }},
+            {field:'name', title: '科室',minWidth : 80,templet: function (row) {
+                    return $.map(row.sysOrgList || [], function (sysOrg) {
+                        return sysOrg.name || ''
+                    }).toString();
+                }},
+            {field:'dutyId', title: '职务', templet :function (row) {
+                    return dicSysDuty[row.dutyId] || '';
+                }},
+
+            {field:'userAttributeId', title: '用户属性',minWidth : 80, templet :function (row) {
+                    return  dicSysUserAttribute[row.userAttributeId] || '';
+                }}
+        ]]
+    }));
+
+    //监听行单击事件
+    table.on('row(userList)', function(obj){
+        if (event.cancelBubble) return;//默认是false, 通过行工具事件设置true取消冒泡
+        parentBack(obj)
+    });
+
+    //监听行工具事件
+    table.on('tool(userList)', function(obj){
+        event.cancelBubble = true;//取消行单击事件的冒泡
+        var layEvent = obj.event; //获得 lay-event 对应的值
+        if (layEvent === "select") {
+            parentBack(obj)
+        }
+    });
+
+    //父级iframe页面 回调方法
+    function parentBack(obj) {
+        // 重点3 jsonpCallback 公用子页面回调方法，由父页面定义，如果有就调用执行
+        if (window.jsonpCallback && typeof(window.jsonpCallback) == 'function') {
+            window.jsonpCallback(obj.data);
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+
+        if (parent.selectSingleUserCall && typeof(parent.selectSingleUserCall) == 'function') {
+            parent.selectSingleUserCall(obj.data);
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+    }
+});
+</script>
+</html>

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    <style type="text/css">
+        .people {
+            width: 220px;
+            height: 140px;
+            margin-left: 25px;
+            margin-top: 35px;
+            color: #0C0C0C;
+            background-color: #eff2f3;
+            border: 2px solid #dddddd;
+        }
+        .current-title{
+            font-size: 20px;
+            font-weight: 700;
+            color: #0a6aa1;
+        }
+        .red-font{
+            font-size: 30px;
+            font-weight: 700;
+            color: red;
+        }
+        .black-font{
+            font-size: 30px;
+            font-weight: 700;
+            color: black;
+        }
+        .bg-eeeeee{
+            background-color: #EEEEEE;
+        }
+        .people-border{
+            border: 2px solid #e2e2e2;
+        }
+
+        .target-value{
+            margin-top: 25px;
+            text-align: center;
+        }
+        .icon-size {
+            width: 50px;
+            height: 50px;
+            border-radius: 24px;
+        }
+
+        .bg-light-blue {
+            background: #00c1de;
+        }
+
+        .bg-green {
+            background: #00C986;
+        }
+
+        .bg-orange {
+            background: #FF841F;
+        }
+
+        .bg-purple {
+            background: #D856CF;
+        }
+
+        .bg-blue {
+            background: blue;
+        }
+
+        .bg-yellow {
+            background: yellowgreen;
+        }
+
+        .bg-red {
+            background: red;
+        }
+        a:hover{
+            color: #eff2f3;
+        }
+
+    </style>
+</head>
+<body>
+<div class="layui-fluid" style="height:calc(100% - 40px);">
+
+    <div class="layui-row m-sm" style="height: 100%">
+
+        <div class="layui-col-xs4" style="height: 100%">
+
+            <div class="layui-row m-sm people-border bg-eeeeee" style="height: 32%">
+                <div class="layui-col-md12">
+                    <div class="grid-demo current-title">
+                        当前门诊人次<span>$!currentMonth</span>
+                    </div>
+                </div>
+
+                <div class="layui-col-md6">
+                    <button class="layui-btn people current-title">
+                        <div class="">
+                            <p class="red-font">$!currentMonthNum</p>
+                            <p class="quota-title">本月门诊人次(万)</p>
+                        </div>
+                    </button>
+                </div>
+
+                <div class="layui-col-md6">
+                    <button class="layui-btn people current-title">
+                        <div class="">
+                            <p class="black-font">$!lastYearPeriodNum</p>
+                            <p class="quota-title">去年同期(万)</p>
+                        </div>
+                    </button>
+                </div>
+                <div class="layui-col-md12">
+                    <div class="grid-demo target-value current-title">
+                        本期目标值:<span>[35万人]</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="layui-row m-sm people-border bg-eeeeee" style="height: 32%;">
+
+                <div class="layui-row m-sm" style="height: 32%;">
+                    <div class="layui-col-md12">
+                        <div class="grid-demo current-title">
+                            当前门诊人次至<span>$!currentMonth</span>
+                        </div>
+                    </div>
+
+                    <div class="layui-col-md6">
+                        <button class="layui-btn people current-title">
+                            <div class="">
+                                <p class="red-font">$!currentYearNum</p>
+                                <p class="quota-title">累计门诊人次(万)</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="layui-col-md6">
+                        <button class="layui-btn people current-title">
+                            <div class="">
+                                <p class="black-font">$!lastYearNum</p>
+                                <p class="quota-title">去年同比累计(万)</p>
+                            </div>
+                        </button>
+                    </div>
+                    <div class="layui-col-md12">
+                        <div class="grid-demo target-value current-title">
+                            目标值:<span>[210万人]</span>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+            <div class="layui-row m-sm people-border" style="height: 31%">
+                <div class="layui-col-md12">
+                    <div class="grid-demo current-title" style="font-size: 20px">
+                        门诊运营相关KPI列表
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-col-xs8" style=" height: 100%">
+            <div class="layui-row m-sm people-border" style="height: 49%;">
+                <div class="grid-demo target-value current-title">
+                    门诊人次构成分析
+                </div>
+                <iframe id="outpatient_composition" width="100%" height="85%" src="" frameborder="0"></iframe>
+            </div>
+            <div class="layui-row m-sm people-border" style="height: 48%;">
+                <div class="grid-demo target-value current-title">
+                    门诊人次趋势分析
+                </div>
+                <iframe id="outpatient_trend" width="100%" height="85%" src="" frameborder="0"></iframe>
+            </div>
+        </div>
+
+    </div>
+
+
+
+</div>
+
+<script>
+    var smartBiRoot = "http://bofan.eicp.net:9008/databi";
+    var smartBiResource = smartBiRoot + "/vision/openresource.jsp?user=admin&password=7ujm8ik,9ol.&resid=";
+    var outpatientCompositionResid = '785e801952f5d7c7cfa4aedbc1d8a6a6';
+    var outpatientTrendResid = '7b2e46bb1bb46fa485f1ab4f0c2441df';
+    layui.use(['element'], function () {
+
+        $('#outpatient_composition').attr('src', smartBiResource + outpatientCompositionResid);
+        $('#outpatient_trend').attr('src', smartBiResource + outpatientTrendResid);
+
+
+    });
+
+</script>
+</body>
+
+</html>

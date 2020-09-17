@@ -1,0 +1,212 @@
+<link href="../resource/hplus/js/plugins/select2/css/select2.css?v=121" rel="stylesheet">
+#parse("./common/pageCss.vm")
+#parse("./common/pageJs.vm")
+<style>
+    body { height: auto;}
+
+    .layui-card { margin-bottom: 10px; }
+    .layui-form-selectup dl { top:auto; bottom:42px; }
+    #baseInfoForm { margin-bottom: 40px; }
+
+    @media screen and (max-width: 675px){
+        .layui-card-body{padding: 10px 0px;}
+        .layui-form-label{padding-left: 0;}
+        .layui-form-item .layui-input-inline{width: 160px;}
+        .layui-form-item .layui-input-inline.width-full {
+            width: calc(100% - 106px);
+        }
+    }
+</style>
+
+<div class="layui-content-wrapper layui-fluid">
+     <form class="layui-form" id="baseInfoForm" >
+        #formHiddenInput("inhospitalId" "$!inpatientInhospital.inhospitalId")
+        <div class="layui-card">
+            <div class="layui-card-header">在院信息</div>
+            <div class="layui-card-body">
+                <div class="layui-form-item ">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">住院号码</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!inpatientInhospital.inhospitalNo"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">病案号码</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!inpatientInhospital.patientMedicalNo"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">就诊卡号</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!inpatientInhospital.visitCardNo"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">住院次数</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!inpatientInhospital.inhospitalNum"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item ">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">登记日期</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!date.format('yyyy-MM-dd',$!inpatientInhospital.recordDate)"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()入院日期</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("inhospitalDate" "$!date.format('yyyy-MM-dd',$!inpatientInhospital.inhospitalDate)"
+                            "lay-verify='required' class='layui-input layer-date' readonly")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">入院来源</label>
+                        <div class="layui-input-inline">
+                             #formSingleSelectSearch("inhospitalSource" "$!inpatientInhospital.inhospitalSource" $!dicData.dicInhospitalWay
+                             "class='layui-input'" "use-pin='first'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()入院科室</label>
+                        <div class="layui-input-inline">
+                            ##formTextInput("inhospitalOfficeName" "#htmlEscape($!{inpatientInhospital.inhospitalOfficeName})"  "maxlength='20' class='layui-input layui-hide'")
+                            #formSingleSelectSearch("inhospitalOfficeId" "$!inpatientInhospital.inhospitalOfficeId" $!dicData.dicOffice
+                            "lay-verify='required' class='layui-input' " "use-pin='first'" "")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item ">
+                    <div class="layui-inline">
+                         <label class="layui-form-label">入院病情</label>
+                        <div class="layui-input-inline">
+                            #formSingleSelectSearch("inpatientCondition" "$!inpatientInhospital.inpatientCondition" $!dicData.dicPatientCondition
+                            " class='layui-input'  " "use-pin='first'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                         <label class="layui-form-label ">护理级别</label>
+                        <div class="layui-input-inline">
+                             #formSingleSelectSearch("nurseLevel" "$!inpatientInhospital.nurseLevel" $!dicData.dicNurseLevel
+                            "class='layui-input'" "use-pin='first'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">转入时间</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("outOfficeDate" "$!date.format('yyyy-MM-dd',$!inpatientInhospital.outOfficeDate)"
+                            "class='layui-input' readonly" )
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">转出科室</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!dicData.dicOffice.get($!inpatientInhospital.outOfficeId)" " id='outOfficeId' maxlength='20'
+                            class='layui-input' readonly" )
+                            ##formSingleSelectSearch("outOfficeId" "$!inpatientInhospital.outOfficeId" $!dicData.dicOffice "class='layui-input' " "use-pin='first'" "")
+                        </div>
+                    </div>
+
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">饮食情况</label>
+                        <div class="layui-input-inline">
+                             #formSingleSelectSearch("foodGuide" "$!inpatientInhospital.foodGuide" $!dicData.dicFoodGuide
+                            "class='layui-input  p-r-n'" "use-pin='first'" "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">住院状态</label>
+                        <div class="layui-input-inline">
+                            #formTextInput("" "$!dicData.dicInhospitalState.get($!inpatientInhospital.inhospitalState)"
+                            "class='layui-input' readonly")
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="layui-card">
+            <div class="layui-card-header" >患者医师</div>
+            <div class="layui-card-body" >
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">主管医师</label>
+                        <div class="layui-input-inline ">
+                            ##formHiddenInput("managerDoctorName" "$!inpatientInhospital.managerDoctorName" )
+                            #formSingleSelectSearchFirstNone("managerDoctorId" "$!{inpatientInhospital.managerDoctorId}" $dicData.dicDoctor " id='managerDoctorId' lay-filter='managerDoctorId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">门诊医师</label>
+                        <div class="layui-input-inline">
+                            ##formHiddenInput("outpatientDoctorName" "$!inpatientInhospital.outpatientDoctorName" )
+                            #formSingleSelectSearchFirstNone("outpatientDoctorId" "$!{inpatientInhospital.outpatientDoctorId}" $dicData.dicDoctor " id='outpatientDoctorId' lay-filter='outpatientDoctorId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()主治医师</label>
+                        <div class="layui-input-inline">
+                            ##formHiddenInput("diagnosisDoctorName" "$!inpatientInhospital.diagnosisDoctorName" )
+                            #formSingleSelectSearchFirstNone("diagnosisDoctorId" "$!{inpatientInhospital.diagnosisDoctorId}" $dicData.dicDoctor " id='diagnosisDoctorId' lay-verify='required' lay-filter='diagnosisDoctorId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">管床医师</label>
+                        <div class="layui-input-inline ">
+                            ##formHiddenInput("bedDoctorName" "$!inpatientInhospital.bedDoctorName" )
+                            #formSingleSelectSearchFirstNone("bedDoctorId" "$!{inpatientInhospital.bedDoctorId}" $dicData.dicDoctor " id='bedDoctorId' lay-filter='bedDoctorId' lay-search " "")
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">主任医师</label>
+                        <div class="layui-input-inline">
+                            ##formHiddenInput("archiaterDoctorName" "$!inpatientInhospital.archiaterDoctorName" )
+                            #formSingleSelectSearchFirstNone("archiaterDoctorId" "$!{inpatientInhospital.archiaterDoctorId}" $dicData.dicDoctor " id='archiaterDoctorId' lay-filter='archiaterDoctorId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()病区护士长</label>
+                        <div class="layui-input-inline">
+                            ##formHiddenInput("headNurserName" "$!inpatientInhospital.headNurserName" )
+                            #formSingleSelectSearchFirstNone("headNurserId" "$!{inpatientInhospital.headNurserId}" $dicData.dicNurse " id='headNurserId' lay-verify='required' lay-filter='headNurserId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">#requiredTag()责任护士</label>
+                        <div class="layui-input-inline">
+                            ##formHiddenInput("dutyNurserName" "$!inpatientInhospital.dutyNurserName" )
+                            #formSingleSelectSearchFirstNone("dutyNurserId" "$!{inpatientInhospital.dutyNurserId}" $dicData.dicNurse " id='dutyNurserId' lay-verify='required' lay-filter='dutyNurserId' lay-search " "")
+                        </div>
+                    </div>
+                    <div class="layui-inline layui-hide">
+                        <label class="layui-form-label">治疗小组</label>
+                        <div class="layui-input-inline">
+                            #formHiddenInput("" "" " id='' maxlength='8' class='layui-input' readonly")
+                        </div>
+                    </div>
+                </div>
+              <!--  <div class="layui-form-item ">
+                    <label class="layui-form-label">备注</label>
+                       #formTextarea("remark" "$!patient.remark" "maxlength='1000' class='layui-textarea' style='width:58.8%;min-width:928px;'")
+                </div>-->
+            </div>
+        </div>
+        <div class="tool-bottom-fixed btn_gorup #if($!optype == "show") layui-hide #end" style="background-color:#ffffff;">
+            <button class="layui-btn layui-btn-sm" type="button" lay-submit id="btn_save" lay-filter="btn_save">保存</button>
+        </div>
+    </form>
+</div>
+#parse("./inpatient/inpatientInfo/baseInpatientInfo.js.vm")
+

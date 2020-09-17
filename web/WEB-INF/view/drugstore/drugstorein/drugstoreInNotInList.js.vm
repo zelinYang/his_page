@@ -1,0 +1,120 @@
+<script>
+	function refreshHtml() {
+		window.location.reload();
+	}
+
+	layui.config({
+		base: '../resource/layuiadmin/'
+	}).extend({
+		index: 'lib/index'
+	}).use(['index', 'jquery','table', 'element', 'form', 'util', 'laydate'], function(){
+		var table = layui.table, element = layui.element, $ = layui.$, form = layui.form, util = layui.util, laydate = layui.laydate;
+		element.render();
+
+		//按日期范围查询
+		laydate.render({
+			elem: '#recordDate', range: true, done: function (value, date, endDate) {
+				refreshTable();
+			}
+		});
+
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 430//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onresize_end: refreshTable
+		});
+		}
+
+		//页面初始化
+		$(function() {
+			initLayout();
+		});
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['recordDate']);
+			console.log(queryForm);
+			return $.extend({
+				recordDateBegin:'',
+				recordDateEnd:''
+			}, queryForm);
+		}
+		//组套tabel
+		var drugstoreInTable = table.render({
+			elem: '#drugstoreInTable'
+			,defaultToolbar: []
+			,url: '../drugstoreSearch/drugstoreSearchIn.jo' //数据接口
+			,page: true //开启分页
+			,where: getQueryParams()
+			,height: getTableHeight()//高度
+			,request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			,cols: [[ //表头
+				{type : 'radio', fixed: 'left' }
+				,{field : 'goodsBillNo',title : '单据号', width: '80', fixed: 'left'}
+				,{field : 'recordDate',title : '录入日期', width: '100',templet: function(row){
+						if (row.recordDate){
+							return util.toDateString(row.recordDate, 'yyyy-MM-dd');
+						}else{
+							return '';
+						}
+					}
+				}
+				,{field : 'drugstoreName', width: '80',title : '药库名称'}
+				,{field : 'drugstoreInWayName', width: '80',title : '入库方式'}
+				,{field : 'medicineVendorName', width: '180',title : '供货厂家名称'}
+				,{field : 'operUserName', width: '80',title : '操作人'}
+			]], done:function () {
+
+			}
+		});
+
+		//监听行单击事件
+		table.on('row(drugstoreInTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.drugstoreInTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var row = obj.data;
+			var src = '$contextPath/drugstore/inWarehousing.do?drugstoreInId=' + obj.data.drugstoreInId;
+			$('#drugstoreInEdit').attr('src',src);
+		});
+
+		function getTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+		}
+
+		//监听搜索
+		$('#btn_query').on('click', function () {
+			refreshTable();
+		});
+
+		function refreshTable() {
+			table.reload('drugstoreInTable',{
+				where: getQueryParams()
+			})
+		}
+
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+
+	});
+</script>

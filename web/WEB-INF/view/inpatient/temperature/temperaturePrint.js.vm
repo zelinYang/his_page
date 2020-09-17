@@ -1,0 +1,52 @@
+<script>
+var dicTemperatureTimeSort = JSON.parse('$dicTools.changeMapToJson($!dicData.dicTemperatureTimeSort)');
+
+layui.use(['element','form','table','util'], function(){
+    var table = layui.table;
+    var form = layui.form;
+    var util = layui.util;
+    table.render({
+        elem: '#inpatientTable'
+        ,url: '../inpatient/temperaturePrintInpatientList.jo' //数据接口
+        ,page: false //开启分页
+        ,height:'full-70'
+        ,cols: [[
+            {type: 'checkbox', fixed: 'left'}
+            ,{field: 'patientName', title: '姓名',width:90}
+            ,{field: 'currentWardName', title: '病区',width:180,sort:true}
+            ,{field: 'currentOfficeName', title: '科室',width:180,sort:true}
+            ,{field: 'currentBedNo', title: '床号',width:90,sort:true}
+            ,{field: 'inhospitalDate', title: '入院时间',width:180
+             ,templet : function(row){
+            	 return util.toDateString(row.inhospitalDate, 'yyyy-MM-dd') || ''
+            }
+             }
+        ]]
+        ,done:function(res,curr,count){
+
+        }
+    })
+
+    //radio被选中事件
+    form.on('select(currentOfficeId)', function(data){
+        console.log(data);
+    });
+
+	//日期控件初始化
+	laydate.render({elem: '#temperatureDate', type: 'date', value:new Date(), istime: true, max: getSmpFormatNowDate(true)
+	    //日期被选中事件
+	    ,done: function (value, date, endDate){
+                if(date.year){
+                    var temperatureDate = date.year+"-"+date.month+"-"+date.date;
+                    $("#temperatureDate").val(temperatureDate);
+                }else{
+                    $("#temperatureDate").val("");
+                }
+            }
+    });
+
+
+
+});
+
+</script>

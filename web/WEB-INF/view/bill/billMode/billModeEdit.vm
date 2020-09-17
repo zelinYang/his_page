@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${SessionSysPortal.appTitle}-发票分类表管理</title>
+#parse("./common/pageCss.vm") 
+#parse("./common/pageJs.vm")
+</head>
+
+<body class="white-bg">
+    <form id="billModeForm" class="form-horizontal full-height-scroll">
+        <!-- 表单 开始 -->
+        <div class="table-content">
+            <input type="hidden" id="submitFlag" >
+            #formHiddenInput("billModeId" "$!{billMode.billModeId}" " id='billModeId' ")
+
+            <div class="form-group">
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()发票名称</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("billModeName" "#htmlEscape($!{billMode.billModeName})" " id='billModeName' maxlength='25' adapter='required' required-msg='请填写发票名称' class='form-control'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()打印格式</label>
+                <div class="col-sm-3 p-r-none">
+                    #formDefArea("printFormat" "#htmlEscape($!{billMode.printFormat})" " id='printFormat' maxlength='2000' adapter='required' required-msg='请填写打印格式' class='form-control' rows='3'")
+                </div>
+
+                <label class="col-sm-1 control-label text-right p-r-none p-l-none">#requiredTag()打印机设置</label>
+                <div class="col-sm-3 p-r-none">
+                    #formTextInput("printerSetting" "#htmlEscape($!{billMode.printerSetting})" " id='printerSetting' maxlength='250' adapter='required' required-msg='请填写打印机设置' class='form-control'")
+                </div>
+            </div>
+
+
+        </div>
+        <!-- 表单 结束 -->
+    </form>
+    <div class="tool-bottom-fixed">
+        <button id="btn_save" type="button" class="btn btn-outline btn-primary"><i class="fa fa-clone"></i> 保存</button>
+    </div>
+</body>
+
+#parse("./bill/billMode/billModeEdit.js.vm")
+</html>

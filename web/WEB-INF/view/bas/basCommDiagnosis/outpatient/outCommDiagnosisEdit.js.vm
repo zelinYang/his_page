@@ -1,0 +1,47 @@
+
+<script>
+	var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        autocomplete : 'modules/autocomplete'
+    }).use([ 'form', 'autocomplete' ], function() {
+        var $ = layui.$, form = layui.form, autocomplete = layui.autocomplete;
+        common.verify(form);
+        form.verify({
+            disease : function(value) {
+                if (!value) {
+                    setTimeout(function() {
+                        $("#diseaseName").addClass('layui-form-danger').focus();
+                    }, 50);
+                    return '请选择正确的选项';
+                }
+            }
+        })
+        // 根据诊断/疾病名称查询icd
+        autocomplete.render({
+            cache : false,
+            searchField : 'keyWord',
+            elem : $('#diseaseName')[0],
+            url : '../basDisease/basDiseaseListData.jo?pageSize=20',
+            template_val : '{{d.diseaseName}}',
+            template_txt : '<span class=\'layui-badge layui-bg-gray\'>{{dicDiseaseTypeFlag[d.diseaseTypeFlag]}}</span>&nbsp;&nbsp;&nbsp;&nbsp;{{d.diseaseName}} （{{d.diseaseIcdTcd}}）',
+            onselect : function(obj) {
+                searchCall(obj);
+            }
+        });
+        //清除值
+        $("#diseaseName").on('input propertychange', function() {
+            $("#diseaseIcdTcd").val('');
+            $("#diseaseId").val('');
+            $("#diseaseTypeFlag").val('');
+        })
+        //选中时执行的callback事件，会返回当前选中项的数据
+        function searchCall(obj) {
+            $("#diseaseIcdTcd").val(obj.diseaseIcdTcd);
+            $("#diseaseId").val(obj.diseaseId);
+            $("#diseaseTypeFlag").val(obj.diseaseTypeFlag);
+        }
+
+    })
+</script>

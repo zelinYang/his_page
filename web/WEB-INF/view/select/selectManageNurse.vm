@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title>
+#parse("./common/pageCss.vm")
+
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+
+    <style>
+        @media screen and (max-width: 768px){
+            .layui-form-item.change-inline-marginbottom,
+            .layui-form-item.change-inline-marginbottom .layui-inline{display: inline-flex;}
+            .layui-form-item.change-inline-marginbottom .layui-inline label{width: unset;}
+        }
+    </style>
+</head>
+<body class="de-bg">
+    
+    <!-- 用户列表 -->
+    <div class="layui-col-xs12 white-bg full-height-scroll overflow-y-h" style="height: calc(100% - 52px );">
+        <table id="userList" lay-filter="userList" class="layui-hide"></table>
+        <script type="text/html" id="operateFormatter">
+            <a class="" ><i class="layui-icon layui-icon-ok-circle"></i></a>
+        </script>
+    </div>
+</body>
+#parse("./common/pageJs.vm")
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+<script type="text/javascript">
+var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+var dicSysDuty = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysDuty)');
+var dicSysUserAttribute = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUserAttribute)');
+layui.config({
+    base: '../resource/layuiadmin/'
+}).extend({
+    dtree: 'modules/dtree/dtree'
+}).use(['element', 'dtree', 'table'], function(){
+    var element = layui.element, dtree = layui.dtree, table = layui.table;
+
+    // 路径分页列表
+    var tableUrl = contextPath + '/inpatient/manageNurseListData.jo';
+    var tableList = table.render($.extend(basePageTable, {
+        url: tableUrl,
+        id:'userList',
+        elem: '#userList', 
+        height: 'full-50',
+        where: {},
+        cols: [[
+            {fixed: true, align:'center',width : 60, templet: '#operateFormatter',event:'select'},
+            {field:'account', title: '账号'},
+            {field:'name', title: '姓名'},
+            {field:'name', title: '科室',templet:function (row) {
+                    return $.map(row.sysOrgList || [], function (sysOrg) {
+                        return sysOrg.name || ''
+                    }).toString();
+                }},
+            {field:'dutyId', title: '职务', templet :function (row) {
+                    return dicSysDuty[row.dutyId] || '';
+                }},
+
+            {field:'userAttributeId', title: '用户属性', templet :function (row) {
+                    return  dicSysUserAttribute[row.userAttributeId] || '';
+                }}
+        ]]
+    }));
+
+    //监听行单击事件
+    table.on('row(userList)', function(obj){
+        if (parent.selectManageNurseCall && typeof(parent.selectManageNurseCall) == 'function') {
+            parent.selectManageNurseCall(obj.data);
+        }
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    });
+    //监听行工具事件
+    table.on('tool(userList)', function(obj){
+        var layEvent = obj.event; //获得 lay-event 对应的值
+        if (layEvent === "select") {
+            if (parent.selectManageNurseCall && typeof(parent.selectManageNurseCall) == 'function') {
+                parent.selectManageNurseCall(obj.data);
+            }
+            var index = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(index);
+        }
+    });
+});
+</script>
+</html>

@@ -1,0 +1,100 @@
+<script>
+  var dicBelongSysType = JSON.parse('$dicTools.changeMapToJson($dicData.dicBelongSysType)')
+  var dicDoctorNurseFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorNurseFlag)')
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'tree', 'form', 'table', 'laytpl'], function () {
+      var $ = layui.$, tree = layui.tree, form = layui.form, table = layui.table, laytpl = layui.laytpl
+      //刷新页面按钮
+      $("#btn_refresh").click(function () {
+          location.reload();
+      });
+
+      var emrTlpClassifyId
+      // 清空按钮
+      $('#btn_clean').click(function () {
+        common.cleanForm('emrTlpClassify_queryForm')
+      })
+    $("#btn_add").click(function () {
+      $('#emrTlpClassifyEdit').attr('src', '$contextPath' + '/emr/emrTlpClassifyEdit.do')
+    })
+      function addHoverDom(treeId, treeNode) {
+        var sObj = $("#" + treeNode.tId + "_span");
+        if (treeNode.editNameFlag || $("#addBtn_"+treeNode.tId).length>0) return;
+        var addStr = "<span class='button add' id='addBtn_" + treeNode.tId
+          + "' title='新增子节点' onfocus='this.blur();'></span>";
+        sObj.after(addStr);
+        var btn = $("#addBtn_"+treeNode.tId);
+        if (btn) btn.bind("click", function(){
+          console.log(treeNode);
+          $('#emrTlpClassifyEdit').attr('src', '$contextPath' + '/emr/emrTlpClassifyEdit.do?parentEmrTreeCode=' + treeNode.emrTreeCode)
+          return false;
+        });
+      };
+
+    // 初始化树形分类
+      var zTreeObj, setting = {
+        view: {
+          addHoverDom: addHoverDom,
+          selectedMulti: false,
+          showIcon: false
+        },edit: {
+          enable: true,
+          editNameSelectAll: true,
+          showRemoveBtn: true,
+          showRenameBtn: false,
+          removeTitle: "删除节点",
+        },
+
+        async: {
+          enable: true,
+          url: '../emrTlp/getEmrTypeTree.jo',
+          dataType: 'json',
+          autoParam: ['id'],
+          type: 'POST'
+        },
+        callback: {
+          onAsyncSuccess: function (event, treeId, treeNode, msg) {
+            if (!(!!window.ActiveXObject || 'ActiveXObject' in window)) { // 非ie
+              zTreeObj.expandNode(treeNode, true, false, true, false) //只展开第一个节点
+            }
+            zTreeObj.setting.async.otherParam['includeRoot'] = false
+          },
+          onClick: function (event, treeId, treeNode) {
+            emrTlpClassifyId = treeNode.emrTlpClassifyId;
+              var parentEmrTreeCode = treeNode.getParentNode() && treeNode.getParentNode().emrTreeCode || ""
+            $('#emrTlpClassifyEdit').attr('src', '$contextPath' + '/emr/emrTlpClassifyEdit.do?emrTlpClassifyId=' + emrTlpClassifyId +'&parentEmrTreeCode=' + parentEmrTreeCode);
+          },beforeRemove:function (treeId, treeNode) {
+            common.confirm('确定要删除吗？<br>注意:将会删除当前分类所属的子分类', function () {
+              common.requestServer('$contextPath' + '/emr/delEmrTlpClassify.jo', {
+                ids: treeNode.emrTlpClassifyId
+              }, function (result) {
+                if (result.code == '0') {
+                  $('#btn_query').click()
+                  location.reload()
+                } else {
+                  common.alert(result.msg, 0)
+                }
+              })
+            })
+            return false;
+          }
+        }
+      }
+      zTreeObj = $.fn.zTree.init($('#emrTypeTree'), setting, [])
+
+      // 获取查询表单高度
+      function getTableHgt () {
+        return ($('body').height() - $('#emrTlpClassify_queryForm').height() - 20)
+      }
+
+      $('#emrTlpClassifyTree').height(getTableHgt())
+      // 重置表格高度
+      $(window).resize(function () {
+        $('#emrTlpClassifyTree').height(getTableHgt())
+      })
+    }
+  )
+</script>

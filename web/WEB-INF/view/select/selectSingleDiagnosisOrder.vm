@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="renderer" content="webkit">
+<title>${SessionSysPortal.appTitle}</title> 
+#parse("./common/pageCss.vm")
+</head>
+<body class="gray-bg">
+    <div class="wrapper-content full-height">
+        <div class="tabs-container full-height">
+            <ul class="nav nav-tabs">
+                <li class="active"><a data-toggle="tab" href="#tab-1" page-url=""> 药品项目 </a></li>
+                <li class=""><a data-toggle="tab" href="#tab-2" page-url="../bas/selectSingleChargeItem.do"> 收费项目 </a></li>
+                <li class=""><a data-toggle="tab" href="#tab-3" page-url="../bas/selectSingleChargeFree.do"> 非收费项目 </a></li>
+            </ul>
+            <div class="tab-content full-height">
+                <!-- 药品项目 -->
+                <div id="tab-1" class="tab-pane full-height active">
+                    <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="../pharmacy/selectSinglePharmacyStock.do" frameborder="0" seamless></iframe>
+                </div>
+
+                <!-- 收费项目 -->
+                <div id="tab-2" class="tab-pane full-height">
+                    <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="" frameborder="0" seamless></iframe>
+                </div>
+                
+                <!-- 非收费项目 -->
+                <div id="tab-3" class="tab-pane full-height">
+                    <iframe class="J_iframe" name="iframe0" width="100%" height="100%" src="" frameborder="0" seamless></iframe>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- 全局js -->
+    #parse("./common/pageJs.vm")
+</body>
+<script type="text/javascript">
+    $(document).ready(function (){
+        $('a[data-toggle="tab"]').click(function (){
+            var url = $(this).attr('page-url');
+            var tabId = $(this).attr('href');
+            if (url && tabId && !$(tabId).find('iframe').attr('src')) {
+                $(tabId).find('iframe').attr('src', url);
+            }
+        });
+    });
+</script>
+</html>
+

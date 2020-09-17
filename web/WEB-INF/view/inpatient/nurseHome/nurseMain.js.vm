@@ -1,0 +1,241 @@
+<script>
+    //医护类型， 2=护
+    var DOCTOR_NURSE_FLAG_NURSE = "$!{CONST.AppConstants.DOCTOR_NURSE_FLAG_NURSE}"
+    //电子病历属性 2=住院病历
+    var EMR_PROPERTY_INPATIENT = "$!{CONST.AppConstants.EMR_PROPERTY_INPATIENT}"
+
+    var layuiIndex;
+    var emrTreeData;
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index',
+        autocomplete: 'autocomplete'
+    }).use(['index', 'form', 'laydate', 'element', 'autocomplete'], function () {
+        var laydate = layui.laydate, form = layui.form, element = layui.element, autocomplete = layui.autocomplete;
+        layuiIndex = layui.index;
+
+        // 菜单收缩
+        $(".side-tree .layui-nav-item").click(function () {
+            $('#LAY_app').siblings().removeClass("layadmin-side-shrink");
+        });
+
+        $(function() {
+            countInpatientOrder();
+        });
+
+        // 初始化左边菜单，menuData 数据从 main.vm 页面获取
+        var menuData = parent.menuData;
+        if (menuData) {
+            var html = [];
+            var tabContent = [];
+            var menu = JSON.parse(menuData).children;
+            $.each(menu, function (i, r) {
+            ## if(!r.children) { return true; }
+                html.push('<li id="' + r.id + '" data-menu=' + (r.children ? JSON.stringify(r.children).replace(/\s+/g, "@") : '[]') + '><span><i class="' + r.icon + '"></i><p>' + r.text + '</p></span></li>');
+                tabContent.push('<div class="container_page full-height-scroll"><ul id="leftMenu_' + i + '" class="layui-nav layui-nav-tree layui-inline side-tree"></ul></div>');
+            });
+            $('#rootMenu').html(html.join(''));
+            $('#leftMenu').html(tabContent.join(''));
+
+            /*跟菜单页选项卡切换监听*/
+            $(".tab_page_menu ul li").click(function () {
+                var index = $(".tab_page_menu ul li").index(this);
+                $(this).addClass("selected").siblings().removeClass("selected");
+                $(".tab_box .container_page").eq(index).addClass("selected").siblings().removeClass("selected");
+
+                var id = $(this).attr('id');
+                var medicalDocMenuId = parent.medicalDocMenuId;//医疗文书菜单主键 medicalDocMenuId 数据从 main.vm 页面获取
+                if (id == medicalDocMenuId) {
+                    if (emrTreeData) {
+                        generateEmrMenu(emrTreeData, index);
+                    }
+                    $.post('../emrTlp/getEmrTypeTree.jo', {emrTlpFlags: '0,2', doctorNurseFlags: '0,2'}, function (result) {
+                        emrTreeData = result;
+                        generateEmrMenu(emrTreeData, index);
+                    }, "json");
+                } else {
+                    // 菜单数据
+                    var menuHtml = [];
+                    var hasChild = false; // 标识是否有子菜单
+                    var strData = $(this).attr('data-menu');
+                    var data = JSON.parse(strData);
+                    $.each(data, function (i, r) {
+                        var href = r.href ? contextPath + "/" + r.href : '';
+                        menuHtml.push('<li id="' + r.id + '" class="layui-nav-item">');
+                        menuHtml.push('<a id="' + r.id + '" href="javascript:void(0);" title="' + r.text + '" tab-url="' + href + '"><i class="' + (r.icon ? r.icon.replace('@', ' ') : '') + '"></i><span>' + r.text + '</span></a>');
+                        if (r.children && r.children.length > 0) {
+                            hasChild = true;
+                            menuHtml.push('<dl class="layui-nav-child">');
+                            $.each(r.children, function (j, v) {
+                                href = v.href ? contextPath + "/" + v.href : '';
+                                menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.text + '" tab-url="' + href + '">' + v.text + '</a></dd>');
+                            });
+                            menuHtml.push('</dl>');
+                        }
+                        menuHtml.push('</li>');
+                    });
+                    $('#leftMenu_' + index).html(menuHtml.join(''));
+                    // 重新渲染菜单标签元素
+                    element.render();
+
+
+                    // 左边菜单点击事件
+                    $('#leftMenu a').click(function () {
+                        // 当存在链接且链接长度必须大于5时才打开选项卡
+                        if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                            var url = $(this).attr('tab-url');
+                            var params = [];
+                            params.push('patientId=' + $('#patientId').val());
+                            params.push('inhospitalId=' + $('#inhospitalId').val());
+                            params.push('emrTlpFlags='+EMR_PROPERTY_INPATIENT);
+                            params.push('doctorNurseFlag='+DOCTOR_NURSE_FLAG_NURSE);
+                            if (!RegExp(/emrProperty/).test(url)) {
+                                params.push('emrProperty=2');
+                            }
+                            var character = url.indexOf('?') > 0 ? '&' : '?';
+                            // 最后一个参数url 做为iframe的ID
+                            layui.index.openTabsPage(url + character + params.join('&'), $(this).text(), $(this).attr('id'));
+                        }
+                    });
+
+                    if (hasChild) {
+                        // 监听左边树型菜单展开和收缩
+                        $('#leftMenu li.layui-nav-item').click(function () {
+                            $('li.layui-nav-item').each(function () {
+                                $(this).removeClass('layui-nav-itemed');
+                            });
+                            $(this).addClass('layui-nav-itemed');
+                        });
+                        // 默认打开第一个树型菜单
+                        //$('li.layui-nav-item:first').click();
+                    }
+                }
+
+            });
+
+            // 打开第一选项卡
+            $(".tab_page_menu ul li:first").click();
+            //打开选中的选项卡下首个树型菜单
+            $("#leftMenu div.selected li.layui-nav-item:first").click().children('a').click().next('dl.layui-nav-child').find('dd a:first').click();
+            // 监听检索菜单
+            $('#searchMenu').bind('input propertychange', function () {
+                var html = [];
+                var value = $(this).val();
+                $("dl.searchMenu-lay").html('');
+                if (!value) {
+                    return;
+                }
+                $.each(menu, function (i, m) {
+                    var rootId = m.id;
+                    if (!m.children) {
+                        return true;
+                    }
+                    $.each(m.children, function (j, c) {
+                        var reg = RegExp("^.*" + value + ".*$");
+                        if (reg.test(c.text)) {
+                            var selector = (c.href ? 'a#' : "li#") + c.id;
+                            html.push('<dd pId="' + rootId + '" id="' + selector + '" ><a href="javascript:void(0);">' + c.text + '</a></dd>');
+                        }
+                        if (!c.children) {
+                            return true;
+                        }
+                        $.each(c.children, function (k, v) {
+                            var reg = RegExp("^.*" + value + ".*$");
+                            if (reg.test(v.text)) {
+                                html.push('<dd pId="' + rootId + '" id="a#' + v.id + '"><a href="javascript:void(0);">' + v.text + '</a></dd>');
+                            }
+                        });
+                    });
+                });
+                $("dl.searchMenu-lay").html(html.join(''));
+                $("dl.searchMenu-lay > dd").click(function () {
+                    var pId = $(this).attr('pId');
+                    var menuId = $(this).attr('id');
+                    $('li#' + pId).click();
+                    $(menuId).click();
+                    $("dl.searchMenu-lay").hide();
+                });
+                $("dl.searchMenu-lay").show();
+            });
+            $('#lab_back').click(function () {
+
+
+            });
+        }
+        function generateEmrMenu(emrTreeData, index) {
+            var menuHtml = [];
+            var hasChild = false; // 标识是否有子菜单
+            var url = 'getPatientEmrByDateGroup.do?emrTlpClassifyId=';
+            $.each(emrTreeData, function (i, value){
+                var isParent = value.children && value.children.length > 0;
+                var href = !isParent? contextPath + '/' + 'emr/' + value.emrTreeCode  + "/" + url + value.emrTlpClassifyId: '';
+                menuHtml.push('<li id="' + value.id + '" class="layui-nav-item">');
+                menuHtml.push('<a id="' + value.id + '" href="javascript:void(0);" title="' + value.emrTlpClassifyName + '" tab-url="' + href + '"><i class="' + (value.icon ? value.icon.replace('@', ' ') : '') + '"></i><span>' + value.emrTlpClassifyName + '</span></a>');
+                if (isParent) {
+                    hasChild = true;
+                    menuHtml.push('<dl class="layui-nav-child">');
+                    $.each(value.children, function (j, v){
+                        href = contextPath + '/' + 'emr/' + v.emrTreeCode  + "/" + url + v.emrTlpClassifyId;
+                        menuHtml.push('<dd><a id="' + v.id + '" href="javascript:void(0);" title="' + v.emrTlpClassifyName + '" tab-url="' + href + '">' + v.emrTlpClassifyName + '</a></dd>');
+                    });
+                    menuHtml.push('</dl>');
+                }
+                menuHtml.push('</li>');
+            });
+            $('#leftMenu_' + index).html(menuHtml.join(''));
+            // 重新渲染菜单标签元素
+            element.render();
+
+            // 左边菜单点击事件
+            $('#leftMenu a').click(function (){
+                // 当存在链接且链接长度必须大于5时才打开选项卡
+                if ($(this).attr('tab-url') && $(this).attr('tab-url').length > 5) {
+                    var url = $(this).attr('tab-url');
+                    var params = [];
+                    params.push('patientId=' + $('#patientId').val());
+                    params.push('inhospitalId=' + $('#inhospitalId').val());
+                    if (!RegExp(/emrProperty/).test(url)) {
+                        params.push('emrProperty=2');
+                    }
+                    var character = url.indexOf('?') > 0 ? '&' : '?';
+                    // 最后一个参数url 做为iframe的ID
+                    layui.index.openTabsPage(url + character + params.join('&'), $(this).text(), $(this).attr('id'));
+                }
+            });
+
+            if (hasChild) {
+                // 监听左边树型菜单展开和收缩
+                $('#leftMenu li.layui-nav-item').click(function (){
+                    $('li.layui-nav-item').each(function (){
+                        $(this).removeClass('layui-nav-itemed');
+                    });
+                    $(this).addClass('layui-nav-itemed');
+                });
+                // 默认打开第一个树型菜单
+                //$('li.layui-nav-item:first').click();
+            }
+        }
+        $('#searchMenuContainer').mouseleave(function () {
+            $("dl.searchMenu-lay").html('');
+            $("dl.searchMenu-lay").hide();
+        });
+    });
+    // 打开一个新的选项卡窗口，一般在子窗口调用
+    function openTab(url, text, id) {
+        layuiIndex.openTabsPage(url, text, id);
+    }
+
+    function countInpatientOrder() {
+//提交 Ajax 成功后，静态更新表格中的数据
+        common.requestServer(contextPath + '/inpatient/countInpatientOrder.jo',{inhospitalId: $('#inhospitalId').val(), hospitalId: $('#hospitalId').val()}, function (result) {
+            if (result.code == "0") {
+                $('#pendingReview').html(result.data["1"]? result.data["1"]: '无');
+                $('#pending').html(result.data["2"]? result.data["2"]: '无');
+                $('#toBeStopped').html(result.data["7"]? result.data["7"]: '无');
+            } else {
+                common.alert(result.data, 0);
+            }
+        });
+    }
+</script>

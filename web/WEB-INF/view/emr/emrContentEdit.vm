@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+	<title>${SessionSysPortal.appTitle}</title>
+    #parse("./common/layuiCss.vm")
+	#parse("./common/visualizationCss.vm")
+	#parse("./common/visualizationJs.vm")
+    <style>
+        /*.edui-dialog .edui-dialog-body {*/
+            /*height: 400px!important;*/
+        /*}*/
+        .edui-default .edui-for-sdetemplate .edui-dialog-content {
+            width: 600px;
+            height: 400px!important;
+        }
+    </style>
+</head>
+<body>
+<body class="gray-bg">
+<div class="wrapper-content full-height">
+    <form id="showForm">
+        #foreach($option in $!{map.keySet()})
+            #formHiddenInput("$option" "$map[$option]" "id='$option'")
+        #end
+    </form>
+    <form id="saveForm">
+        #formHiddenInput("emrTlpId" "$!{emrTlp.emrTlpId}" "id='emrTlpId'")
+        #formHiddenInput("contentId" "$!{emrContent.contentId}" "id='contentId'")
+        #formHiddenInput("inhospitalId" "$!{inpatientInhospital.inhospitalId}" "id='inhospitalId'")
+        #formHiddenInput("patientId" "$!{patient.patientId}" "id='patientId'")
+    </form>
+    <div class="designContainer">
+        <div id="designContent" style="width:1200px;margin:0 auto;  box-shadow: 0 0 0 1px #d1d1d1, 0 0 3px 1px #ccc;;height:100%;">$!emrTlp.emrTlpContent</>
+    </div>
+</div>
+    #parse("./common/layuiJs.vm")
+    #parse("./common/common.js.vm")
+<script src="../resource/hplus/js/jquery-3.3.1.min.js"></script>
+<script>
+    var formDesign = new formDesign('designContent', {
+        mode: 'EDITOR',
+        width: 794,
+        initFormId: 'showForm',
+        iframeJs: ["$!contextPath/resource/hplus/js/jquery-3.3.1.min.js"],
+        saveTempletUrl: '../emrContent/saveEmrContent.jo',
+        nursingRecordJSON: '$!{nursingRecordJSON}'
+    });
+</script>
+</body>
+</html>

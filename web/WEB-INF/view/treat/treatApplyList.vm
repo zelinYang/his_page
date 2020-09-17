@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>治疗列表</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+    #parse("./outpatient/outpatientMain/outCommon.js.vm")
+    #parse("./outpatient/tech/tech.css.vm")
+    #parse("./treat/treatApplyList.js.vm")<!-- 页面js -->
+    <link href="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.css" rel="stylesheet" />
+    <link href="$contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css" rel="stylesheet"> 
+    <script src="$contextPath/resource/hplus/js/webui-popover/jquery.webui-popover.js?v=2" ></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+    <script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+    <style>
+        .del-tr {
+            background-color: #ccc;
+        }
+        .apply-refund {
+            background-color: #ff5722;
+            color: #ffffff;
+        }
+        .apply-refund-success {
+            background-color: #ff0000;
+            color: #ffffff;
+        }
+    </style>
+
+</head>
+<body class="white-bg">
+   <div class="tech-main" style="height: calc(100% - 41px );">
+    <div id="container" >
+         <div class="pane ui-layout-center">
+              <form id="oupatientTech_queryForm">
+                  #formHiddenInput("patientId" "$!info.patientId" "id='patientId'")
+                  #formHiddenInput("inhospitalId" "$!info.inhospitalId" "id='inhospitalId'")
+                  #formHiddenInput("registerId" "$!info.registerId" "id='registerId'")
+                  #formHiddenInput("doctorOrderTypes" "05" " id='medicalTechFlag' ")
+              </form>
+              <div class="layui-form full-height">
+                 <div class="full-height table-width-full" id="techTable">
+                       <!-- 数据表格 -->
+                       <table id="oupatientTechTable" lay-filter="oupatientTechTable"></table>
+                 </div>
+             </div>
+         </div>
+         <!-- ***************************************************************************** -->
+         <div class="ui-layout-south layui-hide" >
+              <!-- 导航切换 -->
+              <div class="layui-tab layui-tab-card blod full-height" lay-filter="outItemTabs"  style="height: calc(100% - 17px);">
+                <!-- 导航 名称 -->
+                <ul class="layui-tab-title"  ><!--
+                  <li lay-id="inspect">检验模板</li>
+                  <li lay-id="examine">检查模板</li>
+                  <li lay-id="common" class="layui-this">整体模板</li>-->
+                  <li lay-id="history" >历史检查检验</li>
+                </ul>
+                <!-- 导航内容 -->
+                <div class="layui-tab-content" style="height: calc(100% - 44px);">
+	                  #set($iframeAttr = 'width="100%" height="100%" frameborder="0" scrolling="no"')
+                    <!--<div class="layui-tab-item inspect full-height layui-show" style="padding: 0px;">
+                        <iframe class="resizeiframe" targetSrc="$contextPath/outpatient/inspectGroup.do" $iframeAttr></iframe>
+                    </div>
+                    <div class="layui-tab-item examine full-height layui-show" style="padding: 0px;">
+                        <iframe class="resizeiframe" targetSrc="$contextPath/outpatient/examineGroup.do" $iframeAttr></iframe>
+                    </div>
+                    <div class="layui-tab-item common full-height layui-show" style="padding: 0px;">
+                        <iframe class="resizeiframe" targetSrc="$contextPath/outpatient/techHistory.do" $iframeAttr></iframe>
+                    </div>-->
+                    <div class="layui-tab-item history full-height" style="padding: 0px;">
+                        <iframe targetSrc="$contextPath/outpatient/techHistory.do" $iframeAttr></iframe>
+                    </div>
+                </div>
+              </div>
+         </div> 
+     </div>
+     
+   </div><!-- container -->
+ <!-- 底部按钮栏  -->
+ <div class="tool-bottom-fixed btn_gorup" style="background: #ffffff;border-top: 1px solid #e7eaec;">
+     <div class="totalPrice">金额：￥<span class="totalPriceValue">0</span></div>
+     <button id="btn_add_treat"  class="layui-btn layui-btn-sm layui-btn-danger" type="button">治疗申请</button>
+     <button id="btn_refund"  class="layui-btn layui-btn-sm" type="button">申请退费</button>
+     <button id="btn_del"  class="layui-btn layui-btn-sm" type="button" onclick="techDelete();">删除</button>
+##     <button id="tech_history" class="layui-btn layui-btn-sm" type="button" targetTab="history">治疗报告</button>
+     <button id="btn_refresh" type="button" class="layui-btn layui-btn-sm " style="margin-left: 30px" lay-tips="刷新">
+         <i class="layui-icon layui-icon-refresh"></i>
+     </button>
+ </div>
+  
+</body>
+</html>

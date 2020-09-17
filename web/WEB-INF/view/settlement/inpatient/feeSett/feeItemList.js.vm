@@ -1,0 +1,112 @@
+<script>
+    var dicDocChargeGroupCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicDocChargeGroupCode)');
+    var dicPatientKind = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientKind)');
+    var dicOrderClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicOrderClassify)');
+    layui.use(['jquery', 'table', 'element', 'form', 'laydate', 'util'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var form = layui.form;
+        var element = layui.element;
+        var util = layui.util;
+        element.render();
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#feeItemListTab'
+            , skin: 'nob'
+            , defaultToolbar: []
+            , height: 'full-150'//高度
+            , url: '../inpatient/feeItemListData.jo' //数据接口
+            , limit: 10
+            , page: true
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , where: common.serializeObject($('#feeItem_qfrom'))
+            , cols: [[ //表头
+                {
+                    field: 'medicineSpec', title: '计价项目', width: '18%', templet: function (row) {
+                        if (row.feeItemtype == 3) {
+                            return '当前科室费用清单';
+                        } else if (row.feeItemtype == 1) {
+                            return '收费项';
+                        } else if (row.medicine.medicineName + row.medicine.medicineSpec == 0) {
+                            return "";
+                        } else {
+                            return row.medicine.medicineName + row.medicine.medicineSpec;
+                        }
+                    }
+                }
+                , {
+                    field: 'medicine.medicineName', title: '', templet: function (row) {
+                        if (row.feeItemtype == 3) {
+                            return '总计金额';
+                        } else if (row.feeItemtype == 1) {
+                            return '小计';
+                        } else if (row.medicineId == null) {
+                            return '';
+                        } else {
+                            return '';
+                        }
+                    }
+                }
+                , {
+                    field: 'orderClassify', title: '医嘱类型', templet: function (row) {
+                        return dicOrderClassify[row.orderClassify] || '';
+                    }
+                }
+                , {
+                    field: 'inhospitalChargeGroupCode', title: '项目类型', templet: function (row) {
+                        return dicDocChargeGroupCode[row.inhospitalChargeGroupCode] || '';
+                    }
+                }
+                , {field: 'giveTotalQuantity', title: '数量'}
+                , {field: '', title: '计量单位'}
+                , {field: 'unitPrice', title: '单价'}
+                , {field: '', title: '报销类型',}
+                , {
+                    field: 'chargingDate', title: '计费日期', templet: function (row) {
+                        return util.toDateString(row.chargingDate)
+                    }
+                }
+                , {field: '', title: '标准编码'}
+                , {field: 'settlementPrice', title: '总金额'}
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+                $(".layui-table th").css("font-weight", "bold");// 设定表格标题字体加粗
+                // LayUIDataTable.SetJqueryObj($);// 第一步：设置jQuery对象
+                // var currentRowDataList = LayUIDataTable.ParseDataTable(function (index, currentData, rowData) {
+                // })
+                // // 对相关数据进行判断处理--此处对mk2大于30的进行高亮显示
+                // $.each(currentRowDataList, function (index, obj) {
+                //     if (obj['giveTotalQuantity'] && obj['giveTotalQuantity'].value == '0') {
+                //         obj['giveTotalQuantity'].row.css({"background-color": "#009966", 'color': '#99CCCC'});
+                //     }
+                // })
+
+
+            }
+        });//table.render
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+
+        //查询列表
+        query = function () {
+            var queryParams = common.serializeObject($('#feeItem_qfrom'));
+            tableIns.reload({where: queryParams});
+        }
+
+
+        //页面初始化
+        $(document).ready(function () {
+            //alert(' = ' + common.cmycurd(256.36));
+        });
+        $('#patientKind').val(dicPatientKind["${inpatientInhospitalInfo.patientKind}"]);
+
+
+    });
+</script>

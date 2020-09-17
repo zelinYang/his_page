@@ -1,0 +1,36 @@
+<script>
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)')
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)')
+    var currentUser = JSON.parse('$AppTools.toJSONString($!currentUser)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'laytpl', 'table', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, laytpl = layui.laytpl, table = layui.table, tableSelect = layui.tableSelect
+        common.verify(form)
+
+        //提交表单
+        function saveConsultingRoom() {
+            var consultingRoomParams = common.serializeObject($('#consultingRoomForm'))
+            common.requestServer(contextPath + '/outpatient/saveConsultingRoom.jo', consultingRoomParams, function (result) {
+                if (result.code == '0') {
+                    common.msg('保存成功。', 1, function () {
+                        $('#btn_query', window.parent.document).click()
+                        var index = parent.layer.getFrameIndex(window.name)
+                        parent.layer.close(index)
+                    })
+                } else {
+                    common.alert(result.msg, 2)
+                }
+            })
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveConsultingRoom()
+            return false
+        })
+    })
+</script>

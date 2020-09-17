@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>文本输入</title>
+    <link rel="stylesheet" href="../../plugins/layuiadmin/layui/css/layui.css">
+    <script src="../js/jQuery.v3.1.2-pre.js"></script>
+    <script src="../../plugins/layer/layer.js"></script>
+    <style>
+        .layui-table td, .layui-table th{
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+<table class="layui-table">
+    <colgroup>
+        <col width="20%">
+        <col width="20%">
+        <col width="20%">
+        <col width="10%">
+        <col width="10%">
+        <col width="10%">
+        <col width="10%">
+    </colgroup>
+    <thead>
+    <tr>
+        <th>类名</th>
+        <th>字段名</th>
+        <th>描述</th>
+        <th>控件模式</th>
+        <th>另存字段</th>
+        <th>控件类型</th>
+        <th>是否必填</th>
+    </tr>
+    </thead>
+    <tbody id="field">
+    <tr>
+        <td>className</td>
+        <td>fieldName</td>
+        <td>desc</td>
+        <td>required</td>
+        <td>otherFieldName</td>
+        <td>type</td>
+        <td>mode</td>
+    </tr>
+    </tbody>
+</table>
+<script>
+    /**
+     * js原生的触发事件方法，比jQuery方法适用性广一些，在某些情况下jQuery触发事件无效，适用本方法有效
+     * element 触发事件的对象
+     * eventNameStr 事件的名称
+     * 调用示例  triggerEvent(document.getElementById("a_test"),"mouseover");
+     */
+    function triggerEvent(element,eventNameStr){
+        if (document.createEvent) {
+            event = document.createEvent("HTMLEvents");
+            event.initEvent(eventNameStr, true, true);
+            event.eventName = eventNameStr;
+            element.dispatchEvent(event);
+        } else {
+            event = document.createEventObject();
+            event.eventType = eventNameStr;
+            event.eventName = eventNameStr;
+            element.fireEvent("on" + event.eventType, event);
+        }
+    }
+
+    $(function() {
+        var fieldHtml = $('#field').first().html();
+        $('#field').html('');
+        console.log(fieldHtml);
+        var miniEditor = parent.miniEditor;
+        var controls = miniEditor.getControlById();
+        var controlObj = {};
+        for (var i = 0, len = controls.length; i < len; i++) {
+            var controlId = controls[i].getCtrlId();
+            if(!(/^[A-Z][A-z0-9]*$/).test(controlId)){
+                continue;
+            }
+            var opt = controls[i].getOpt();
+            var ids = controlId.split('_');
+            var className = ids[0];
+            var fieldName = ids[1] ? ids[1] : ids[0];
+            if (!controlObj[className]) {
+                controlObj[className] = [];
+            }
+            controlObj[className].push({
+                fieldName: fieldName,
+                desc: opt.desc,
+                mode: opt.mode,
+                required: opt.required,
+                otherFieldName: opt.otherFieldName,
+                type: opt.type
+            });
+            if (opt.type === 'edittable') {
+                var ctrlDom = controls[i].getCtrlElement();
+                $( ctrlDom ).find( '.emr-ctrl' ).each(function() {
+                    var ctrl = new parent.MiniControl( this );
+                    var childOpt = ctrl.getOpt();
+                    controlObj[className].push({
+                        fieldName: ctrl.getCtrlId(),
+                        desc: childOpt.desc,
+                        mode: childOpt.mode,
+                        required: childOpt.required,
+                        otherFieldName: childOpt.otherFieldName,
+                        type: childOpt.type
+                    });
+                });
+            }
+        }
+        var html = [];
+        for (var name in controlObj) {
+            var fields = controlObj[name];
+            console.log(fields);
+            for (var i = 0, len = fields.length; i < len; i++) {
+                var trDom = [];
+                trDom.push('<tr data-ctrl-id="'+name + "_" + fields[i].fieldName+'">');
+                if (i === 0) {
+                    trDom.push('<td rowspan="' + len + '">' + name + '</td>');
+                }
+                trDom.push('<td>' + fields[i].fieldName + '</td>');
+                trDom.push('<td>' + fields[i].desc + '</td>');
+                trDom.push('<td>' + getMode(fields[i].mode) + '</td>');
+                trDom.push('<td>' + (fields[i].otherFieldName? fields[i].otherFieldName: '') + '</td>');
+                trDom.push('<td>' + getType(fields[i].type) + '</td>');
+                trDom.push('<td>' + getRequired(fields[i].required) + '</td>');
+                trDom.push('</tr>');
+                html.push(trDom.join(''));
+            }
+        }
+        console.log(html);
+        $('#field').html(html.join(''));
+        $('#field').find('tr[data-ctrl-id]').mouseover(function () {
+            var ctrlId = $(this).data('ctrl-id');
+            triggerEvent(miniEditor.editor.document.getElementById(ctrlId),"mouseover");
+        })
+    });
+
+    function getMode(mode) {
+        var value = '';
+        switch (mode) {
+            case '0': value = '只读模式'; break;
+            case '1': value = '编辑模式'; break;
+            case '2': value = '隐藏模式'; break;
+        }
+        return value;
+    }
+
+    function getRequired(required) {
+        return required === '1'? '是': '否';
+    }
+
+    function getType(type) {
+        return type;
+    }
+</script>
+</body>
+
+</html>

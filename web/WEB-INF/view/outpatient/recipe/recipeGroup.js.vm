@@ -1,0 +1,288 @@
+<script>
+	var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+	var dicDrugNumUnitDosageUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+	var dicPharmacyFreq = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+	var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+	var userId = '$!{user.userId}';
+
+	var queryRecipeGroup;//查询方法
+	layui.use(['jquery', 'table', 'element', 'form'], function () {
+		var table = layui.table, element = layui.element, $ = layui.$, form = layui.form;
+		element.render();
+
+		/* 组套 JS */
+		var initQFrom = common.serializeObject($('#recipeGroup_queryForm'));
+		//组套tabel
+		var recipeGroupTable = table.render({
+			elem: '#recipeGroupTable'
+			, defaultToolbar: []
+			, height: 'full-45'//高度
+			, url: '../outpatient/orderGroupListData.jo' //数据接口
+			, page: true //开启分页
+			, where: getQueryParams()
+			, request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				, limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			, cols: [[ //表头
+				{type: 'radio'}
+				, {field: 'orderGroupName', title: '组套名称'}
+			]]
+		});
+
+		// 查询按钮
+		$('#btn_query_recipeGroup').click(function () {
+			queryRecipeGroup();
+		});
+
+		//监听单选按钮
+		form.on('radio(orderGroupClassify)', function (data) { //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+			queryRecipeGroup();
+			$('.main-right').addClass('layui-hide');
+		});
+
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var initQFrom = common.serializeObject($('#recipeGroup_queryForm'));
+			if (initQFrom.orderGroupClassify === '1') {
+				initQFrom.orderUserId = userId;
+			} else {
+				initQFrom.orderUserId = '';
+			}
+			return $.extend({
+				orderGroupName: '',
+				commonMedicineFlag: '',
+				orderGroupClassify: ''
+			}, initQFrom);
+		}
+
+		//查询列表
+		queryRecipeGroup = function () {
+			var queryParams = common.serializeObject($('#recipeGroup_queryForm'));
+			recipeGroupTable.reload({where: queryParams});
+		}
+
+        ## //监听行单击事件
+        ## table.on('row(recipeGroupTable)', function(obj){
+        ##   var row = obj.data;
+        ##   rowRecipeGroupSelect(row);
+        ## });
+		//监听行单击事件
+		table.on('row(recipeGroupTable)', function (obj) {
+			obj.tr.addClass('layui-table-click').siblings().removeClass('layui-table-click');//选中行样式
+			obj.tr.find('input[lay-type="layTableRadio"]').prop("checked", true);
+			var index = obj.tr.data('index');
+			var thisData = table.cache.recipeGroupTable;//tableName 表名
+			//重置数据单选属性
+			layui.each(thisData, function (i, item) {
+				if (index === i) {
+					item.LAY_CHECKED = true;
+				} else {
+					delete item.LAY_CHECKED;
+				}
+			});
+			form.render('radio');
+
+			var row = obj.data;
+			rowRecipeGroupSelect(row);
+		});
+
+		//处方组套行单击查询处方明细
+		function rowRecipeGroupSelect(recipeGroupRow) {
+			$('.main-right').removeClass('layui-hide');
+			$('#orderGroupId').val(recipeGroupRow.orderGroupId);
+			queryRecipeGroupItem();
+		}
+
+		//*************************  处方组套明细项 JS ********************************/
+		var recipeGroupItemTable = table.render({
+			elem: '#recipeGroupItemTable'
+			, defaultToolbar: []
+			, height: 'full-45'//高度
+			, url: '../bas/orderItemInfoListData.jo' //数据接口
+			, limit: 200
+			, request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				, limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			, cols: [[ //表头
+				{type: 'checkbox'}
+				, {field: 'orderGroupNo', hide: true}
+				, {field: 'show', title: ' ', width: 10, templet: function (row) {
+						return '';
+					}
+				}
+				, {field: 'orderName', title: '项目名称', width: 180}
+				, {
+					field: 'perOrderCount', title: '每次数量', templet: function (row) {
+						if (!row.perOrderCount) {
+							return '';
+						}
+						return row.perOrderCount + dicDrugNumUnit[row.minMedicineUnit];
+					}
+				}
+				, {
+					field: 'dosage', title: '每次剂量', templet: function (row) {
+						if (!row.dosage) {
+							return '';
+						}
+						return row.dosage + dicDrugNumUnitDosageUnit[row.dosageUnit];
+					}
+				}
+				, {
+					field: 'pharmacyFreqId', title: '频次', templet: function (row) {
+						if (!row.pharmacyFreqId) {
+							return '';
+						}
+						return dicPharmacyFreq[row.pharmacyFreqId] || '';
+					}
+				}
+				, {field: 'usageQuantity', title: '每日剂量', templet: function (row) {
+						if (!row.usageQuantity) {
+							return '';
+						}
+						return row.usageQuantity + dicDrugNumUnitDosageUnit[row.dosageUnit];
+					}}
+				, {field: 'orderDay', title: '天数', width: 40}
+				, {
+					field: 'giveTotalQuantity', title: '总量', width: 80, templet: function (row) {
+						if (!row.giveTotalQuantity) {
+							return '';
+						}
+						return row.giveTotalQuantity + dicDrugNumUnit[row.giveTotalQuantityUnit];
+					}
+				}
+				, {
+					field: 'doseWayCode', title: '用法', width: 120, templet: function (row) {
+						if (!row.doseWayCode) {
+							return '';
+						}
+						return dicDoseWay[row.doseWayCode] || '';
+					}
+				} //用法，给药途径
+				, {field: 'minRetailPrice', width: 120, title: '最小包装单位价格'}
+				, {field: 'retailPrice', width: 120, title: '包装单位价格'}
+				, {field: 'specialRemark', title: '特殊处理', width: 80}
+			]]
+			, done: function (res, curr, count) {
+				var that = this;
+				//合并显示单元格字段
+				var groupCells = ['show'];
+				var oldData = [];
+				//合并关键字段
+				var groupKeyWord = 'orderGroupNo';
+				$.each(res.data, function (index, contains) {
+					var allTrs = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains.orderGroupNo + ')').filter(function () {
+                        return $(this).text() == contains.orderGroupNo;
+                    }).parents('tr');
+					$.each(groupCells, function (i, field) {
+						if (oldData.contains(contains.orderGroupNo + field)) {
+							return;
+						}
+						var trs = that.elem.next().find('.layui-table-main tr td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + contains.orderGroupNo + ')').filter(function () {
+                            return $(this).text() == contains.orderGroupNo;
+                        }).parents('tr');
+						trs.find('td[data-field="' + field + '"]').first().attr('rowspan', trs.length).end().not(":first").remove();
+						oldData.push(contains.orderGroupNo + field);
+					})
+					//移入背景颜色
+					allTrs.hover(function () {
+						allTrs.addClass('layui-table-hover');
+					}, function () {
+						allTrs.removeClass('layui-table-hover');
+					})
+				});
+			}
+		});
+
+		table.on('checkbox(recipeGroupItemTable)', function (obj) {
+			var groupKeyWord = 'orderGroupNo';
+			console.log([obj.data.orderGroupNo])
+			obj.tr.siblings().find('td[data-field="' + groupKeyWord + '"]>.layui-table-cell:contains(' + obj.data.orderGroupNo + ')').filter(function () {
+                return $(this).text() == obj.data.orderGroupNo;
+            }).parents('tr').find(':checkbox[name="layTableCheckbox"]').click();
+			form.render('checkbox');
+		});
+
+		// 导入选中的组套
+		$('#btn_import_recipeGroupItem').click(function () {
+			importRecipeGroupItem();
+		});
+
+		// 保存组套
+		$('#btn_save_recipeGroup').click(function () {
+			var checkRows = table.checkStatus('recipeGroupTable');
+			if (!checkRows.data.length) {
+				common.alert('请选择要保存的组套', 0);
+				return false;
+			}
+			var recipeItems = parent.getSelectedRecipeItems();
+			var medicineIds = $.map(recipeItems, function (recipeItem) {
+				return recipeItem.medicineId;
+			})
+			var recipeGroupItems = table.cache.recipeGroupItemTable;//tableName 表名
+			var medicineName = [];
+			$.each(recipeGroupItems, function (index, recipeGroupItem) {
+				if (medicineIds.contains(recipeGroupItem.medicineId)) {
+					medicineName.push(recipeGroupItem.orderName);
+				}
+			})
+			if (medicineName.length > 0) {
+				common.alert('药品' + medicineName.join(',') + '已存在组套中', 0);
+				return false;
+			}
+			var orderGroup = checkRows.data[0];
+			$.each(recipeItems, function (index, recipeItem) {
+				recipeItem.orderClassify = '2';
+				recipeGroupItems.push(recipeItem);
+			});
+			orderGroup.itemJsonData = JSON.stringify(recipeGroupItems);
+			common.requestServer('$contextPath/bas/saveBasOrderGroup.jo', orderGroup, function (result) {
+				if (result.code === "0") {
+					common.alert('保存成功', 1);
+					recipeGroupItemTable.reload();
+				} else {
+					common.alert(result.msg, 0);
+				}
+			});
+		});
+
+		//查询列表
+		function queryRecipeGroupItem() {
+			var queryParams = common.serializeObject($('#recipeGroupItem_queryForm'));
+			recipeGroupItemTable.reload({where: queryParams});
+		}
+
+		// 导入组套明细
+		function importRecipeGroupItem() {
+			var checkRows = table.checkStatus('recipeGroupItemTable'); //test即为基础参数id对应的值
+			if (!checkRows.data.length) {
+				common.alert('请选择需要导入的数据', 0);
+				return false;
+			}
+			parent.addRecipeGroupItem(checkRows.data);
+		}
+
+		//加载组套明细项
+		function loadGroupItem(orderGroupId) {
+			var recipeGroupItemArray = [];
+			$.ajax({
+				type: "POST",
+				url: '../bas/orderItemListData.jo',
+				data: {orderGroupId: orderGroupId},
+				dataType: "json",
+				async: false,//同步 请求
+				success: function (data) {
+					if (data && data.total > 0) {
+						recipeGroupItemArray = data.rows;
+					}
+				},
+				error: function (res) {
+					jqueryPostError(res);
+				}
+			});//ajax end
+			return recipeGroupItemArray;
+		}
+
+	});//layui.use
+</script>

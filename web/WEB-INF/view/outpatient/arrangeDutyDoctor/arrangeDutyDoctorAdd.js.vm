@@ -1,0 +1,195 @@
+<script>
+    var dicConsultingRoom = JSON.parse('$dicTools.changeMapToJson($dicData.dicConsultingRoom)');
+    var dicSysOrgDeptName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgDeptName)');
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+var number=0;
+layui.config({
+    base: '../resource/layuiadmin/' //静态资源所在路径
+  }).extend({
+    index: 'lib/index' //主入口模块
+  }).use(['index', 'table', 'form','layer', 'laytpl'], function(){
+    var $ = layui.$
+    ,form = layui.form
+    ,table = layui.table
+    ,layer = layui.layer
+    ,laytpl = layui.laytpl;
+
+    //根据门诊科室获取医生
+    function laodbasPostDoctorData() {
+        var arrangeDutyOfficeId = $('#q_arrangeDutyOfficeId').val();
+        var arrangeDutyDate = $('#arrangeDutyDate').val();
+        var arrangeDutyType = $('#arrangeDutyType').val();
+        var basPostDoctorMap = {};
+        if(!arrangeDutyOfficeId || !arrangeDutyDate || !arrangeDutyType) return basPostDoctorMap;
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/getNotArrangeDoctorDate.jo',
+            data: {doctorOfficeId: arrangeDutyOfficeId, arrangeDutyDate: arrangeDutyDate, arrangeDutyType: arrangeDutyType},
+            async: false,
+            success: function (result) {
+                if (result.code == '0') {
+                    $.each(result.data, function (index, item) {
+                        basPostDoctorMap[item.doctorId] = (item.doctorName || '');
+                    })
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            }})
+        return basPostDoctorMap;
+    }
+    //根据医生获取诊室
+    function laodConsultingRoomDoctorData(depId, doctorId) {
+        var consultingRoomMap = {};
+        if(!doctorId) return doctorId;
+        $.ajax({
+            type: "POST",
+            url: '$contextPath/outpatient/consultingRoomDoctorPageData.jo?pageSize=1000',
+            data: {officeId: depId, doctorId: doctorId},
+            async: false,
+            success: function (result) {
+                if (result.code == '0') {
+                    $.each(result.data, function (index, item) {
+                        consultingRoomMap[item.consultingRoomId] = (item.roomName || '');
+                    })
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            }})
+        return consultingRoomMap;
+    }
+    form.on('select(q_arrangeDutyOfficeId)', function(data){
+
+    });
+    //医生监听
+    form.on('select(arrangeDutyDoctorSelect)', function(data){
+        var tr = data.othis.parents('tr');
+        var doctorId = data.value;
+        var addDoctorIds = $.makeArray(tr.siblings().find('select[name="AddDoctorIds"]').map(function () {
+            return $(this).val();
+        }));
+        if(addDoctorIds.indexOf(doctorId) != -1) {
+            common.msg('当前医生已选择！', 0);
+            $(data.elem).val('');
+            form.render();
+            return false;
+        }
+    	var arrangeDutyOfficeId = tr.find('input[id=doctorOfficeId]').val();
+        var consultingRoomMap = laodConsultingRoomDoctorData(arrangeDutyOfficeId, doctorId);
+        var options = $.map(consultingRoomMap, function (key, value) {
+            return '<option value="' + value + '">' + key + '</option>';
+        })
+        options.unshift('<option value=""></option>');
+        tr.find('select[name="consultingRoomIds"]').html(options.join(''));
+        form.render();
+    });
+    //重新规划序号
+    var readyTable = function(){
+        //$('table tr:not(:first)').remove();
+        var len = $('table tr').length;
+        for(var i = 1;i<len;i++){
+            $('table tr:eq('+i+') td:nth-child(2)').text(i);
+        }
+    };
+
+    //清空表格行
+    function removeTrAll() {
+        $('#tgtt').empty();
+    }
+
+    //添加一行
+    $('#addArrangeDutyDoctorTable').on('click',function(){
+    	number++;
+        var basPostDoctorMap = laodbasPostDoctorData();
+        var options = $.map(basPostDoctorMap, function (key, value) {
+            return '<option value="' + value + '">' + key + '</option>';
+        })
+        options.unshift('<option value=""></option>')
+    	$('#tgtt').append('<tr>'
+    		  +'  <td>'
+    		    + ' <i  class="layui-icon layui-icon-delete btn-img-red deleteTr" title="删除"></i>'
+    		    + ' </td>'
+    		    + ' <td>'+number+'</td>'
+				+ ' <td>'
+				+ '<input type="hidden" id="doctorOfficeId" value="' + $('#q_arrangeDutyOfficeId').val() + '" >'
+				+  $('#q_arrangeDutyOfficeId').find('option:selected').text()
+				+ '</td>'
+    		    +  '<td>'
+    		     + '<div class="layui-input-inline" style="width: 170px">'
+    		     + '<select name="AddDoctorIds"  lay-filter="arrangeDutyDoctorSelect" lay-search="" lay-verify="required">'
+    		      + options.join('') +
+            '</select>'
+    		  + ' </div>'
+    		  +'  </td>'
+    		    + ' <td name="consultingRoomName">'
+    		    + '<div class="layui-input-inline" style="width: 170px">'
+                + '<input type="hidden" name="consultingRoomIds" id="consultingRoomId" >'
+            + '<select name="consultingRoomIds"  lay-filter="consultingRoomIds" lay-search="" lay-verify="required"></select>'
+    		    +'</div>'
+    		     + '</td>'
+    		    + ' <td> <div class="layui-input-inline" style="width: 100px">'
+    		      +  '<input type="tel" name="limitCounts" lay-verify="required" min="0" max="99" oninput="if(value.length>2)value=value.slice(0,2)" autocomplete="off" class="layui-input">'
+    		    + ' </div></td>'
+    		    +'</tr>');
+    	readyTable();
+    	form.render();
+    });
+
+    //根据科室查找诊室
+    var findconsultingRoomdata = function(data,findconsultingRoom) {
+    	var optionstring = "";
+    	$.each(data,function(index, obj){
+    		var e = '<option value="'+obj.consultingRoomId+'">'+obj.roomName+'</option>';
+    		optionstring += "<option value=\"" + obj.consultingRoomId + "\" >" +obj.roomName+" " + "</option>";
+    		findconsultingRoom.html(optionstring);
+    	});
+
+	}
+
+    //保存-异步提交
+    /* $('#btn_save').on('click',function(){
+    	var Param = common.serializeObject($('#arrangeDutyDocotorEdtiForm'));
+		$.ajax({
+			type: "POST",
+	            url: '$contextPath/outpatient/addArrangeDutyDoctor.jo',
+	            data: Param,
+	            dataType:"json",
+	            async:false,
+	            success: function(result){
+	            	parent.window.closeAddview();
+	            }
+		});
+
+    }); */
+
+    //保存方法  - from 提交
+    function saveConsultingRoom () {
+    	var param= common.serializeObject($('#arrangeDutyDocotorEdtiForm'));
+      common.requestServer(contextPath + '/outpatient/addArrangeDutyDoctor.jo', param, function (result) {
+        if (result.code == '0') {
+          common.msg('保存成功。', 1, function () {
+        	  parent.window.closeAddview();
+          })
+        } else {
+          common.alert(result.msg, 2)
+        }
+      })
+    }//save function
+     // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveConsultingRoom()
+      return false
+    })
+
+    //移除行
+    $("#tgtt").on('click', '.deleteTr', function () {
+    	var a = $(this).parents('tr');
+    	a.remove();
+    	readyTable();
+    	form.render();
+    });
+
+
+  });
+
+//医生代码  输入首拼 可以检索
+</script>

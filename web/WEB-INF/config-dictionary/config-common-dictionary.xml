@@ -1,0 +1,3095 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd">
+    <bean id="dicNurseDoctor" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护士医生"/>
+        <property name="dictionarySql">
+            <value>
+                select user_id as dictkey, name as dictvalue from public_sys.sys_user where valid_flag = '1' and
+                user_attribute_id in ('D','N')
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicSysUser" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="所有用户"/>
+        <property name="dictionarySql">
+            <value>
+                select user_id as dictkey, name as dictvalue from public_sys.sys_user where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysUserAttributeTable" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="系统用户属性表"/>
+        <property name="dictionarySql">
+            <value>
+                select user_attribute_id as dictkey, user_attribute_name as dictvalue from public_sys.sys_user_attribute where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicNurse" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护士"/>
+        <property name="dictionarySql">
+            <value>
+                select user_id as dictkey, name as dictvalue from public_sys.sys_user where valid_flag = '1' and
+                user_attribute_id = 'N'
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDoctor" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医生"/>
+        <property name="dictionarySql">
+            <value>
+                select user_id as dictkey, name as dictvalue from public_sys.sys_user where valid_flag = '1' and
+                user_attribute_id = 'D'
+            </value>
+        </property>
+    </bean>
+
+    <!-- 系统参数字典 -->
+    <bean id="dicSysPro" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="系统参数字典"/>
+        <property name="dictionarySql">
+            <value>
+                select properties_paramkey as dictkey, properties_paramvalue as dictvalue from
+                public_sys.sys_properties_item where sys_code = 'cloud_his' and use_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysDuty" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="系统用户职务"/>
+        <property name="dictionarySql">
+            <value>
+                select duty_id as dictkey, name as dictvalue from public_sys.sys_duty where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysOrgName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="单位机构部门字典"/>
+        <property name="dictionarySql">
+            <value>
+                select org_id as dictkey, name as dictvalue from public_sys.sys_org
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysOrgHospital" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医院部门字典"/>
+        <property name="dictionarySql">
+            <value>
+                select org_id as dictkey, name as dictvalue from public_sys.sys_org where unit_org_id = org_id
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysOrgDeptName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="单位机构部门字典"/>
+        <property name="dictionarySql">
+            <value>
+                select org_id as dictkey, name as dictvalue from public_sys.sys_org where unit_org_id &lt;&gt; org_id
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegisterDoctorDutyName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="收费项目明细名称-职称"/>
+        <property name="dictionarySql">
+            <value>
+                select charge_item_id as dictkey, charge_name as dictvalue from cloud_his.bas_charge_item where
+                outpatient_fee_code='04' and valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegisterDoctorDutyUnitPrice" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="收费项目明细单价-职称"/>
+        <property name="dictionarySql">
+            <value>
+                select charge_item_id as dictkey, unit_price as dictvalue from cloud_his.bas_charge_item where
+                outpatient_fee_code='04' and valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSex" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="性别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_code &lt;&gt; 9 and
+                dic_type_id='9' and valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicClearSex" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="性别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_code in(1,2) and
+                dic_type_id='9' and valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicUterineStrength" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="宫缩强度"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='145' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFoetusPosition" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="胎儿方位代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='75' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNewbornApgarInterval" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="Apgar评分间隔时间分类代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='68' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDeliveryOutcome" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="分娩结局代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='89' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNewbornAbnormal" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="新生儿异常情况代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='88' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientKind" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="付费方式-医保"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='22' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInsuredType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医疗费用类型字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='69' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDosageForm" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品剂型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='507' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicContactRelation" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="联系人关系字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='121' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMarryState" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="婚否字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='19' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNurseLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='600'and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgeryIncisionLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术级别"/>
+        <property name="dictionarySql">
+            <value>
+                select surgery_incision_level_id as dictkey, incision_level_name as dictvalue from
+                cloud_his.bas_surgery_incision_level where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgeryCode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术操作代码"/>
+        <property name="dictionarySql">
+            <value>
+                select surgery_code_id as dictkey, surgery_name as dictvalue from
+                cloud_his.bas_surgery_code where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBloodType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="血型字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='98' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRhBloodType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="rh血型字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='99' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNation" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="民族字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='122' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientAttribute" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="患者类型字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='29' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="患者类型代码字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='16' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInfantBed" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="婴儿床字典"/>
+        <property name="dictionarySql">
+            <value>
+                select ward_bed_no as dictkey, ward_bed_no as dictvalue from cloud_his.inpatient_ward_bed
+                where inpatient_ward_office_id=56 and valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicCareerCode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="职业字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='151' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientCondition" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="患者情况字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='6' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFoodGuide" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="饮食情况字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='130' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicInpatientWardAll" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="所有病区"/>
+        <property name="dictionarySql">
+            <value>
+                select ward_id as dictkey, ward_name as dictvalue from cloud_his.inpatient_ward where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOffice" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="就诊科室"/>
+        <property name="dictionarySql">
+            <value>
+                select org_id as dictkey, name as dictvalue from public_sys.sys_org where org_rank in ('1','3','5','7')
+                and valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineFirstType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品甲乙丙类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='524' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicProvinceInsuranceType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="省医保甲乙丙类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='365' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicCityInsuranceType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="市医保甲乙丙类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='298' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyFreq" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品用药频次"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_freq_id as dictkey, pharmacy_freq_name as dictvalue from cloud_his.bas_pharmacy_freq
+                where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyFreqId" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品用药频次代码"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_freq_id as dictkey, pharmacy_freq_id as dictvalue from cloud_his.bas_pharmacy_freq where
+                valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyFreqDayFreq" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品用药频次对应数量"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_freq_id as dictkey, day_freq as dictvalue from cloud_his.bas_pharmacy_freq where
+                valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyFreqWeekFreq" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品用药周频次对应数量"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_freq_id as dictkey, week_freq as dictvalue from cloud_his.bas_pharmacy_freq where
+                valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoseWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品用法"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='523' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicHerbUsage" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="草药用法"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='46' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicHerbCooking" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="中药煎煮法"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='45' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsultingRoom" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="诊室"/>
+        <property name="dictionarySql">
+            <value>
+                select consulting_room_id as dictkey, room_name as dictvalue from cloud_his.consulting_room where
+                valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNationality" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="国籍字典"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='119' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicmbfOrgBelong" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="参保所属机构"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='348' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDistrictMedicalInsurance" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="区医保"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='937' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOutpatientFeeCode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊费用分类代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='24' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOutpatientFeeCodeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊费用分类代码-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='24' and dic_name like '%药费%' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOutpatientFeeCodeMaterial" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊费用分类代码-耗材"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='24' and dic_name like '%材料费%' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOutpatientFeeCodeChargeItem" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊费用分类代码-诊疗"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='24' and dic_name not like '%材料费%' and not dic_name like '%药费%' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicInhospitalChargeGroupCode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="住院结算分类代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='25' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalChargeGroupCodeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="住院结算分类代码-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='25' and dic_name like '%药费%'  and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalChargeGroupCodeMaterial" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="住院结算分类代码-耗材"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='25' and dic_name like '%材料费%'  and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalChargeGroupCodeChargeItem" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="住院结算分类代码-诊疗"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='25' and dic_name not like '%材料费%' and not dic_name like '%药费%' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDocChargeGroupCode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病案首页费用分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='26' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDocChargeGroupCodeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病案首页费用分类-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='26' and dic_name like '%药费%' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDocChargeGroupCodeMaterial" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病案首页费用分类-耗材"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='26' and dic_name like '%材料费%' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDocChargeGroupCodeChargeItem" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病案首页费用分类-诊疗"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='26' and dic_name not like '%材料费%' and not dic_name like '%药费%' and
+                valid_flag ='1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDisease" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="疾病诊断"/>
+        <property name="dictionarySql">
+            <value>
+                select disease_id as dictkey, disease_name as dictvalue from cloud_his.bas_disease where valid_flag =
+                '1' and disease_id &lt; 200
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicalRecordsFeeName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历费名称"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where
+                dic_type_id='31' and valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicalRecordsFeePrice" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历费单价"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_score as dictvalue from cloud_his.bas_dic where
+                dic_type_id='31' and valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegisterType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="挂号类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='13' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicInhospitalStatePatient" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="在院状态患者"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=在院
+                2=转科
+                3=批准出院
+                4=出院返回
+                5=确认出院
+                6=预结
+                7=出院未结算
+                99=登记撤销
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicInhospitalState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否在院"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=入院（未分配床位）
+                1=在院
+                2=转科
+                3=批准出院
+                4=出院返回
+                5=确认出院
+                6=预结
+                7=出院未结算
+                8=出院已结算
+                99=登记撤销
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDiagnosisClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="诊断类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='11' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPrognosis" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="转归情况"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='41' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicProducingArea" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品产地--生产厂商"/>
+        <property name="dictionarySql">
+            <value>
+                select producing_area_id as dictkey, producing_area_name as dictvalue from
+                cloud_his.medicine_producing_area where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineVendor" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品供应商--供应厂商"/>
+        <property name="dictionarySql">
+            <value>
+                select medicine_vendor_id as dictkey, medicine_vendor_name as dictvalue from
+                cloud_his.Medicine_Vendor where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicvisitCardType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="身份证件类型-患者-诊疗卡类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='28' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientIdType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="身份证件类型-患者"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='27' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicGuardIdType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="监护人证件类型-患者"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='30' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBelongSysType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="所属类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='38' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrTlpFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历使用分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='18' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrTlpClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="模板分类"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_classify_id as dictkey, emr_tlp_classify_name as dictvalue from
+                cloud_his.emr_tlp_classify where valid_flag = '1' order by emr_tree_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicLisSpecimenGroup" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="检验申请单分组"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='212' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicPaymentMethod" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="付费方式-自费"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='70' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOutPayInWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊挂号缴费方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='70' and
+                dic_code in('1','2','3','4','8','9','10') and valid_flag = '1' order by to_number(tree_sort)
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderState" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱状态"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='34' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicEmrParting" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历分型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='50' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品药物分类/物资类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='505' and
+                valid_flag = '1' order by tree_sort
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineTypeFixed" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品药物分类/物资类型-西成草药"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='505' and
+                valid_flag = '1' and dic_code in(1,2,3,4,9) order by tree_sort
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineTypeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品药物分类-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='505' and
+                valid_flag = '1' and dic_name like '%药%' order by tree_sort
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineTypeMaterial" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品药物分类-耗材"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='505' and
+                valid_flag = '1' and dic_name not like '%药%' order by tree_sort
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='33' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDoctorOrderType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='35' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorOrderTypeItem" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='35' and
+                valid_flag = '1' and dic_code &lt;&gt; '01' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorOrderTypeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类型-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='35' and
+                valid_flag = '1' and dic_code &lt;&gt; '01' and dic_code like '01%' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacy" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药房"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_id as dictkey, pharmacy_name as dictvalue from cloud_his.pharmacy where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDispensingWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="发药方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='23' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAllergyMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="过敏药物"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='508' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDrugNumUnitDosageUnit" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品剂量单位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='517' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugNumUnit" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品包装单位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='518' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="入院途径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='10' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSexLimit" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="性别限制"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='76' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDiseaseClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病种专业类别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='65' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPathStageType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="路径时点类型-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='57' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicClinicAssessType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="评估类别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='63' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPathActivityType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="活动类别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='60' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicActivityNode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="活动环节-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='54' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicActivityClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="活动分类-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='55' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicActivityOrderType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='33' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTechClinicLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="诊疗级别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='61' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicActivityGenWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="生成方式-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='66' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicClinicEarlyWarningFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="预警级别-临床路径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='64' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFreeOrderType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类型检查分类--不收费"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='37' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOnDutyType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="值班类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='273' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPatientName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="患者姓名"/>
+        <property name="dictionarySql">
+            <value>
+                select patient_id as dictkey, patient_name as dictvalue from cloud_his.patient where valid_flag = '1'
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAppointRegisterType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="预约类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='14' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAppointSource" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="号源类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='15' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBasDiseaseClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="疾病诊断代码类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='02' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDiseaseType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="疾病诊断代码类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='02' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicChargeType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="收费项目类型-病案"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='42' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgeryPosition" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="体位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='172' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgeryNarcosisMode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="麻醉方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='176' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicClinicDiseaseClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病种专业分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='65' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMaterialClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="耗材分类代码"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='500' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAntibioticLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="抗菌药物级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='504' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSpecialMedicineLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="毒麻级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='497' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNarcosisClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="SAS分级"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='177' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEduDegree" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="文化程度"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='436' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAccountBookType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="账簿类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='82' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAccountBookTypeMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="账簿类别-药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='82' and dic_name not like '%耗材%'  and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAccountBookTypeMaterial" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="账簿类别-耗材"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='82' and dic_name like '%耗材%'  and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAccountBookTcmType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="中草药账簿类别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='82' and
+                (dic_code =3 or dic_code =5 or dic_code =6 or dic_code =7) and valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineRecipeClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品处方分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='498' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSpecialMedicine" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品处方分类-特殊药品"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='498' and
+                valid_flag = '1' and dic_code in('2','3','4','5','6') order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOutpatientRecipeType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="门诊处方分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='43' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicIncisionLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术切口类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='173' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicIncisionHealingLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术切口愈合等级"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='170' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAntibioticGen" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="特殊药品--抗菌药物级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='501' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineAttribute" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品性质（监管类型）"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='506' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugTherapyTypeWestern" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药物用药类型-西医"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='503' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugTherapyTypeChinese" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药物用药类型-中医"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='502' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalQueryType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="住院患者查询类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='101' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAntibioticType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="抗菌药物类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='499' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicNationMedicineDirClassify" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="国家基本用药目录分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='522' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrClassName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历对应类名"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_class_id as dictkey, emr_class_path as dictvalue from cloud_his.emr_tlp_class
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrClassCHName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历对应类中文名"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_class_id as dictkey, emr_class_name_chs as dictvalue from cloud_his.emr_tlp_class
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrClassNameKeyField" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历对应类名的主键字段"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_class_id as dictkey, emr_class_primary_key as dictvalue from cloud_his.emr_tlp_class
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrClassQueryName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历数据对应实体类查询路径"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_class_id as dictkey, emr_query_class_path as dictvalue from cloud_his.emr_tlp_class
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrFunctionHtml" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历功能对应操作功能内容"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_button_id as dictkey, emr_input_button_area as dictvalue from cloud_his.emr_tlp_button
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrFunctionName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="病历功能对应操作名称"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_button_id as dictkey, remark as dictvalue from cloud_his.emr_tlp_button
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgeryLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='174' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorPost" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医生职称"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='449' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrTypeTree" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="电子病历类型数据"/>
+        <property name="dictionarySql">
+            <value>
+                select emr_tlp_classify_id as dictkey, emr_tlp_classify_name as
+                dictvalue from cloud_his.emr_tlp_classify where valid_flag = '1' order by emr_tree_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTableComments" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="数据库所有表的表名和注释"/>
+        <property name="dictionarySql">
+            <value>
+                select table_name as dictkey, comments as dictvalue from all_tab_comments where owner = 'CLOUD_HIS' and
+                comments is not null
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTemperatureTimeSort" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="体温测量时间段"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='229' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTemperatureTimeSortTwo" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="体温测量时间段2"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='230' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTimeUnit" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="时间单位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as DICTKEY, dic_name as DICTVALUE from cloud_his.bas_dic where dic_type_id='67' and
+                valid_flag = '1' order by DIC_CODE asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyWindow" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="发药窗口"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_window_id as dictkey, window_name as dictvalue from cloud_his.pharmacy_window where
+                valid_flag = '1' order by pharmacy_window_id asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSeverityLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="严重程度"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='123' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyInWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品入库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='407' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugstoreInWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品入库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='405' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyOutWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品入库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='400' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugstoreOutWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品入库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='406' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTemperatureLoc" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="体温位置"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='618' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBillFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药品购入方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='404' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicWarehousingFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药房入库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='407' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugStoreOutFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药库/耗材库出库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='406' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyOutFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药房出库方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='400' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPricingMode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="定价方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='128' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFollowVisitWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="随访方式"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='90' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFollowVisitPeriod" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="随访周期"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='91' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicWardDispensingWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="随访周期"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='491' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDrugstoreId" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药库/耗材库名称"/>
+        <property name="dictionarySql">
+            <value>
+                select drugstore_id as dictkey, drugstore_name as dictvalue from cloud_his.drugstore where valid_flag =
+                '1' order by drugstore_id asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugstoreStorageId" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药库/耗材库库位名称"/>
+        <property name="dictionarySql">
+            <value>
+                select drugstore_storage_id as dictkey, drugstore_storage_name as dictvalue from
+                cloud_his.drugstore_storage where valid_flag = '1' order by drugstore_id asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyStorageId" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="药房库位名称"/>
+        <property name="dictionarySql">
+            <value>
+                select pharmacy_storage_id as dictkey, pharmacy_storage_name as dictvalue from
+                cloud_his.pharmacy_storage where valid_flag = '1' order by pharmacy_id asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicChildbirthWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="分娩方式（生产方式）"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='74' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorNurseFlag" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="电子病历-医护类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='53' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAware" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-意识"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='871' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSkinColor" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-皮肤颜色"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='873' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInputVolume" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="通用护理记录入量"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='720' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOutputVolume" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="通用护理记录出量"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='721' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicSkinCondition" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-皮肤完好/异常"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='874' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicLightReflex" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-对光反射"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='879' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPainDegree" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-疼痛程度"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='614' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPeeNature" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理记录-疼痛程度"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='863' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMeasureDicName" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="护理措施"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='790' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrainTube" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="置管类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='277' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicExchangeType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="换床类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='550' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorDuty" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="员工职称"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='450' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugstoreStorage" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="库位编码"/>
+        <property name="dictionarySql">
+            <value>
+                select drugstore_storage_id as dictkey, drugstore_storage_name as dictvalue from
+                cloud_his.drugstore_storage where valid_flag = '1' order by drugstore_storage_id asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorOrderSubtype" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="医嘱类型-检验"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='36' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicLisTestTube" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="试管类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='181' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBodyPartClassifyExam" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="检查标本部位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='144' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBodyPartClassifyLis" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="检验标本部位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='182' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBodyPartClassifySurgery" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="手术标本部位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='171' and
+                valid_flag = '1' order by dic_code
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBodyPartClassifyTreat" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="治疗标本部位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='169' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInpatientCondition" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="标本部位"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='62' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTransfuseWay" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="输液途径"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='601' and
+                valid_flag = '1' order by dic_code asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInpatientSymptomPrj" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="体征项目"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='184' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVisitTimeRange" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="预约--挂号号源时段"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='40' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicWardBedLevel" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="床位级别"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='553' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSettlementType" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="结算类型"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='32' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVariationFactor" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="变异因素"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='48' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicClinicVariationClassfiy" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="活动分类"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='55' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVariationNode" class="cn.com.base.dictionary.support.DatabaseDictionaryItem">
+        <property name="displayName" value="活动环节"/>
+        <property name="dictionarySql">
+            <value>
+                select dic_code as dictkey, dic_name as dictvalue from cloud_his.bas_dic where dic_type_id='54' and
+                valid_flag = '1' order by tree_sort asc
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSysUserAttribute" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="系统用户属性"/>
+        <property name="dictionaryDatas">
+            <value>
+                D=医生
+                N=护士
+                P=药师
+                T=技师
+                F=收款员
+                C=厨师
+                O=其他
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicIsLevelHospital" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否在院"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=在院
+                0=离院
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVisitTimeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="号源时段"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=上午
+                2=下午
+            </value>
+        </property>
+    </bean>
+    <bean id="dicShortOrderFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="临时医嘱标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=长期
+                1=临时
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderRule" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="临床路径医嘱规则"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=必选
+                2=可选
+                3=可不选
+                4=多选一
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineTypeRecipe" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="常用医嘱类别"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=西药
+                2=中成药
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOrderCommon" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="常用医嘱类别"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=长期医嘱
+                2=临时医嘱
+                3=急诊用药
+                4=出院带药
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicPatientClassify" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="患者类别字典"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=成人
+                2=儿童
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicYesNo" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=否
+                1=是
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicIsValid" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否有效"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=无效
+                1=有效
+                2=不祥
+            </value>
+        </property>
+    </bean>
+    <bean id="dicHasNoUnknown" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="有无不详"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=无
+                1=有
+                2=不祥
+            </value>
+        </property>
+    </bean>
+    <bean id="dicHaveNo" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="有无"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=有
+                0=无
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicStartStop" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="启停"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=停用
+                1=启用
+            </value>
+        </property>
+    </bean>
+
+
+    <bean id="dicIsArrange" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否分配标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=已分配
+                0=未分配
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOrderDay" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="处方天数"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=1
+                2=2
+                3=3
+                4=4
+                5=5
+                6=6
+                7=7
+                8=8
+                9=9
+                10=10
+                11=11
+                12=12
+                13=13
+                14=14
+                15=15
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBillType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="票据类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=门诊
+                2=住院
+            </value>
+        </property>
+    </bean>
+    <bean id="dicUsageMode" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="票据使用方式"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=住院结算
+                2=住院预交款
+                3=无
+            </value>
+        </property>
+    </bean>
+    <bean id="dicUsageModeEdit" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="票据使用方式-编辑使用"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=住院结算
+                2=住院预交款
+            </value>
+        </property>
+    </bean>
+    <bean id="dicUsageFinish" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="票据使用状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未用完
+                1=使用完
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBelongsFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="数据归属_个人-科室"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=个人
+                2=科室
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicVerifyType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="数据类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                \S=普通文本
+                <!--^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+((\.[a-zA-Z0-9_-]{2,3}){1,2})$=邮箱地址-->
+                ^[0-9]*$=整数
+                <!--int=实时检测整数-->
+                ^-?\d+\.\d+$=小数
+                ^\d{15}|\d{}18$=身份证号码
+            </value>
+        </property>
+    </bean>
+    <bean id="dicControlModelType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="控件模板类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=单行文本
+                2=多行文本
+                3=日期
+                4=下拉
+                5=多选
+                6=单选
+                7=列表
+                8=医学公式
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSectionType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="多行文本类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=左右模式
+                2=上下模式
+                3=流式
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFormulaType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="医学公式类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=通用公式
+                2=月经史1
+                3=月经史2
+                4=月经史3
+                5=瞳孔图
+                6=光定位图
+                7=胎心图
+                8=标尺
+                9=恒牙
+            </value>
+        </property>
+    </bean>
+    <bean id="dicControlModelDateFormat" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="控件模板日期格式"/>
+        <property name="dictionaryDatas">
+            <value>
+                yyyy-MM-dd=yyyy-MM-dd
+                yyyy年MM月dd日=yyyy年MM月dd日
+                yyyy-MM-dd HH:mm=yyyy-MM-dd HH:mm
+                yyyy年MM月dd日HH时mm分=yyyy年MM月dd日HH时mm分
+                yyyy-MM-dd HH:mm:ss=yyyy-MM-dd HH:mm:ss
+                yyyy年MM月dd日HH时mm分ss秒=yyyy年MM月dd日HH时mm分ss秒
+                HH:mm=HH:mm
+                HH时mm分=HH时mm分
+                HH:mm:ss=HH:mm:ss
+                HH时mm分ss秒=HH时mm分ss秒
+            </value>
+        </property>
+    </bean>
+    <bean id="dicModeType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="控件模式"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=编辑模式
+                0=只读模式
+                2=隐藏模式
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBedArrange" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="床位分配情况"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未分配
+                1=已分配
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDutyNurserRange" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="责任护士范围"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=本人
+                2=本科室
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDiagnoseBelong" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="门诊诊断所属科室"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=本科室
+                2=其他科室
+            </value>
+        </property>
+    </bean>
+    <bean id="dicActivityProperty" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="路径-项目属性"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=医
+                2=护
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPathAuditStatus" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="路径审核状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未提交
+                1=待审核
+                2=已审核
+                3=已退回
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDateRegion" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="日期区间选择"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=当天
+                1=前一天
+                2=前两天
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSkinTestFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="皮试判别"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=不需皮试
+                1=需皮试
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDiseaseTypeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="中西医诊断标记"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=西医
+                2=中医
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOutTechExamState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="医技单据状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=已取消
+                1=已申请
+                2=已缴费
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicPayFeeState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="处方缴费状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未缴费
+                1=已缴费
+                2=申请退费
+                3=同意退费
+                4=已退费
+                5=拒绝退费
+                6=缴费执行失败
+                7= 退费执行失败
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicOperPayFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="处方缴费状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=缴费
+                2=退费
+            </value>
+        </property>
+    </bean>
+    <bean id="dicWardDispensingFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="发药取整方式"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=每次发药取整
+                1=每天发药取整
+                2=发药时不取整
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineGrade" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="药品档次"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=国产
+                2=合资
+                3=进口
+                4=自制
+            </value>
+        </property>
+    </bean>
+    <bean id="dicLatestFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="最近操作标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=新增
+                2=修改
+                3=撤销
+            </value>
+        </property>
+    </bean>
+    <bean id="dicReportDrugUseFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="报告用药"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=是
+                0=否
+                2=长期
+                3=特需
+            </value>
+        </property>
+    </bean>
+    <bean id="dicUnpackDispensingFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="门诊拆包发药"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=拆包
+                1=按大包装发
+                2=按小包装发
+            </value>
+        </property>
+    </bean>
+    <bean id="dicSurgerySourceFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="手术名称代码来源标识"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=标准数据
+                2=自定义数据
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDicType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="字典类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=普通
+                2=树形
+                3=分值
+                0=静态
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDataValueTypeField" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="数据元--保存--数据类型字段"/>
+        <property name="dictionaryDatas">
+            <value> <!-- 1=字符 2=数字  3=日期，4=文本  5=评分 -->
+                1=data_value_str
+                2=data_value_num
+                3=data_value_date
+                4=data_value_txt
+                5=data_value_score
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDataValueType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="数据元值类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=字符
+                2=数字
+                3=日期
+                4=文本
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTimeRegion" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="午别时段选择"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=全天
+                2=上午
+                3=下午
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegDayBefore" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="挂号日期前N天"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=一
+                2=二
+                3=三
+                4=四
+                5=五
+                6=六
+                7=七
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPrintType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="打印布局"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=纵向
+                2=横向
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsttStateFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊流程状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=暂存
+                1=提交
+                2=审核中
+                3=审核完成
+                4=会诊完成
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsttJoinState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊参与状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                2,3,4=全部
+                2=审核中
+                3=会诊中
+                4=会诊完成
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsttAutditingState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊审核状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                1,2,3,4=全部
+                1=待审核
+                2=审核通过
+                3=已退回
+                4=已完成
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsttLevel" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊级别"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=平诊
+                1=急诊
+            </value>
+        </property>
+    </bean>
+    <bean id="dicConsultationSpeciallFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊情况"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=普通
+                1=特殊
+            </value>
+        </property>
+    </bean>
+    <bean id="consultStateCss" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="会诊状态的样式"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=text-primary
+                1=text-warning
+                2=text-info
+                3=text-danger
+                4=text-success
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDrugReportUsage" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="报告用药"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=否
+                1=是
+                2=长期
+                3=特需
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVisitState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="就诊状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未就诊
+                1=就诊中
+                2=就诊结束
+                3=暂挂处理
+                4=已过号
+            </value>
+        </property>
+    </bean>
+    <bean id="dicExamCheckFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="财务判别"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未验收
+                1=已验收
+            </value>
+        </property>
+    </bean>
+    <bean id="dicIsRetire" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="在职退休"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=在职
+                2=退休
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBackRegisterId" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="退号标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未退号
+                1=已退号
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRecipeFeeType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="处方费用类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=西药处方
+                2=成药处方
+                3=草药处方
+            </value>
+        </property>
+    </bean>
+    <bean id="printPaperSizeType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="标准纸张"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=A5
+                1=A4
+                2=A3
+                3=A2
+                4=A0
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalStateColor" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="住院状态字体颜色"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=#FF0000
+                1=#FF0000
+                2=#000
+                10=#FF0000
+                3=#000
+                4=green
+                5=#FF0000
+                6=#000
+                7=#FF0000
+                8=#000
+                9=#000
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInhospitalStateBackColor" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="住院状态背景颜色"/>
+        <property name="dictionaryDatas">
+            <value>
+                6=#e6e6e6
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrDefectType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="电子病历评分缺陷类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=单项
+                2=每项
+            </value>
+        </property>
+    </bean>
+    <bean id="dicReformStatus" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="整改状态标识"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未整改
+                1=整改待审核
+                3=已完成整改
+                4=未完成整改
+                5=重新整改
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicEmrDefectMode" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="电子病历评分模式"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=手动
+                2=自动
+            </value>
+        </property>
+    </bean>
+    <bean id="dicEmrRecvFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="病案签收字典"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未签收
+                1=已签收
+                2=退回
+                3=取消签收
+            </value>
+        </property>
+    </bean>
+    <bean id="dicProvinceFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="省内/外患者"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=省内
+                2=省外
+            </value>
+        </property>
+    </bean>
+    <bean id="dicBorrowFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="借阅情况"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=科室未审核
+                2=病案未审核
+                3=已同意
+                4=未同意借阅
+            </value>
+        </property>
+    </bean>
+    <bean id="dicReturnFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="借阅情况"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未还
+                1=已归还
+            </value>
+        </property>
+    </bean>
+    <bean id="dicFontSize" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="打印字体大小"/>
+        <property name="dictionaryDatas">
+            <value>
+                56=初号 　　　　　　
+                48=小初 　　　　　　
+                34=一号 　　　　　　
+                32=小一 　　　　　　
+                29=二号 　　　　　　
+                24=小二 　　　　　　
+                21=三号 　　　　　　
+                20=小三 　　　　　　
+                18=四号 　　　　　　
+                16=小四 　　　　　　
+                14=五号 　　　　　　
+                12=小五 　　　　　　
+                10=六号 　　　　　　
+                8 =小六 　　　　　　
+                7 =七号 　　　　　　
+                6 =八号 　　　　　　
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderStatusFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="医生建议类别"/>
+        <property name="dictionaryDatas">
+            <value>
+                0= 新开
+                1 = 已核对
+                2 = 执行
+                3 = 停止
+                4 = 撤销
+                5 = 暂停
+                6 = 疑问
+                7 = 医生新开未提交的
+                8 = 被重整的医嘱
+                9 = 当前有效医嘱
+                -1 = 未知
+
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInspectionState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="检验状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                audited=已审核
+                inspecting=正在检验
+                reported=已报告
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyFreqType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="用药频次属性"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=用药频次
+                2=治疗频次
+            </value>
+        </property>
+    </bean>
+    <bean id="dicDoctorSignType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="电子病历签名级别"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=一级
+                2=二级
+                3=三级
+                4=四级
+            </value>
+        </property>
+    </bean>
+    <bean id="dicQualityCode" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="病案质量"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=甲
+                2=乙
+                3=丙
+            </value>
+        </property>
+    </bean>
+    <bean id="dicWardFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="病区门诊/住院使用标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=住院
+                1=门诊
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAgeUnit" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="年龄单位"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=年
+                2=月
+                3=日
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineTypeInOrder" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="住院医生医嘱药品类别"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=西药
+                2=中成药
+                12=针剂
+                4=器械
+                9=材料
+                5=诊疗项目
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegionLevel" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="行政区域级别长度"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=2
+                2=4
+                3=6
+                4=9
+                5=12
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDiseaseClassifyLevel" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="疾病分类级别"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=3
+                2=4
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderGroupType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="组套所属类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                01=药品类医嘱 (非草药）
+                0103=草药
+                0104针剂
+                06=材料类医嘱
+                07=嘱托医嘱
+                08=输血类医嘱
+                09=护理类医嘱
+                10=饮食类医嘱
+                99=其他医嘱
+            </value>
+        </property>
+    </bean>
+    <bean id="dicOrderGroupTypeNotTcm" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="组套所属类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                01=药品类医嘱 (非草药）
+                0104针剂
+                06=材料类医嘱
+                07=嘱托医嘱
+                08=输血类医嘱
+                09=护理类医嘱
+                10=饮食类医嘱
+                99=其他医嘱
+            </value>
+        </property>
+    </bean>
+    <bean id="dicRegStatus" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="挂号状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=挂号中
+                2=挂号成功
+                3=挂号失败
+                4=挂号取消
+                5=挂号已取消
+                6=挂号确认中
+                7=挂号缴费成功
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicSkinTestResultFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="皮试结果"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=阴性(-)
+                2=阳性(+)
+            </value>
+        </property>
+    </bean>
+    <bean id="dicExeState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="执行状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未执行
+                1=已执行
+                2=取消执行
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInfusionsFinishFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="处方--输液结束状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未完成
+                1=完成
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicProjectUseLimits" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="项目使用限制"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=公用
+                1=本单位
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDocSelectGroup" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="病案查询类别"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=全部类别
+                1=基本信息类
+                2=入出转类
+                3=诊断类
+                4=手术类
+                5=医护人员类
+                6=中医类
+                7=其他类
+                8=费用类
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDocSelectItemZero" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="项目使用限制"/>
+        <property name="dictionaryDatas">
+            <value>
+                10=病案号
+                20=住院号
+                25=医疗付款方式
+                30=医疗付款方式描述
+                40=姓名
+                45=住院次数
+                50=性别
+                60=性别描述
+                70=医疗保险号
+                75=出生日期
+                80=年龄
+                85=年龄单位
+                90=婚姻
+                95=婚姻描述
+                100=职业
+                110=出生地
+                120=民族
+                130=国籍
+                140=身份证号
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicDocSelectItemOne" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="项目使用限制"/>
+        <property name="dictionaryDatas">
+            <value>
+                10=病案号
+                20=住院号
+                25=医疗付款方式
+                30=医疗付款方式描述
+                40=姓名
+                45=住院次数
+                50=性别
+                60=性别描述
+                70=医疗保险号
+                75=出生日期
+                80=年龄
+                85=年龄单位
+                90=婚姻
+                95=婚姻描述
+                100=职业
+                110=出生地
+                120=民族
+                130=国籍
+                140=身份证号
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMaterialTypeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="药库/耗材库申请采购"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=医用材料
+                9=其他
+            </value>
+        </property>
+    </bean>
+    <bean id="dicReasonableMedicineApplyState" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="合理用药审核状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未审核
+                1=已审核
+                2=未使用
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMedicineFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="是否药品"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=非药品
+                1=药品
+            </value>
+        </property>
+    </bean>
+    <bean id="dicMakeOrderFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="开嘱人类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=医生
+                2=护士
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPayFeeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="结算状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未结算
+                1=已结算
+                2=申请退费
+                3=已退费
+                4=拒绝退费
+            </value>
+        </property>
+    </bean>
+    <bean id="dicQualitativeShow" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="检验结果高低值"/>
+        <property name="dictionaryDatas">
+            <value>
+                ah=&#8593;
+                h=&#8593;
+                l=&#8595;
+                al=&#8595;
+            </value>
+        </property>
+    </bean>
+
+    <bean id="dicRpPatientType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="结算状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=住院
+                2=门诊
+            </value>
+        </property>
+    </bean>
+    <bean id="dicProducingAreaType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="生产厂商类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=药品
+                2=材料
+            </value>
+        </property>
+    </bean>
+    <bean id="dicVendorFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="厂家类型"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=药品
+                2=耗材
+            </value>
+        </property>
+    </bean>
+    <bean id="dicAgeFeeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="收费年龄段标识"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=≤6岁
+                2=>6岁
+            </value>
+        </property>
+    </bean>
+    <bean id="dicInfusionsFeeFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="药库/耗材库标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=针剂注射费
+                2=皮试注射费
+            </value>
+        </property>
+    </bean>
+    <bean id="dicTreatFinishFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="治疗完成标志"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未完成
+                1=已完成
+            </value>
+        </property>
+    </bean>
+    <bean id="dicPharmacyDispensingFlag" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="药房发药"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=门诊药房
+                2=急诊药房
+                3=住院药房
+                9=科室二级库
+            </value>
+        </property>
+    </bean>
+
+    <bean id="columnClassify_0" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="万能查询字段类型0"/>
+        <property name="dictionaryDatas">
+            <value>
+                40=patientName,姓名
+                50=patientSex,性别
+                80=patientAgeYear,年龄（岁）
+                85=patientAgeMonth,年龄（月）
+            </value>
+        </property>
+    </bean>
+    <bean id="columnClassify_1" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="万能查询字段类型1"/>
+        <property name="dictionaryDatas">
+            <value>
+                40=patientName,姓名
+                50=patientSex,性别
+                80=patientAgeYear,年龄（岁）
+            </value>
+        </property>
+    </bean>
+    <bean id="activityExeStateType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="临床路径活动执行状态"/>
+        <property name="dictionaryDatas">
+            <value>
+                0=未执行
+                1=已经执行
+                2=取消执行
+                3=部分执行
+                4=提前执行
+                5=延后执行
+            </value>
+        </property>
+    </bean>
+    <bean id="pathStageTimeAssessType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="临床路径阶段评估时间进度"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=正常进入下阶段
+                2=提前进入下阶段
+                3=阶段延后（继续当前阶段）
+            </value>
+        </property>
+    </bean>
+    <bean id="pathStageResultAssessType" class="cn.com.base.dictionary.support.SimpleDictionaryItem">
+        <property name="displayName" value="临床路径阶段评估总体结果"/>
+        <property name="dictionaryDatas">
+            <value>
+                1=正常
+                2=变异后继续
+                3=变异后退出
+                4=提前完成
+            </value>
+        </property>
+    </bean>
+</beans>

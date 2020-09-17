@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>患者挂号列表-会诊申请</title>
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm")
+##        #parse("./outpatient/outpatientMain/regPatientList.css.vm")<!-- 页面js -->
+</head>
+
+<body class="white-bg">
+<!-- 查询表单 -->
+
+<div class="layui-content-wrapper">
+    <div class="layui-fluid">
+        <form id="reg_patient_queryForm" class="layui-form">
+            #formHiddenInput("consultationState" "1" "id='consultationState' ")
+            <div class="layui-row-query layui-form-item search-term">
+                <div class="layui-inline">
+                    <label class="layui-form-label">会诊时间</label>
+                    <div class="layui-input-inline wd-120">
+                         #formTextInput("consultationTime" "" "id='consultationTime' maxlength='10'  class='layui-input' ")
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button id="btn_query" class="layui-btn layui-btn-sm " type="button" lay-tips="查询">
+                        <i class="layui-icon layui-icon-search "></i>
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- 数据表格 -->
+        <table id="regPatientTable" lay-filter="regPatientTable"></table>
+    </div>
+</div>
+<script type="text/html" id="operateFormatter">
+    <a class=""><i class="iconfont icon-shou"></i></a>
+</script>
+<script>
+    var dicRegisterType = JSON.parse('$dicTools.changeMapToJson($dicData.dicRegisterType)');
+    var dicSex = JSON.parse('$dicTools.changeMapToJson($dicData.dicSex)');
+
+    var dateRegionChange;
+    var regDateRegionChangeEvent;//日期radio事件
+    var timeRegionChangeEvent;//午别radio事件
+    var registerTimeChaneEvent;
+    var freshen;
+
+    layui.use(['jquery', 'table', 'laypage', 'element', 'form', 'laydate'], function () {
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var $ = layui.$;
+        var form = layui.form;
+        var laypage = layui.laypage;
+        var element = layui.element;
+        element.render();
+
+        laydate.render({
+            elem: '#consultationTime',
+            value: new Date().format('yyyy-MM-dd')
+        });
+
+        //第一个实例
+        var tableIns = table.render({
+            elem: '#regPatientTable'
+            //,toolbar: '#toolbarDemo'
+            , defaultToolbar: []
+            , height: 'full-62'//高度
+            , url: '../consultationDoctorItem/consultationDoctorItemPageData.jo' //数据接口
+            , limit: 200
+            , method: 'post'
+            , request: {pageName: 'pageNumber', limitName: 'pageSize'}
+            , where: common.serializeObject($('#reg_patient_queryForm'))
+            , cols: [[ //表头
+                {align: 'center', width: 60, templet: '#operateFormatter', event: 'open'}
+                , {
+                    field: 'consultationApply.patientName', title: '患者姓名',
+                    templet: function (row) {
+                        return row.consultationApply.patientName;
+                    }
+                }
+                , {
+                    field: 'patientSex', title: '性别',
+                    templet: function (row) {
+                        if (row.consultationApply.patientSex) return dicSex[row.consultationApply.patientSex];
+                    }
+                }
+                , {
+                    field: 'consultationApply.patientAgeYear', title: '年龄',
+                    templet: function (row) {
+                        if (row.consultationApply.patientAgeYear) {
+                            return row.consultationApply.patientAgeYear;
+                        } else {
+                            return row.consultationApply.patientAgeMonth;
+                        }
+                    }
+                }
+                , {field: 'consultationApply.applyDoctorName', title: '申请医生',
+                    templet: function (row) {
+                        return row.consultationApply.applyDoctorName;
+                    }}
+                , {field: 'consultationApply.applyOfficeName', title: '申请科室',
+                    templet: function (row) {
+                        return row.consultationApply.applyOfficeName;
+                    }}
+                , {
+                    field: 'consultationApply.applyTime', title: '申请时间',
+                    templet: function (row) {
+                        if (row.consultationApply.applyTime) {
+                            return layui.util.toDateString(row.consultationApply.applyTime, 'yyyy-MM-dd HH:mm');
+                        }
+                        return '';
+                    }
+                }
+            ]]
+            //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+            , done: function (res, curr, count) {
+            }
+        });//table.render
+
+        //监听行工具事件
+        table.on('tool(regPatientTable)', function (obj) {
+            var layEvent = obj.event; //获得 lay-event 对应的值
+            if (layEvent === "open") {
+
+            }
+        });
+
+        //监听行单击事件
+        table.on('row(regPatientTable)', function (obj) {
+            editConsultationResult(obj.data);
+        });
+
+        function editConsultationResult(consultationDoctorItem) {
+            top.common.open('$contextPath' + '/consultationDoctorItem/inpatientConsultationResult.do?inhospitalId=' + consultationDoctorItem.consultationApply.inhospitalId + '&consultationDoctorItemId=' + consultationDoctorItem.consultationDoctorItemId, '填写会诊意见（' + consultationDoctorItem.consultationApply.patientName + '）', {
+                area: ['90%', '90%'],
+                scroll: true
+            })
+        }
+
+        // 查询按钮
+        $('#btn_query').click(function () {
+            query();
+        });
+
+        //查询列表
+        function query() {
+            var queryParams = common.serializeObject($('#reg_patient_queryForm'));
+            if (!queryParams.registerTime) {
+                /* 生产环境打开
+                $('#registerTime').val(new Date().format('yyyy-MM-dd')).trigger('change');
+                $("input[name='regDateRegion'][value='0']").next('.layui-form-radio').click();*/
+            }
+            tableIns.reload({where: queryParams});
+
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<script>
+    var emrTlpTypeChangeEvent;//模板类型变化查询
+    var queryEmrTpl;//查询方法
+    var useEmrTpl;//启用电子病历模板
+    var useUnTherEmrTpl;//启用其他的电子病历
+    var leadingIn;//导入内容
+
+    //导入内容
+    function leadingIn(content){
+        var emrIframe =  $('div[lay-id=outpatientEmr] iframe',window.parent.document);
+        if (emrIframe.contents().find('iframe').length==0) {
+            return false;
+        }
+        parent.tabChange(parent.mainTab.layFilter, parent.mainTab.menu.outpatientEmr.layId);//切换门诊病历页面
+
+        var emrEditWin = emrIframe.contents().find('iframe')[0].contentWindow;
+        emrEditWin.leadingIn(content);
+    }
+
+    layui.use(['jquery','table', 'element', 'form'], function(){
+        var table = layui.table, element = layui.element, $ = layui.$, form = layui.form;
+        element.render();
+
+        var queryParams = common.serializeObject($('#emr_queryForm'));
+        queryParams.emrTlpClassifyId = '$!emrTlpClassifyId';
+        var emrTplTable = table.render({
+            elem: '#emrTplTable'
+            ,defaultToolbar: []
+            ,height: 'full-80'//高度
+            ,url: '../emrTlp/emrTlpPageData.jo' //数据接口
+            ,page: false //开启分页
+            ,limit:200
+            ,where: queryParams
+            ,request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+            ,cols: [[ //表头
+                {field : 'emrTlpName',title : '模板名称' }
+                ,{field : 'emrTlpVersion',title : '版本'}
+            ]]
+        });
+
+        //查询列表
+        queryEmrTpl = function() {
+            var queryParams = common.serializeObject($('#emr_queryForm'));
+            emrTplTable.reload({ where: queryParams });
+        }
+
+        //监听行单击事件
+        table.on('row(emrTplTable)', function(obj){
+            var row = obj.data;
+            rowRecipeGroupSelect(row);
+        });
+
+
+        emrTlpTypeChangeEvent = function() {
+            form.on('radio(emrTlpType)', function(data){
+                queryEmrTpl();
+            });
+        }
+
+        //页面初始化
+        $(document).ready(function() {
+            emrTlpTypeChangeEvent();
+        });
+
+
+        useEmrTpl = function(row) {
+            var curEmpTplCode = '1';
+            if (curEmpTplCode == row.curEmpTplCode) {
+
+                //询问框
+                parent.layer.confirm('当前电子病历已存在，启用新的模板将覆盖原有数据，确定启用吗', {
+                    btn: ['确定','取消'],
+                    skin: 'layui-layer-molv'
+                }, function(index, layero){
+                    useUnTherEmrTpl();
+                    layer.close(index);
+                }, function(index){
+                    layer.close(index);
+                });
+            }
+
+        }
+
+        useUnTherEmrTpl = function() {
+
+        }
+
+    });//layui.use
+</script> 

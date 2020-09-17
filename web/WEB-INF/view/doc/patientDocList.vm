@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>病历列表</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=0">
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .xm-select-title, .xm-input {
+            height: 30px !important;
+            min-height: 30px !important;
+        }
+
+        .xm-select-parent .xm-select {
+            padding: 0px !important;
+        }
+    </style>
+    #parse("./common/pageJs.vm")
+</head>
+<body>
+<div class="layui-fluid">
+    <div class="layui-card ">
+        <div class="layui-card-body ">
+            <!-- 列表表格 工具栏-->
+            <!--搜索条件 开始-->
+            <form class="layui-form">
+                <div class="p-l-sm">
+                    #formHiddenInput("patientId" "$!patientId" " id='patientId' ")
+                    #formHiddenInput("inhospitalId" "$!inhospitalId" " id='inhospitalId' ")
+                    <div class="layui-inline">
+                        <div class="layui-input-inline">#formTextInput("emrTlpName" ""
+                            " maxlength='50' id='emrTlpName' autocomplete='off' placeholder='请输入病历名称' class='layui-input'")</div>
+                    </div>
+                    <div class="layui-inline">
+                        <div class="layui-input-inline">#formMultiSelectFirstNone("emrTlpClassifyIds" "" $!dicData.dicEmrTlpClassify
+                            " xm-select='emrTlpClassifyIds' xm-select-height='30px' xm-select-search-type='dl' xm-select-search='' xm-select-show-count='1' "
+                            "请选择模板分类")</div>
+                    </div>
+                    <div class="layui-inline m-r-n">
+                        <div class="layui-btn-group">
+                            <button class="layui-btn  layui-btn-sm " lay-tips="查询" lay-submit lay-filter="btn_query"
+                                    id="btn_query">
+                                <i class="layui-icon layui-icon-search "></i>
+                            </button>
+                            <button class="layui-btn layui-btn-sm " type="reset" lay-tips="刷新" id="btn_reset"
+                                    style="margin-left: auto;">
+                                <i class="layui-icon layui-icon-refresh"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+
+            <!--列表 begin-->
+            <table id="patientHospitalEmrList" lay-filter="patientHospitalEmrList"></table>
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+<script type="text/html" id="colstoolbar">
+    <a class="layui-btn layui-btn-xs " lay-tips="查看" lay-event="lookOver">查看</a>
+</script>
+
+<script>
+    var dicOffice = JSON.parse('$dicTools.changeMapToJson($dicData.dicOffice)');
+    var dicEmrTlpClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrTlpClassify)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        formSelects: 'modules/formSelects/formSelects-v4.min'
+    }).use(['table', 'form', 'layer', 'formSelects', 'util', 'laydate'], function () {
+        var $ = layui.$, form = layui.form, layer = layui.layer, table = layui.table,
+                laydate = layui.laydate, formSelects = layui.formSelects, util = layui.util;
+        formSelects.btns('emrTlpClassifyIds', ['select', 'remove'], {
+            show: 'icon'
+        });
+
+        var url = '../emr/selectPatientAllEmr.jo';
+        var params = '?inhospitalId=' + $('#inhospitalId').val() + '&patientId=' + $('#patientId').val();
+        //表列表
+        table.render({
+            elem: '#patientHospitalEmrList',//INHOSPITAL_STATE_CONFIRM_OUT 5 = 确认出院
+            url: url + params,
+            limit: 20,
+            cols: [[{
+                type: 'numbers'
+            }, {
+                field: 'emrTlpName',
+                title: '病历名称'
+            }, {
+                field: 'emrTlpClassify',
+                title: '模板分类',
+                templet: function (row) {
+                    return row.emrTlpClassify ? dicEmrTlpClassify[row.emrTlpClassify] : '';
+                }
+            }, {
+                field: 'outpatientOfficeId',
+                title: '就诊科室',
+                templet: function (row) {
+                    return row.outpatientOfficeId ? dicOffice[row.outpatientOfficeId] : '';
+                }
+            }, {
+                field: 'diagnosisDoctorName',
+                title: '填写医生/护士'
+            }, {
+                field: 'createTime',
+                title: '填写时间',
+                minWidth: 150,
+                templet: function (d) {
+                    return util.toDateString(d.createTime)
+                }
+            }, {
+                title: '操作',
+                align: 'center',
+                toolbar: '#colstoolbar'
+            }
+            ]],
+            page: true,
+            height: 'full-70',
+            done: function (res, curr, count) {
+                this.where = {}
+            },
+            request: {
+                pageName: 'pageNumber' //页码的参数名称，默认：page
+                ,
+                limitName: 'pageSize' //每页数据量的参数名，默认：limit
+            }
+        });
+
+
+        //监听数据搜索
+        form.on('submit(btn_query)', function (data) {
+            var field = data.field;
+            //执行重载
+            table.reload('patientHospitalEmrList', {
+                where: field,
+                url: url
+            });
+            return false;
+        });
+
+        //重置查询表单并刷新表格
+        $("#btn_reset").click(function () {
+            setTimeout(function () {
+                $('#btn_query').click();
+            }, 50);
+        });
+
+        //监听工具条
+        table.on('tool(patientHospitalEmrList)', function (obj) {
+            var data = obj.data;
+            switch (obj.event) {
+                case 'lookOver':
+                    console.log(data);
+                    var params = "inhospitalId=" + data.inhospitalId + "&emrTlpId=" + data.emrTlpId + "&patientHospitalEmrId=" + data.patientHospitalEmrId + "&patientId=" + data.patientId;
+                    parent.openTab(contextPath + '/emr/commonEmrTemplate.do?' + params, $('#patientName', window.parent.document).val() + data.emrTlpName + "详情", '');
+                    break;
+                case 'del':
+                    console.log(data);
+                    break;
+            }
+        });
+
+    });
+</script>
+
+</body>
+
+</html>

@@ -1,0 +1,127 @@
+<script>
+    var medicineId = null; // 药品ID
+    var medicineVendorId = null;
+    var producingAreaId = null;
+    var medicineRowSelect;
+    var medicineVendorRowSelect;
+    var drugstoreMedicineStockselect;//选择库存药品
+    var medicineProducingAreaRowSelect;
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicMedicineType = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineType)');
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDrugstoreId = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreId)');
+    var dicPharmacy = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacy)');
+    var dicDrugstoreOutFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreOutFlag)');
+    var dicDrugstoreInWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugstoreInWay)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        autocomplete: 'modules/autocomplete'
+    }).use(['table', 'form', 'element', 'autocomplete','util','laydate'], function () {
+        var table = layui.table, form = layui.form, element = layui.element, autocomplete = layui.autocomplete , util = layui.util , laydate = layui.laydate;
+        //按日期范围查询
+		laydate.render({
+			elem: '#pharmacyInDate', range: true, done: function (value, date, endDate) {
+
+			}
+		});
+		initLayout = function() {
+			$('#container').layout({
+				west__size: 450//pane的大小
+				,togglerContent_open: "<div style='background:#6cbbd4;line-height: 9px;'>◀</div>"//pane打开时，边框按钮中需要显示的内容可以是符号"<"等。需要加入默认css样式.ui-layout-toggler .content
+				,togglerContent_closed: "<div style='background:#6cbbd4;line-height: 9px;'>▶</div>"//pane关闭时，同上。
+				,spacing_open:8//边框的间隙
+				,maskIframesOnResize:".resizeiframe"
+				,onshow_end: refreshTable
+			});
+		}
+		//页面初始化
+		$(function() {
+			initLayout();
+		});
+		$('#btn_query').click(function (){
+			refreshTable()
+		});
+		// 清空按钮
+		$('#btn_clean').click(function () {
+			common.cleanForm('queryForm');
+		});
+		function refreshTable() {
+			table.reload('mainTable',{
+				where: getQueryParams()
+			})
+		}
+		// 获取查询表单参数对象
+		function getQueryParams() {
+			var queryForm = common.serializeObject($('#queryForm'), ['pharmacyInDate']);
+			return $.extend({
+				pharmacyInDateBegin:'',
+				pharmacyInDateEnd:'',
+				drugstoreId:'',
+				pharmacyId:''
+			}, queryForm);
+		}
+        // 处方接收列表
+        var mainTableUrl = contextPath + '/drugstore/getDrugstoreOutAndAmount.jo';
+        var mainTable = table.render($.extend(basePageTable, {
+            url: mainTableUrl,
+            elem: '#mainTable',
+            height: getTableHeight(),
+            where: getQueryParams(),
+            done: function (res, curr, count) {
+                // 去掉表格头部的全选及取消全选功能
+                common.removeHeadCheckbox('pharmacyApplyId');
+            },
+            cols: [[
+                {
+                    type: 'radio',
+                    fixed: 'left'
+                },
+                {
+                    field: 'pharmacyApplyId',
+                    title: '出库单号',
+                    width: 100,
+                    fixed: 'left'
+                }, {
+                    field: 'drugstoreName',
+                    title: '药库名称',
+                    width:85
+                }, {
+                    field: 'pharmacyName',
+                    title: '领药药房',
+                    width:85
+                }, {
+                    field: 'pharmacyInDate',
+                    title: '申请日期',
+                    minWidth: 120,
+                    templet: function (row) {
+                        if (null != row.pharmacyInDate) {
+                            return util.toDateString(row.pharmacyInDate, 'yyyy-MM-dd');
+                        }
+                        return "";
+                    }
+                },{
+                    field: 'drugstoreOutRemak',
+                    title: '备注'
+                }
+            ]]
+        }));
+        //处方接收列表行单击事件
+        table.on('row(mainTable)', function (obj) {
+			clickTableByRow(obj, 'mainTable')
+			var src = '$contextPath/drugstore/drugstoreOutEdit.do?pharmacyApplyId=' + obj.data.pharmacyApplyId;
+			$('#drugstoreOutEdit').attr('src',src);
+        });
+
+        // 获取表格高度
+        function getTableHeight() {
+			return $('.layui-fluid').height() - $('#queryForm').height() - 10;
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            table.reload('mainTable', {
+                height: T_height
+            });
+        });
+    });
+</script>

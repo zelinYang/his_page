@@ -1,0 +1,404 @@
+<script>
+    var YES_FLAG = "$!{CONST.AppConstants.YES_FLAG}";
+    var PRODUCING_AREA_TYPE_MEDICINE = "$!{CONST.AppConstants.PRODUCING_AREA_TYPE_MEDICINE}";
+    var MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN = "$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN}";
+    var MEDICINE_RECIPE_CLASSIFY_SKIN_TEST = "$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_SKIN_TEST}";
+    var SPECIAL_MEDICINE_LEVEL_STR = '$AppTools.toJSONString($!{CONST.AppConstants.SPECIAL_MEDICINE_LEVEL_STR})';
+    var MEDICINE_RECIPE_CLASSIFY_NARCOSIS = '$!{CONST.AppConstants.MEDICINE_RECIPE_CLASSIFY_NARCOSIS}';
+    var MEDICINE_TYPE_W_MEDICINE = '$!{CONST.AppConstants.MEDICINE_TYPE_W_MEDICINE}';
+    var MEDICINE_TYPE_WTCM_MEDICINE = '$!{CONST.AppConstants.MEDICINE_TYPE_WTCM_MEDICINE}';
+    var MEDICINE_TYPE_TCM_MEDICINE = '$!{CONST.AppConstants.MEDICINE_TYPE_TCM_MEDICINE}';
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    //科室名称
+    var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+
+    var dicDrugNumUnit = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+    var dicDoseWay = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+    var dicMedicineTypeMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineTypeMedicine)');
+    var dicMedicineTypeMaterial = JSON.parse('$dicTools.changeMapToJson($dicData.dicMedicineTypeMaterial)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'tableSelect'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, tableSelect = layui.tableSelect;
+
+        common.verify(form);
+
+        //根据name 归类下拉框
+        function loadSelectGroup(name) {
+            var selectElem = $('select[name=' + name + ']');
+            //多个选项组合
+            selectElem.children('option').each(function () {
+                var options = $(this).siblings('[value^="'+ $(this).val() + '"]');
+                if(options.length > 0) {
+                    $('<optgroup value="'+ $(this).val() +'" label="'+ $(this).text() +'"></optgroup>').replaceAll(this).append(options);
+                }
+            });
+            //单个选项作为本身
+            selectElem.children('option').each(function () {
+                if($(this).val()) {
+                    $('<optgroup value="' + $(this).val() + '" label="' + $(this).text() + '"></optgroup>').replaceAll(this).append(this);
+                }
+            })
+            form.render();
+        }
+
+        //药品药物分类
+        loadSelectGroup('medicineType');
+
+        // 药品药物分类 选择方法
+        function medicineTypeChange(data) {
+            var medicineType = data.value;
+            debugger
+            $('[lay-templateid="drugTherapyTypeWesternTpl"], [lay-templateid="drugTherapyTypeChineseTpl"]').remove();
+            var westernFlag = (RegExp("^" + MEDICINE_TYPE_W_MEDICINE).test(medicineType));
+            var chineseFlag = (RegExp("^" + MEDICINE_TYPE_WTCM_MEDICINE).test(medicineType) || RegExp("^" + MEDICINE_TYPE_TCM_MEDICINE).test(medicineType));
+            if (westernFlag) {
+                //西药
+                $("#drugTherapyTypeWesternTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            } else if (chineseFlag) {
+                //中药
+                $("#drugTherapyTypeChineseTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            }
+            form.render();
+        }
+
+        //特殊药品 药品处方分类
+        form.on('select(medicineType)', medicineTypeChange);
+        medicineTypeChange({value: $('#medicineType').val()});
+
+        //药物使用途径
+        loadSelectGroup('doseWayCode');
+
+        // 药品处方分类 选择方法
+        function medicineRecipeClassifyChange(data) {
+            var medicineRecipeClassify = data.value;
+            $('[lay-templateid="specialMedicineLevelTpl"], [lay-templateid="antibioticTpl"]').remove();
+            var antibioticLevelflag = (MEDICINE_RECIPE_CLASSIFY_ANTIBIOTIC_GEN == medicineRecipeClassify);
+            var specialMedicineLevelFlag = (medicineRecipeClassify && medicineRecipeClassify !== MEDICINE_RECIPE_CLASSIFY_NARCOSIS && SPECIAL_MEDICINE_LEVEL_STR.indexOf(medicineRecipeClassify) !== -1);
+            if (antibioticLevelflag) {
+                //抗菌
+                $("#antibioticTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            } else if (specialMedicineLevelFlag) {
+                //毒麻级别
+                $("#specialMedicineLevelTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            }
+            form.render();
+        }
+
+        //特殊药品 药品处方分类
+        form.on('select(medicineRecipeClassify)', medicineRecipeClassifyChange);
+        medicineRecipeClassifyChange({value: $('#medicineRecipeClassify').val()});
+
+
+        //新增药品别称
+        function medicineOtherNameAdd() {
+            $("#btn_add_medicineOtherName").click(function () {
+                var medicineOtherNames = table.cache['medicineOtherNameListGrid'];
+                medicineOtherNames.push({medicineOtherName: ''});
+                table.reload('medicineOtherNameListGrid', {
+                    data: medicineOtherNames
+                })
+            })
+        }
+
+        var medicineOtherNameElem = $("#medicineOtherName");
+        //药品别称列表
+        table.render({
+            elem: '#medicineOtherNameListGrid',
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: $.map(medicineOtherNameElem.val().split(','), function (medicineOtherName) {
+                if (medicineOtherName) return {medicineOtherName: medicineOtherName};
+            }),
+            height: '150',
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_medicineOtherName" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="新增"><i class="layui-icon layui-icon-add-1"></i></button>'
+                },
+                {
+                    field: 'medicineOtherName',
+                    edit: 'text',
+                    title: '药品别称',
+                    minWidth: '250',
+                    style: 'box-shadow: 1px 1px 20px rgba(0, 0, 0, .15);background-color: #fff;'
+                }, {
+                    title: '操作',
+                    width: 120,
+                    align: 'center',
+                    toolbar: '#operateTpl',
+                    fixed: 'right'
+                }]]
+            , done: function (res) {
+                medicineOtherNameAdd();
+            }
+        });
+
+        //交换表格行数据
+        function swopTableData(tbName, index, tempIndex) {
+            var data = table.cache[tbName];
+            var tempObj = data[tempIndex];
+            if (tempObj) {
+                data[tempIndex] = data[index];
+                data[index] = tempObj;
+                table.reload(tbName, {
+                    url: '',
+                    data: data
+                })
+            }
+            setTimeout(function () {
+                //标注选中样式
+                $('#' + tbName + ' + .layui-table-view .layui-table-body tr[data-index="' + tempIndex + '"]').addClass('layui-table-click').siblings().removeClass('layui-table-click');
+            })
+        }
+
+        //操作栏操作按钮的事件
+        table.on('tool(medicineOtherNameListGrid)', function (obj) {
+            var row = obj.data;
+            var index = obj.tr.data('index');
+            layer.closeAll('tips'); //关闭所有的tips层
+            switch (obj.event) {
+                case 'btn_up':
+                    swopTableData('medicineOtherNameListGrid', index, index - 1)
+                    break;
+                case 'btn_down':
+                    swopTableData('medicineOtherNameListGrid', index, index + 1)
+                    break;
+                case 'btn_delete':
+                    obj.del();
+                    break;
+            }
+
+        });
+
+        //选择药品产地
+        tableSelect.render({
+            elem: '#producingAreaName,#producingAreaName~.choose',	//定义输入框input对象 必填
+            checkedKey: 'producingAreaId', //表格的唯一建值，非常重要，影响到选中状态 必填
+            searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+            searchPlaceholder: '产地名称',	//搜索输入框的提示文字 默认关键词搜索
+            table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                url: contextPath + '/medicine/medicineProducingAreaJsonList.jo?producingAreaType=' + PRODUCING_AREA_TYPE_MEDICINE,
+                cols: [[{type: 'radio'},
+                    {
+                        field: 'producingAreaName',
+                        title: '产地名称',
+                        minWidth: 100
+                    }]]
+            }),
+            done: function (elem, result) {
+                var data = result.data;
+                if (data && data.length > 0) {
+                    $("#producingAreaId").val(data[0].producingAreaId);
+                    $("#producingAreaName").val(data[0].producingAreaName);
+                }
+            }
+        });
+
+        //清空药品产地
+        $('#producingAreaName+.caller-icon').click(function () {
+            $("#producingAreaId").val("");
+            $("#producingAreaName").val("");
+        })
+
+        //皮试
+        function changeNeedSkinTestFlag(data) {
+            var flag = Boolean(+data.value);
+            $(".needSkinTestInfo")[flag ? 'show' : 'hide']();
+            form.render();
+        }
+
+        //是否皮试显示选择药品耗材信息
+        form.on('radio(needSkinTestFlag)', changeNeedSkinTestFlag);
+        //触发是否皮试事件
+        changeNeedSkinTestFlag({value : $(':radio[name="needSkinTestFlag"]:checked').val()})
+        var skinTestMedicineIdElem = $("#skinTestMedicineId");
+
+        //添加皮试关联药品按钮
+        function renderAddSkinTestMedicine() {
+            tableSelect.render({
+                elem: '#btn_add_skinTestMedicine',	//定义输入框input对象 必填
+                checkedKey: 'medicineId', //表格的唯一建值，非常重要，影响到选中状态 必填
+                searchKey: 'keyWord',	//搜索输入框的name值 默认keyword
+                searchPlaceholder: '药品名称',	//搜索输入框的提示文字 默认关键词搜索
+                table: $.extend({}, basePageTable, {	//定义表格参数，与LAYUI的TABLE模块一致，只是无需再定义表格elem
+                    url: contextPath + '/medicine/medicineListData.jo',
+                    cols: [[
+                        {type: 'checkbox'},
+                        {
+                            field: 'medicineName',
+                            title: '药品名称',
+                            minWidth: '250'
+                        }, {
+                            field: 'medicineType',
+                            title: '药品类型',
+                            minWidth: '100', templet: function (d) {
+                                return dicMedicineTypeMedicine[d.medicineType] || ""
+                            }
+                        }, {
+                            field: 'medicineSpec',
+                            title: '药品规格',
+                            minWidth: '100'
+                        }, {
+                            field: 'medicineUnit',
+                            title: '单位',
+                            align: 'center',
+                            width: 60,
+                            templet: function (d) {
+                                return dicDrugNumUnit[d.medicineUnit] || '';
+                            }
+                        }]]
+                }),
+                done: function (elem, result) {
+                    var skinTestMedicineId = $.grep($.map(result.data, function (item) {
+                        return item.medicineId;
+                    }).concat($.map(table.cache['skinTestMedicineListGrid'], function (item) {
+                        return item.medicineId;
+                    })), function (n) {
+                        return $.trim(n).length > 0;
+                    }).join();
+                    table.reload('skinTestMedicineListGrid', {
+                        url: skinTestMedicineId ? contextPath + '/medicine/medicineSimpleListData.jo?medicineIds=' + skinTestMedicineId : '', //接口
+                    });
+                }
+            })
+        }
+
+        //皮试药品列表
+        table.render({
+            elem: '#skinTestMedicineListGrid',
+            url: skinTestMedicineIdElem.val() ? contextPath + '/medicine/medicineSimpleListData.jo?medicineIds=' + skinTestMedicineIdElem.val() : '', //接口
+            limit: 10000,
+            request: {pageName: 'pageNumber', limitName: 'pageSize'},
+            data: [],
+            height: 150,
+            cols: [[
+                {
+                    type: 'numbers',
+                    title: '<button type="button" id="btn_add_skinTestMedicine" class="layui-btn layui-btn-xs layui-btn-normal" lay-tips="选择"><i class="layui-icon layui-icon-more"></i></button>'
+                },
+                {
+                    field: 'medicineName',
+                    title: '药品名称',
+                    minWidth: '250'
+                }, {
+                    field: 'medicineType',
+                    title: '药品类型',
+                    minWidth: '100', templet: function (d) {
+                        return dicMedicineTypeMedicine[d.medicineType] || ""
+                    }
+                }, {
+                    field: 'medicineSpec',
+                    title: '药品规格',
+                    minWidth: '100'
+                }, {
+                    field: 'medicineUnit',
+                    title: '单位',
+                    align: 'center',
+                    width: 60,
+                    templet: function (d) {
+                        return dicDrugNumUnit[d.medicineUnit] || '';
+                    }
+                }, {
+                    title: '操作',
+                    width: 50,
+                    align: 'center',
+                    toolbar: '#delTpl',
+                    fixed: 'right'
+                }]]
+            , done: function (res) {
+                //新增药品项目
+                renderAddSkinTestMedicine();
+            }
+        });
+
+        //操作栏操作按钮的事件
+        table.on('tool(skinTestMedicineListGrid)', function (obj) {
+            layer.closeAll('tips'); //关闭所有的tips层
+            switch (obj.event) {
+                case 'btn_delete':
+                    obj.del();
+                    break;
+            }
+        });
+
+        //日期渲染
+        $('#limitStartDate,#limitEndDate').each(function () {
+            laydate.render({
+                elem: this,trigger: 'click'
+            });
+        })
+
+        //自定义验证规则
+        form.verify({
+            skinTestMedicine: function (value) {
+                //同步皮试关联药品
+                skinTestMedicineIdElem.val($.map(table.cache['skinTestMedicineListGrid'], function (item) {
+                    if (item.medicineId) return item.medicineId;
+                }).join());
+                $("#skinTestMedicineName").val($.map(table.cache['skinTestMedicineListGrid'], function (item) {
+                    if (item.medicineName) return item.medicineName;
+                }).join());
+                if (Boolean(+$(':radio[name="needSkinTestFlag"]:checked').val()) && !skinTestMedicineIdElem.val()) {
+                    $('#btn_add_skinTestMedicine').focus(function () {
+                        $('#skinTestMedicineListGrid').next().addClass('table-danger');
+                    }).blur(function () {
+                        $('#skinTestMedicineListGrid').next().removeClass('table-danger');
+                    }).focus();
+                    return '请选择皮试关联药品，必填项不能为空';
+                }
+            },
+            medicineOtherName: function (value) {
+                //同步药品别称
+                medicineOtherNameElem.val($.map(table.cache['medicineOtherNameListGrid'], function (item) {
+                    if (item.medicineOtherName) return item.medicineOtherName;
+                }).filter(function (currentValue, index, arr) {
+                    return arr.indexOf(currentValue) == index;
+                }).join());
+                if (medicineOtherNameElem.val().length > 200) {
+                    $('#btn_add_medicineOtherName').focus(function () {
+                        $('#medicineOtherNameListGrid').next().addClass('table-danger');
+                    }).blur(function () {
+                        $('#medicineOtherNameListGrid').next().removeClass('table-danger');
+                    }).focus();
+                    return '药品别称字数不能超过200个字。'
+                }
+            }
+        });
+
+
+        //提交表单
+        function saveMedicine() {
+            var medicineParams = common.serializeObject($('#medicineForm'));
+            if (!medicineParams.medicineType) {
+                common.msg("请选择药品药物分类", 0);
+                return;
+            }
+            common.requestServer(contextPath + '/medicine/saveMedicine.jo', medicineParams, function (result) {
+                if (result.code == "0") {
+                    common.alertCall("保存成功。", 1, function () {
+                        location.reload();
+                    });
+                } else {
+                    common.alert(result.msg, 0);
+                }
+            });
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function (data) {
+            saveMedicine();
+            return false;
+        });
+    })
+</script>

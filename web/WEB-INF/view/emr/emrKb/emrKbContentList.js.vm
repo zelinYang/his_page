@@ -1,0 +1,248 @@
+<script>
+
+    var dicUrgent = JSON.parse('$dicTools.changeMapToJson($dicData.dicUrgent)');
+    var dicDocType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDocType)');
+    var dicSecurityClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicSecurityClassify)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        dtree: 'modules/dtree/dtree'
+    }).use(['form', 'element', 'dtree','table'], function(){
+        var table = layui.table, form = layui.form, dtree = layui.dtree;
+        // 初始化左边树型
+        var dtreeObj = dtree.render({
+            dot:false,
+            toolbar:true,
+            initLevel: 1,
+            elem: "#kbTypeTree",
+            toolbarLoad: "node",
+            toolbarScroll:"#kbTypeTreeDiv",
+            toolbarStyle: {area:["520px", "250px"] },
+            url: contextPath + "/emr/kbTypeTree.jo?kbBelongFlag=$!kbBelongFlag",
+            toolbarFun: {
+                addTreeNode: function(treeNode, nodeDiv){
+                    var parentBase = JSON.parse($(nodeDiv).attr('data-basic'));
+                    var buildNode = {kbTypeName: treeNode.addNodeName, parentCode: treeNode.parentId, kbTlpFlag: parentBase.kbTlpFlag, kbBelongFlag: parentBase.kbBelongFlag};
+                    if (!buildNode.kbTlpFlag || !buildNode.kbBelongFlag) {
+                        common.alert("模板类型或模板所属参数无效", 0);
+                        return ;
+                    }
+                    var basDoctorEmrRole = '$!{basDoctorEmrRole}';
+                    var roles = ${roles};
+                    var notAdmin = true;
+                    for(var i=0;i<roles.length;i++){
+                        if("admin" == roles[i].roleCode){
+                            notAdmin = false;
+                        }
+                    }
+                    if(notAdmin){
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_OFFICE}" == treeNode.parentId){
+                            if(basDoctorEmrRole == null || basDoctorEmrRole == "" ){
+                                common.alert("该用户无"+treeNode.nodeTitle+"编辑权限！", 0);
+                                return ;
+                            }else{
+                                basDoctorEmrRole = $.parseJSON(basDoctorEmrRole);
+                            }
+                            if("$!{CONST.AppConstants.YES_FLAG}" != basDoctorEmrRole.emrRoleFalg){
+                                common.alert("该用户无"+treeNode.nodeTitle+"编辑权限！", 0);
+                                return ;
+                            }
+                        }
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_HOSPITAL}" == treeNode.parentId){
+                            if(notAdmin){
+                                common.alert("该用户不是管理员，不能编辑"+treeNode.nodeTitle, 0);
+                                return ;
+                            }
+                        }
+                    }
+
+                    if("3" == treeNode.level){
+                        common.alert("禁止新增三级节点！", 0);
+                        return ;
+                    }
+                    common.requestServer(contextPath + '/emr/saveKbType.jo', buildNode, function (result){
+                        if (result.code == "0" && result.data) {
+                            var data = result.data;
+                            dtreeObj.changeTreeNodeAdd({
+                                isLeaf: true,
+                                spread: false,
+                                basicData: data,
+                                id: data.kbTypeCode,
+                                level: treeNode.level,
+                                title: data.kbTypeName,
+                                parentId: treeNode.parentId });
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                },
+                editTreeNode: function(treeNode){
+                    var editNode = JSON.parse(treeNode.basicData);
+                    editNode.kbTypeName = treeNode.editNodeName
+
+                    var basDoctorEmrRole = '$!{basDoctorEmrRole}';
+                    var roles = ${roles};
+                    var notAdmin = true;
+                    for(var i=0;i<roles.length;i++){
+                        if("admin" == roles[i].roleCode){
+                            notAdmin = false;
+                        }
+                    }
+                    if(notAdmin){
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_OFFICE}" == treeNode.parentId || "$!{CONST.AppConstants.EMR_KB_TYPE_OFFICE}" == treeNode.nodeId){
+                            if(basDoctorEmrRole == null || basDoctorEmrRole == "" ){
+                                common.alert("该用户无"+treeNode.nodeTitle+"编辑权限！", 0);
+                                return ;
+                            }else{
+                                basDoctorEmrRole = $.parseJSON(basDoctorEmrRole);
+                            }
+                            if("$!{CONST.AppConstants.YES_FLAG}" != basDoctorEmrRole.emrRoleFalg){
+                                common.alert("该用户无"+treeNode.nodeTitle+"编辑权限！", 0);
+                                return ;
+                            }
+                        }
+
+
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_HOSPITAL}" == treeNode.parentId || "$!{CONST.AppConstants.EMR_KB_TYPE_HOSPITAL}" == treeNode.nodeId){
+                            if(notAdmin){
+                                common.alert("该用户不是管理员，不能编辑"+treeNode.nodeTitle, 0);
+                                return ;
+                            }
+
+                        }
+                    }
+
+                    common.requestServer(contextPath + '/emr/saveKbType.jo', editNode, function (result){
+                        if (result.code == "0") {
+                            dtreeObj.changeTreeNodeEdit(true/false);
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                },
+                delTreeNode: function(treeNode){
+                    var basDoctorEmrRole = '$!{basDoctorEmrRole}';
+                    var roles = ${roles};
+                    var notAdmin = true;
+                    for(var i=0;i<roles.length;i++){
+                        if("admin" == roles[i].roleCode){
+                            notAdmin = false;
+                        }
+                    }
+                    if(notAdmin){
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_OFFICE}" == treeNode.parentId || "$!{CONST.AppConstants.EMR_KB_TYPE_OFFICE}" == treeNode.nodeId){
+                            if(basDoctorEmrRole == null || basDoctorEmrRole == "" ){
+                                common.alert("该用户无此权限！", 0);
+                                return ;
+                            }else{
+                                basDoctorEmrRole = $.parseJSON(basDoctorEmrRole);
+                            }
+                            if("$!{CONST.AppConstants.YES_FLAG}" != basDoctorEmrRole.emrRoleFalg){
+                                common.alert("该用户无此权限！", 0);
+                                return ;
+                            }
+                        }
+
+                        if("$!{CONST.AppConstants.EMR_KB_TYPE_HOSPITAL}" == treeNode.parentId || "$!{CONST.AppConstants.EMR_KB_TYPE_HOSPITAL}" == treeNode.nodeId){
+                            if(notAdmin){
+                                common.alert("该用户不是管理员，无此权限", 0);
+                                return ;
+                            }
+
+                        }
+                    }
+
+                    common.confirm('确定要从彻底删除吗？', function (){
+                        var deleteNode = JSON.parse(treeNode.basicData);
+                        common.requestServer(contextPath + '/emr/deleteKbType.jo', {ids: deleteNode.kbTypeId}, function (result){
+                            if (result.code == "0") {
+                                dtreeObj.changeTreeNodeDel(true/false);
+                                $('#btn_query').click();
+                            } else {
+                                common.alert(result.msg, 0);
+                            }
+                        });
+                    });
+                }
+            }
+
+        });
+
+        // 监听树型节点点击事件
+        dtree.on("node('kbTypeTree')" ,function(obj){
+            var curNode = JSON.parse(obj.param.basicData);
+            $('#kbTypeCode').val(curNode.kbTypeCode);
+            $('#kbTypeId').val(curNode.kbTypeId);
+            $('#kbTypeName').val(curNode.kbTypeName);
+            $('#btn_query').click();
+        });
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#queryForm').height() - 12)
+        }
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt()
+            table.reload('emrKbContentList', {
+                height: height
+            })
+        })
+        // 路径分页列表
+        var tableUrl = contextPath + '/emr/kbTypeContentJsonList.jo';
+        var tableList = table.render($.extend(basePageTable, {
+                url: tableUrl,
+                id:'emrKbContentList',
+                elem: '#emrKbContentList',
+                height: getTableHgt(),
+                cols: [[
+                    {field:'kbName', title: '<i id="btn_add_tr" class="layui-icon layui-icon-add-1 btn-img-green" title="新增医嘱"></i>&nbsp;&nbsp;模板名称', width: 250},
+                    {field:'kbContent', title: '模板内容', Width: 400},
+                    {fixed: 'right', title:'操作', toolbar: '#operateBar', width:160}
+                ]],
+                done: function(res, curr, count){
+                    $('#btn_add_tr').click(function (){
+                        if (!$('#kbTypeId').val()) {
+                            common.msg('请选择模板类型', 0);
+                            return ;
+                        }
+                        common.open(contextPath + '/emr/emrKbContentEdit.do?kbTypeId=' + $('#kbTypeId').val(), "编辑模板", {area:['85%', '95%']});
+                    });
+                }
+            })
+        );
+
+        //监听行工具事件(编辑和删除)
+        table.on('tool(emrKbContentList)', function(obj){
+
+            if(obj.event === 'del'){
+                common.confirm('确定要彻底删除吗？', function (){
+                    common.requestServer(contextPath + '/emr/delEmrKbContent.jo', {ids: obj.data.kbContentId}, function (result){
+                        if (result.code == "0") {
+                            $('#btn_query').click();
+                        } else {
+                            common.alert(result.msg, 0);
+                        }
+                    });
+                });
+            } else if(obj.event === 'edit'){
+
+                common.open(contextPath + '/emr/emrKbContentEdit.do?kbTypeId=' + $('#kbTypeId').val()+'&kbTypeName='+$('#kbTypeName').val() + '&kbContentId=' + obj.data.kbContentId, "编辑模板", {area:['85%', '95%']});
+            }
+        });
+
+        // 查询按钮
+        $('#btn_query').click(function (){
+            var queryForm = common.serializeObject($('#queryForm'));
+            queryForm.kbTypeCode = $('#kbTypeCode').val();
+            tableList.reload({url: tableUrl, page: {curr: 1}, where: queryForm});
+        });
+
+        // 清空按钮
+        $('#btn_clean').click(function (){
+            common.cleanForm('queryForm');
+            form.render('select');
+        });
+    });
+</script>

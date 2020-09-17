@@ -1,0 +1,395 @@
+<script>
+    /**
+     * 疾病分类与代码
+     * 前3位编码为ICD-10类目码。
+     * 前4位编码为ICD-10亚目码。4位亚目码是3位码的亚分类。
+     * 第5-6位数为扩展码。
+     * 6位代码之后自行扩展尾码
+     */
+        //前3位编码为ICD-10类目码。
+    var DISEASE_CLASSIFY_LEVEL_CATEGORY = "$!{CONST.AppConstants.DISEASE_CLASSIFY_LEVEL_CATEGORY}";
+    //前4位编码为ICD-10亚目码。4位亚目码是3位码的亚分类。
+    var DISEASE_CLASSIFY_LEVEL_SUBORDER = "$!{CONST.AppConstants.DISEASE_CLASSIFY_LEVEL_SUBORDER}";
+    //疾病分类与代码
+    var DIC_TYPE_DISEASE_CLASSIFY = "$!{CONST.AppConstants.DIC_TYPE_DISEASE_CLASSIFY}";
+    //疾病分类与代码
+    var DIC_TYPE_DISEASE_CLASSIFY_TCM = "$!{CONST.AppConstants.DIC_TYPE_DISEASE_CLASSIFY_TCM}";
+    //疾病分类级别西医
+    var dicDiseaseClassifyLevel = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseClassifyLevel)');
+    //疾病分类级别中医
+    var dicDiseaseClassifyTcmLevel = {
+        1:2,
+        2:3
+    };
+    var dicDiseaseTypeFlagMapping = {
+        [DIC_TYPE_DISEASE_CLASSIFY]: '1',
+        [DIC_TYPE_DISEASE_CLASSIFY_TCM]: '2',
+    }
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+    var dicDiseaseType = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseType)');
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+    var dicClinicDiseaseClassify = JSON.parse('$dicTools.changeMapToJson($dicData.dicClinicDiseaseClassify)');
+    layui.config({
+        base: '../resource/layuiadmin/'
+    }).extend({
+        index: 'lib/index'
+    }).use(['index', 'form', 'table', 'util', 'element'], function () {
+        var $ = layui.$, form = layui.form, table = layui.table, util = layui.util;
+        //清空分类
+        $('.caller-icon').click(function () {
+            $("#q_keyWord_classify").val("");
+        })
+
+        //回车触发查询分类
+        $("#q_keyWord_classify").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query_classify').click();
+                return false;
+            }
+        });
+
+        //查询分类
+        $("#btn_query_classify").click(function () {
+            var keyWord = $("#q_keyWord_classify").val();
+            refreshRootNode(keyWord);
+        })
+
+        //刷新分类
+        $("#btn_refresh_classify").click(function () {
+            var nodes = zTreeObj.getNodes();
+            zTreeObj.reAsyncChildNodes(nodes[0], "refresh", false);
+        })
+
+        //过滤数据
+        function filter(treeId, parentNode, result) {
+            var childNodes = result.data;
+            if (!childNodes) return null;
+            $.each(childNodes, function (index, item) {
+                //判断是否是最大级别的最大长度
+                item.isParent = getDiseaseClassifyIsParent(item.dicTypeId ,item.dicCode.length);
+                item.name = item.dicName +' '+ item.dicCode;
+            })
+            return childNodes;
+        }
+
+        //根据疾病类别 中医、西医 获取对于的树形长度
+        function getDiseaseClassifyLevel(dicTypeId, level){
+            if(dicTypeId == DIC_TYPE_DISEASE_CLASSIFY){
+                return dicDiseaseClassifyLevel[level + 1] || '';
+            }
+            if(dicTypeId == DIC_TYPE_DISEASE_CLASSIFY_TCM){
+                return dicDiseaseClassifyTcmLevel[level + 1] || '';
+            }
+        }
+        //根据疾病类别 中医、西医 获取是否是父级
+        function getDiseaseClassifyIsParent(dicTypeId, len){
+            if(dicTypeId == DIC_TYPE_DISEASE_CLASSIFY){
+                return !(len >= DISEASE_CLASSIFY_LEVEL_SUBORDER);
+            }
+            if(dicTypeId == DIC_TYPE_DISEASE_CLASSIFY_TCM){
+                return !(len >= dicDiseaseClassifyTcmLevel[2]);
+            }
+        }
+        //展开事件
+        function zTreeBeforeExpand(treeId, treeNode) {
+            zTreeObj.setting.async.otherParam.dicTypeId = treeNode.dicTypeId;
+            //获取下一个级别的长度
+            zTreeObj.setting.async.otherParam.dicCodeLenNotSymbolEqu = getDiseaseClassifyLevel(treeNode.dicTypeId, treeNode.level);
+        };
+
+        //单击事件
+        function onClick(event, treeId, treeNode) {
+
+            $(':checkbox[name="diseaseTypeFlags"]').prop('checked', false).filter('[value="'+dicDiseaseTypeFlagMapping[treeNode.dicTypeId]+'"]').prop('checked', true);
+            form.render();
+            var diseaseClassify = treeNode ? treeNode.dicCode || '' : '';
+            var queryParams = getQueryParams();
+            queryParams.diseaseClassifyLeftLike = diseaseClassify;
+            //执行重载
+            table.reload('basDiseaseListGrid', {
+                where: queryParams
+            });
+        }
+
+        /**
+         * 刷新根结点树
+         */
+        window.refreshRootNode = function (diseaseClassifyName) {
+            var nodes = zTreeObj.getNodes();
+            zTreeObj.setting.async.otherParam.keyWord = diseaseClassifyName;
+            if(!diseaseClassifyName){
+                $.each(nodes,function (i, node) {
+                    zTreeObj.removeChildNodes(node);
+                    node.zAsync = false;
+                    node.isParent = true;
+                    zTreeObj.updateNode(node);
+                })
+                zTreeObj.expandAll(Boolean(diseaseClassifyName));
+                return;
+            }
+            zTreeObj.selectNode(nodes[0], true); //选中第一个子节点
+            zTreeObj.setting.async.otherParam.dicTypeId = nodes[0].dicTypeId;
+            zTreeObj.setting.async.otherParam.dicCodeLenNotSymbolEqu = getDiseaseClassifyLevel(nodes[0].dicTypeId, 0);
+            refreshNode({type: "refresh", silent: false});
+            zTreeObj.selectNode(nodes[1], true); //选中第二个子节点
+            zTreeObj.setting.async.otherParam.dicTypeId = nodes[1].dicTypeId;
+            zTreeObj.setting.async.otherParam.dicCodeLenNotSymbolEqu = getDiseaseClassifyLevel(nodes[1].dicTypeId, 0);
+            refreshNode({type: "refresh", silent: false});
+            zTreeObj.cancelSelectedNode(); //取消所有选中
+
+        }
+
+        //刷新子节点
+        function refreshNode(data) {
+            var type = data.type,
+                silent = data.silent,
+                nodes = zTreeObj.getSelectedNodes();
+            if (nodes.length == 0) {
+                alert("请先选择一个父节点");
+            }
+            for (var i = 0, l = nodes.length; i < l; i++) {
+                zTreeObj.reAsyncChildNodes(nodes[i], type, silent);
+                if (!silent) zTreeObj.selectNode(nodes[i]);
+            }
+        }
+
+        // 初始化树形分类
+        var zTreeObj, setting = {
+            view: {
+                selectedMulti: false,
+                showIcon: false
+            },
+            data: {
+                simpleData: {
+                    enable: true
+                }
+            },
+            async: {
+                enable: true,
+                url: '../basDic/basDicListData.jo?pageSize=99999&validFlag=1',
+                otherParam: {
+                    "dicCodeLenNotSymbolEqu": DISEASE_CLASSIFY_LEVEL_CATEGORY
+                },
+                autoParam: ["dicCode=dicCodeLK"],
+                dataFilter: filter
+            },
+            callback: {
+                beforeExpand: zTreeBeforeExpand,
+                onAsyncSuccess: function (event, treeId, treeNode, msg) {
+                    if (!(!!window.ActiveXObject || 'ActiveXObject' in window)) { // 非ie
+                        zTreeObj.expandNode(treeNode, true, false, true, false) //只展开第一个节点
+                    }
+                    zTreeObj.setting.async.otherParam['includeRoot'] = false
+                },
+                onClick: onClick
+            }
+        }
+        //根节点
+        var zNodes = [
+            {"name": "西医", dicTypeId: DIC_TYPE_DISEASE_CLASSIFY,  isParent: true},
+            {"name": "中医", dicTypeId: DIC_TYPE_DISEASE_CLASSIFY_TCM,isParent: true}
+        ];
+        zTreeObj = $.fn.zTree.init($('#regionTree'), setting, zNodes);
+
+        // 获取查询表单参数对象
+        function getQueryParams() {
+            return $.extend({
+                diseaseClassifyLeftLike: '',
+                diseaseType: '',
+                diseaseTypeFlags: '',
+                clinicDiseaseFlag: '',
+                diseaseSpecialType: '',
+                keyWord: '',
+            }, common.serializeObject($('#basDisease_queryForm')));
+        }
+
+        //回车触发查询
+        $("#q_keyWord").keydown(function (event) {
+            if (event.keyCode == 13) {
+                $('#btn_query').click();
+                return false;
+            }
+        });
+        // 查询按钮
+        $('#btn_query').click(function () {
+            zTreeObj.cancelSelectedNode(); //取消所有选中
+            var queryParams = getQueryParams();
+            //执行重载
+            table.reload('basDiseaseListGrid', {
+                where: queryParams
+            });
+        })
+
+        // 清空按钮
+        $('#btn_clean').click(function () {
+            common.cleanForm('basDisease_queryForm');
+        })
+
+        // 新增按钮
+        $('#btn_add').click(function () {
+            var node = zTreeObj.getSelectedNodes()[0];
+            var diseaseClassify = node ? node.dicCode : '';
+            var diseaseTypeFlag = node ? dicDiseaseTypeFlagMapping[node.dicTypeId] : '';
+            common.open('$contextPath' + '/basDisease/basDiseaseEdit.do?diseaseClassify=' + diseaseClassify+'&diseaseTypeFlag='+diseaseTypeFlag, '新增病种', {
+                area: ['80%', '80%'],
+                scroll: true
+            })
+        })
+
+        //表格设置
+        table.render($.extend(basePageTable, {
+            elem: '#basDiseaseListGrid',
+            height: getTableHgt(),
+            url: contextPath + '/basDisease/basDiseaseListData.jo',
+            where: getQueryParams(),
+            cols: [[{
+                type: 'numbers',
+                fixed: 'left'
+            }, {
+                field: 'diseaseName',
+                title: '疾病名称',
+                minWidth: 250
+            },
+                {
+                    field: 'diseaseIcdTcd',
+                    title: 'ICD10/TCD疾病编码',
+                    width: 130
+                },
+                {
+                    field: 'diseaseTypeFlag',
+                    title: '西/中医标志 ',
+                    templet: function (d) {
+                        return dicDiseaseTypeFlag[d.diseaseTypeFlag] || ''
+                    },
+                    width: 100
+                },
+                {
+                    field: 'diseaseType',
+                    title: '疾病诊断代码类型',
+                    width: 160,
+                    templet: function (d) {
+                        return dicDiseaseType[d.diseaseType] || '';
+                    }
+                },
+                {
+                    field: 'diseaseType',
+                    title: '临床路径>病种专业分类',
+                    width: 160,
+                    templet: function (d) {
+                        return Boolean(+d.clinicDiseaseFlag) ? (dicClinicDiseaseClassify[d.clinicDiseaseClassifyId] || dicYesNo[d.clinicDiseaseFlag]) : dicYesNo[d.clinicDiseaseFlag];
+                    }
+                },
+                {
+                    field: 'chronicFlag',
+                    title: '慢性病标志',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    templet: '#chronicFlagTpl'
+                },
+                {
+                    field: 'infectiousFlag',
+                    title: '传染病标志',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    templet: '#infectiousFlagTpl'
+                },
+                {
+                    field: 'singleDiseaseFlag',
+                    title: '单病种标志',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    templet: '#singleDiseaseFlagTpl'
+                }, {
+                    field: 'validFlag',
+                    title: '是否有效',
+                    templet: '#validFlagTpl',
+                    width: 100,
+                    unresize: true,
+                    align: 'center',
+                    fixed: 'right'
+                }, {
+                    title: '操作',
+                    width: 100,
+                    align: 'center',
+                    fixed: 'right',
+                    toolbar: '#operateTpl'
+                }]],
+    done:function(){autoSetHeigt()}
+        }));
+
+        //监听慢性病标志事件
+        form.on('switch(chronicFlag)', function (obj) {
+            common.requestServer('../basDisease/updateBasDiseaseChronicFlag.jo', {
+                diseaseId: obj.value,
+                chronicFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+        //监听传染病标志事件
+        form.on('switch(infectiousFlag)', function (obj) {
+            common.requestServer('../basDisease/updateBasDiseaseInfectiousFlag.jo', {
+                diseaseId: obj.value,
+                infectiousFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+        //监听单病种标志事件
+        form.on('switch(singleDiseaseFlag)', function (obj) {
+            common.requestServer('../basDisease/updateBasDiseaseSingleDiseaseFlag.jo', {
+                diseaseId: obj.value,
+                singleDiseaseFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //监听是否有无效事件
+        form.on('switch(validFlag)', function (obj) {
+            common.requestServer('../basDisease/updateBasDiseaseValidFlag.jo', {
+                diseaseId: obj.value,
+                validFlag: Number(obj.elem.checked)
+            }, function (result) {
+                common.responseAtcion(result)
+            })
+        })
+
+        //操作栏操作按钮的事件
+        table.on('tool(basDiseaseListGrid)', function (obj) {
+            var row = obj.data
+            switch (obj.event) {
+                case 'btn_show':
+                    common.open('$contextPath' + '/basDisease/basDiseaseShow.do?diseaseId=' + row.diseaseId, '病种【' + row.diseaseName + '】' + '详情', {
+                        area: ['80%', '80%'],
+                scroll: true
+                    })
+                    break;
+                case 'btn_edit':
+                    common.open('$contextPath' + '/basDisease/basDiseaseEdit.do?diseaseId=' + row.diseaseId, '病种【' + row.diseaseName + '】', {
+                        area: ['80%', '80%'],
+                scroll: true
+                    })
+                    break
+            }
+        });
+
+
+        // 获取表格高度
+        function getTableHgt() {
+            return ($('body').height() - $('#basDisease_queryForm').height() - 13)
+        }
+
+        // 重置表格高度
+        $(window).resize(function () {
+            var height = getTableHgt();
+            table.reload('basDiseaseListGrid', {
+                height: height
+            });
+        })
+
+    })
+</script>

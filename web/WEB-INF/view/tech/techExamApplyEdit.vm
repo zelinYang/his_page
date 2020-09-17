@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>门诊住院-检查申请单</title>
+    #parse("./common/pageCss.vm")
+    <link href="$!contextPath/resource/hplus/js/plugins/layout/layout-default-latest.css?v=123233" rel="stylesheet">
+    <link href="../resource/hplus/js/plugins/ztree/css/zTreeStyle/zTreeStyle.css" rel="stylesheet">
+    #parse("./outpatient/tech/tech.css.vm")
+    <style>
+        #emrIframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            vertical-align: bottom
+        }
+    </style>
+</head>
+<body>
+<div class="layui-col-xs1 white-bg full-scroll border-r p-t-xs">
+    <ul id="treeDemo" class="ztree"></ul>
+</div>
+<div class="layui-col-lg8 layui-col-md8 layui-col-xs8 full-height border-r pacs">
+    <div id="container">
+        <div class="ui-layout-north">
+            <form class="layui-form">
+                <!--基础数据-->
+                #formHiddenInput("patientId" "$!patientId" "id='patientId'")
+                <!--医技申请单-->
+                #formHiddenInput("patientHospitalEmrId" "$!patientHospitalEmr.patientHospitalEmrId"
+                "id='patientHospitalEmrId'")
+                <!--门诊-->
+                #formHiddenInput("registerId" "$!registerId" "id='registerId'")
+                <!--住院-->
+                #formHiddenInput("inhospitalId" "$!inhospitalId" "id='inhospitalId'")
+                #formHiddenInput("makeOrderFlag" "$!makeOrderFlag" "id='makeOrderFlag'")
+                #formHiddenInput("techApplyName" "" " id='techApplyName' ")
+                #formHiddenInput("outpatientTechId" "" " id='outpatientTechId' ")
+				<!--门诊住院默认病历模板 -->
+				<!--50 检查申请单（门诊）-->
+                #set($defaultEmrTlp = 50)
+                #if($inhospitalId)
+					<!-- 527 检查申请单（住院）-->
+                    #set($defaultEmrTlp = 527)
+                #end
+                #if($patientHospitalEmr)
+                    #formHiddenInput("emrTlp" "$!patientHospitalEmr.emrTlpId" " id='emrTlp' ")
+                #else
+                    #formHiddenInput("emrTlp" "$!defaultEmrTlp" " id='emrTlp' ")
+                #end
+                <div class="layui-row-query">
+                    <div class="layui-form-item search-term">
+                    <div class="layui-inline" style="width: 265px">
+                        <label class="layui-form-label">开始时间</label>
+                        <div class="layui-input-inline" style="width: 152px">
+                            #formTextInput("exeOrderStartTime" "" "id='exeOrderStartTime' class='layui-input'
+                            placeholder='' maxLength='50'")
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">执行科室</label>
+                        <div class="layui-input-inline">
+                            #formSelectOrgForList("exeOfficeId" "" $!deptList "class='layui-input'
+                            lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId' lay-search" "执行科室")
+##                            #if($techExamApply.examSampleOfficeId)
+##                            #formSelectOrgForList("exeOfficeId" "$!techExamApply.examSampleOfficeId" $!deptList
+##                            "class='layui-input' lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId' lay-search"
+##                            "执行科室")
+##                            #else
+##                            #formSelectOrgForList("exeOfficeId" "$!orgId" $!deptList "class='layui-input'
+##                            lay-verify='required' id='exeOfficeId' lay-filter='exeOfficeId' lay-search" "执行科室")
+##                            #end
+                        </div>
+                    </div>
+                    <div class="layui-inline m-l-sm" style="width: 50px">
+                        <div class="layui-input-inline" style="width: 50px">
+                            #if($techExamApply.urgentFlag == "0")
+                            #formSimpleCheckbox("urgentFlag" "$techExamApply.urgentFlag" "" "lay-skin='primary'
+                            lay-filter='urgentFlag' id='urgentFlag' title='加急' " "")
+                            #else
+                            #formSimpleCheckbox("urgentFlag" "" "" " lay-skin='primary' lay-filter='urgentFlag'
+                            id='urgentFlag' title='加急' " "")
+                            #end
+                        </div>
+                    </div>
+						<div class="layui-inline layui-btn-group m-l-sm">
+							<button type="button" id="btn_add" class="layui-btn layui-btn-sm" lay-tips="新增检查">新增检查</button>
+						</div>
+                </div>
+                </div>
+            </form>
+            <!-- 检验项目 -->
+            <div class="layui-row">
+                <div class="layui-col-md6">
+                    <table id="chargeGroup" lay-filter="chargeGroup"></table>
+                </div>
+                <div class="layui-col-md6">
+                    <table id="chargeItem" lay-filter="chargeItem"></table>
+                </div>
+            </div>
+        </div>
+        <div class="pane ui-layout-center" style="text-align: center;">
+            <!-- 电子病历容器 -->
+            <iframe id="emrIframe"></iframe>
+        </div>
+    </div>
+</div>
+
+<div class="layui-col-lg3 layui-col-md3 layui-col-xs3 white-bg full-scroll border-r p-t-xs" style="padding: 42px 5px 0px;">
+    <table class="layui-table">
+        <tbody class="outTechList">
+        <tr id="outTechListHead">
+            <td width="30px">分类</td>
+            <td width="60px" id="payFlag">缴费状态</td>
+            <td width="80px">项目名称</td>
+            <td width="80px" id="itemName">项目明细</td>
+        </tr>
+        <tr class="data-empty" id="noItem">
+            <td colspan="4">无记录</td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+#parse("./common/pageJs.vm")
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery-ui.js"></script>
+<script type="text/javascript" src="$!contextPath/resource/hplus/js/plugins/layout/jquery.layout.js"></script>
+<script src="../resource/hplus/js/plugins/ztree/js/jquery.ztree.all.min.js"></script>
+#parse("./tech/techExamApplyEdit.js.vm")
+</body>
+</html>

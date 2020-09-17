@@ -1,0 +1,104 @@
+<script>
+	var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+	var dicSysOrgName = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+    var dicDiseaseTypeFlag = JSON.parse('$dicTools.changeMapToJson($dicData.dicDiseaseTypeFlag)');
+	layui.use(['jquery', 'table', 'element', 'form'], function () {
+		var table = layui.table;
+		var element = layui.element;
+		var form = layui.form;
+		var $ = layui.$;
+
+		element.render();
+		//第一个实例
+		var tableIns = table.render({
+			elem: '#commonDiagnosisTable'
+			//,toolbar: '#toolbarDemo'
+			, defaultToolbar: []
+			//,height: '230'//高度
+			, height: 'full-55'//高度
+			, url: '../basCommDiagnosis/basCommDiagnosisListData.jo' //数据接口
+			//,page: true //开启分页
+			, where: getParams()
+			, limit: 200
+			, request: {
+				pageName: 'pageNumber' //页码的参数名称，默认：page
+				, limitName: 'pageSize' //每页数据量的参数名，默认：limit
+			}
+			, cols: [[ //表头
+				{type: 'checkbox'}
+				, {title: '西医/中医',templet:function (d) {
+				    return dicDiseaseTypeFlag[d.diseaseTypeFlag] || "";
+                    }}
+				, {field: 'diseaseName', title: '诊断名称'}
+                , {field: 'diseaseIcdTcd', title: 'ICD'}
+                , {field: 'commDiagnosisDesc', title: '描述性诊断'}
+				, {
+					field: 'doctorId', title: '医生',
+					templet: function (row) {
+						return dicSysUser[row.doctorId];
+					}
+				}
+				, {
+					field: 'officeId', title: '门诊科室',
+					templet: function (row) {
+						return dicSysOrgName [row.officeId];
+					}
+				}
+			]]
+			//res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+			, done: function (res, curr, count) {
+			}
+		});
+
+		// 查询按钮
+		$('#btn_query').click(function () {
+			query();
+		});
+
+		// 导入常用诊断按钮
+		$('#btn_import_outItem').click(function () {
+			importCommonOutItem();
+		});
+
+		function getParams() {
+			var queryParams = common.serializeObject($('#commonDiagnosis_queryForm'));
+			if (queryParams.diagnosisClassify == '1') {
+				queryParams.doctorId = $("#doctorId").val();
+				queryParams.officeId = '';
+				queryParams.hospitalId = '';
+			} else if (queryParams.diagnosisClassify == '2') {
+				queryParams.doctorId = '';
+				queryParams.officeId = $("#officeId").val();
+				queryParams.hospitalId = '';
+			} else if (queryParams.diagnosisClassify == '3') {
+				queryParams.doctorId = '';
+				queryParams.officeId = '';
+				queryParams.hospitalId = $("#hospitalId").val();
+			}
+			return queryParams;
+		}
+
+		//查询列表
+		function query() {
+			var queryParams = getParams();
+			tableIns.reload({where: queryParams});
+		}
+
+		//单选按钮触发查询
+		form.on('radio(diagnosisClassify)', function (data) { //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+			query();
+		});
+
+		// 导入常用诊断
+		function importCommonOutItem() {
+			var checkRows = table.checkStatus('commonDiagnosisTable'); //test即为基础参数id对应的值
+			if (!checkRows.data.length) {
+				common.alert('请选择需要导入的数据', 0);
+				return false;
+			}
+			var diagnosisArr = checkRows.data;
+			parent.addTr(diagnosisArr);
+		}
+
+	});//layui.use
+</script> 

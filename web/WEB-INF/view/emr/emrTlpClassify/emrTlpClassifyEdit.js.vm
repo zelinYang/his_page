@@ -1,0 +1,97 @@
+<script>
+  var dicEmrTreeCode = JSON.parse('$dicTools.changeMapToJson($dicData.dicEmrTreeCode)')
+  layui.config({
+    base: '../resource/layuiadmin/'
+  }).extend({
+    index: 'lib/index'
+  }).use(['index', 'form', 'laytpl', 'autocomplete'], function () {
+    var $ = layui.$, form = layui.form, laytpl = layui.laytpl, autocomplete = layui.autocomplete
+    common.verify(form)
+
+      //初始化手术分类名称 请求参数
+      var surgeryClassifyOption = {
+          url: contextPath + '/emr/emrTlpClassifyListData.jo?validFlag=1',
+          data: {
+              emrTreeCodeEqu: $("#parentEmrTreeCode").val()
+          },
+          success: function (result) {
+              var data = result.data;
+              if (data && data.length > 0) {
+                  $("#parentEmrTreeCode").val(data[0].emrTreeCode);
+                  $("#parentEmrTreeName").val(data[0].emrTlpClassifyName);
+              }
+          }
+      }
+      if (surgeryClassifyOption.data.emrTreeCodeEqu) {
+          common.requestServer(surgeryClassifyOption.url, surgeryClassifyOption.data, surgeryClassifyOption.success);
+      }
+
+    //打开电子分类树页面
+    $('#parentEmrTreeName').click(function () {
+      layer.open({
+        type: 2
+        ,title: '选择病历模板分类'
+        ,content: '../emr/emrTlpClassifySelectTree.do'
+        ,area: ['300px', '400px']
+        ,btn: ['确定', '取消','清空']
+        ,yes: function(index, layero){
+          var iframeWindow = window['layui-layer-iframe'+ index]
+            ,submitID = 'LAY-emr-classify-submit'
+            ,submit = layero.find('iframe').contents().find('#'+ submitID);
+          //监听提交
+          iframeWindow.layui.form.on('submit('+ submitID +')', function(data){
+            var field = data.field; //获取提交的字段
+              surgeryClassifyOption.success({data: [field]});
+            layer.close(index);
+          });
+
+          submit.trigger('click');
+        }
+        ,btn3: function(index, layero){
+          $('#parentEmrTreeCode').val(null);
+          $('#parentEmrTreeName').val(null);
+        }
+      });
+    });
+
+    var emrTlpClassifyType = $('input[name="emrTlpClassifyType"]:checked').val();
+    toogleOffice(emrTlpClassifyType)
+    //显示隐藏科室复选框页面
+    function toogleOffice(emrTlpClassifyType) {
+      if(emrTlpClassifyType == "$!{CONST.AppConstants.VISABLE_DEPARTMENT}"){
+        $("#officeEle").removeClass('layui-hide')
+      }else{
+        $("#officeEle").addClass('layui-hide')
+      }
+    }
+
+    form.on('radio(emrTlpClassifyType)', function(data){
+      toogleOffice(data.value)
+    });
+    // 获取坐标回调函数
+    function selectMapCoordinateBack (lng, lat) {
+      //$('#longitude').val(lng);
+      //$('#latitude').val(lat);
+    }
+
+    //提交表单
+    function saveEmrTlpClassify () {
+      var emrTlpClassifyParams = common.serializeObject($('#emrTlpClassifyForm'))
+      common.requestServer(contextPath + '/emr/saveEmrTlpClassify.jo', emrTlpClassifyParams, function (result) {
+        if (result.code === '0') {
+          common.msg("电子病历分类保存成功", 1, function (){
+            parent.location.reload();
+          });
+        } else {
+          common.alert(result.msg, 0);
+        }
+      })
+    }//save function
+
+     // 保存按钮
+    form.on('submit(btn_save)', function (data) {
+      saveEmrTlpClassify()
+      return false
+    })
+  })
+</script>

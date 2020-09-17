@@ -1,0 +1,59 @@
+ <script>
+  layui.use(['jquery','table', 'element'], function(){
+      var table = layui.table, element = layui.element, $ = layui.$;
+      element.render();
+      
+      //第一个实例
+      var examineTable = table.render({
+         elem: '#outpatientExamine'
+        //,toolbar: '#toolbarDemo'
+        ,defaultToolbar: []
+        ,height: 'full-45'//高度
+        ,width: 350
+        ,url: '../outpatient/recipeListData.jo' //数据接口
+        //,page: true //开启分页
+        ,limit:200
+        ,request: { 
+           pageName: 'pageNumber' //页码的参数名称，默认：page
+          ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+        }
+        ,where: {patientId:$('#patientId').val()}
+        ,cols: [[ //表头
+          {field : 'makeOrderTime',title : '日期',
+             templet :function (row) {return getSmpFormatDateByLong(row.makeOrderTime,false);}}
+         ,{field : 'diagnosisContent', title : '诊断名称',
+        	 templet :function (row) {
+        	     if (!row.diagnosisContent) {
+        	         row.diagnosisContent = '未关联诊断';
+                 }
+        		 return '<a recipeId=' + row.recipeId + ' href="javascript:" onclick="editRecipe(this)">'+ row.diagnosisContent + '</a>';
+        	 }
+          }
+        ]]
+        //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+        ,done: function(res, curr, count){
+        }
+      });
+    
+      //处方行单击查询处方明细
+      function rowExamineSelect(recipeRow) {
+          $('.main-right').removeClass('layui-hide');
+          $('#recipeId').val(recipeRow.recipeId);
+          queryExamineItem();
+      }
+      
+    //监听行单击事件
+      table.on('row(outpatientExamine)', function(obj){
+        var row = obj.data;
+        rowExamineSelect(row);
+      });
+    
+    //查询列表
+      function queryExamineItem() {
+        var queryParams = common.serializeObject($('#examineItem_Form'));
+        examineTable.reload({ where: queryParams });
+      }
+     
+        
+    });//layui.use
+</script> 

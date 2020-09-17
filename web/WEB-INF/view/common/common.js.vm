@@ -1,0 +1,488 @@
+<script>
+
+/** 创建选项卡 */
+function createMenuItem(dataUrl, menuName) {
+    dataIndex = $.common.random(1,100),
+    flag = true;
+    if (dataUrl == undefined || $.trim(dataUrl).length == 0) return false;
+    var topWindow = $(window.parent.document);
+    // 选项卡菜单已存在
+    $('.menuTab', topWindow).each(function() {
+        if ($(this).data('id') == dataUrl) {
+            if (!$(this).hasClass('active')) {
+                $(this).addClass('active').siblings('.menuTab').removeClass('active');
+                $('.page-tabs-content').animate({ marginLeft: ""}, "fast");
+                // 显示tab对应的内容区
+                $('.mainContent .RuoYi_iframe', topWindow).each(function() {
+                    if ($(this).data('id') == dataUrl) {
+                        $(this).show().siblings('.RuoYi_iframe').hide();
+                        return false;
+                    }
+                });
+            }
+            flag = false;
+            return false;
+        }
+    });
+    // 选项卡菜单不存在
+    if (flag) {
+        var str = '<a href="javascript:;" class="active menuTab" data-id="' + dataUrl + '">' + menuName + ' <i class="fa fa-times-circle"></i></a>';
+        $('.menuTab', topWindow).removeClass('active');
+
+        // 新增选项卡对应的iframe
+        var str1 = '<iframe class="RuoYi_iframe" name="iframe' + dataIndex + '" width="100%" height="100%" src="' + dataUrl + '" frameborder="0" data-id="' + dataUrl + '" seamless></iframe>';
+        $('.mainContent', topWindow).find('iframe.RuoYi_iframe').hide().parents('.mainContent').append(str1);
+
+        // 新增选项卡
+        $('.menuTabs .page-tabs-content', topWindow).append(str);
+    }
+    return false;
+}
+
+
+var common = {
+		//红字必填的提示文字
+		mustHit : '<span class="must-red font-14">( 红字为必填 )</span>',
+		
+		openTab : function() {
+	    },
+	    /*
+	     * msg提示信息; exeComand 点确定后执行的方法
+	     */
+	    confirm: function (msg, exeComand){
+	    	//询问框
+			layer.confirm(msg, {
+			  btn: ['确定','取消'],
+			  skin: 'layui-layer-molv'
+			}, function(index){
+				exeComand();
+				layer.close(index);
+			}, function(index){
+				layer.close(index);
+			});
+	    },
+	    /**
+	     * msg提示信息
+	     * iconType对应的值  0：警告；1:成功；2：错误；3：提示；4：提示锁住；5：难过表情；6：微笑表情；其他值默认为警告
+	     */
+	    alert: function (msg, iconType){
+			layer.alert(msg, { icon: iconType, skin: 'layui-layer-molv' });
+	    },
+	    /**
+	     * msg提示信息，点按钮后执行回调
+	     * iconType对应的值  0：警告；1:成功；2：错误；3：提示；4：提示锁住；5：难过表情；6：微笑表情；其他值默认为警告
+	     */
+	    alertCall: function (msg, iconType, exeComand){
+			//layer.msg(msg, { icon: 1, time: 3});
+			layer.alert(msg, {icon: iconType, skin: 'layui-layer-molv' }, function(index){ exeComand(); layer.close(index);});
+	    },
+	    /** 打开新窗口（iframe） */
+	    open: function (url, title, options){
+	    	var opt = {
+	    			id: 'win',
+		            type: 2,
+		            move: false,
+		            title: title,
+		            shadeClose: false,
+		            shade: 0.5,
+		            maxmin: false, //开启最大化最小化按钮
+		            area: ['100%', '100%'],
+		            content: [url, ((options.scroll == undefined || options.scroll == "") ? 'no': options.scroll)]
+	    	}
+	    	$.extend(opt, options);
+	    	layer.open(opt);
+	    },
+	    
+	    // 清空表单
+	    cleanForm: function (formId){
+	    	var $formObj = $("#" + formId);
+	        $formObj.find("input[type=text]").val("");
+	        $formObj.find("select").val('');
+	        $formObj.find("select").trigger("chosen:updated");
+	    },
+	    
+	    // 序列化表单,form:表单对象；arrayDateId：日期范围控件ID数组
+		serializeObject: function(form, arrayDateId) {
+			var o = {};
+			$.each(form.serializeArray(), function(index) {
+				if (this['value'] == "") {
+					return true; 
+				}
+				if (o[this['name']]) {
+					o[this['name']] = o[this['name']] + "," + this['value'];
+				} else {
+					o[this['name']] = this['value'];
+				}
+			});
+
+			// 处理日期查询条件
+			if (arrayDateId && arrayDateId.length > 0) {
+				var obj = {};
+				for (var i = 0; i < arrayDateId.length; i++) {
+					var dateEle = $(form).find('#' + arrayDateId[i]);
+					if (!dateEle || dateEle.val() == '') { continue; }
+					
+					var tag = dateEle.attr('tag').split(',');
+					var arrayDate = dateEle.val().split(" - ");
+					obj[tag[0]] = ((arrayDate[0] != "" && arrayDate[0] != undefined) ? arrayDate[0] : "");
+					obj[tag[1]] = ((arrayDate[1] != "" && arrayDate[1] != undefined) ? arrayDate[1] : "");
+				}
+				$.extend(o, obj);
+			}
+			return o;
+		},
+		baseQueryOptions : function (url, queryParamObj){
+			var options = {
+					url: url + '?tiem=' + new Date().getTime(),
+				    silent: false,
+				    query: queryParamObj
+			}
+			return options;
+		},
+		isSuccess : function(obj) {
+			return obj.code == "0";
+		},
+		// 提交后端服务
+		requestServer: function (url, params, callBack) {
+			$.post(url, params, function(result){
+				callBack(result)
+			}, 'json').error(function (e){jqueryPostError(e)});
+		},
+
+		// 获取表格单行或多行数据，tableId 为表格ID；isMultiSelect为true表示获取多行，否则单行
+	    getTableSelectRow: function(tableId, isMultiSelect) {
+	    	var rows = $('#' + tableId).bootstrapTable('getSelections');
+	    	if (!isMultiSelect && rows.length > 1) {
+	    		return [];
+	    	}
+	    	return rows;
+	    },
+	    
+	 	// 获取表格单行或多行数据ID，tableId 为表格ID；isMultiSelect为true表示获取多行，否则单行
+	    getTableSelectRowField: function (tableId, isMultiSelect, field) {
+	    	var rows = common.getTableSelectRow(tableId, isMultiSelect);
+	    	if (!isMultiSelect) {
+	    		return rows[0][field];
+	    	} else {
+	    		var result = [];
+	    		$.each(rows, function (i){
+	    			result.push(this[field]);
+	    		});
+	    		return result.join(',');
+	    	}
+	    },
+	    
+	    //传入一个jquery对象，将对象下的表单元素设置为只读
+	    setFormReadOnly : function($Ele) {
+	    	$Ele.find('input').attr('readonly',true);
+	    	$Ele.find('input[type=radio],input[type=checkbox]').attr('disabled',true);
+	    	$Ele.find('select').attr('disabled',true);
+	    	$Ele.find('textarea').attr('readonly',true);
+        },
+        
+        // 计算两个时间差，结果单位由第三个参数决定
+        timeDifference: function (endDate, beginDate, unit) {
+        	var ed = new Date(Date.parse(endDate));
+        	var bd = new Date(Date.parse(beginDate));
+        	//相差的毫秒数
+        	var TotalMilliseconds = Math.abs(ed.getTime() - bd.getTime());
+        	if (unit == "d") {
+        		return parseInt(TotalMilliseconds / 1000 / 60 / 60 /24);
+        	}
+        	if (unit == "h") {
+        		return parseInt(TotalMilliseconds / 1000 / 60 / 60);
+        	}
+        	if (unit == "m") {
+                return parseInt(TotalMilliseconds / 1000 / 60);
+        	}
+        	if (unit == "s") {
+        		return parseInt(TotalMilliseconds / 1000);
+        	}
+        },
+        // 下载文件
+        downLoadFile: function (iframeId, affixFlag, fileId){
+        	$('#' + iframeId).attr('src', '../affix/download.do?area=' + affixFlag + '&fileId=' + fileId);
+        },
+        // 删除文件
+        deleteFile: function (fileId, affixFlag, _ele) {
+        	common.confirm("确定要删除该文件吗？", function (){
+        		$.post(
+        				contextPath + '/affix/delete.jo',
+        				{fileId: fileId, area: affixFlag}, 
+        				function (result){
+        					if (result.code == "0") {
+        						$(_ele).parents('.fileRow').remove();
+        					} else {
+        						common.alert(result.msg, 0);
+        					}
+        				}, 
+        		'json').error(function (e){jqueryPostError(e)});
+        	});
+        }
+}
+
+//console.log(JSON.stringify(option));
+
+/**
+ * bootstrapTable 对象的基本参数设置对象
+ */
+var baseTable = {
+		mobileResponsive : true,
+		pagination : true,
+		pageNumber : true,
+		cache : false,
+		striped: true,
+		clickToSelect: true,
+		singleSelect: true,
+		pageSize : "10",
+		pageNumber : 1,
+		height : "500",
+		queryParams : {},
+		queryParamsType : "",
+		sidePagination : 'server',
+		halign : "center"
+}
+ 
+
+//扩展Date的format方法 
+Date.prototype.format = function (format) { 
+	var o = { 
+		"M+": this.getMonth() + 1, 
+		"d+": this.getDate(), 
+		"h+": this.getHours(), 
+		"m+": this.getMinutes(), 
+		"s+": this.getSeconds(), 
+		"q+": Math.floor((this.getMonth() + 3) / 3), 
+		"S": this.getMilliseconds() 
+	} 
+	if (/(y+)/.test(format)) { 
+		format = format.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length)); 
+	} 
+	for (var k in o) { 
+		if (new RegExp("(" + k + ")").test(format)) { 
+			format = format.replace(RegExp.$1, RegExp.$1.length == 1 ? o[k] : ("00" + o[k]).substr(("" + o[k]).length)); 
+		} 
+	} 
+	return format; 
+} 
+
+/** 
+*转换日期对象为日期字符串 
+* @param date 日期对象 
+* @param isFull 是否为完整的日期数据, 
+* 为true时, 格式如"2000-03-05 01:05:04" 
+* 为false时, 格式如 "2000-03-05" 
+* @return 符合要求的日期字符串 
+*/ 
+function getSmpFormatDate(date, isFull) { 
+	var pattern = ""; 
+	if (isFull == true || isFull == undefined) { 
+		pattern = "yyyy-MM-dd hh:mm:ss"; 
+	} else { 
+		pattern = "yyyy-MM-dd"; 
+	} 
+	return getFormatDate(date, pattern); 
+} 
+
+/** 
+*转换当前日期对象为日期字符串 
+* @param date 日期对象 
+* @param isFull 是否为完整的日期数据, 
+* 为true时, 格式如"2000-03-05 01:05:04" 
+* 为false时, 格式如 "2000-03-05" 
+* @return 符合要求的日期字符串 
+*/ 
+function getSmpFormatNowDate(isFull) { 
+    return getSmpFormatDate(new Date(), isFull); 
+} 
+
+/** 
+*转换long值为日期字符串 
+* @param l long值 
+* @param isFull 是否为完整的日期数据, 
+* 为true时, 格式如"2000-03-05 01:05:04" 
+* 为false时, 格式如 "2000-03-05" 
+* @return 符合要求的日期字符串 
+*/ 
+function getSmpFormatDateByLong(l, isFull) { 
+	return getSmpFormatDate(new Date(l), isFull); 
+} 
+
+/** 
+*转换long值为日期字符串 
+* @param l long值 
+* @param pattern 格式字符串,例如：yyyy-MM-dd hh:mm:ss 
+* @return 符合要求的日期字符串 
+*/ 
+function getFormatDateByLong(l, pattern) { 
+	return getFormatDate(new Date(l), pattern); 
+} 
+/** 
+*转换日期对象为日期字符串 
+* @param l long值 
+* @param pattern 格式字符串,例如：yyyy-MM-dd hh:mm:ss 
+* @return 符合要求的日期字符串 
+*/ 
+function getFormatDate(date, pattern) { 
+	if (date == undefined) { 
+		date = new Date(); 
+	} 
+	if (pattern == undefined) { 
+		pattern = "yyyy-MM-dd hh:mm:ss"; 
+	} 
+	return date.format(pattern); 
+} 
+
+//是否为手机号
+function checkMobile(mobike){ 
+	var re = /^1[34578]\d{9}$/;
+	return re.test(mobike);
+}
+
+//是否为电话号码
+function checkPhone(phone){
+    var  re = /^0\d{2,3}-?\d{7,8}$/;
+    return re.test(phone);
+}
+
+//是否为身份证号码
+function checkIDcard(IDCard){
+    var  re = /(^\d{15}$)|(^\d{17}([0-9]|X|x)$)/;
+    return re.test(IDCard);
+}
+
+//是否符合日期格式 yyyy-mm-dd
+function isDate(dateString) {
+	if (dateString.trim() == "")
+		return true;
+	var r = dateString.match(/^(\d{1,4})(-|\/)(\d{1,2})\2(\d{1,2})$/);
+	if (r == null) {
+		return false;
+	}
+	var d = new Date(r[1], r[3] - 1, r[4]);
+	var num = (d.getFullYear() == r[1] && (d.getMonth() + 1) == r[3] && d.getDate() == r[4]);
+	return (num != 0);
+}
+
+//日期格式必须是  yyyy-mm-dd
+function dateToLong(dateString){
+	var stringDate = dateString+ " 00:00:00";
+	return Date.parse(new Date(stringDate));
+}
+
+/*
+ * 日期格式必须是  yyyy-mm-dd
+ * 比较两个日期大小
+ * 第一个日期 > 第二个日期 返回 true
+ */
+function compareDate(dateStringFirst,dateStringSecond){
+	return dateToLong(dateStringFirst) - dateToLong(dateStringSecond) > 0;
+} 
+ 
+//检查输入的一串字符是否全部是数字
+function checkNum(str){
+    return str.match(/\D/) == null;
+}
+
+//检查输入的一串字符是否为整型数据
+function checkInteger(str){
+    if (str.match(/^[-+]?\d*$/) == null) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+ 
+//检查输入的固定电话号码是否正确
+function checkTelephone(str){
+    if (str.match(/^(([0\+]\d{2,3}-)?(0\d{2,3})-)(\d{7,8})(-(\d{3,}))?$/) == null) {
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+/**
+ * 参数输入字符串的数值在指定区间
+ * @param inputStr 输入值
+ * @param min 最小值
+ * @param max 最大值
+ */
+function checkNumInterval(inputStr,min,max){
+    var re = /(\d+)/g;
+    while(re.exec(inputStr)){
+            var int = parseInt(RegExp.$1);
+            if(int < min || int> max )return false;
+    }
+    return true;
+}
+//判断是否为double类型
+function isDouble(str){
+	var reg=/^[-\+]?\d+(\.\d+)?$/;  
+	return reg.test(str);
+}
+//只允许输入数字（不带小数点的） 
+//<input type="text" onkeyup="value=value.replace(/[^\d]/g,'')" >  
+//只允许输入数字（带小数点的） 
+//<input type="text" onkeyup="value=value.replace(/[^\d\.]/g,'')" >  
+ 
+ 
+ 
+//增加 Stirng对象的原型方法replaceAll
+String.prototype.replaceAll = function(oldChar,newChar){ 
+	return this.replace(new RegExp(oldChar,"gm"),newChar); 
+}
+
+ //JQuery post 提交异常处理
+//jqXHR:jquerypost返回的对象
+function jqueryPostError(jqXHR) {
+    var errorResult;
+    try {
+        var errorResult= $.parseJSON(jqXHR.responseText);
+    } catch(err){
+          common.alert("提交发送请求失败！ 状态码：" +  jqXHR.status + "  状态描述： " + jqXHR.statusText , 2);
+    }
+    if (errorResult.msg !== null || errorResult.msg !== undefined || errorResult.msg !== '') {
+       common.alert("服务器后台报告错误：" + errorResult.msg, 2);
+    } else {
+       common.alert("调用保存程序失败！", 2);
+    }
+}
+
+    // 时间戳日期formatter
+    function datetimeFormatter(value, row, index) {
+		if (value) {
+			var now = new Date(parseInt(value));
+			return now.format("yyyy-MM-dd hh:mm:ss");
+		}
+		return '';
+	}
+
+    function dateFormatter(value, row, index) {
+		if (value) {
+			var now = new Date(parseInt(value));
+			return now.format("yyyy-MM-dd");
+		}
+		return '';
+	}
+
+    Date.prototype.Format = function (fmt) { //author: meizz
+		var o = {
+			"M+": this.getMonth() + 1, //月份
+			"d+": this.getDate(), //日
+			"H+": this.getHours(), //小时
+			"m+": this.getMinutes(), //分
+			"s+": this.getSeconds(), //秒
+			"q+": Math.floor((this.getMonth() + 3) / 3), //季度
+			"S": this.getMilliseconds() //毫秒
+		};
+		if (/(y+)/.test(fmt)) fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+		for (var k in o)
+		if (new RegExp("(" + k + ")").test(fmt)) fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ? (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+		return fmt;
+	}
+</script>
+
+ 

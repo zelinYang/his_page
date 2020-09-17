@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-票据领用-编辑</title> #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        .layui-form .layui-input-inline {
+            height: 30px;
+        }
+    </style>
+</head>
+
+<body>
+<form class="layui-form" id="billRecipientForm" style="padding: 20px 0 0 0;">
+    <!-- 表单 开始 -->
+    #formHiddenInput("billRecipientId" "$!{billRecipient.billRecipientId}" " id='billRecipientId' ")
+    #formHiddenInput("recipientTime" $!{billRecipient.recipientTime} " id='recipientTime' ")
+    #formHiddenInput("usageFinishFlag" "$!{billRecipient.usageFinishFlag}" " id='usageFinishFlag' ")
+    #formHiddenInput("validFlag" "$!{billRecipient.validFlag}" " id='validFlag' ")
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()接手人</label>
+            <div class="layui-input-inline">#formTextInput("" "" "id='transferRecipientName' class='layui-input' lay-verify='required'")
+            </div>
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()领用人 </label>
+            <div class="layui-input-inline">
+                #formHiddenInput("recipientNameId" "" "id='recipientNameId'")
+                #formTextInput("" "$!currentUser.name" " class='layui-input'
+                readonly='readonly' ")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">票据类型</label>
+            <div class="layui-input-inline">#formHiddenInput("billType" "$!{billRecipient.billType}") #formTextInput(""
+                "#lookUpDict(${dicData.dicBillType} ${billRecipient.billType})" " class='layui-input'
+                readonly='readonly' ")
+            </div>
+        </div>
+        #if($!{billRecipient.billType} == $!{CONST.AppConstants.BILL_TYPE_INHOSPITAL})
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()使用方式</label>
+            <div class="layui-input-inline">#formHiddenInput("usageMode" "$!{billRecipient.usageMode}")
+                #formTextInput("" "#lookUpDict(${dicData.dicUsageMode} ${billRecipient.usageMode})" "
+                class='layui-input' readonly='readonly' ")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()起始票据号</label>
+            <div class="layui-input-inline">#formIntZeroInput("startNum" "$!{billRecipient.startNum}" " id='startNum'
+                maxlength='20' lay-verify='required|startNum' autocomplete='off' placeholder='' class='layui-input
+                billNum' readonly='readonly'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()当前票据号</label>
+            <div class="layui-input-inline">#formIntZeroInput("currentNum" "$!{billRecipient.currentNum}" "
+                id='currentNum' maxlength='20' lay-verify='required|currentNum' autocomplete='off' placeholder=''
+                class='layui-input billNum' readonly")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()结束票据号 </label>
+            <div class="layui-input-inline">#formIntZeroInput("endNum" "$!{billRecipient.endNum}" " id='endNum'
+                maxlength='20' lay-verify='required|endNum' autocomplete='off' placeholder='' class='layui-input
+                billNum' readonly='readonly'")
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-inline">
+            <label class="layui-form-label">票据张数</label>
+            <div class="layui-input-inline">#formIntZeroInput("" "" " readonly id='billNum' maxlength='22'
+                lay-verify='required' autocomplete='off' placeholder='' class='layui-input'")
+            </div>
+        </div>
+        <div class="layui-inline">
+            <label class="layui-form-label">#requiredTag()使用票据数</label>
+            <div class="layui-input-inline">#formIntZeroInput("billUseNum" "$!{billRecipient.billUseNum}" " readonly
+                id='billUseNum' maxlength='22' lay-verify='required' autocomplete='off' placeholder=''
+                class='layui-input'")
+            </div>
+        </div>
+        #if(${billRecipient})
+        <div class="layui-inline">
+            <label class="layui-form-label">作废票据数</label>
+            <div class="layui-input-inline">#formIntZeroInput("cancelBillNum" "$!{billRecipient.cancelBillNum}" "
+                readonly class='layui-input'")
+            </div>
+        </div>
+        #end
+    </div>
+    <div class="layui-form-item layui-form-text ">
+        <label class="layui-form-label">备注</label>
+        <div class="layui-input-inline " style="width: 440px;">#formTextarea("remark"
+            "#htmlEscape($!{billRecipient.remark})" "id='remark' class='layui-textarea' maxlength='200'
+            autocomplete='off' placeholder='请输入内容，字数最多200字' readonly")
+        </div>
+    </div>
+    <div class="tool-bottom-fixed">
+        <button type="button" id="btn_save" lay-submit="" lay-filter="btn_save" class="layui-btn layui-btn-sm">保 存
+        </button>
+    </div>
+    <!-- 表单 结束 -->
+</form>
+</body>
+
+<script>
+    var BILL_TYPE_OUTPATIENT = "$!{CONST.AppConstants.BILL_TYPE_OUTPATIENT}";
+    var USAGE_MODE_USAGEMODE = "$!{CONST.AppConstants.USAGE_MODE_USAGEMODE}";
+    layui.config({
+        base : '../resource/layuiadmin/'
+    }).extend({
+        index : 'lib/index'
+    }).use([ 'index', 'form' ], function() {
+        var $ = layui.$, form = layui.form;
+
+        common.verify(form);
+        //选择医生触发方法的回调函数
+        function selectSingleUserCall(data) {
+            $('#recipientNameId').val(data.userId);
+            $('#transferRecipientName').val(data.name);
+        }
+        //选择医生
+        $('#transferRecipientName').click(function () {
+            //重点1  top 调用最顶层的弹出层
+            top.common.open(contextPath + "/sys/selectSingleOrgUser.do", "选择医生（单击选择）", {area: ['750px','450px'],success: function(layero,index){
+                    var iframeWindow = top.window['layui-layer-iframe'+ index];
+                    //重点2 jsonpCallback 公用子页面回调方法；如果在这里定义了这个方法，那么子页面就会调用这个方法
+                    iframeWindow.jsonpCallback = function (data) {
+                        selectSingleUserCall(data)
+                    };
+                }});
+        })
+
+        //自定义验证规则
+        form.verify({
+            startNum : function(value) {
+                if ('' != $("#currentNum").val() && value.length != $("#currentNum").val().length) {
+                    return '票据号长度必须相等，请修改！';
+                } else if (parseInt(value) > parseInt($("#currentNum").val())) {
+                    return '起始票据号不能大于当前票据号，请修改！';
+                }
+            },
+            endNum : function(value) {
+                if (('' != $("#currentNum").val() && value.length != $("#currentNum").val().length) || (value.length != $("#startNum").val().length)) {
+                    return '票据号长度必须相等，请修改！';
+                } else if (parseInt(value) < parseInt($("#currentNum").val())) {
+                    return '结束票据号不能小于当前票据号，请修改！';
+                }
+            }
+        });
+        //选择门诊住院修改
+        var billTypeChage = function(data) {
+            $('[lay-templateid="usageModelTpl"]').remove();
+            if (data.value && (BILL_TYPE_OUTPATIENT != data.value)) {
+                //住院
+                $("#usageModelTpl").after(function () {
+                    return $($(this).html()).attr("lay-templateid", this.id);
+                });
+            }
+            form.render();
+        }
+        billTypeChage({value: $(':radio[name="billType"]:checked').val()});
+        //票据类型
+        form.on('radio(billType)', billTypeChage);
+
+        //监听票据数变化
+        $(".billNum").on("input propertychange", function() {
+            var currentNum = $("#currentNum").val();//当前票据号
+            var endNum = $("#endNum").val();//结束票据号
+            var billNum = parseInt(endNum) - parseInt($("#startNum").val());
+            var billUseNum = parseInt(currentNum) - parseInt($("#startNum").val());
+            if (endNum && !isNaN(billNum)) {
+                //票据张数=结束票据号-开始号码
+                $("#billNum").val(billNum);
+            }
+            if (currentNum) {
+                //使用票据数=当前票据号-开始号码
+                $("#billUseNum").val(billUseNum);
+            }
+        }).trigger('input');
+
+        // 获取坐标回调函数
+        function selectMapCoordinateBack(lng, lat) {
+            //$('#longitude').val(lng);
+            //$('#latitude').val(lat);
+        }
+
+        //提交表单
+        function saveBillCancel() {
+            var billRecipientParams = common.serializeObject($('#billRecipientForm'));
+            if(billRecipientParams.billType == BILL_TYPE_OUTPATIENT){
+                billRecipientParams.usageMode = USAGE_MODE_USAGEMODE;
+            }
+            common.openLoad();
+            common.requestServerHandler(contextPath + '/billRecipient/saveBillRecipientTransfer.jo', billRecipientParams,"保存成功。", function(result) {
+                $('#btn_query', window.parent.document).click();
+                var index = parent.layer.getFrameIndex(window.name);
+                parent.layer.close(index);
+            });
+
+        }//save function
+
+        // 保存按钮
+        form.on('submit(btn_save)', function(data) {
+            if ($("#billRecipientId").val()) {
+                //编辑
+                saveBillCancel();
+            } else {
+                var msg = '注意:保存后只能修改"当前票据号”,其余各项信息将不能再修改,请仔细核对后再保存!'
+                common.confirm(msg, function() {
+                    saveBillCancel();
+                });
+            }
+            return false;
+        });
+    })
+</script>
+
+</html>

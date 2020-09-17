@@ -1,0 +1,92 @@
+ <!DOCTYPE html>
+<html>
+<head>
+    <title>疾病列表</title> 
+    #parse("./common/pageCss.vm")
+    #parse("./common/pageJs.vm") 
+    <style type="text/css">
+   .layui-table, .layui-table-view {
+    margin: 0px 0;
+}
+    </style>
+</head>  
+
+<body class="full-height white-bg table-width-full" >
+  <!-- 查询表单 -->
+  <form id="basDisease_queryForm"> 
+    #formHiddenInput("keySearch" "" " id='keySearch' class='layui-input' placeholder='疾病检索' ")
+  </form>
+ 
+  <!-- 数据表格 -->
+  <table id="wardBedFeeListGrid" lay-filter="wardBedFeeListGrid"></table>
+ 
+   <script>
+  var dicSysUser  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+  var dicSysOrgName  = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysOrgName)');
+  var query;
+  layui.use(['jquery','table', 'laypage','element','form'], function(){
+    var table = layui.table;
+    var element = layui.element;
+    var form = layui.form;
+    var laypage = layui.laypage; 
+    var $ = layui.$;
+    
+    element.render();
+  //表列表
+   var tableIns= table.render({
+      elem: '#wardBedFeeListGrid'
+      ,url : "../inpatient/wardBedFeeListData.jo" //数据接口
+      ,limit:20
+      ,cols: [[
+           {  field : 'chargeName',
+               title : '房间名称',minWidth:250}
+           ,{  field : 'unitPrice',
+               title : '费用',sort:true}
+           ,{  field : 'unit',
+               title : '单位'}
+      ]]
+    ,height: 'full-0'
+      ,page: true
+      ,request: {
+          pageName: 'pageNumber' //页码的参数名称，默认：page
+         ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+       }
+     //res = 如果是异步请求数据方式，res即为你接口返回的信息。 curr = 当前页码   count= 得到数据总量
+       ,done: function(res, curr, count){
+           curRows = res.data;
+       }
+    });
+      
+    // 查询按钮
+    $('#btn_query').click(function (){
+        query();
+    });
+        
+ 
+        
+   //查询列表
+    query = function() {
+        var queryParams = common.serializeObject($('#basDisease_queryForm'));
+        if(!isNaN(queryParams.keySearch)){
+        	queryParams.unitPrice = queryParams.keySearch;
+        }else if (common.isExistChina(queryParams.keySearch)) {
+                  queryParams.chargeName = queryParams.keySearch;
+            } else {
+                  queryParams.pinyinCode = queryParams.keySearch;
+            }
+        console.log(queryParams);
+         tableIns.reload({ where: queryParams });
+      }
+        
+          
+    //监听行单击事件
+    table.on('row(wardBedFeeListGrid)', function(obj){
+      var data = obj.data;
+      parent.$('#bedFee').val(data.unitPrice);
+    });
+        
+  });//layui.use
+</script> 
+</body>
+</html>
+  

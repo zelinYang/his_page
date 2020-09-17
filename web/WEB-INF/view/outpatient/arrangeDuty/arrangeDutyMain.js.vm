@@ -1,0 +1,84 @@
+<script>
+    /************************ 导航 ********************************/
+    var childrenNav = [
+        {
+            'id': 'general',
+            'text': '门诊排班',
+            'href': '/outpatient/arrangeDutyDoctorMain.do'
+        },
+      /*  {
+            'id': 'emergencyRegister',
+            'text': '急诊排班',
+            'href': '/outpatient/arrangeDutyDoctorMain.do'
+        },*/
+        {
+            'id': 'arrangeDutyDoctorList',
+            'text': '医生排班记录',
+            'href': '/outpatient/arrangeDutyDoctorList.do'
+        }]
+
+    layui.use(['element', 'layer'], function () {
+        var element = layui.element
+        $ = layui.$
+
+        //新增导航
+        function addNav(href, text, iframeId) {
+            //遍历页签选项卡
+            var isExistNav = Boolean($('.layui-tab[lay-filter="childrenNav"] > ul.layui-tab-title > li[lay-id="' + iframeId + '"]').length);
+            //已经存在就退出了
+            if (isExistNav) return;
+            //新增一个Tab项
+            element.tabAdd('childrenNav', {
+                id: iframeId,
+                title: text,
+                attr: href
+            })
+        }
+
+        //监听导航菜单点击事件
+        element.on('tab(childrenNav)', function (data) {
+            var href = $(this).attr("lay-attr");
+            data.elem.find('.layui-tab-content > .layui-tab-item.layui-show').html(function () {
+                //已经存在就不重复加载了
+                if ($(this).children('iframe').prop('src')) return;
+                common.openLoad();
+                return $('<iframe/>').prop('src', href).load(function () {
+                    common.closeLoad();
+                })
+            });
+        })
+
+        //加载导航
+        /**
+         *
+         * @param childrenNav  [
+         {
+            'id': '',
+            'text': '',
+            'href': ''
+        },'' ]
+         */
+        function initNav(childrenNav) {
+            $.each(childrenNav, function (index, item) {
+                addNav(contextPath + '/' + item.href, item.text, item.id)
+            })
+            $('.layui-tab[lay-filter="childrenNav"]').find('.layui-tab-title li').first().click()
+        }
+
+        /**
+         * 打开一个新的选项卡窗口，一般在子窗口调用
+         * @param href
+         * @param text
+         * @param iframeId
+         */
+        window.openNav = function (href, text, iframeId) {
+            addNav(href, text, iframeId)
+            element.tabChange('childrenNav', iframeId) //切换到导航
+        }
+
+        //初始化菜单
+        initNav(childrenNav)
+    })
+
+</script>
+

@@ -1,0 +1,143 @@
+<script>
+var dicDrugNumUnitDosageUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnitDosageUnit)');
+var dicDrugNumUnit  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDrugNumUnit)');
+var dicPharmacyFreq  = JSON.parse('$dicTools.changeMapToJson($dicData.dicPharmacyFreq)');
+var dicDoseWay  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoseWay)');
+var dicDoctorOrderType  = JSON.parse('$dicTools.changeMapToJson($dicData.dicDoctorOrderType)');
+var dicYesNo  = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+
+var queryExamineGroup;//查询方法
+layui.use(['jquery','table', 'element','form'], function(){
+	var table = layui.table, element = layui.element, $ = layui.$, form = layui.form;
+	element.render();
+
+	/* 组套 JS */
+	var initQFrom = common.serializeObject($('#examineGroup_queryForm'));
+	//组套tabel
+	var examineGroupTable = table.render({
+	   elem: '#examineGroupTable'
+	  ,defaultToolbar: []
+	  ,height: 'full-45'//高度
+	  ,url: '../outpatient/orderGroupListData.jo' //数据接口
+	  ,page: true //开启分页
+	  ,where: initQFrom
+	  ,request: { 
+	     pageName: 'pageNumber' //页码的参数名称，默认：page
+	    ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+	  }
+	  ,cols: [[ //表头
+	    {field : 'orderGroupId',title : '项目ID' }
+	   ,{field : 'orderGroupName',title : '项目名称'}
+	  ]]
+	});
+	
+	// 查询按钮
+	$('#btn_query_examineGroup').click(function (){
+	    queryExamineGroup();
+	});
+
+    //监听单选按钮
+    form.on('radio(orderGroupClassify)', function(data){ //data.elem = 得到radio原始DOM对象；data.value =被点击的radio的value值
+        queryExamineGroup();
+        $('.main-right').addClass('layui-hide');
+    });
+	
+	//查询列表
+	queryExamineGroup = function() {
+	    var queryParams = common.serializeObject($('#examineGroup_queryForm'));
+	    examineGroupTable.reload({ where: queryParams });
+	}
+	   
+	//监听行单击事件
+	table.on('row(examineGroupTable)', function(obj){
+	  var row = obj.data;
+	  rowExamineGroupSelect(row);
+	});
+	//监听行单击事件
+	table.on('row(examineGroupTable)', function(obj){
+		var row = obj.data;
+		rowExamineGroupSelect(row);
+	});
+        
+	//处方组套行单击查询处方明细
+	function rowExamineGroupSelect(examineGroupRow) {
+	    $('.main-right').removeClass('layui-hide');
+	    $('#orderGroupId').val(examineGroupRow.orderGroupId);
+	    queryExamineGroupItem();
+	}
+        
+    //*************************  处方组套明细项 JS ********************************/
+	var examineGroupItemTable = table.render({
+	   elem: '#examineGroupItemTable'
+	  ,defaultToolbar: []
+	  ,height: 'full-45'//高度
+	  ,url: '../bas/orderItemInfoListData.jo' //数据接口
+	  ,limit:200
+	  ,request: { 
+	     pageName: 'pageNumber' //页码的参数名称，默认：page
+	    ,limitName: 'pageSize' //每页数据量的参数名，默认：limit
+	  }
+	  ,cols: [[ //表头
+	    {type:'checkbox'}
+	    ,{field : 'doctorOrderType', title : '项目类型', templet: function (row) {return dicDoctorOrderType[row.doctorOrderType] ? dicDoctorOrderType[row.doctorOrderType] : '';}}
+	    ,{field : 'medicineFlag', title : '是否药品', templet: function (row) {return dicYesNo[row.medicineFlag];}}
+	    ,{field : 'orderName', title : '项目名称', width:180}
+	    ,{field : 'dosage', title : '剂量'}
+	    ,{field : 'dosageUnit', title : '单位', templet :function (row) {return  dicDrugNumUnitDosageUnit[row.dosageUnit] || '';}}
+	    ,{field : 'usageQuantity', title : '数量'}
+	    ,{field : 'dosageUnit', title : '单位', templet :function (row) {return  dicDrugNumUnitDosageUnit[row.dosageUnit] || '';}}
+	    ,{field : 'pharmacyFreqId', title : '频次', templet :function (row) {return  dicPharmacyFreq[row.pharmacyFreqId] ? dicPharmacyFreq[row.pharmacyFreqId] : '';}}
+	    ,{field : 'doseWayCode', title : '途径' , templet :function (row) {return dicDoseWay[row.doseWayCode] ? dicDoseWay[row.doseWayCode] : '';}} //用法，给药途径
+	    ,{field : 'itemPrice', title : '单价'}
+	    ,{field : 'remark', title : '备注'}
+	  ]]
+	});
+  
+	// 导入历史诊断按钮
+	$('#btn_import_examineGroupItem').click(function (){
+        importExamineGroupItem();
+	});
+  
+	//查询列表
+	function queryExamineGroupItem() {
+		var queryParams = common.serializeObject($('#examineGroupItem_queryForm'));
+		examineGroupItemTable.reload({ where: queryParams });
+	}
+  
+	// 导入组套明细
+	function importExamineGroupItem() {
+		var checkRows = table.checkStatus('examineGroupItemTable'); //test即为基础参数id对应的值
+		if (!checkRows.data.length) {
+		  common.alert('请选择需要导入的数据', 0);
+		  return false;
+		} 
+		var examineGroupItemArr = checkRows.data;
+		addExamineGroupItem(examineGroupItemArr);
+	}
+
+	function addExamineGroupItem(examineGroupItemArr) {
+		console.log(examineGroupItemArr);
+    }
+
+	
+	//加载组套明细项
+	function loadGroupItem(orderGroupId) {
+	    var examineGroupItemArray = [];
+	  $.ajax({  
+	      type: "POST",  
+	      url: '../bas/orderItemListData.jo',  
+	      data: {orderGroupId: orderGroupId},
+	      dataType:"json",
+	      async:false,//同步 请求
+	      success: function(data){ 
+	        if(data && data.total>0 ){
+	            examineGroupItemArray = data.rows;
+	        }
+	      },  
+	      error: function(res){jqueryPostError(res);} 
+	  });//ajax end 
+	  return examineGroupItemArray;
+	}
+        
+});//layui.use
+</script> 

@@ -1,0 +1,383 @@
+<script>
+var iframeSettings = {  width:700,//诊断内容propover 弹框参数
+        height:350,
+        closeable:false,
+        padding:false,
+        type:'iframe',
+        url:'../inpatient/basDiseaseSelect.do'
+    };
+var dicSysUser = JSON.parse('$dicTools.changeMapToJson($dicData.dicSysUser)');
+var dicAllergyMedicine = JSON.parse('$dicTools.changeMapToJson($dicData.dicAllergyMedicine)');
+var allergyOptions = JSON.parse('$dicTools.changeMapToJson($!dicData.dicAllergyMedicine)');
+
+layui.use(['element','form'],function(){
+    var element = layui.element;
+    var form  = layui.form;
+
+    //保存按钮
+    $("#btn_save").on("click",function(){
+        submitForm();
+    });
+    //新增过敏行
+    $("#addAllergyTr").click(function(){
+        addTr(this,"addAllergyTr");
+    });
+    //新增不良反应行
+    $("#addAdverseTr").click(function(){
+        addTr(this,"addAdverseTr");
+    });
+    //新增疾病史行
+    $("#addPastDiseaseTr").click(function(){
+        addTr(this,"addPastDiseaseTr");
+    });
+
+    //收展tbody按钮
+    $(".btn-shrink").click(function(){
+        var tBody = $(this).parents(".layui-card-body").find("tbody:last");
+        if(tBody.hasClass("layui-hide")){
+	        tBody.removeClass("layui-hide");
+	        $(this).removeClass("layui-icon-down").addClass("layui-icon-up");
+        }else{
+	        tBody.addClass("layui-hide");
+	        $(this).removeClass("layui-icon-up").addClass("layui-icon-down");
+        }
+    });
+
+
+
+    //初始化行js事件
+    reApplyPlugins();
+    //渲染行事件
+    function reApplyPlugins(){
+        lay('.layer-date').each(function(){
+            laydate.render({
+               elem: this
+               ,type: 'datetime'
+               ,format: 'yyyy-MM-dd HH:mm:ss'
+               ,max: getSmpFormatNowDate(true)
+            });
+        });
+
+        $("select[name='createUserId']").change(function(){
+            $(this).parent().find("input[name='createUserName']").val(dicSysUser[$(this).val()]);
+        });
+        $(".delAllergyTr").click(function(){
+           delTr(this,"delAllergyTr");
+        });
+        $(".delAdverseTr").click(function(){
+           delTr(this,"delAdverseTr");
+        });
+        $(".delPastDiseaseTr").click(function(){
+           delTr(this,"delPastDiseaseTr");
+        });
+
+        bindShowBasDiseasePopover($("input[name='diseaseName']"));
+        bindSearchBasDiseasePopover($("input[name='diseaseName']"));
+        activeTrFun();
+        form.render();
+        selectInputReplugins();
+    }
+
+
+    //提交表单
+    function submitForm() {
+        var allergyArrayObj = getTbodyData('allergy');
+        var adverseArrayObj = getTbodyData('adverse');
+        var pastDiseaseArrayObj = getTbodyData('pastDisease');
+        var params = {};
+        params['patientId'] = $("#patientId").val();
+        var jsonAllergyData = params['jsonAllergyData']=JSON.stringify(allergyArrayObj);
+        var jsonAdverseData = params['jsonAdverseData']=JSON.stringify(adverseArrayObj);
+        var jsonPastDiseaseData = params['jsonPastDiseaseData']=JSON.stringify(pastDiseaseArrayObj);
+        console.log(jsonAllergyData);
+        if(jsonAllergyData == 'null' || jsonAdverseData == 'null' || jsonPastDiseaseData == 'null'){
+            return;
+        }
+        common.requestServer('../patient/savePatientFile.jo', params, function(result){
+            if (result.code == "0") {
+                common.alertCall("保存成功。", 1, function (){
+                    window.location.href = window.location.href;
+                });
+            } else {
+                parent.common.alert(result.msg, 0);
+            }
+        });
+    }
+
+    //获取某个表的编辑数据
+    function getTbodyData(type){
+        var trs;
+        if(type == "allergy"){
+            trs = $('#allergyTbody > tr');
+        }else if(type == "adverse"){
+            trs = $('#adverseTbody > tr');
+        }else if(type == "pastDisease"){
+            trs = $('#pastDiseaseTbody > tr');
+        }
+        var arrayObj = [];
+        $(trs).each(function (){
+            var obj = {};
+            //console.log($(this).find('td > input, select')[0]);
+            $(this).find('input, select').each(function (){
+                var name = $(this).attr('name');
+                var value = $(this).val();
+                if(name && value) {
+                    obj[name] = value;
+                }
+                if($(this).attr('type')=='checkbox'){
+                    var ck = $(this)[0].checked;
+                    if(ck == true){
+                        obj[name] = '1';
+                    }else if(ck == false){
+                        obj[name] = '0';
+                    }
+                }
+            });
+            if(!$.isEmptyObject(obj)) {
+                var valid = '0';
+                if(type == "allergy"){
+                    valid = validAllergyForm(obj);
+                }else if(type == "adverse"){
+                    valid = validAdverseForm(obj);
+                }else if(type == "pastDisease"){
+                    valid = validPastDiseaseForm(obj);
+                }
+                if(valid == '1'){
+                    arrayObj.push(obj);
+                }else{
+                    arrayObj = null;
+                    console.log(valid);
+                    $(".input-error").removeClass("input-error");
+                    $(this).find("input[name='" + valid + "'],select[name='" + valid + "']").parents('td').addClass("input-error");
+                    $(".input-error").click(function(){
+                       $(this).removeClass("input-error").unbind();
+                    });
+                    return false;
+                }
+            }
+        });
+        return arrayObj;
+    }
+    //验证过敏行编辑数据
+    function validAllergyForm(obj){
+        if(obj.allergyDrugName == null || obj.allergyDrugName == ""){
+            layer.msg('请输入过敏原名称', {time: 3000, icon:2});
+            return 'allergyDrugName';
+        }
+        if(obj.createUserId == null || obj.createUserId == ""){
+            layer.msg('请选择记录人', {time: 3000, icon:2});
+            return '-1';
+        }
+        if(obj.createTime == null || obj.createTime == ""){
+            layer.msg('请选择记录时间', {time: 3000, icon:2});
+            return '-1';
+        }
+        return '1';
+    }
+
+
+    //验证不良反应编辑数据
+    function validAdverseForm(obj){
+        if(obj.adverseDrugName == null || obj.adverseDrugName == ""){
+            layer.msg('请输入不良反应药物名称', {time: 3000, icon:2});
+            return 'adverseDrugName';
+        }
+        if(obj.createUserId == null || obj.createUserId == ""){
+            layer.msg('请选择记录人', {time: 3000, icon:2});
+            return '-1';
+        }
+        if(obj.createTime == null || obj.createTime == ""){
+            layer.msg('请选择记录时间', {time: 3000, icon:2});
+            return '-1';
+        }
+        return '1';
+    }
+
+
+    //验证疾病史编辑数据
+    function validPastDiseaseForm(obj){
+        if(obj.diseaseId==null||obj.diseaseId==""){
+            layer.msg('没有获取到疾病ID', {time: 3000, icon:2});
+            return 'diseaseId';
+        }
+        if(obj.diseaseName==null||obj.diseaseName==""){
+            layer.msg('请选择疾病名称', {time: 3000, icon:2});
+            return 'diseaseName';
+        }
+        if(obj.createUserId == null || obj.createUserId == ""){
+            layer.msg('请选择记录人', {time: 3000, icon:2});
+            return '-1';
+        }
+        if(obj.createTime == null || obj.createTime == ""){
+            layer.msg('请选择记录时间', {time: 3000, icon:2});
+            return '-1';
+        }
+        return '1';
+    }
+
+
+
+
+    //新增行
+    function addTr(ele,type){
+        var newTr;
+        if(type == "addAllergyTr"){
+            newTr = $('#alleThead .rowTpl .trRow').clone();
+            $('#allergyTbody').append(newTr);
+        }else if(type == "addAdverseTr"){
+            newTr = $('#adverseThead .rowTpl .trRow').clone();
+            $('#adverseTbody').append(newTr);
+        }else if(type == "addPastDiseaseTr"){
+            newTr = $('#pastDiseaseThead .rowTpl .trRow').clone();
+            $('#pastDiseaseTbody').append(newTr);
+        }
+
+        //lay-key必须唯一，否则二次渲染无效
+        var laydates = $(".layer-date");
+        var dateNumber = laydates.length;
+        for(var i = 0; i < dateNumber; i++){
+            $(laydates[i]).attr("lay-key",i);
+        }
+        newTr.find(".layer-date").each(function(){
+            dateNumber++;
+            $(this).attr("lay-key",dateNumber);
+        });
+        newTr.find(".newCreateTime").val(getFormatDate(new Date(),'yyyy-MM-dd HH:mm:ss'));
+        reApplyPlugins();
+    }
+
+    //删除行
+    function delTr(ele,type){
+        var ids = [];
+        var id;
+        var url = "";
+        var tr = $(ele).parent().parent();
+        if(type == "delAllergyTr"){
+            id = $(tr).find("#drugAllergyId").val();
+            url = '../patient/delPatientDrugAllergy.jo';
+        }else if(type == "delAdverseTr"){
+            id = $(tr).find("#adverseDrugReactionId").val();
+            url = '../patient/delPatientAdverseReaction.jo';
+        }else if(type == "delPastDiseaseTr"){
+            id = $(tr).find("#pastDiseaseId").val();
+            url = '../patient/delPatientPastDisease.jo';
+        }
+        if(id != null && id != ""){
+            ids.push(id);
+        }else{
+            $(tr).remove();
+        }
+        if (ids.length > 0) {
+            common.confirm('确定要从库中删除吗？', function (){
+                common.requestServer(url, {ids: ids.join(',')}, function (result){
+                    if (result.code == '0') {
+                        $(tr).remove();
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        }
+    }
+
+
+
+
+
+    //选择&输入 框  绑定事件
+    function selectInputReplugins(){
+        $(".selInp_select").unbind().change(function(){
+                var value = $(this).val();
+                var select = $(this).parent().find(".selInp_select");
+                var input = $(this).parent().find(".selInp_input");
+                var div_input = $(this).parent().find(".div_input");
+                if(value == 'other'){
+                    $(input).val("");
+                    $(select).val("");
+                    $(select).hide();
+                    $(div_input).show();
+                    $(input)[0].focus();
+                }else{
+                    $(input).val(allergyOptions[value]);
+                }
+                console.log(input.val());
+        });
+        //var inputClears = document.getElementsByClassName("input_clear")
+        $(".input_clear").unbind().click(function(){
+            console.log("click");
+            var select = $(this).parent().parent().find(".selInp_select");
+            var input = $(this).parent().parent().find(".selInp_input");
+            var div_input = $(this).parent().parent().find(".div_input");
+            $(input).val("");
+            $(div_input).hide();
+            $(select).show();
+            $(select).click();
+        });
+    }
+});
+
+
+
+//显示Popover
+function initShowBasDiseasePopover() {
+   var inputBoxList = $(".tbody-data tr td input[name=diseaseName]");
+   inputBoxList.each(function(index) {
+     var elem = $(this);
+     elem.webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+   });
+}
+
+//绑定显示Popover
+function bindShowBasDiseasePopover(elem) {
+    console.log("bindShow");
+   elem.webuiPopover('destroy').webuiPopover($.extend({},iframeSettings));
+}
+
+//初始化搜索Popover
+function initSearchBasDiseasePopover() {
+    $('input[name=diseaseName]').on('input propertychange', function (){
+       var popoverId = $(this).attr('data-target');
+       $('#'+popoverId+' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+       $('#'+popoverId+' iframe')[0].contentWindow.query(); //调用iframe的方法
+    });
+}
+
+//bind搜索Popover
+function bindSearchBasDiseasePopover(elem) {
+    console.log("bindSearch");
+    elem.on('input propertychange', function (){
+         var popoverId = $(this).attr('data-target');
+      $('#'+popoverId+' iframe').contents().find("#keyWord").val($(this).val());//获取iframe的内容
+      $('#'+popoverId+' iframe')[0].contentWindow.query(); //调用iframe的方法
+    });
+}
+
+//疾病列表名称 row选择回调
+basDiseaseRowSelect = function (basDiseaseRow) {
+  WebuiPopovers.hideAll();
+  addTrData(basDiseaseRow);
+}
+
+addTrData = function (disease){
+    var isExist = 0;
+    $("#pastDiseaseTbody #diseaseId").each(function(){
+       if($(this).val() == disease.diseaseId){
+           isExist = 1;
+       }
+    });
+    if(isExist == 0){
+        var newTr = $('#pastDiseaseTbody tr.active');
+        newTr.find('input[name=diseaseId]').val(disease.diseaseId);//diseaseId
+        newTr.find('input[name=diseaseName]').val(disease.diseaseName);//诊断名称
+    }else{
+        common.alert("已有所选病种",2);
+    }
+}
+
+function activeTrFun() {
+    $('#pastDiseaseTbody tr td input[name=diseaseName]').click(function() {
+       $(this).parents('tr').addClass('active').siblings().removeClass('active');
+    });
+}
+
+</script>

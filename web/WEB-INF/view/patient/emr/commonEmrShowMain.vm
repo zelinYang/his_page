@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="renderer" content="webkit">
+    <title>${SessionSysPortal.appTitle}住院病程记录</title>
+    #parse("./common/pageCss.vm")
+    <style type="text/css">
+        .layui-content-wrapper.layui-bg-white .layui-fluid {
+            overflow-y: auto;
+        }
+
+        .layui-table td, .layui-table th {
+            padding: 5px;
+        }
+
+        .layui-form-item .layui-btn.layui-btn-sm {
+            margin-bottom: 0;
+        }
+    </style>
+</head>
+<body>
+<div class="layui-content-wrapper layui-bg-white">
+    <div class="layui-fluid">
+        <div class="layui-row layui-col-sm4" style="height: 100%;">
+            <iframe id="" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 0px); "
+                    src="../emr/1003/getPatientEmrByDateGroup.do?emrTlpClassifyId=$!{emrTlpClassifyId}&patientId=$!{patientId}&inhospitalId=$!{inhospitalId}&emrProperty=$!{CONST.AppConstants.EMR_PROPERTY_INPATIENT}&view=patient/emr/commonEmrShowList"></iframe>
+        </div>
+        <div class="layui-row layui-col-sm8" style="height: 100%;">
+            <iframe id="emrEdit" width="100%" scrolling="no" frameBorder="0" style="height:calc(100% - 0px); "
+                    src=""></iframe>
+        </div>
+    </div>
+</div>
+
+</body>
+#parse("./common/common.js.vm")
+#parse("./common/pageJs.vm")
+<script type="text/javascript">
+    var dicYesNo = JSON.parse('$dicTools.changeMapToJson($dicData.dicYesNo)');
+
+    layui.use(['table', 'form', 'laydate'], function () {
+        var rowId;
+        var table = layui.table, form = layui.form, laydate = layui.laydate;
+
+        window.openIframe = function(patientHospitalEmrId){
+            $("#emrEdit").attr("src", '$contextPath/emr/commonEmrTemplate.do?view=patient/emr/commonEmrShow&inhospitalId=$!inhospitalId&patientId=$!patientId&patientHospitalEmrId='+patientHospitalEmrId);
+        }
+    })
+    ;
+</script>
+</html>

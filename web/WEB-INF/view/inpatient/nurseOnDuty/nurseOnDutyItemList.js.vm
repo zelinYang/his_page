@@ -1,0 +1,142 @@
+<script>
+
+var dicPatientName = JSON.parse('$dicTools.changeMapToJson($dicData.dicPatientName)');
+layui.use(['element','form'],function(){
+    var form = layui.form;
+    reApplyPlugins();
+    
+    
+    $(".btn_add_tr").click(function(){
+        addTr(this);
+    });
+    function reApplyPlugins(){
+        $(".btn_del_tr").click(function(){
+            delTr(this);
+        });
+        form.render();
+    }
+    
+  //删除行
+    function delTr(ele){
+        var ids = [];
+        var eles = [];
+        var tr = $(ele).parent().parent();
+        var adverseDrugReactionId = $(tr).find("#adverseDrugReactionId").val();
+        console.log(adverseDrugReactionId);
+        if(adverseDrugReactionId!=null&&adverseDrugReactionId!=""){
+            ids.push(adverseDrugReactionId);
+        }else{
+            $(tr).remove();
+        }
+        if (ids.length > 0) {
+            common.confirm('确定要从库中删除吗？', function (){
+                common.requestServer('../patient/delPatientAdverseReaction.jo', {ids: ids.join(',')}, function (result){
+                    if (result.code == '0') {
+                        $(tr).remove();
+                    } else {
+                        common.alert(result.msg, 0);
+                    }
+                });
+            });
+        }
+    }
+
+    //新增行
+    function addTr(){
+      var newTr = $('#dutyItem .rowTpl .trRow').clone(); 
+      console.log(newTr);
+      $('#editTbody').append(newTr);
+    //lay-key必须唯一，否则二次渲染无效
+    /*
+      var maxLayKey = 0; 
+      $(".layer-date").each(function(){
+          var key = $(this).attr("lay-key");
+          if(maxLayKey < parseInt(key)){
+              maxLayKey = parseInt(key);
+          }
+      })
+          console.log(maxLayKey);
+      newTr.find(".layer-date").each(function(){
+          maxLayKey++;
+          $(this).attr("lay-key",maxLayKey);
+      });
+    */
+      reApplyPlugins();
+    }
+});
+
+
+
+
+//提交表单
+function submitForm() {
+    var jsonOnDutyData = getOnDutyData();
+    var params = {};
+    var jsonOnDutyData = params['jsonOnDutyData']=JSON.stringify(jsonOnDutyData);
+    
+    console.log(params);
+    if(jsonOnDutyData=='null'){
+        return;
+    }
+    /*
+    common.requestServer('../patient/savePatientAdverseReaction.jo', params, function(result){
+        if (result.code == "0") {
+            common.alertCall("保存成功。", 1, function (){
+                window.location.href = window.location.href;
+            });
+        } else {
+            parent.common.alert(result.msg, 0);
+        }
+    });
+    */
+}
+
+//获取编辑数据
+function getOnDutyData(){
+    var onDutyObj = [];
+    $('#editTbody > tr').each(function (){
+        var obj = {};
+        //console.log($(this).find('td > input, select')[0]);
+        $(this).find('input, select').each(function (){
+            var name = $(this).attr('name');
+            var value = $(this).val();
+            if(name && value) {
+                obj[name] = value;
+            }
+        })
+        
+        if(!$.isEmptyObject(obj) && obj.patientId) {
+            if(validateForm(obj)==1){
+                obj['patientName'] = dicPatientName[obj.patientId];
+                onDutyObj.push(obj); 
+            }else{
+                onDutyObj=null;
+                return;
+            }
+        }
+        console.log(obj);
+    });
+    return onDutyObj;
+}
+
+//验证编辑数据
+function validateForm(obj){
+   /* if(obj.adverseDrugName==null||obj.adverseDrugName==""){
+        common.alert("没有获取到药物名称",0);
+        return -1;
+    }
+    if(obj.createUserId==null||obj.createUserId==""){
+        common.alert("请选择记录人",0);
+        return -1;
+    }
+    if(obj.createTime==null||obj.createTime==""){
+        common.alert("请选择记录时间",0);
+        return -1;
+    }*/
+    return 1;
+}
+
+
+
+
+</script>

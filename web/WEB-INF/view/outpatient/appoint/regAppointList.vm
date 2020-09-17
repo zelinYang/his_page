@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${SessionSysPortal.appTitle}-预约挂号列表管理</title>
+    #parse("./common/pageCss.vm") #parse("./common/pageJs.vm")
+    <style>
+        body{overflow: hidden;}
+        .layui-form-item .layui-inline {
+            display: inline-block;
+        }
+        .layui-card{
+            margin-bottom: 0;
+        }
+        .layui-inline.col-14{min-width: 160px;}
+    </style>
+</head>
+<body class="layui-bg-white">
+<div class="layui-content-wrapper">
+    <div class=" layui-card">
+        <div class="layui-card-header">今日预约列表</div>
+        <div class="layui-card-body  p-n">
+            <!--搜索条件 开始-->
+            <form id="appoint_queryForm" class="layui-form p-t-xs p-b-n layui-bg-gray">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                            #formTextInput("keyWord" "" "id='q_keyWord' autocomplete='off' placeholder='请输入就诊卡号/姓名'
+                            class='layui-input'")
+                    </div>
+                    <div class="layui-inline layui-btn-group">
+                        <button id="btn_query" class="layui-btn layui-btn-sm" type="button" lay-tips="查询"><i class="layui-icon layui-icon-search "></i></button>
+                        <button id="btn_clean" class="layui-btn layui-btn-sm " type="button" lay-tips="清 空"><i class="iconfont icon-qingchu"></i></button>
+                    </div>
+                </div>
+            </form>
+            <!--搜索条件 结束-->
+
+            <!--列表 begin-->
+            <!-- 列表表格 工具栏-->
+            <!-- 性别 -->
+            <script type="text/html" id="sexTpl">
+                <span class="layui-badge {{d.patientSex == 1 ? 'layui-bg-blue' : (d.patientSex == 2 ? 'layui-bg-orange' : 'layui-bg-gray') }}">{{ dicSex[d.patientSex] || '' }}</span>
+            </script>
+            <!-- 列表表格 工具栏 结束-->
+            <!-- 列表表格 begin -->
+            <table id="appointListGrid" lay-filter="appointListGrid"></table>
+            <!--  列表表格 end -->
+            <!--列表end-->
+        </div>
+    </div>
+</div>
+<!-- 本页面js -->
+#parse("./outpatient/appoint/regAppointList.js.vm")
+</body>
+</html>
